@@ -1,0 +1,25 @@
+diff --git a/Makefile b/Makefile
+index 8dd0717..0392a6b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,4 +1,5 @@
+-CFLAGS+=-Wall -O2 -g
++WARMUP_ITERATIONS ?= 5
++CFLAGS+=-Wall -O2 -g -DWARMUP_ITERATIONS=${WARMUP_ITERATIONS}
+ LDFLAGS+=-lhwloc
+ 
+ processes := $(patsubst tests/%.c,%_processes,$(wildcard tests/*.c))
+diff --git a/main.c b/main.c
+index e53b7ff..75cc8b9 100644
+--- a/main.c
++++ b/main.c
+@@ -23,7 +23,9 @@
+ 
+ #define MAX_TASKS 2048
+ #define MAX_CACHELINE_SIZE 256
++#ifndef WARMUP_ITERATIONS
+ #define WARMUP_ITERATIONS 5
++#endif /* WARMUP_ITERATIONS */
+ 
+ extern char *testcase_description;
+ extern void __attribute__((weak)) testcase_prepare(unsigned long nr_tasks) { }

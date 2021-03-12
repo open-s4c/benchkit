@@ -1,0 +1,529 @@
+diff --git a/Makefile.in b/Makefile.in
+index be4bdbb..0df526a 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -1063,8 +1063,8 @@ libkyotocabinet.dylib : libkyotocabinet.$(LIBVER).$(LIBREV).0.dylib
+ 	ln -f -s libkyotocabinet.$(LIBVER).$(LIBREV).0.dylib $@
+ 
+ 
+-kcutiltest : kcutiltest.o $(LIBRARYFILES)
+-	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS) $(CMDLDFLAGS) -lkyotocabinet $(CMDLIBS)
++kcutiltest : kcutiltest.o kcutil.o $(LIBRARYFILES)
++	$(CXX) $(CXXFLAGS) -o $@ kcutil.o $< $(LDFLAGS) $(CMDLDFLAGS) -lkyotocabinet $(CMDLIBS)
+ 
+ 
+ kcutilmgr : kcutilmgr.o $(LIBRARYFILES)
+@@ -1247,6 +1247,7 @@ kclangctest.o : \
+   kcplantdb.h kcprotodb.h kcstashdb.h kccachedb.h kchashdb.h kcdirdb.h kctextdb.h \
+   kcpolydb.h kcdbext.h kclangc.h
+ 
++modp_b64.o : modp_b64.h modp_b64_data.h modp_stdint.h extern_c_begin.h extern_c_begin.h
+ 
+ 
+ # END OF FILE
+diff --git a/README b/README
+index 3d289bc..2769e37 100644
+--- a/README
++++ b/README
+@@ -1,6 +1,7 @@
+ ================================================================
+  Kyoto Cabinet: a straightforward implementation of DBM
+  Copyright (C) 2009-2011 FAL Labs
++ Copyright (C) 2013-2014 Cloudflare Inc.
+ ================================================================
+ 
+ 
+diff --git a/cmdcommon.h b/cmdcommon.h
+index b6fe365..7489381 100644
+--- a/cmdcommon.h
++++ b/cmdcommon.h
+@@ -52,7 +52,7 @@ namespace kc = kyotocabinet;
+ 
+ 
+ // constants
+-const int32_t THREADMAX = 64;            // maximum number of threads
++const int32_t THREADMAX = 128;            // maximum number of threads
+ const size_t RECBUFSIZ = 64;             // buffer size for a record
+ const size_t RECBUFSIZL = 1024;          // buffer size for a long record
+ 
+diff --git a/configure b/configure
+index a07063d..871d3f3 100755
+--- a/configure
++++ b/configure
+@@ -2097,6 +2097,7 @@ MYLIBRARYFILES="libkyotocabinet.a"
+ MYLIBOBJFILES="kcutil.o kcthread.o kcfile.o kccompress.o kccompare.o kcmap.o kcregex.o"
+ MYLIBOBJFILES="$MYLIBOBJFILES kcdb.o kcplantdb.o kcprotodb.o kcstashdb.o kccachedb.o"
+ MYLIBOBJFILES="$MYLIBOBJFILES kchashdb.o kcdirdb.o kctextdb.o kcpolydb.o kcdbext.o kclangc.o"
++MYLIBOBJFILES="$MYLIBOBJFILES modp_b64.o"
+ MYCOMMANDFILES="kcutiltest kcutilmgr kcprototest kcstashtest kccachetest kcgrasstest"
+ MYCOMMANDFILES="$MYCOMMANDFILES kchashtest kchashmgr kctreetest kctreemgr"
+ MYCOMMANDFILES="$MYCOMMANDFILES kcdirtest kcdirmgr kcforesttest kcforestmgr"
+@@ -2109,8 +2110,8 @@ MYDOCUMENTFILES="COPYING FOSSEXCEPTION ChangeLog doc kyotocabinet.idl"
+ MYPCFILES="kyotocabinet.pc"
+ 
+ # Building flags
+-MYCFLAGS="-Wall -ansi -pedantic -fPIC -fsigned-char -g0 -O2"
+-MYCXXFLAGS="-Wall -fPIC -fsigned-char -g0 -O2"
++MYCFLAGS="-Wall -ansi -pedantic -fPIC -fsigned-char -O2"
++MYCXXFLAGS="-Wall -fPIC -fsigned-char -O2"
+ MYCPPFLAGS="-I. -I\$(INCLUDEDIR) -I/usr/local/include"
+ MYCPPFLAGS="$MYCPPFLAGS -DNDEBUG -D_GNU_SOURCE=1"
+ MYCPPFLAGS="$MYCPPFLAGS -D_FILE_OFFSET_BITS=64 -D_REENTRANT -D__EXTENSIONS__"
+diff --git a/configure.in b/configure.in
+index 7808806..0b480db 100644
+--- a/configure.in
++++ b/configure.in
+@@ -23,6 +23,7 @@ MYLIBRARYFILES="libkyotocabinet.a"
+ MYLIBOBJFILES="kcutil.o kcthread.o kcfile.o kccompress.o kccompare.o kcmap.o kcregex.o"
+ MYLIBOBJFILES="$MYLIBOBJFILES kcdb.o kcplantdb.o kcprotodb.o kcstashdb.o kccachedb.o"
+ MYLIBOBJFILES="$MYLIBOBJFILES kchashdb.o kcdirdb.o kctextdb.o kcpolydb.o kcdbext.o kclangc.o"
++MYLIBOBJFILES="$MYLIBOBJFILES modp_b64.o"
+ MYCOMMANDFILES="kcutiltest kcutilmgr kcprototest kcstashtest kccachetest kcgrasstest"
+ MYCOMMANDFILES="$MYCOMMANDFILES kchashtest kchashmgr kctreetest kctreemgr"
+ MYCOMMANDFILES="$MYCOMMANDFILES kcdirtest kcdirmgr kcforesttest kcforestmgr"
+@@ -35,8 +36,8 @@ MYDOCUMENTFILES="COPYING FOSSEXCEPTION ChangeLog doc kyotocabinet.idl"
+ MYPCFILES="kyotocabinet.pc"
+ 
+ # Building flags
+-MYCFLAGS="-Wall -ansi -pedantic -fPIC -fsigned-char -g0 -O2"
+-MYCXXFLAGS="-Wall -fPIC -fsigned-char -g0 -O2"
++MYCFLAGS="-Wall -ansi -pedantic -fPIC -fsigned-char -O2"
++MYCXXFLAGS="-Wall -fPIC -fsigned-char -O2"
+ MYCPPFLAGS="-I. -I\$(INCLUDEDIR) -I/usr/local/include"
+ MYCPPFLAGS="$MYCPPFLAGS -DNDEBUG -D_GNU_SOURCE=1"
+ MYCPPFLAGS="$MYCPPFLAGS -D_FILE_OFFSET_BITS=64 -D_REENTRANT -D__EXTENSIONS__"
+diff --git a/kccommon.h b/kccommon.h
+index 5cd2e6e..b5aec4d 100644
+--- a/kccommon.h
++++ b/kccommon.h
+@@ -82,7 +82,7 @@ using ::modfl;
+ using ::snprintf;
+ }
+ 
+-#if __cplusplus > 199711L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(_MSC_VER)
++#if __cplusplus > 199711L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(_MSC_VER) || defined(_LIBCPP_VERSION)
+ 
+ #include <unordered_map>
+ #include <unordered_set>
+diff --git a/kcdbext.h b/kcdbext.h
+index 001c09a..93c612d 100644
+--- a/kcdbext.h
++++ b/kcdbext.h
+@@ -1278,7 +1278,7 @@ class IndexDB {
+     if (omode_ == 0) {
+       set_error(_KCCODELINE_, BasicDB::Error::INVALID, "not opened");
+       *sp = 0;
+-      return false;
++      return NULL;
+     }
+     if (!cache_) return db_.get(kbuf, ksiz, sp);
+     size_t dvsiz = 0;
+diff --git a/kctreemgr.cc b/kctreemgr.cc
+index 1278367..b8ff4da 100644
+--- a/kctreemgr.cc
++++ b/kctreemgr.cc
+@@ -14,6 +14,7 @@
+ 
+ 
+ #include <kchashdb.h>
++#include <kccompress.h>
+ #include "cmdcommon.h"
+ 
+ 
+@@ -43,7 +44,7 @@ static int32_t rungetbulk(int argc, char** argv);
+ static int32_t runcheck(int argc, char** argv);
+ static int32_t proccreate(const char* path, int32_t oflags, int32_t apow, int32_t fpow,
+                           int32_t opts, int64_t bnum, int32_t psiz, kc::Comparator* rcomp);
+-static int32_t procinform(const char* path, int32_t oflags, bool st);
++static int32_t procinform(const char* path, int32_t oflags, bool st, bool zcomp);
+ static int32_t procset(const char* path, const char* kbuf, size_t ksiz,
+                        const char* vbuf, size_t vsiz, int32_t oflags, int32_t mode);
+ static int32_t procremove(const char* path, const char* kbuf, size_t ksiz, int32_t oflags);
+@@ -55,7 +56,8 @@ static int32_t procclear(const char* path, int32_t oflags);
+ static int32_t procimport(const char* path, const char* file, int32_t oflags, bool sx);
+ static int32_t proccopy(const char* path, const char* file, int32_t oflags);
+ static int32_t procdump(const char* path, const char* file, int32_t oflags);
+-static int32_t procload(const char* path, const char* file, int32_t oflags);
++static int32_t procload(const char* path, const char* file, int32_t oflags,
++                        bool zcomp);
+ static int32_t procdefrag(const char* path, int32_t oflags);
+ static int32_t procsetbulk(const char* path, int32_t oflags,
+                            const std::map<std::string, std::string>& recs);
+@@ -121,7 +123,7 @@ static void usage() {
+   eprintf("usage:\n");
+   eprintf("  %s create [-otr] [-onl|-otl|-onr] [-apow num] [-fpow num] [-ts] [-tl] [-tc]"
+           " [-bnum num] [-psiz num] [-rcd|-rcld|-rcdd] path\n", g_progname);
+-  eprintf("  %s inform [-onl|-otl|-onr] [-st] path\n", g_progname);
++  eprintf("  %s inform [-onl|-otl|-onr] [-st] [-lzo] path\n", g_progname);
+   eprintf("  %s set [-onl|-otl|-onr] [-add|-rep|-app|-inci|-incd] [-sx] path key value\n",
+           g_progname);
+   eprintf("  %s remove [-onl|-otl|-onr] [-sx] path key\n", g_progname);
+@@ -132,7 +134,7 @@ static void usage() {
+   eprintf("  %s import [-onl|-otl|-onr] [-sx] path [file]\n", g_progname);
+   eprintf("  %s copy [-onl|-otl|-onr] path file\n", g_progname);
+   eprintf("  %s dump [-onl|-otl|-onr] path [file]\n", g_progname);
+-  eprintf("  %s load [-otr] [-onl|-otl|-onr] path [file]\n", g_progname);
++  eprintf("  %s load [-otr] [-onl|-otl|-onr] [-lzo] path [file]\n", g_progname);
+   eprintf("  %s defrag [-onl|-otl|-onr] path\n", g_progname);
+   eprintf("  %s setbulk [-onl|-otl|-onr] [-sx] path key value ...\n", g_progname);
+   eprintf("  %s removebulk [-onl|-otl|-onr] [-sx] path key ...\n", g_progname);
+@@ -220,6 +222,7 @@ static int32_t runinform(int argc, char** argv) {
+   const char* path = NULL;
+   int32_t oflags = 0;
+   bool st = false;
++  bool zcomp = false;
+   for (int32_t i = 2; i < argc; i++) {
+     if (!argbrk && argv[i][0] == '-') {
+       if (!std::strcmp(argv[i], "--")) {
+@@ -232,6 +235,8 @@ static int32_t runinform(int argc, char** argv) {
+         oflags |= kc::TreeDB::ONOREPAIR;
+       } else if (!std::strcmp(argv[i], "-st")) {
+         st = true;
++      } else if (!std::strcmp(argv[i], "-lzo")) {
++        zcomp = true;
+       } else {
+         usage();
+       }
+@@ -243,7 +248,7 @@ static int32_t runinform(int argc, char** argv) {
+     }
+   }
+   if (!path) usage();
+-  int32_t rv = procinform(path, oflags, st);
++  int32_t rv = procinform(path, oflags, st, zcomp);
+   return rv;
+ }
+ 
+@@ -628,6 +633,7 @@ static int32_t runload(int argc, char** argv) {
+   const char* path = NULL;
+   const char* file = NULL;
+   int32_t oflags = 0;
++  bool zcomp = false;
+   for (int32_t i = 2; i < argc; i++) {
+     if (!argbrk && argv[i][0] == '-') {
+       if (!std::strcmp(argv[i], "--")) {
+@@ -640,6 +646,8 @@ static int32_t runload(int argc, char** argv) {
+         oflags |= kc::TreeDB::OTRYLOCK;
+       } else if (!std::strcmp(argv[i], "-onr")) {
+         oflags |= kc::TreeDB::ONOREPAIR;
++      } else if (!std::strcmp(argv[i], "-lzo")) {
++        zcomp = true;
+       } else {
+         usage();
+       }
+@@ -653,7 +661,7 @@ static int32_t runload(int argc, char** argv) {
+     }
+   }
+   if (!path) usage();
+-  int32_t rv = procload(path, file, oflags);
++  int32_t rv = procload(path, file, oflags, zcomp);
+   return rv;
+ }
+ 
+@@ -899,8 +907,14 @@ static int32_t proccreate(const char* path, int32_t oflags, int32_t apow, int32_
+ 
+ 
+ // perform inform command
+-static int32_t procinform(const char* path, int32_t oflags, bool st) {
++static int32_t procinform(const char* path, int32_t oflags, bool st,
++                          bool zcomp) {
+   kc::TreeDB db;
++  if (zcomp) {
++    kyotocabinet::Compressor *zcomp_;
++    zcomp_ = new kyotocabinet::LZOCompressor<kyotocabinet::LZO::RAW>;
++    db.tune_compressor(zcomp_);
++  }
+   db.tune_logger(stdlogger(g_progname, &std::cerr));
+   if (!db.open(path, kc::TreeDB::OREADER | oflags)) {
+     dberrprint(&db, "DB::open failed");
+@@ -1375,8 +1389,14 @@ static int32_t procdump(const char* path, const char* file, int32_t oflags) {
+ 
+ 
+ // perform load command
+-static int32_t procload(const char* path, const char* file, int32_t oflags) {
++static int32_t procload(const char* path, const char* file, int32_t oflags,
++                        bool zcomp) {
+   kc::TreeDB db;
++  if (zcomp) {
++    kyotocabinet::Compressor *zcomp_;
++    zcomp_ = new kyotocabinet::LZOCompressor<kyotocabinet::LZO::RAW>;
++    db.tune_compressor(zcomp_);
++  }
+   db.tune_logger(stdlogger(g_progname, &std::cerr));
+   if (!db.open(path, kc::TreeDB::OWRITER | kc::TreeDB::OCREATE | oflags)) {
+     dberrprint(&db, "DB::open failed");
+diff --git a/kcutil.cc b/kcutil.cc
+index f46c6f5..c8a1337 100644
+--- a/kcutil.cc
++++ b/kcutil.cc
+@@ -15,6 +15,7 @@
+ 
+ #include "kcutil.h"
+ #include "myconf.h"
++#include "modp_b64.h"
+ 
+ namespace kyotocabinet {                 // common namespace
+ 
+@@ -384,6 +385,31 @@ void setstdiobin() {
+ }
+ 
+ 
++/**
++ * Encode a serial object by Base64 encoding.
++ */
++char* baseencode(const void* buf, size_t size) {
++  _assert_(buf && size <= MEMMAXSIZ);
++  const char* rp = (const char*)buf;
++  char* zbuf = new char[size*4/3+5];
++  modp_b64_encode(zbuf, rp, size);
++  return zbuf;
++}
++
++
++/**
++ * Decode a string encoded by Base64 encoding.
++ */
++char* basedecode(const char* str, size_t* sp) {
++  _assert_(str && sp);
++  size_t len = std::strlen(str);
++  char* zbuf = new char[len+4];
++
++  *sp = modp_b64_decode(zbuf, str, len);
++  return (char*)zbuf;
++}
++
++
+ }                                        // common namespace
+ 
+ // END OF FILE
+diff --git a/kcutil.h b/kcutil.h
+index 8e3f747..0532640 100644
+--- a/kcutil.h
++++ b/kcutil.h
+@@ -18,6 +18,7 @@
+ 
+ #include <kccommon.h>
+ 
++
+ namespace kyotocabinet {                 // common namespace
+ 
+ 
+@@ -68,6 +69,8 @@ const uint32_t UINT32MAX = (std::numeric_limits<uint32_t>::max)();
+ /** The maximum value of uint64_t. */
+ const uint64_t UINT64MAX = (std::numeric_limits<uint64_t>::max)();
+ 
++/** The size of uint64_t. */
++const uint64_t UINT64LEN = sizeof(uint64_t);
+ 
+ /** The maximum value of size_t. */
+ const size_t SIZEMAX = (std::numeric_limits<size_t>::max)();
+@@ -349,10 +352,21 @@ bool chkinf(double num);
+  * @param format the printf-like format string.  The conversion character `%' can be used with
+  * such flag characters as `s', `d', `o', `u', `x', `X', `c', `e', `E', `f', `g', `G', and `%'.
+  * @param ap used according to the format string.
++ * NOTE: capped at 2K for performace enhancement
+  */
+ void vstrprintf(std::string* dest, const char* format, va_list ap);
+ 
+ 
++/**
++ * Append a formatted string at the end of a string.
++ * @param dest the destination string.
++ * @param format the printf-like format string.  The conversion character `%' can be used with
++ * such flag characters as `s', `d', `o', `u', `x', `X', `c', `e', `E', `f', `g', `G', and `%'.
++ * @param ap used according to the format string.
++ */
++void vstrprintf_unlimited(std::string* dest, const char* format, va_list ap);
++
++
+ /**
+  * Append a formatted string at the end of a string.
+  * @param dest the destination string.
+@@ -1563,10 +1577,26 @@ inline bool chkinf(double num) {
+ }
+ 
+ 
++#define MIN(a, b) (a > b ? b : a)
++#define MAX_LINE 2048
++
++
+ /**
+  * Append a formatted string at the end of a string.
++ * NOTE: capped at 2K
+  */
+ inline void vstrprintf(std::string* dest, const char* format, va_list ap) {
++  _assert_(dest && format);
++  char tmp[MAX_LINE] = {0};
++  int len = vsnprintf(tmp, MAX_LINE, format, ap);
++  dest->append(tmp, MIN(len, MAX_LINE));
++}
++
++
++/**
++ * Append a formatted string at the end of a string.
++ */
++inline void vstrprintf_unlimited(std::string* dest, const char* format, va_list ap) {
+   _assert_(dest && format);
+   while (*format != '\0') {
+     if (*format == '%') {
+@@ -1596,11 +1626,11 @@ inline void vstrprintf(std::string* dest, const char* format, va_list ap) {
+           char tbuf[NUMBUFSIZ*4];
+           size_t tsiz;
+           if (lnum >= 2) {
+-            tsiz = std::sprintf(tbuf, cbuf, va_arg(ap, long long));
++            tsiz = sprintf(tbuf, cbuf, va_arg(ap, long long));
+           } else if (lnum >= 1) {
+-            tsiz = std::sprintf(tbuf, cbuf, va_arg(ap, long));
++            tsiz = sprintf(tbuf, cbuf, va_arg(ap, long));
+           } else {
+-            tsiz = std::sprintf(tbuf, cbuf, va_arg(ap, int));
++            tsiz = sprintf(tbuf, cbuf, va_arg(ap, int));
+           }
+           dest->append(tbuf, tsiz);
+           break;
+@@ -1609,11 +1639,11 @@ inline void vstrprintf(std::string* dest, const char* format, va_list ap) {
+           char tbuf[NUMBUFSIZ*4];
+           size_t tsiz;
+           if (lnum >= 2) {
+-            tsiz = std::sprintf(tbuf, cbuf, va_arg(ap, unsigned long long));
++            tsiz = sprintf(tbuf, cbuf, va_arg(ap, unsigned long long));
+           } else if (lnum >= 1) {
+-            tsiz = std::sprintf(tbuf, cbuf, va_arg(ap, unsigned long));
++            tsiz = sprintf(tbuf, cbuf, va_arg(ap, unsigned long));
+           } else {
+-            tsiz = std::sprintf(tbuf, cbuf, va_arg(ap, unsigned int));
++            tsiz = sprintf(tbuf, cbuf, va_arg(ap, unsigned int));
+           }
+           dest->append(tbuf, tsiz);
+           break;
+@@ -1622,9 +1652,9 @@ inline void vstrprintf(std::string* dest, const char* format, va_list ap) {
+           char tbuf[NUMBUFSIZ*4];
+           size_t tsiz;
+           if (lnum >= 1) {
+-            tsiz = std::snprintf(tbuf, sizeof(tbuf), cbuf, va_arg(ap, long double));
++            tsiz = snprintf(tbuf, sizeof(tbuf), cbuf, va_arg(ap, long double));
+           } else {
+-            tsiz = std::snprintf(tbuf, sizeof(tbuf), cbuf, va_arg(ap, double));
++            tsiz = snprintf(tbuf, sizeof(tbuf), cbuf, va_arg(ap, double));
+           }
+           if (tsiz > sizeof(tbuf)) {
+             tbuf[sizeof(tbuf)-1] = '*';
+@@ -1635,7 +1665,7 @@ inline void vstrprintf(std::string* dest, const char* format, va_list ap) {
+         }
+         case 'p': {
+           char tbuf[NUMBUFSIZ*4];
+-          size_t tsiz = std::sprintf(tbuf, "%p", va_arg(ap, void*));
++          size_t tsiz = sprintf(tbuf, "%p", va_arg(ap, void*));
+           dest->append(tbuf, tsiz);
+           break;
+         }
+@@ -2223,110 +2253,6 @@ inline char* quotedecode(const char* str, size_t* sp) {
+ }
+ 
+ 
+-/**
+- * Encode a serial object by Base64 encoding.
+- */
+-inline char* baseencode(const void* buf, size_t size) {
+-  _assert_(buf && size <= MEMMAXSIZ);
+-  const char* tbl = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+-  const unsigned char* rp = (const unsigned char*)buf;
+-  char* zbuf = new char[size*4/3+5];
+-  char* wp = zbuf;
+-  for (size_t i = 0; i < size; i += 3) {
+-    switch (size - i) {
+-      case 1: {
+-        *(wp++) = tbl[rp[0] >> 2];
+-        *(wp++) = tbl[(rp[0] & 3) << 4];
+-        *(wp++) = '=';
+-        *(wp++) = '=';
+-        break;
+-      }
+-      case 2: {
+-        *(wp++) = tbl[rp[0] >> 2];
+-        *(wp++) = tbl[((rp[0] & 3) << 4) + (rp[1] >> 4)];
+-        *(wp++) = tbl[(rp[1] & 0xf) << 2];
+-        *(wp++) = '=';
+-        break;
+-      }
+-      default: {
+-        *(wp++) = tbl[rp[0] >> 2];
+-        *(wp++) = tbl[((rp[0] & 3) << 4) + (rp[1] >> 4)];
+-        *(wp++) = tbl[((rp[1] & 0xf) << 2) + (rp[2] >> 6)];
+-        *(wp++) = tbl[rp[2] & 0x3f];
+-        break;
+-      }
+-    }
+-    rp += 3;
+-  }
+-  *wp = '\0';
+-  return zbuf;
+-}
+-
+-
+-/**
+- * Decode a string encoded by Base64 encoding.
+- */
+-inline char* basedecode(const char* str, size_t* sp) {
+-  _assert_(str && sp);
+-  size_t bpos = 0;
+-  size_t eqcnt = 0;
+-  size_t len = std::strlen(str);
+-  unsigned char* zbuf = new unsigned char[len+4];
+-  unsigned char* wp = zbuf;
+-  size_t zsiz = 0;
+-  while (bpos < len && eqcnt == 0) {
+-    size_t bits = 0;
+-    size_t i;
+-    for (i = 0; bpos < len && i < 4; bpos++) {
+-      if (str[bpos] >= 'A' && str[bpos] <= 'Z') {
+-        bits = (bits << 6) | (str[bpos] - 'A');
+-        i++;
+-      } else if (str[bpos] >= 'a' && str[bpos] <= 'z') {
+-        bits = (bits << 6) | (str[bpos] - 'a' + 26);
+-        i++;
+-      } else if (str[bpos] >= '0' && str[bpos] <= '9') {
+-        bits = (bits << 6) | (str[bpos] - '0' + 52);
+-        i++;
+-      } else if (str[bpos] == '+') {
+-        bits = (bits << 6) | 62;
+-        i++;
+-      } else if (str[bpos] == '/') {
+-        bits = (bits << 6) | 63;
+-        i++;
+-      } else if (str[bpos] == '=') {
+-        bits <<= 6;
+-        i++;
+-        eqcnt++;
+-      }
+-    }
+-    if (i == 0 && bpos >= len) continue;
+-    switch (eqcnt) {
+-      case 0: {
+-        *wp++ = (bits >> 16) & 0xff;
+-        *wp++ = (bits >> 8) & 0xff;
+-        *wp++ = bits & 0xff;
+-        zsiz += 3;
+-        break;
+-      }
+-      case 1: {
+-        *wp++ = (bits >> 16) & 0xff;
+-        *wp++ = (bits >> 8) & 0xff;
+-        zsiz += 2;
+-        break;
+-      }
+-      case 2: {
+-        *wp++ = (bits >> 16) & 0xff;
+-        zsiz += 1;
+-        break;
+-      }
+-    }
+-  }
+-  zbuf[zsiz] = '\0';
+-  *sp = zsiz;
+-  return (char*)zbuf;
+-}
+-
+-
+ /**
+  * Cipher or decipher a serial object with the Arcfour stream cipher.
+  */

@@ -1,0 +1,35 @@
+[BASIC]
+good-names=x,y,m,gd,df,p,s,i,r,d,k,cd,d1,d2,ip,vn,x0,x1,y0,y1,dd,xs,i,j,tz
+ignore-paths=
+    tutorials/leveldb-bench/deps/,
+    plotbench/venv/,
+
+[MESSAGE-CONTROL]
+disable=
+    fixme,
+    too-many-branches,
+    too-many-statements,
+    too-many-instance-attributes,
+    too-many-arguments,
+    too-many-locals,
+    too-few-public-methods,
+    unspecified-encoding,
+    consider-using-sys-exit,
+    useless-parent-delegation,
+    too-many-lines,
+    too-many-public-methods,
+    unsupported-membership-test,
+    unsubscriptable-object,
+    unsupported-assignment-operation,
+    c-extension-no-member,
+    duplicate-code,
+    unsubscriptable-object,
+    exec-used,
+    too-many-return-statements,
+    cell-var-from-loop,
+    inconsistent-return-statements,
+    consider-using-with,
+    raise-missing-from,
+    subprocess-popen-preexec-fn,
+    eval-used,
+    consider-using-dict-items,

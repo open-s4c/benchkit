@@ -1,0 +1,9 @@
+variables:
+  PYTHON3_IMAGE: "${BENCHKIT_PYTHON3_IMAGE}"
+
+tests:
+  image: ${PYTHON3_IMAGE}
+  script:
+    - cd ${CI_PROJECT_DIR}
+    - python3.10 -m unittest discover -v -s tests -t .
+    - python3.10 -m unittest discover -v -s benchkit/utils -t .

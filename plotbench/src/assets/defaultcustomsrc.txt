@@ -1,0 +1,15 @@
+# use 'df' as the dataframe variable.
+if "sysbench_threads" in df.columns and "nb_cores" in df.columns:
+    df["subscription"] = df["sysbench_threads"] - df["nb_cores"]
+
+
+def h2p(h):
+    d = {
+        "machine1": " ARM64 Kunpeng920",
+        "machine2": " ARM64 Kunpeng920",
+        "machine3": " AMD EPYC",
+    }
+    return d[h] if h in d else h
+
+
+df["Platform"] = df["hostname"].transform(h2p)

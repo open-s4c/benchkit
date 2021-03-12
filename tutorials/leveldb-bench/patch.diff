@@ -1,0 +1,210 @@
+diff --git a/.gitignore b/.gitignore
+index c4b2425..b1091ab 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -2,7 +2,10 @@
+ *.sw*
+ .vscode
+ .DS_Store
++.idea/
+ 
+ # Build directory.
+ build/
++build-*/
+ out/
++cmake-build-*/
+diff --git a/benchmarks/db_bench.cc b/benchmarks/db_bench.cc
+index 8e3f4e7..0f8c15e 100644
+--- a/benchmarks/db_bench.cc
++++ b/benchmarks/db_bench.cc
+@@ -67,6 +67,10 @@ static const char* FLAGS_benchmarks =
+ // Number of key/values to place in database
+ static int FLAGS_num = 1000000;
+ 
++// Duration of the benchmark
++// Specify it to fix the duration (and not the number of reads)
++static int FLAGS_duration = -1;
++
+ // Number of read operations to do.  If negative, do FLAGS_num reads.
+ static int FLAGS_reads = -1;
+ 
+@@ -129,6 +133,9 @@ static const char* FLAGS_db = nullptr;
+ // ZSTD compression level to try out
+ static int FLAGS_zstd_compression_level = 1;
+ 
++// Sync on completion of requested duration
++static std::atomic_bool duration_completed;
++
+ namespace leveldb {
+ 
+ namespace {
+@@ -246,6 +253,7 @@ class Stats {
+   double last_op_finish_;
+   Histogram hist_;
+   std::string message_;
++  std::vector<int> done_vector_;
+ 
+  public:
+   Stats() { Start(); }
+@@ -261,6 +269,11 @@ class Stats {
+   }
+ 
+   void Merge(const Stats& other) {
++    if (done_vector_.empty()) {
++      done_vector_.push_back(done_);
++    }
++    done_vector_.push_back(other.done_);
++
+     hist_.Merge(other.hist_);
+     done_ += other.done_;
+     bytes_ += other.bytes_;
+@@ -334,6 +347,21 @@ class Stats {
+     std::fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
+                  name.ToString().c_str(), seconds_ * 1e6 / done_,
+                  (extra.empty() ? "" : " "), extra.c_str());
++
++    // values to evaluate fairness
++    std::stringstream done_vector_stream;
++    if (done_vector_.empty()) {
++      done_vector_stream << ";" << done_;
++    } else {
++      for (int thread_done : done_vector_) {
++        done_vector_stream << ";" << thread_done;
++      }
++    }
++    std::fprintf(stdout, "benchstats:%.3f;%d%s\n",
++                 seconds_,                          // output_seconds
++                 done_,                             // output_nbops
++                 done_vector_stream.str().c_str()); // ;thread0;thread1;...
++
+     if (FLAGS_histogram) {
+       std::fprintf(stdout, "Microseconds per op:\n%s\n",
+                    hist_.ToString().c_str());
+@@ -730,8 +758,17 @@ class Benchmark {
+       shared.cv.Wait();
+     }
+ 
++    duration_completed = (FLAGS_duration <= 0);
+     shared.start = true;
+     shared.cv.SignalAll();
++
++    if (FLAGS_duration > 0) {
++      shared.mu.Unlock(); // need to unlock otherwise workers won't start
++      sleep(FLAGS_duration);
++      duration_completed = true;
++      shared.mu.Lock();
++    }
++
+     while (shared.num_done < n) {
+       shared.cv.Wait();
+     }
+@@ -869,7 +906,10 @@ class Benchmark {
+     Iterator* iter = db_->NewIterator(ReadOptions());
+     int i = 0;
+     int64_t bytes = 0;
+-    for (iter->SeekToFirst(); i < reads_ && iter->Valid(); iter->Next()) {
++    for (iter->SeekToFirst();
++         (FLAGS_duration == -1 && i < reads_ && iter->Valid())
++         || (FLAGS_duration != -1 && !duration_completed);
++         iter->Next()) {
+       bytes += iter->key().size() + iter->value().size();
+       thread->stats.FinishedSingleOp();
+       ++i;
+@@ -882,7 +922,10 @@ class Benchmark {
+     Iterator* iter = db_->NewIterator(ReadOptions());
+     int i = 0;
+     int64_t bytes = 0;
+-    for (iter->SeekToLast(); i < reads_ && iter->Valid(); iter->Prev()) {
++    for (iter->SeekToLast();
++         (FLAGS_duration == -1 && i < reads_ && iter->Valid())
++         || (FLAGS_duration != -1 && !duration_completed);
++         iter->Prev()) {
+       bytes += iter->key().size() + iter->value().size();
+       thread->stats.FinishedSingleOp();
+       ++i;
+@@ -896,7 +939,10 @@ class Benchmark {
+     std::string value;
+     int found = 0;
+     KeyBuffer key;
+-    for (int i = 0; i < reads_; i++) {
++    for (int i = 0;
++         (FLAGS_duration == -1 && i < reads_)
++         || (FLAGS_duration != -1 && !duration_completed);
++         i++) {
+       const int k = thread->rand.Uniform(FLAGS_num);
+       key.Set(k);
+       if (db_->Get(options, key.slice(), &value).ok()) {
+@@ -913,7 +959,10 @@ class Benchmark {
+     ReadOptions options;
+     std::string value;
+     KeyBuffer key;
+-    for (int i = 0; i < reads_; i++) {
++    for (int i = 0;
++         (FLAGS_duration == -1 && i < reads_)
++         || (FLAGS_duration != -1 && !duration_completed);
++         i++) {
+       const int k = thread->rand.Uniform(FLAGS_num);
+       key.Set(k);
+       Slice s = Slice(key.slice().data(), key.slice().size() - 1);
+@@ -927,7 +976,10 @@ class Benchmark {
+     std::string value;
+     const int range = (FLAGS_num + 99) / 100;
+     KeyBuffer key;
+-    for (int i = 0; i < reads_; i++) {
++    for (int i = 0;
++         (FLAGS_duration == -1 && i < reads_)
++         || (FLAGS_duration != -1 && !duration_completed);
++         i++) {
+       const int k = thread->rand.Uniform(range);
+       key.Set(k);
+       db_->Get(options, key.slice(), &value);
+@@ -939,7 +991,10 @@ class Benchmark {
+     ReadOptions options;
+     int found = 0;
+     KeyBuffer key;
+-    for (int i = 0; i < reads_; i++) {
++    for (int i = 0;
++         (FLAGS_duration == -1 && i < reads_)
++         || (FLAGS_duration != -1 && !duration_completed);
++         i++) {
+       Iterator* iter = db_->NewIterator(options);
+       const int k = thread->rand.Uniform(FLAGS_num);
+       key.Set(k);
+@@ -959,7 +1014,10 @@ class Benchmark {
+     int found = 0;
+     int k = 0;
+     KeyBuffer key;
+-    for (int i = 0; i < reads_; i++) {
++    for (int i = 0;
++         (FLAGS_duration == -1 && i < reads_)
++         || (FLAGS_duration != -1 && !duration_completed);
++         i++) {
+       k = (k + (thread->rand.Uniform(100))) % FLAGS_num;
+       key.Set(k);
+       iter->Seek(key.slice());
+@@ -1095,6 +1153,8 @@ int main(int argc, char** argv) {
+       FLAGS_compression = n;
+     } else if (sscanf(argv[i], "--num=%d%c", &n, &junk) == 1) {
+       FLAGS_num = n;
++    } else if (sscanf(argv[i], "--duration=%d%c", &n, &junk) == 1) {
++      FLAGS_duration = n;
+     } else if (sscanf(argv[i], "--reads=%d%c", &n, &junk) == 1) {
+       FLAGS_reads = n;
+     } else if (sscanf(argv[i], "--threads=%d%c", &n, &junk) == 1) {
+diff --git a/port/port_stdcxx.h b/port/port_stdcxx.h
+index 6f503f6..121f5ad 100644
+--- a/port/port_stdcxx.h
++++ b/port/port_stdcxx.h
+@@ -50,7 +50,11 @@ class CondVar;
+ // Thinly wraps std::mutex.
+ class LOCKABLE Mutex {
+  public:
+-  Mutex() = default;
++  Mutex() {
++    if (pthread_mutex_init(mu_.native_handle(), NULL)) {
++        assert(0 && "mutex init failed");
++    }
++  }
+   ~Mutex() = default;
+ 
+   Mutex(const Mutex&) = delete;

@@ -1,0 +1,345 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6c54a7d6836..6af54c7952c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1461,8 +1461,41 @@ INCLUDE_DIRECTORIES(
+   ${CMAKE_CURRENT_BINARY_DIR}/include
+   ${CMAKE_SOURCE_DIR}
+   ${CMAKE_SOURCE_DIR}/include
++  ${CMAKE_SOURCE_DIR}/../../deps/libvsync/atomics/include
++  ${CMAKE_SOURCE_DIR}/../../deps/libvsync/sync/include
++  ${CMAKE_SOURCE_DIR}/../../clof/include
++  ${CMAKE_SOURCE_DIR}/storage/innobase/include/vsync
+   )
+ 
++IF(NOT WLOCK)
++  SET(WLOCK "BASELINE")
++ENDIF()
++MESSAGE(STATUS "Selected wrapper lock: ${WLOCK}")
++IF("BASELINE" STREQUAL "${WLOCK}")
++  STRING_APPEND(CMAKE_C_FLAGS   " -DCONFIG_USE_YIELD ")
++  STRING_APPEND(CMAKE_CXX_FLAGS " -DCONFIG_USE_YIELD ")
++ELSEIF("BASELINENOYIELD" STREQUAL "${WLOCK}")
++ELSEIF("BASELINECOUNT" STREQUAL "${WLOCK}")
++  STRING_APPEND(CMAKE_C_FLAGS   " -DCONFIG_USE_YIELD ")
++  STRING_APPEND(CMAKE_CXX_FLAGS " -DCONFIG_USE_YIELD ")
++
++  STRING_APPEND(CMAKE_C_FLAGS   " -DCONFIG_USE_COUNT ")
++  STRING_APPEND(CMAKE_CXX_FLAGS " -DCONFIG_USE_COUNT ")
++ELSE()
++  STRING_APPEND(CMAKE_C_FLAGS   " -DCONFIG_USE_YIELD ")
++  STRING_APPEND(CMAKE_CXX_FLAGS " -DCONFIG_USE_YIELD ")
++  STRING_APPEND(CMAKE_C_FLAGS   " -DVSYNC_BUILTINS -DCONFIG_USE_WRAPPER -DCONFIG_WLOCK_${WLOCK} ")
++  STRING_APPEND(CMAKE_CXX_FLAGS " -DVSYNC_BUILTINS -DCONFIG_USE_WRAPPER -DCONFIG_WLOCK_${WLOCK} ")
++ENDIF()
++IF(LOCK_BIGSMALL)
++  STRING_APPEND(CMAKE_C_FLAGS   " -DCONFIG_USE_LOCK_BIGSMALL ")
++  STRING_APPEND(CMAKE_CXX_FLAGS " -DCONFIG_USE_LOCK_BIGSMALL ")
++ENDIF()
++IF(VSYNC_LXE)
++  STRING_APPEND(CMAKE_C_FLAGS   " -DVSYNC_ENABLE_ARM64_LXE ")
++  STRING_APPEND(CMAKE_CXX_FLAGS " -DVSYNC_ENABLE_ARM64_LXE ")
++ENDIF()
++
+ IF(WITH_LTO)
+   IF(APPLE)
+     # Requires CMake 3.9+
+diff --git a/cmake/boost.cmake b/cmake/boost.cmake
+index 40c4d948c3a..bfe27e36093 100644
+--- a/cmake/boost.cmake
++++ b/cmake/boost.cmake
+@@ -195,7 +195,7 @@ ENDIF()
+ # There is a similar option in unittest/gunit.
+ # But the boost tarball is much bigger, so we have a separate option.
+ OPTION(DOWNLOAD_BOOST "Download boost from sourceforge." OFF)
+-SET(DOWNLOAD_BOOST_TIMEOUT 600 CACHE STRING
++SET(DOWNLOAD_BOOST_TIMEOUT 3600 CACHE STRING
+   "Timeout in seconds when downloading boost.")
+ 
+ # If we could not find it, then maybe download it.
+diff --git a/storage/innobase/include/ib0mutex.h b/storage/innobase/include/ib0mutex.h
+index 4adf7a937e9..dec47fb0e3b 100644
+--- a/storage/innobase/include/ib0mutex.h
++++ b/storage/innobase/include/ib0mutex.h
+@@ -39,6 +39,10 @@ this program; if not, write to the Free Software Foundation, Inc.,
+ #include "ut0rnd.h"
+ #include "ut0ut.h"
+ 
++#if defined(CONFIG_USE_WRAPPER)
++#include "vsync/vsyncmutexwrapper.h"
++#endif /* defined(CONFIG_USE_WRAPPER) */
++
+ #include <atomic>
+ 
+ /** OS mutex for tracking lock/unlock for debugging */
+@@ -145,7 +149,11 @@ struct OSTrackMutex {
+ #endif /* UNIV_DEBUG */
+ 
+   /** OS Mutex instance */
++#if defined(CONFIG_USE_WRAPPER)
++  VSyncOSMutex m_mutex;
++#else
+   OSMutex m_mutex;
++#endif /* defined(CONFIG_USE_WRAPPER) */
+ 
+   /** Policy data */
+   MutexPolicy m_policy;
+@@ -370,17 +378,58 @@ struct TTASEventMutex {
+   typedef Policy<TTASEventMutex> MutexPolicy;
+ 
+   TTASEventMutex() UNIV_NOTHROW {
++    #if defined(CONFIG_USE_WRAPPER)
++    LOCK_INIT(&vlock);
++    #else
++
+     /* Check that m_owner is aligned. */
+     using m_owner_t = decltype(m_owner);
+     ut_ad(reinterpret_cast<std::uintptr_t>(&m_owner) % alignof(m_owner_t) == 0);
+     static_assert(m_owner_t::is_always_lock_free);
++
++    #if defined(CONFIG_USE_COUNT)
++    count_nb_waiters.store(0);
++    count_waiters = std::vector<int>(301);
++    #endif /* defined(CONFIG_USE_COUNT) */
++
++    #endif /* defined(CONFIG_USE_WRAPPER) */
+   }
+ 
+-  ~TTASEventMutex() UNIV_NOTHROW { ut_ad(!is_locked()); }
++  ~TTASEventMutex() UNIV_NOTHROW {
++    ut_ad(!is_locked());
++
++    #if defined(CONFIG_USE_COUNT)
++    bool non_zero = false;
++    for (int value : count_waiters) {
++      if (value) {
++        non_zero = true;
++      }
++    }
++
++    /*
++     * to avoid overloading the file (there are many unused locks),
++     * we only register the locks with at least one access.
++     */
++    if (non_zero) {
++      std::ofstream outfile;
++      outfile.open("/tmp/counts-mysqld-vec.txt", std::ios::app);
++      for (int value : count_waiters) {
++        outfile << value << " ";
++      }
++      outfile << std::endl;
++    }
++    #endif /* defined(CONFIG_USE_COUNT) */
++  }
+ 
+   /** If the lock is locked, returns the current owner of the lock, otherwise
+   returns the default std::thread::id{} */
+-  std::thread::id peek_owner() const UNIV_NOTHROW { return m_owner.load(); }
++  std::thread::id peek_owner() const UNIV_NOTHROW {
++    #if defined(CONFIG_USE_WRAPPER)
++    return m_current_owner;
++    #else
++    return m_owner.load();
++    #endif /* defined(CONFIG_USE_WRAPPER) */
++  }
+ 
+   /** Called when the mutex is "created". Note: Not from the constructor
+   but when the mutex is initialised.
+@@ -394,6 +443,10 @@ struct TTASEventMutex {
+     m_event = os_event_create();
+ 
+     m_policy.init(*this, id, filename, line);
++
++    #if defined(CONFIG_USE_WRAPPER)
++    LOCK_INIT(&vlock);
++    #endif /* defined(CONFIG_USE_WRAPPER) */
+   }
+ 
+   /** This is the real desctructor. This mutex can be created in BSS and
+@@ -412,15 +465,34 @@ struct TTASEventMutex {
+   /** Try and lock the mutex. Note: POSIX returns 0 on success.
+   @return true on success */
+   bool try_lock() UNIV_NOTHROW {
++#if defined(CONFIG_USE_WRAPPER)
++    if (LOCK_TRYACQUIRE(&vlock)) {
++      m_current_owner = std::this_thread::get_id();
++      return true;
++    } else {
++      return false;
++    }
++#else
+     auto expected = std::thread::id{};
+     return m_owner.compare_exchange_strong(expected,
+                                            std::this_thread::get_id());
++#endif /* defined(CONFIG_USE_WRAPPER) */
+   }
+ 
+   /** Release the mutex. */
+   void exit() UNIV_NOTHROW {
++    #if defined(CONFIG_USE_WRAPPER)
++    m_current_owner = std::thread::id{};
++    LOCK_RELEASE(&vlock);
++    #else
+     m_owner.store(std::thread::id{});
+ 
++    #if defined(CONFIG_USE_COUNT)
++    count_waiters.at(count_nb_waiters.load()) += 1;
++    #endif /* defined(CONFIG_USE_COUNT) */
++
++    #endif /* defined(CONFIG_USE_WRAPPER) */
++
+     if (m_waiters.load()) {
+       signal();
+     }
+@@ -433,9 +505,22 @@ struct TTASEventMutex {
+   @param[in]	line		within filename */
+   void enter(uint32_t max_spins, uint32_t max_delay, const char *filename,
+              uint32_t line) UNIV_NOTHROW {
++#if defined(CONFIG_USE_WRAPPER)
++    LOCK_ACQUIRE(&vlock);
++    m_current_owner = std::this_thread::get_id();
++#else
+     if (!try_lock()) {
+-      spin_and_try_lock(max_spins, max_delay, filename, line);
++        #if defined(CONFIG_USE_COUNT)
++        atomic_fetch_add(&count_nb_waiters, 1);
++        #endif /* defined(CONFIG_USE_COUNT) */
++
++        spin_and_try_lock(max_spins, max_delay, filename, line);
++
++        #if defined(CONFIG_USE_COUNT)
++        atomic_fetch_sub(&count_nb_waiters, 1);
++        #endif /* defined(CONFIG_USE_COUNT) */
+     }
++#endif /* defined(CONFIG_USE_WRAPPER) */
+   }
+ 
+   /** The event that the mutex will wait in sync0arr.cc
+@@ -486,7 +571,9 @@ struct TTASEventMutex {
+         return (true);
+       }
+ 
++      #if defined(CONFIG_USE_YIELD)
+       ut_delay(ut_rnd_interval(0, max_delay));
++      #endif /* defined(CONFIG_USE_YIELD) */
+ 
+       ++n_spins;
+ 
+@@ -504,6 +591,7 @@ struct TTASEventMutex {
+                          const char *filename, uint32_t line) UNIV_NOTHROW {
+     uint32_t n_spins = 0;
+     uint32_t n_waits = 0;
++
+     const uint32_t step = max_spins;
+ 
+     for (;;) {
+@@ -522,7 +610,9 @@ struct TTASEventMutex {
+ 
+       ++n_waits;
+ 
++      #if defined(CONFIG_USE_YIELD)
+       std::this_thread::yield();
++      #endif /* defined(CONFIG_USE_YIELD) */
+ 
+       /* The 4 below is a heuristic that has existed for a
+       very long time now. It is unclear if changing this
+@@ -533,11 +623,13 @@ struct TTASEventMutex {
+       above. Otherwise we could have simply done the extra
+       spin above. */
+ 
++      #if defined(CONFIG_USE_YIELD)
+       if (wait(filename, line, 4)) {
+         n_spins += 4;
+ 
+         break;
+       }
++      #endif /* defined(CONFIG_USE_YIELD) */
+     }
+ 
+     /* Waits and yields will be the same number in our
+@@ -562,9 +654,19 @@ struct TTASEventMutex {
+   TTASEventMutex &operator=(TTASEventMutex &&) = delete;
+   TTASEventMutex &operator=(const TTASEventMutex &) = delete;
+ 
++  #if defined(CONFIG_USE_WRAPPER)
++  LOCK_T vlock;
++  std::thread::id m_current_owner;
++  #else
++
+   /** Set to owner's thread's id when locked, and reset to the default
+   std::thread::id{} when unlocked. */
+   std::atomic<std::thread::id> m_owner{std::thread::id{}};
++  #if defined(CONFIG_USE_COUNT)
++  std::atomic<int> count_nb_waiters;
++  std::vector<int> count_waiters;
++  #endif /* defined(CONFIG_USE_COUNT) */
++  #endif /* defined(CONFIG_USE_WRAPPER) */
+ 
+   /** Used by sync0arr.cc for the wait queue */
+   os_event_t m_event{};
+diff --git a/storage/innobase/include/vsync/vsyncmutexwrapper.h b/storage/innobase/include/vsync/vsyncmutexwrapper.h
+new file mode 100644
+index 00000000000..be61b0683ad
+--- /dev/null
++++ b/storage/innobase/include/vsync/vsyncmutexwrapper.h
+@@ -0,0 +1,60 @@
++#ifndef vsync_vsyncmutexwrapper_h
++#define vsync_vsyncmutexwrapper_h
++
++#include <atomic>
++
++extern "C" {
++#include "vsync/locks/wrapper.h"
++}
++
++struct VSyncOSMutex {
++  VSyncOSMutex() UNIV_NOTHROW {
++    LOCK_INIT(&lock);
++  }
++
++  /** Create the mutex by calling the system functions. */
++  void init() UNIV_NOTHROW {
++    LOCK_INIT(&lock);
++  }
++
++  /** Destructor */
++  ~VSyncOSMutex() = default;
++
++  /** Destroy the mutex */
++  void destroy() UNIV_NOTHROW {
++    //    pthread_mutex_destroy(&m_mutex);
++  }
++
++  /** Release the mutex. */
++  void exit() UNIV_NOTHROW {
++    LOCK_RELEASE(&lock);
++  }
++
++  /** Acquire the mutex. */
++  void enter() UNIV_NOTHROW {
++    LOCK_ACQUIRE(&lock);
++  }
++
++  /** @return true if locking succeeded */
++  bool try_lock() UNIV_NOTHROW {
++    return LOCK_TRYACQUIRE(&lock);
++  }
++
++  /** Required for os_event_t */
++  operator sys_mutex_t *() UNIV_NOTHROW {
++    return NULL; // TODO TO CHECK
++  }
++
++#if defined(UNIV_LIBRARY) && defined(UNIV_DEBUG)
++  bool is_owned() {
++    ut_error;
++    return (false);
++  }
++#endif /* UNIV_LIBRARY && UNIV_DEBUG */
++
++ private:
++  LOCK_T lock;
++};
++
++
++#endif /* vsync_vsyncmutexwrapper_h*/

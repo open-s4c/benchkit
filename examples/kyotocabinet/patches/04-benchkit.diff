@@ -1,0 +1,328 @@
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..8686d70
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,30 @@
++*.o
++*.pc
++*.a
++*.so*
++*.log
++*.tmp
++
++Makefile
++benchmark
++config.status
++kccachetest
++kcdirmgr
++kcdirtest
++kcforestmgr
++kcforesttest
++kcgrasstest
++kchashmgr
++kchashtest
++kclangctest
++kcpolymgr
++kcpolytest
++kcprototest
++kcstashtest
++kctreemgr
++kctreetest
++kcutilmgr
++kcutiltest
++
++__pycache__/
++.idea/
+diff --git a/Makefile.in b/Makefile.in
+index 0df526a..13f4957 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -1082,6 +1082,9 @@ kcstashtest : kcstashtest.o $(LIBRARYFILES)
+ kccachetest : kccachetest.o $(LIBRARYFILES)
+ 	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS) $(CMDLDFLAGS) -lkyotocabinet $(CMDLIBS)
+ 
++benchmark : benchmark.o $(LIBRARYFILES)
++	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS) $(CMDLDFLAGS) -lkyotocabinet $(CMDLIBS)
++
+ 
+ kcgrasstest : kcgrasstest.o $(LIBRARYFILES)
+ 	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS) $(CMDLDFLAGS) -lkyotocabinet $(CMDLIBS)
+@@ -1210,6 +1213,11 @@ kccachetest.o : \
+   kcmap.h kcregex.h \
+   kcplantdb.h kccachedb.h cmdcommon.h
+ 
++benchmark.o : \
++  kccommon.h kcdb.h kcutil.h kcthread.h kcfile.h kccompress.h kccompare.h \
++  kcmap.h kcregex.h \
++  kcplantdb.h kccachedb.h cmdcommon.h
++
+ kcgrasstest.o : \
+   kccommon.h kcdb.h kcutil.h kcthread.h kcfile.h kccompress.h kccompare.h \
+   kcmap.h kcregex.h \
+diff --git a/benchmark.cc b/benchmark.cc
+index 299669a..7fa5848 100644
+--- a/benchmark.cc
++++ b/benchmark.cc
+@@ -1,10 +1,6 @@
+ #include <kccachedb.h>
+ #include "cmdcommon.h"
+ 
+-#if __has_include("benchmark.h")
+-#include "benchmark.h"
+-#endif /* __has_include("benchmark.h") */
+-
+ #include <getopt.h>
+ 
+ #ifndef RECORD_NUM
+@@ -15,13 +11,6 @@
+ #define UPDATE_RATIO 200
+ #endif /* UPDATE_RATIO */
+ 
+-/**
+- * Single benchmark duration, expressed in milliseconds.
+- */
+-#ifndef DURATION
+-#define DURATION 30000
+-#endif /* DURATION */
+-
+ // global variables
+ uint32_t g_randseed;                     // random seed
+ int64_t g_memusage;                      // memory usage
+@@ -221,17 +210,20 @@ class ThreadBench : public kc::Thread {
+ };
+ 
+ void print_usage() {
+-	printf("Usage: ./benchmark -t num\n");
++	printf("Usage: ./benchmark -t num_threads -d duration_seconds\n");
+ }
+ 
+ int main(int argc, char *argv[])
+ {
+ 	int thnum = -1;
++	int duration = 1000;
+ 	int option = 0;
+-	while ((option = getopt(argc, argv, "t:")) != -1) {
++	while ((option = getopt(argc, argv, "t:d:")) != -1) {
+ 		switch(option) {
+ 			case 't': thnum = atoi(optarg);
+-				  break;
++				break;
++			case 'd': duration = atoi(optarg) * 1000;
++				break;
+ 			default: print_usage();
+ 				 exit(EXIT_FAILURE);
+ 		}
+@@ -253,7 +245,6 @@ int main(int argc, char *argv[])
+ 
+ 	int rnum = RECORD_NUM;
+ 	int update = UPDATE_RATIO;
+-	int duration = DURATION;
+ 
+ 	struct timespec timeout;
+ 	timeout.tv_sec = duration / 1000;
+diff --git a/configure b/configure
+index 871d3f3..012f8a7 100755
+--- a/configure
++++ b/configure
+@@ -2102,6 +2102,7 @@ MYCOMMANDFILES="kcutiltest kcutilmgr kcprototest kcstashtest kccachetest kcgrass
+ MYCOMMANDFILES="$MYCOMMANDFILES kchashtest kchashmgr kctreetest kctreemgr"
+ MYCOMMANDFILES="$MYCOMMANDFILES kcdirtest kcdirmgr kcforesttest kcforestmgr"
+ MYCOMMANDFILES="$MYCOMMANDFILES kcpolytest kcpolymgr kclangctest"
++MYCOMMANDFILES="$MYCOMMANDFILES benchmark"
+ MYMAN1FILES="kcutiltest.1 kcutilmgr.1 kcprototest.1 kcstashtest.1 kccachetest.1 kcgrasstest.1"
+ MYMAN1FILES="$MYMAN1FILES kchashtest.1 kchashmgr.1 kctreetest.1 kctreemgr.1"
+ MYMAN1FILES="$MYMAN1FILES kcdirtest.1 kcdirmgr.1 kcforesttest.1 kcforestmgr.1"
+diff --git a/kccachetest.cc b/kccachetest.cc
+index 1ad9217..0896856 100644
+--- a/kccachetest.cc
++++ b/kccachetest.cc
+@@ -15,13 +15,15 @@
+ 
+ #include <kccachedb.h>
+ #include "cmdcommon.h"
+-
++#include <atomic>
++#include <unistd.h>
+ 
+ // global variables
+ const char* g_progname;                  // program name
+ uint32_t g_randseed;                     // random seed
+ int64_t g_memusage;                      // memory usage
+ 
++static std::atomic_bool duration_completed;
+ 
+ // function prototypes
+ int main(int argc, char** argv);
+@@ -37,7 +39,7 @@ static int32_t procorder(int64_t rnum, int32_t thnum, bool rnd, bool etc, bool t
+ static int32_t procqueue(int64_t rnum, int32_t thnum, int32_t itnum, bool rnd,
+                          int32_t opts, int64_t bnum, int64_t capcnt, int64_t capsiz, bool lv);
+ static int32_t procwicked(int64_t rnum, int32_t thnum, int32_t itnum,
+-                          int32_t opts, int64_t bnum, int64_t capcnt, int64_t capsiz, bool lv);
++                          int32_t opts, int64_t bnum, int64_t capcnt, int64_t capsiz, bool lv, const int32_t dursec);
+ static int32_t proctran(int64_t rnum, int32_t thnum, int32_t itnum,
+                         int32_t opts, int64_t bnum, int64_t capcnt, int64_t capsiz, bool lv);
+ 
+@@ -83,7 +85,7 @@ static void usage() {
+           " [-capcnt num] [-capsiz num] [-lv] rnum\n", g_progname);
+   eprintf("  %s queue [-th num] [-it num] [-rnd] [-tc] [-bnum num]"
+           " [-capcnt num] [-capsiz num] [-lv] rnum\n", g_progname);
+-  eprintf("  %s wicked [-th num] [-it num] [-tc] [-bnum num]"
++  eprintf("  %s wicked [-th num] [-d duration] [-it num] [-tc] [-bnum num]"
+           " [-capcnt num] [-capsiz num] [-lv] rnum\n", g_progname);
+   eprintf("  %s tran [-th num] [-it num] [-tc] [-bnum num]"
+           " [-capcnt num] [-capsiz num] [-lv] rnum\n", g_progname);
+@@ -290,6 +292,7 @@ static int32_t runwicked(int argc, char** argv) {
+   bool argbrk = false;
+   const char* rstr = NULL;
+   int32_t thnum = 1;
++  int32_t dursec = -1;
+   int32_t itnum = 1;
+   int32_t opts = 0;
+   int64_t bnum = -1;
+@@ -303,6 +306,9 @@ static int32_t runwicked(int argc, char** argv) {
+       } else if (!std::strcmp(argv[i], "-th")) {
+         if (++i >= argc) usage();
+         thnum = kc::atoix(argv[i]);
++      } else if (!std::strcmp(argv[i], "-d")) {
++        if (++i >= argc) usage();
++        dursec = kc::atoix(argv[i]);
+       } else if (!std::strcmp(argv[i], "-it")) {
+         if (++i >= argc) usage();
+         itnum = kc::atoix(argv[i]);
+@@ -333,7 +339,7 @@ static int32_t runwicked(int argc, char** argv) {
+   int64_t rnum = kc::atoix(rstr);
+   if (rnum < 1 || thnum < 1 || itnum < 1) usage();
+   if (thnum > THREADMAX) thnum = THREADMAX;
+-  int32_t rv = procwicked(rnum, thnum, itnum, opts, bnum, capcnt, capsiz, lv);
++  int32_t rv = procwicked(rnum, thnum, itnum, opts, bnum, capcnt, capsiz, lv, dursec);
+   return rv;
+ }
+ 
+@@ -1599,7 +1605,7 @@ static int32_t procqueue(int64_t rnum, int32_t thnum, int32_t itnum, bool rnd,
+ 
+ // perform wicked command
+ static int32_t procwicked(int64_t rnum, int32_t thnum, int32_t itnum,
+-                          int32_t opts, int64_t bnum, int64_t capcnt, int64_t capsiz, bool lv) {
++                          int32_t opts, int64_t bnum, int64_t capcnt, int64_t capsiz, bool lv, const int32_t dursec) {
+   oprintf("<Wicked Test>\n  seed=%u  rnum=%lld  thnum=%d  itnum=%d"
+           "  opts=%d  bnum=%lld  capcnt=%lld  capsiz=%lld  lv=%d\n\n",
+           g_randseed, (long long)rnum, thnum, itnum,
+@@ -1624,13 +1630,14 @@ static int32_t procwicked(int64_t rnum, int32_t thnum, int32_t itnum,
+     class ThreadWicked : public kc::Thread {
+      public:
+       void setparams(int32_t id, kc::CacheDB* db, int64_t rnum, int32_t thnum,
+-                     const char* lbuf) {
++                     const char* lbuf, const int duration) {
+         id_ = id;
+         db_ = db;
+         rnum_ = rnum;
+         thnum_ = thnum;
+         lbuf_ = lbuf;
+         err_ = false;
++        duration_seconds_ = duration;
+       }
+       bool error() {
+         return err_;
+@@ -1638,7 +1645,14 @@ static int32_t procwicked(int64_t rnum, int32_t thnum, int32_t itnum,
+       void run() {
+         kc::DB::Cursor* cur = db_->cursor();
+         int64_t range = rnum_ * thnum_ / 2;
+-        for (int64_t i = 1; !err_ && i <= rnum_; i++) {
++
++        const int duration_seconds = this->duration_seconds_;
++
++        int64_t i;
++        for (i = 1;
++             !err_ && ((duration_seconds <= 0 && i <= rnum_) ||
++                       (duration_seconds > 0  && !duration_completed));
++             i++) {
+           bool tran = myrand(100) == 0;
+           if (tran) {
+             if (myrand(2) == 0) {
+@@ -1903,6 +1917,7 @@ static int32_t procwicked(int64_t rnum, int32_t thnum, int32_t itnum,
+           }
+         }
+         delete cur;
++        returned_result = i;
+       }
+      private:
+       int32_t id_;
+@@ -1915,17 +1930,23 @@ static int32_t procwicked(int64_t rnum, int32_t thnum, int32_t itnum,
+     char lbuf[RECBUFSIZL];
+     std::memset(lbuf, '*', sizeof(lbuf));
+     ThreadWicked threads[THREADMAX];
++    duration_completed = (0 >= dursec);
+     if (thnum < 2) {
+-      threads[0].setparams(0, &db, rnum, thnum, lbuf);
++      threads[0].setparams(0, &db, rnum, thnum, lbuf, dursec);
+       threads[0].run();
+       if (threads[0].error()) err = true;
+     } else {
+       for (int32_t i = 0; i < thnum; i++) {
+-        threads[i].setparams(i, &db, rnum, thnum, lbuf);
++        threads[i].setparams(i, &db, rnum, thnum, lbuf, dursec);
+         threads[i].start();
+       }
++      if (dursec > 0) {
++          sleep(dursec);
++          duration_completed = true;
++      }
+       for (int32_t i = 0; i < thnum; i++) {
+         threads[i].join();
++        if (-1 == threads[i].returned_result) err = true;
+         if (threads[i].error()) err = true;
+       }
+     }
+@@ -1935,6 +1956,13 @@ static int32_t procwicked(int64_t rnum, int32_t thnum, int32_t itnum,
+       err = true;
+     }
+     oprintf("time: %.3f\n", kc::time() - stime);
++    int global_count = 0;
++    for (int32_t i = 0; i < thnum; i++) {
++        const int thread_count = threads[i].returned_result;
++        oprintf("iterations thread %d: %d\n", i, thread_count);
++        global_count += thread_count;
++    }
++    oprintf("total iterations: %d\n", global_count);
+   }
+   oprintf("%s\n\n", err ? "error" : "ok");
+   return err ? 1 : 0;
+diff --git a/kcthread.cc b/kcthread.cc
+index 7d1cdc5..8f83d61 100644
+--- a/kcthread.cc
++++ b/kcthread.cc
+@@ -72,7 +72,7 @@ static void* threadrun(void* arg);
+ /**
+  * Default constructor.
+  */
+-Thread::Thread() : opq_(NULL) {
++Thread::Thread() : returned_result(-1), opq_(NULL), duration_seconds_(0) {
+ #if defined(_SYS_MSVC_) || defined(_SYS_MINGW_)
+   _assert_(true);
+   ThreadCore* core = new ThreadCore;
+diff --git a/kcthread.h b/kcthread.h
+index 7b77bbd..1291732 100644
+--- a/kcthread.h
++++ b/kcthread.h
+@@ -74,6 +74,11 @@ class Thread {
+    * @return the hash value of the current thread.
+    */
+   static int64_t hash();
++
++  /**
++   * Stores the result returned by the thread once it completes its execution.
++   */
++  int returned_result;
+  private:
+   /** Dummy constructor to forbid the use. */
+   Thread(const Thread&);
+@@ -81,6 +86,8 @@ class Thread {
+   Thread& operator =(const Thread&);
+   /** Opaque pointer. */
+   void* opq_;
++ protected:
++  int duration_seconds_;
+ };
+ 
+ 

@@ -1,0 +1,19 @@
+/*
+ * Copyright (C) 2023 Huawei Technologies Co.,Ltd. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ */
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define NB_THREADS @NB_THREADS@
+
+#define RUN_DURATION_SECONDS @RUN_DURATION_SECONDS@
+
+#include <vsync/spinlock/@LOCK@lock.h>
+typedef @LOCK@lock_t lock_t;
+#define lock_init @LOCK@lock_init
+#define lock_acquire @LOCK@lock_acquire
+#define lock_release @LOCK@lock_release
+
+#endif /* CONFIG_H */

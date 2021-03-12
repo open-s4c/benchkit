@@ -1,0 +1,43 @@
+diff --git a/Makefile b/Makefile
+index 7746d86..c5f9df1 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,21 +1,34 @@
+ CC = gcc
+ CFLAGS = -O2 -fopenmp
+ 
++BUILD ?= build/
++
++N ?= 90000000
++
+ FC = gfortran
+ FFLAGS = -O2 -fopenmp
+ 
+-all: stream_f.exe stream_c.exe
++all: $(BUILD)/stream_c.exe
+ 
+ stream_f.exe: stream.f mysecond.o
+ 	$(CC) $(CFLAGS) -c mysecond.c
+ 	$(FC) $(FFLAGS) -c stream.f
+ 	$(FC) $(FFLAGS) stream.o mysecond.o -o stream_f.exe
+ 
+-stream_c.exe: stream.c
+-	$(CC) $(CFLAGS) stream.c -o stream_c.exe
++$(BUILD):
++	mkdir -p $(BUILD)
++
++$(BUILD)/stream_c.exe: stream.c $(BUILD)
++	$(CC) $(CFLAGS) stream.c -DSTREAM_ARRAY_SIZE=$(N) -o $(BUILD)/stream_c.exe
++
++
++run:
++	make clean
++	make N=$(N)
++	./run_stream.sh $(N)
+ 
+ clean:
+-	rm -f stream_f.exe stream_c.exe *.o
++	rm -f $(BUILD)/stream_f.exe $(BUILD)/stream_c.exe *.o
+ 
+ # an example of a more complex build line for the Intel icc compiler
+ stream.icc: stream.c
