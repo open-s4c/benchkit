@@ -15,6 +15,7 @@ _apt_file2package = {
 
 _dnf_file2package = {}
 
+_pacman_file2package = {}
 
 class PackageManager:
     """
@@ -182,6 +183,49 @@ class Dnf(PackageManager):
             print_output=False,
         )
 
+class Pacman(PackageManager):
+    """
+    Represent the "pacman" package manager, installed on arch-based 
+    distributions such as Manjaro and Arch."
+    """
+
+    def filename_to_packagename(
+        self,
+        filename: str,
+    ) -> str | None:
+        return _pacman_file2package.get(filename)
+
+    def get_install_lines(
+        self,
+        packages: Iterable[str],
+    ) -> List[str]:
+        packages_s = " ".join(packages)
+        return [f"pacman -Syu {packages_s}"]
+
+    def package_exists(
+        self,
+        package_name: str,
+        platform: Platform,
+    ) -> bool:
+        # This command uses a regex to get an exact match to see if 
+        # the given package exists.
+        return platform.comm.shell_succeed(
+            command=f"pacman -Ss ^{package_name}$",
+            print_input=False,
+            print_output=False,
+        )
+
+    def package_is_installed(
+        self,
+        package_name: str,
+        platform: Platform,
+    ) -> bool:
+        return platform.comm.shell_succeed(
+            command=f"pacman -Q {package_name}",
+            print_input=False,
+            print_output=False,
+        )
+
 
 def get_package_manager(platform: Platform) -> PackageManager:
     """
@@ -203,5 +247,9 @@ def get_package_manager(platform: Platform) -> PackageManager:
     dnf = platform.comm.which(cmd="dnf")
     if dnf is not None:
         return Dnf()
+    
+    pacman = platform.comm.which(cmd="pacman")
+    if pacman is not None:
+        return Pacman()
 
     raise ValueError("Supported package manager not found")
