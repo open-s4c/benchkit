@@ -7,7 +7,7 @@ future.
 
 - memcached
 - mariadb
-- reddis
+- redis
 - dpdk
 - NAS Parallel Benchmarks (https://www.nas.nasa.gov/software/npb.html)
 
