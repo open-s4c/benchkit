@@ -580,6 +580,12 @@ class LocalCommLayer(CommunicationLayer):
 
     def which(self, cmd: str) -> pathlib.Path | None:
         result = which(cmd=cmd)
+        
+        # If result is None, pathlib.Path will throw an error because it
+        # expects bytes or string.
+        if result is None: 
+            return None
+        
         return pathlib.Path(result)
 
 
