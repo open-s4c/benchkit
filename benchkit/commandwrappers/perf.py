@@ -185,12 +185,16 @@ def _get_available_events(
             (event_desc,) = m.groups()
             if event_id is not None:
                 # use event_id set at the previous iteration (description over 3 lines)
+                if event_id not in events_dict:
+                    events_dict[current_group][event_id] = ''
                 events_dict[current_group][event_id] += " " + event_desc
             continue
 
         if "[Raw hardware event descriptor]" in sline:
             continue
         if "[Hardware breakpoint]" in sline:
+            continue
+        if sline.startswith("Error:"):
             continue
         if not sline:
             continue
