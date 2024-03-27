@@ -57,7 +57,7 @@ def _generate_chart_from_df(
         return
 
     # TODO refactor with the other df management routines:
-    if "global_count" in df.columns and "duration" in df.columns:
+    if "global_count" in df.columns and "duration" in df.columns and "throughput" not in df.columns:
         df["throughput"] = df["global_count"] / df["duration"]
 
     plot_functions = [plot_name] if isinstance(plot_name, str) else list(plot_name)
