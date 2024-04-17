@@ -907,6 +907,21 @@ class Benchmark:
         }
         return build_variables, run_variables, tilt_variables, other_variables
 
+    def _is_result_cached(
+        self,
+        record_to_run: Dict[str, Any],
+        cached_records: Iterable[Dict[str, Any]],
+    ) -> bool:
+        for cached_record in cached_records:
+            same_record = True
+            for key in record_to_run:
+                if key in cached_record:
+                    if cached_record[key] != record_to_run[key]:
+                        same_record = False
+                        break
+            if same_record:
+                return True
+
     def _run_single_run(
         self,
         record_parameters: Dict[str, Any],
@@ -978,7 +993,7 @@ class Benchmark:
 
             # If this execution has already been done and continuing option is activated,
             # then skip
-            if continuing and execution_parameters in executions_dict:
+            if continuing and self._is_result_cached(execution_parameters, executions_dict):
                 print("[CONTINUING] This execution has already been done. Skipping it")
                 self._nb_runs_done += 1
                 if not self._first_line_is_printed:
