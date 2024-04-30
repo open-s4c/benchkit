@@ -20,7 +20,7 @@ def read(
     Returns:
         str: value of the variable read.
     """
-    sysctl_command = ["sysctl", "-n", f"{variable}"]
+    sysctl_command = ["sudo", "sysctl", "-n", f"{variable}"]
     command = sysctl_command
     output = comm_layer.shell(command=command, print_input=False, print_output=False).strip()
     return output

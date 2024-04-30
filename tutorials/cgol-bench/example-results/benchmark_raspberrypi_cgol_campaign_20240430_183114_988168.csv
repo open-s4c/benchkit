@@ -1,0 +1,74 @@
+# benchmark_campaign_name: cgol_campaign
+# benchmark_duration_seconds: 10
+# nb_runs: 3
+# date: 2024-04-30 18:31:15.264606+00:00
+# date_val: 20240430_183115
+# git_branch: main
+# git_sha: d595d920fb3190593c3059b77d7670288d45ce6f
+# kernel: Linux raspberrypi 6.1.0-rpi8-rpi-2712 #1 SMP PREEMPT Debian 1:6.1.73-1+rpt1 (2024-01-25) aarch64 GNU/Linux
+# kernel_boot_args: reboot=w coherent_pool=1M 8250.nr_uarts=1 pci=pcie_bus_safe snd_bcm2835.enable_compat_alsa=0 snd_bcm2835.enable_hdmi=1  smsc95xx.macaddr=D8:3A:DD:F7:44:F9 vc_mem.mem_base=0x3fc00000 vc_mem.mem_size=0x40000000  console=ttyAMA10,115200 console=tty1 root=PARTUUID=72eb4825-02 rootfstype=ext4 fsck.repair=yes rootwait
+# expected_duration_seconds: 600
+# expected_duration_pretty: 0:10:00
+experiment_name;benchmark_name;hostname;architecture;version;bench_name;nb_threads;width;height;nb_generations;rep;global_count;duration
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;1;50;50;100;1;36504735;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;1;50;50;100;2;36592302;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;1;50;50;100;3;36658829;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;2;50;50;100;1;72682500;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;2;50;50;100;2;69276281;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;2;50;50;100;3;72820789;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;3;50;50;100;1;99247371;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;3;50;50;100;2;100983349;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;3;50;50;100;3;98255726;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;4;50;50;100;1;124884092;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;4;50;50;100;2;119591221;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-1;time_based;4;50;50;100;3;124895138;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;1;50;50;100;1;25694262;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;1;50;50;100;2;25706395;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;1;50;50;100;3;25717842;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;2;50;50;100;1;49122500;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;2;50;50;100;2;49090877;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;2;50;50;100;3;48950164;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;3;50;50;100;1;72844894;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;3;50;50;100;2;73112328;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;3;50;50;100;3;72656370;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;4;50;50;100;1;94691655;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;4;50;50;100;2;93426342;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-2;time_based;4;50;50;100;3;94583035;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;1;50;50;100;1;25961083;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;1;50;50;100;2;25932976;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;1;50;50;100;3;25965771;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;2;50;50;100;1;51250796;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;2;50;50;100;2;48788525;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;2;50;50;100;3;48739970;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;3;50;50;100;1;71485595;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;3;50;50;100;2;71526871;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;3;50;50;100;3;71652261;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;4;50;50;100;1;93669009;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;4;50;50;100;2;93238815;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-3;time_based;4;50;50;100;3;94049996;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;1;50;50;100;1;33963761;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;1;50;50;100;2;33963313;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;1;50;50;100;3;33961030;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;2;50;50;100;1;67088865;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;2;50;50;100;2;61198045;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;2;50;50;100;3;62528913;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;3;50;50;100;1;92374530;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;3;50;50;100;2;85430828;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;3;50;50;100;3;91118882;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;4;50;50;100;1;100729571;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;4;50;50;100;2;107133726;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-4;time_based;4;50;50;100;3;112717048;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;1;50;50;100;1;33904796;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;1;50;50;100;2;33946538;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;1;50;50;100;3;34018507;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;2;50;50;100;1;67448900;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;2;50;50;100;2;67514008;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;2;50;50;100;3;67103621;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;3;50;50;100;1;97872588;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;3;50;50;100;2;96528987;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;3;50;50;100;3;96552071;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;4;50;50;100;1;114320521;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;4;50;50;100;2;96769265;10
+cgol_campaign;cgolbench;raspberrypi;aarch64;version-5;time_based;4;50;50;100;3;111547459;10
+# total_duration_seconds: 600.632061
+# total_duration_pretty: 0:10:00.632061

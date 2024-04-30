@@ -4,6 +4,7 @@ See: https://github.com/guido589/perf-assignment
 """
 
 import pathlib
+import re
 from typing import Any, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
@@ -37,12 +38,17 @@ class CGOLBench(Benchmark):
             post_run_hooks=post_run_hooks,
         )
         if platform is not None:
-            self.platform = platform  # TODO Warning! overriding upper class platform
+            self.platform = platform
         else:
             self.platform = get_current_platform()
 
         bench_src_path = pathlib.Path(src_dir)
         self._bench_src_path = bench_src_path
+
+        if build_dir is None:
+            self._build_dir = self._bench_src_path / f"build"
+        else:
+            self._build_dir = self._bench_src_path / build_dir
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -102,28 +108,71 @@ class CGOLBench(Benchmark):
 
     def single_run( 
         self,
+        benchmark_duration_seconds: int,
+        nb_threads: int = 2,
+        version: str = "version-1",
+        width: int = 100,
+        height: int = 100,
+        bench_name: str = "time_duration",
+        nb_generations: int = 5,
         **_kwargs,
     ):
-        return ""
+        environment = {}
+        duration_flag = []
+        if bench_name == "time_based":
+            duration_flag = ["-d", f"{benchmark_duration_seconds}"]
+        elif bench_name == "generation_based":
+            duration_flag = ["-g", f"{nb_generations}"]
+        else:
+            raise ValueError(f"Unknown bench_name: {bench_name}")
+        
+        run_command = [
+            f"./cgol",
+            "-t", f"{nb_threads}",
+            "-w", f"{width}",
+            "-h", f"{height}",
+            *duration_flag
+        ]
+        wrap_run_command, wrapperd_environment = self._wrap_command(
+            run_command=run_command,
+            environment=environment,
+            **_kwargs
+        )
+
+        output = self.run_bench_command(
+            run_command=run_command,
+            wrapped_run_command=wrap_run_command,
+            current_dir=self._bench_src_path / version / "build",
+            environment=environment,
+            wrapped_environment=wrapperd_environment,
+            print_output=False
+        )
+        return output
     
     @staticmethod
     def _parse_results(
         log_output: str,
+        benchmark_duration_seconds: int,
         nb_threads: int
     ) -> Dict[str, Any]:
+        
+        nb_cells_updated_pattern = "Number of cells updated: (\d+)"
+        nb_cells_updated = re.search(nb_cells_updated_pattern, log_output).group(1)
 
         return {
-            "nb_threads": nb_threads
+            "global_count": int(nb_cells_updated),
+            "duration": benchmark_duration_seconds,
         }
     
     def parse_output_to_results(
         self,
         command_output: str,
         run_variables: Dict[str, Any],
+        benchmark_duration_seconds: int,
         **_kwargs,
     ) -> Dict[str, Any]:
         nb_threads = int(run_variables["nb_threads"])
-        result_dict = self._parse_results(log_output=command_output, nb_threads=nb_threads)
+        result_dict = self._parse_results(log_output=command_output, nb_threads=nb_threads, benchmark_duration_seconds=benchmark_duration_seconds)
         return result_dict
     
 def cgol_campaign(
@@ -141,10 +190,10 @@ def cgol_campaign(
     platform: Platform | None = None,
     nb_runs: int = 1,
     benchmark_duration_seconds: int = 5,
+    nb_generations: Iterable[int] = (100,),
     nb_threads: Iterable[int] = (1,),
     width: Iterable[int] = (100,),
     height: Iterable[int] = (100,),
-    nb_generations: Iterable[int] = (100,),
     version: Iterable[str] = ("version-1",),
     debug: bool = False,
     gdb: bool = False,

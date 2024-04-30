@@ -2,9 +2,10 @@
 ## Cloning Conway's Game Of Life and benchkit
 
 ```sh
-$ git clone https://github.com/Guido589/perf-assignment
+$ git clone https://github.com/Guido589/perf-assignment.git
 $ cd perf-assignment
-$ git clone https://github.com/Guido589/benchkit
+$ git clone https://github.com/Guido589/benchkit.git
+$ git clone https://github.com/brendangregg/FlameGraph.git
 ```
 
 ## Running the campaign
