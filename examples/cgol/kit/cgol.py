@@ -45,11 +45,6 @@ class CGOLBench(Benchmark):
         bench_src_path = pathlib.Path(src_dir)
         self._bench_src_path = bench_src_path
 
-        if build_dir is None:
-            self._build_dir = self._bench_src_path / f"build"
-        else:
-            self._build_dir = self._bench_src_path / build_dir
-
     @property
     def bench_src_path(self) -> pathlib.Path:
         return self._bench_src_path
@@ -215,7 +210,7 @@ def cgol_campaign(
         pretty = {"lock": pretty}
 
     if src_dir is None:
-        pass  # TODO try some search heuristics
+        pass
 
     if benchmark is None:
         benchmark = CGOLBench(
