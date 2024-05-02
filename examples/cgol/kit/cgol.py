@@ -43,6 +43,10 @@ class CGOLBench(Benchmark):
             self.platform = get_current_platform()
 
         bench_src_path = pathlib.Path(src_dir)
+        if build_dir is not None:
+            self._build_dir = build_dir
+        else:
+            self._build_dir = bench_src_path / "build"
         self._bench_src_path = bench_src_path
 
     @property
@@ -58,19 +62,15 @@ class CGOLBench(Benchmark):
 
     @staticmethod
     def get_build_var_names():
-        return [
-            "version"
-        ]
+        return []
 
     @staticmethod
     def get_run_var_names() -> List[str]:
         return [
             "bench_name",
             "nb_threads",
-            "width",
-            "height",
+            "size",
             "nb_generations",
-            "version",
         ]
     
     @staticmethod
@@ -82,12 +82,7 @@ class CGOLBench(Benchmark):
         pass
 
     def prebuild_bench(self, **_kwargs) -> None:
-        pass
-    
-    def build_bench(self, version, **_kwargs) -> None:
-        src_dir = self._bench_src_path
-        build_dir = src_dir / version / "build"
-        print(f"Building version {version} in {build_dir}")
+        build_dir = self._build_dir
         self.platform.comm.makedirs(path=build_dir, exist_ok=True)
 
         self.platform.comm.shell(
@@ -100,14 +95,15 @@ class CGOLBench(Benchmark):
             current_dir=build_dir,
             output_is_log=True,
         )
+    
+    def build_bench(self, **_kwargs) -> None:
+        pass
 
     def single_run( 
         self,
         benchmark_duration_seconds: int,
         nb_threads: int = 2,
-        version: str = "version-1",
-        width: int = 100,
-        height: int = 100,
+        size: int = 100,
         bench_name: str = "time_duration",
         nb_generations: int = 5,
         **_kwargs,
@@ -120,7 +116,8 @@ class CGOLBench(Benchmark):
             duration_flag = ["-g", f"{nb_generations}"]
         else:
             raise ValueError(f"Unknown bench_name: {bench_name}")
-        
+        width = size
+        height = size
         run_command = [
             f"./cgol",
             "-t", f"{nb_threads}",
@@ -137,7 +134,7 @@ class CGOLBench(Benchmark):
         output = self.run_bench_command(
             run_command=run_command,
             wrapped_run_command=wrap_run_command,
-            current_dir=self._bench_src_path / version / "build",
+            current_dir=self._build_dir,
             environment=environment,
             wrapped_environment=wrapperd_environment,
             print_output=False
@@ -187,9 +184,7 @@ def cgol_campaign(
     benchmark_duration_seconds: int = 5,
     nb_generations: Iterable[int] = (100,),
     nb_threads: Iterable[int] = (1,),
-    width: Iterable[int] = (100,),
-    height: Iterable[int] = (100,),
-    version: Iterable[str] = ("version-1",),
+    size: Iterable[int] = (100,),
     debug: bool = False,
     gdb: bool = False,
     enable_data_dir: bool = False,
@@ -201,10 +196,8 @@ def cgol_campaign(
     variables = {
         "bench_name": bench_name,
         "nb_threads": nb_threads,
-        "width": width,
-        "height": height,
+        "size": size,
         "nb_generations": nb_generations,
-        "version": version,
     }
     if pretty is not None:
         pretty = {"lock": pretty}

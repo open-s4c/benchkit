@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from benchkit.commandwrappers.perf import PerfStatWrap
 from cgol import cgol_campaign
 
 from benchkit.campaign import CampaignSuite
@@ -8,23 +7,14 @@ from benchkit.utils.dir import get_curdir
 
 def create_campaign_for_version(perf_assignment_path, version_nr):
     code_src_path = perf_assignment_path / f"version-{version_nr}"
-    wrapper = PerfStatWrap(separator=";", events=["cpu-cycles", "cache-misses"])
-
     campaign = cgol_campaign(
-        command_wrappers= [
-            wrapper
-        ],
-        post_run_hooks= [
-            wrapper.post_run_hook_update_results
-        ],
         src_dir=code_src_path,
         build_dir=code_src_path / "build",
-        bench_name=["generation_based"],
-        nb_threads=[1,2,3,4],
-        size=[500],
-        nb_generations=[1],
+        bench_name=["time_based"],
+        nb_threads=[4],
+        size=[200,400,600],
+        benchmark_duration_seconds=3,
         nb_runs=3,
-        enable_data_dir=True,
         constants= {
             "bench_version": f"version-{version_nr}"
         }
@@ -58,15 +48,8 @@ def main() -> None:
 
     suite.generate_graph(
         plot_name="barplot",
-        x="bench_version",
-        y="perf-stat/cpu-cycles",
-        hue="bench_version",
-    )
-
-    suite.generate_graph(
-        plot_name="barplot",
-        x="bench_version",
-        y="perf-stat/cache-misses",
+        x="size",
+        y="throughput",
         hue="bench_version",
     )
 
