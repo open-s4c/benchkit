@@ -46,7 +46,7 @@ class CGOLBench(Benchmark):
         if build_dir is not None:
             self._build_dir = build_dir
         else:
-            self._build_dir = bench_src_path / "build"
+            self._build_dir = bench_src_path
         self._bench_src_path = bench_src_path
 
     @property
@@ -68,7 +68,7 @@ class CGOLBench(Benchmark):
     def get_run_var_names() -> List[str]:
         return [
             "bench_name",
-            "nb_threads",
+            "threads_per_block",
             "size",
             "nb_generations",
         ]
@@ -86,11 +86,6 @@ class CGOLBench(Benchmark):
         self.platform.comm.makedirs(path=build_dir, exist_ok=True)
 
         self.platform.comm.shell(
-            command=f"cmake ..",
-            current_dir=build_dir,
-            output_is_log=True,
-        )
-        self.platform.comm.shell(
             command=f"make{self._parallel_make_str()}",
             current_dir=build_dir,
             output_is_log=True,
@@ -102,7 +97,7 @@ class CGOLBench(Benchmark):
     def single_run( 
         self,
         benchmark_duration_seconds: int,
-        nb_threads: int = 2,
+        threads_per_block: int = 32,
         size: int = 100,
         bench_name: str = "time_based",
         nb_generations: int = 5,
@@ -120,7 +115,7 @@ class CGOLBench(Benchmark):
         height = size
         run_command = [
             f"./cgol",
-            "-t", f"{nb_threads}",
+            "-tpb", f"{threads_per_block}",
             "-w", f"{width}",
             "-h", f"{height}",
             *duration_flag
@@ -144,7 +139,7 @@ class CGOLBench(Benchmark):
     @staticmethod
     def _parse_results(
         log_output: str,
-        benchmark_duration_seconds: int
+        benchmark_duration_seconds: int,
     ) -> Dict[str, Any]:
         
         nb_cells_updated_pattern = "Number of cells updated: (\d+)"
@@ -181,7 +176,7 @@ def cgol_campaign(
     nb_runs: int = 1,
     benchmark_duration_seconds: int = 5,
     nb_generations: Iterable[int] = (100,),
-    nb_threads: Iterable[int] = (1,),
+    threads_per_block: Iterable[int] = (32,),
     size: Iterable[int] = (100,),
     debug: bool = False,
     gdb: bool = False,
@@ -193,7 +188,7 @@ def cgol_campaign(
     """Return a cartesian product campaign configured for the cgol benchmark."""
     variables = {
         "bench_name": bench_name,
-        "nb_threads": nb_threads,
+        "threads_per_block": threads_per_block,
         "size": size,
         "nb_generations": nb_generations,
     }
