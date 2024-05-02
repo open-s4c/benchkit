@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from benchkit.commandwrappers.perf import PerfReportWrap
-from cgol import cgol_campaign
+from cgol_cpu import cgol_campaign
 
 from benchkit.campaign import CampaignSuite
 from benchkit.utils.dir import get_curdir
@@ -38,8 +38,8 @@ def main() -> None:
     """Main function of the campaign script."""
 
     # Where is the benchmark code located
-    perf_assignment_src = (get_curdir(__file__).parent.parent.parent).resolve()
-    flamegraph_path="../../../FlameGraph"
+    perf_assignment_src = (get_curdir(__file__).parent.parent.parent.parent).resolve()
+    flamegraph_path="../../../../FlameGraph"
 
     # Define the campaign
     campaign_1 = create_campaign_for_version(perf_assignment_src, flamegraph_path, 1)

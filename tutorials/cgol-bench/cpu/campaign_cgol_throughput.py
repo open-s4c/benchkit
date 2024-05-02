@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from cgol import cgol_campaign
+from cgol_cpu import cgol_campaign
 
 from benchkit.campaign import CampaignSuite
 from benchkit.utils.dir import get_curdir
@@ -25,7 +25,7 @@ def main() -> None:
     """Main function of the campaign script."""
 
     # Where is the benchmark code located
-    perf_assignment_src = (get_curdir(__file__).parent.parent.parent).resolve()
+    perf_assignment_src = (get_curdir(__file__).parent.parent.parent.parent).resolve()
 
     # Define the campaigns
     campaign_1 = create_campaign_for_version(perf_assignment_src, 1)
