@@ -114,7 +114,7 @@ class CGOLBench(Benchmark):
         width = size
         height = size
         run_command = [
-            f"./cgol",
+            f"./cgol.exe",
             "-tpb", f"{threads_per_block}",
             "-w", f"{width}",
             "-h", f"{height}",
