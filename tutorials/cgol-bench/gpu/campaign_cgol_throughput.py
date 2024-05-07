@@ -14,7 +14,7 @@ def create_campaign_for_version(perf_assignment_dir, version_nr):
         bench_name=["time_based"],
         threads_per_block=[32,64,96,128,160,192],
         size=[2000],
-        benchmark_duration_seconds=30,
+        benchmark_duration_seconds=25,
         nb_runs=30,
         constants= {
             "bench_version": f"version-{version_nr}"

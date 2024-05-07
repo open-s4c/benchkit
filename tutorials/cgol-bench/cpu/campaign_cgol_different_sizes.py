@@ -13,8 +13,8 @@ def create_campaign_for_version(perf_assignment_dir, version_nr):
         build_dir=version_src_dir / "build",
         bench_name=["time_based"],
         nb_threads=[4],
-        size=[500,1000,2000,4000,6000,8000,10000],
-        benchmark_duration_seconds=30,
+        size=[200,500,1000,2000,4000,6000,8000],
+        benchmark_duration_seconds=25,
         nb_runs=30,
         constants= {
             "bench_version": f"version-{version_nr}"
