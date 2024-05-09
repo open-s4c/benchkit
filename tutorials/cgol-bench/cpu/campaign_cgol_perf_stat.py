@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import time
 from benchkit.commandwrappers.perf import PerfStatWrap
 from cgol_cpu import cgol_campaign
 
@@ -44,6 +45,8 @@ def main() -> None:
     campaign_3 = create_campaign_for_version(perf_assignment_dir, 3)
     campaign_4 = create_campaign_for_version(perf_assignment_dir, 4)
     campaign_5 = create_campaign_for_version(perf_assignment_dir, 5)
+    campaign_6 = create_campaign_for_version(perf_assignment_dir, 6)
+    campaign_7 = create_campaign_for_version(perf_assignment_dir, 7)
 
     # Define the campaign suite and run the benchmarks in the suite
     campaigns = [
@@ -51,7 +54,9 @@ def main() -> None:
         campaign_2,
         campaign_3,
         campaign_4,
-        campaign_5
+        campaign_5,
+        campaign_6,
+        campaign_7
     ]
     suite = CampaignSuite(campaigns=campaigns)
     suite.print_durations()
@@ -65,12 +70,16 @@ def main() -> None:
         hue="bench_version",
     )
 
+    time.sleep(3)
+
     suite.generate_graph(
         plot_name="barplot",
         x="bench_version",
         y="perf-stat/cache-misses",
         hue="bench_version",
     )
+
+    time.sleep(3)
 
     suite.generate_graph(
         plot_name="barplot",
