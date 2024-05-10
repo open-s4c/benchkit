@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import time
 from benchkit.commandwrappers.perf import PerfStatWrap
 from cgol_cpu import cgol_campaign
 
@@ -70,16 +69,12 @@ def main() -> None:
         hue="bench_version",
     )
 
-    time.sleep(3)
-
     suite.generate_graph(
         plot_name="barplot",
         x="bench_version",
         y="perf-stat/cache-misses",
         hue="bench_version",
     )
-
-    time.sleep(3)
 
     suite.generate_graph(
         plot_name="barplot",
