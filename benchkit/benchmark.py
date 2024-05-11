@@ -695,6 +695,7 @@ class Benchmark:
         environment: Environment,
         wrapped_environment: Environment,
         print_output: bool,
+        timeout: int | None = None,
         **kwargs,
     ) -> str | AsyncProcess:
         """
@@ -741,6 +742,7 @@ class Benchmark:
             current_dir=current_dir,
             environment=wrapped_environment,
             print_output=print_output,
+            timeout=timeout,
         )
         return output
 
