@@ -1,6 +1,6 @@
 """
 Benchkit support for Conway's game of life benchmark.
-See: https://github.com/guido589/perf-assignment
+See: https://github.com/guido589/conway-game-of-life-parallel
 """
 
 import pathlib

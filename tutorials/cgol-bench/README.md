@@ -2,13 +2,13 @@
 ## Cloning Conway's Game Of Life and benchkit
 
 ```sh
-$ git clone --recurse-submodules https://github.com/Guido589/perf-assignment.git
+$ git clone --recurse-submodules https://github.com/Guido589/conway-game-of-life-parallel.git
 ```
 
 ## Running the campaigns
 
 ```sh
-$ cd perf-assignment/benchkit/tutorials/cgol-bench
+$ cd conway-game-of-life-parallel/benchkit/tutorials/cgol-bench
 $ ./configure.sh
 $ . ./venv/bin/activate
 $ cd cpu
