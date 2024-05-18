@@ -1,8 +1,11 @@
 #!/bin/sh
 set -e
 
+venv_path=$1
+[ -z "${venv_path}" ] && venv_path=venv
+
 target_file=benchkit-dep.pth
-venvsp_path=$(find venv/lib -name 'site-packages' | head -n 1)
+venvsp_path=$(find ${venv_path}/lib -name 'site-packages' | head -n 1)
 
 venv_rel_paths=""
 if [ -e ./dependency-paths.txt ]
