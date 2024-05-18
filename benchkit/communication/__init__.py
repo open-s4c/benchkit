@@ -393,6 +393,20 @@ class CommunicationLayer:
             print_input=False,
             print_output=False,
         )
+    
+    def remove(self, path: PathType, recursive: bool) -> None:
+        """Remove a file or directory on the target host.
+
+        Args:
+            path (PathType): path of file or directory that needs to be removed on the target host.
+            recursive (bool): whether to recursively delete everything in this path.
+        """
+        command = ["rm"] + (["-r"] if recursive else []) + [str(path)]
+        self.shell(
+            command=command,
+            print_input=False,
+            print_output=False,
+        )
 
     def isdir(self, path: PathType) -> bool:
         """Return whether the given path is a file on the target host.
