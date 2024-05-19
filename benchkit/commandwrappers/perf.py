@@ -186,7 +186,7 @@ def _get_available_events(
             if event_id is not None:
                 # use event_id set at the previous iteration (description over 3 lines)
                 if event_id not in events_dict:
-                    events_dict[current_group][event_id] = ''
+                    events_dict[current_group][event_id] = ""
                 events_dict[current_group][event_id] += " " + event_desc
             continue
 
@@ -437,11 +437,48 @@ class PerfStatWrap(CommandWrapper):
 
         return output_dict
 
+    def _align_field_names(
+        self, perf_stat_pathname: PathType, events: List[str], field_names: List[str]
+    ) -> List[str]:
+        # For reasons beyond my understanding, perf stat returns a CSV file format that contains
+        # optional fields without giving you the header of the file. To combat this, we try to
+        # align the fields that are guaranteed to be given (given in field_names)
+        # with the real CSV fields by inserting some padding to fill the optional fields if they
+        # exist. We do this by trying to infer the location of the "event_name" column, we can
+        # then align the field_names to that. Inferring this location is as easy as trying to
+        # find the name of an event we were looking for in the row, since the event_name column
+        # should contain the name of one of these events.
+        with open(perf_stat_pathname, "r") as perf_stat_file:
+            first_line_filter = filter(
+                lambda row: not row.strip().startswith("#") and row.strip() is not "",
+                perf_stat_file,
+            )
+            row = next(first_line_filter)
+            fields = row.split(self._separator)
+
+            event_idxes = [fields.index(event) for event in events if event in fields]
+
+            # If we did not find an event in the row, we return the field names as we got
+            # them because we cannot align the fields.
+            if len(event_idxes) == 0:
+                return field_names
+
+            # We take the lowest index of the event indexes. In practice we should
+            # only ever find one index here, but in theory it is possible that one
+            # of the other fields (maybe a comment field) in the CSV contains a string
+            # that matches the event name.
+            idx_in_row = sorted(event_idxes)[0]
+            idx_in_fieldnames = field_names.index("event_name")
+            padding_events = [f"bogus-column{i}" for i in range(idx_in_row - idx_in_fieldnames)]
+            return [*padding_events, *field_names]
+
     def _parse_csv(
         self,
         perf_stat_pathname: PathType,
         field_names: List[str],
     ) -> List[Dict[str, str]]:
+        field_names = self._align_field_names(perf_stat_pathname, self._events, field_names)
+
         with open(perf_stat_pathname, "r") as perf_stat_file:
             comments_filtered_file = filter(
                 lambda row: not row.strip().startswith("#"),
