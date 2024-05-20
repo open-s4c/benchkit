@@ -11,6 +11,8 @@ from typing import Iterable, Optional
 from benchkit.shell.utils import get_args, print_header
 from benchkit.utils.types import Command, Environment, PathType
 
+from multiprocessing import Process,Manager
+from ctypes import c_char_p
 
 def pipe_shell_out(
     command: Command,
@@ -30,20 +32,13 @@ def pipe_shell_out(
     Returns:
         str: the output of the piped command.
     """
-    arguments = get_args(command)
-    print_header(
-        arguments=arguments,
-        current_dir=current_dir,
-        environment=None,
-        print_input=True,
-        print_env=True,
-        print_curdir=True,
+    return shell_out(
+        command = command,
+        current_dir = current_dir,
+        shell = True,
         print_shell_cmd=True,
-        print_file_shell_cmd=True,
-        asynced=False,
-        remote_host=None,
+        split_arguments=False,
     )
-    return subprocess.check_output(command, cwd=current_dir, shell=True, text=True)
 
 
 def shell_out(
@@ -61,6 +56,7 @@ def shell_out(
     timeout: Optional[int] = None,
     output_is_log: bool = False,
     ignore_ret_codes: Iterable[int] = (),
+    split_arguments: bool = True,
 ) -> str:
     """
     Run a shell command on the host system.
@@ -112,6 +108,10 @@ def shell_out(
             This allows to avoid an exception to be raised for commands that do not end with 0 even
             if they are successful.
             Defaults to ().
+        split_arguments (bool, optional):
+            whether the command is split in parts.
+            This allows for the usage of commands using things like the pipe symbol, use with shell=True for this functionality.
+            Defaults to True.
 
     Raises:
         subprocess.CalledProcessError:
@@ -121,9 +121,15 @@ def shell_out(
     Returns:
         str: the output of the shell command that completed successfully.
     """
-    arguments = get_args(command)
+
+    completedProcess = subprocess.run(["true"], timeout=None)
+    sucsess_value = completedProcess.returncode
+    def sucsess(value):
+        return value == sucsess_value
+
+    print_arguments = get_args(command)
     print_header(
-        arguments=arguments,
+        arguments=print_arguments,
         current_dir=current_dir,
         environment=environment,
         print_input=print_input,
@@ -134,75 +140,69 @@ def shell_out(
         asynced=False,
         remote_host=None,
     )
+    arguments = get_args(command) if (split_arguments)  else command
 
-    if output_is_log:
-
-        def flush_outlines():
-            raw_outline = process.stdout.readline()
-            while raw_outline:
-                outline = raw_outline.decode()
-                print(outline, end="")
-                outlines.append(outline)
-                raw_outline = process.stdout.readline()
-
+    def flush_outlines(process):
         outlines = []
-        with subprocess.Popen(
-            arguments,
-            shell=shell,
-            cwd=current_dir,
-            env=environment,
-            stdout=subprocess.PIPE,
-        ) if std_input is None else subprocess.Popen(
-            arguments,
-            shell=shell,
-            cwd=current_dir,
-            env=environment,
-            stdout=subprocess.PIPE,
-            stdin=std_input,
-            text=True,
-        ) as process:
-            retcode = process.poll()
-            while retcode is None:
-                flush_outlines()
-                retcode = process.poll()
-            flush_outlines()
-        output = "".join(outlines)
+        outline = process.stdout.readline()
+        while outline:
+            print(outline, end="")
+            outlines.append(outline)
+            outline = process.stdout.readline()
+        return outlines
 
+    def flush_thread(process,output):
+        outlines = []
+        retcode = process.poll()
+        while retcode is None:
+            outlines += flush_outlines(process)
+            retcode = process.poll()
+        outlines += flush_outlines(process)
         sys.stdout.flush()
         sys.stderr.flush()
+        output.value = "".join(outlines)
+     
+    with subprocess.Popen(
+        arguments,
+        shell=shell,
+        cwd=current_dir,
+        env=environment,
+        stdout=subprocess.PIPE,
+        stdin=std_input,
+        text=True,
+    ) as shell_process:
+        if output_is_log:
+            try:
+                manager = Manager()
+                output_logger_process = manager.Value(c_char_p, "Hello")
+                logger_process = Process(target=flush_thread, args=(shell_process,output_logger_process,))
+                logger_process.start()
+                retcode = shell_process.wait(timeout=timeout)
+                logger_process.join()
+                output = output_logger_process.value
 
-        if retcode:
+            except subprocess.TimeoutExpired as err:
+                logger_process.terminate()
+                raise err
+
+        else:
+            try:
+                retcode = shell_process.wait(timeout=timeout)
+                output = shell_process.stdout.read()
+            except subprocess.TimeoutExpired as err:
+                raise err
+
+        #not a sucsessfull execution and not an alowed exit code
+        #raise the appropriate error
+        if not sucsess(retcode) and retcode not in ignore_ret_codes:
             raise subprocess.CalledProcessError(
                 retcode,
-                process.args,
-            )
-    else:
-        try:
-            if std_input is not None:
-                output = subprocess.check_output(
-                    arguments,
-                    shell=shell,
-                    cwd=current_dir,
-                    env=environment,
-                    timeout=timeout,
-                    input=std_input,
-                    text=True,
-                )
+                shell_process.args,)
+        #not a sucsessfull execution but an alowed exit code
+        #append the error to the output
+        if not sucsess(retcode):
+            output += shell_process.stderr.read()
 
-            else:
-                output = subprocess.check_output(
-                    arguments,
-                    shell=shell,
-                    cwd=current_dir,
-                    env=environment,
-                    timeout=timeout,
-                    text=True,
-                )
-        except subprocess.CalledProcessError as err:
-            retcode = err.returncode
-            if retcode not in ignore_ret_codes:
-                raise err
-            output = err.output
 
     if print_output and not output_is_log:
         if "" != output.strip():
@@ -290,7 +290,7 @@ def shell_interactive(
     process.wait()
     retcode = process.poll()
 
-    if 0 != retcode and retcode not in ignore_ret_codes:
+    if retcode and retcode not in ignore_ret_codes:
         raise subprocess.CalledProcessError(
             retcode,
             process.args,
