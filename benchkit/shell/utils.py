@@ -9,6 +9,7 @@ import re
 import sys
 import tempfile
 from typing import Optional
+from shlex import split
 
 from benchkit.utils.types import Command, Environment, PathType, SplitCommand
 
@@ -26,7 +27,7 @@ def get_args(command: Command) -> SplitCommand:
         SplitCommand: the split command.
     """
     if isinstance(command, str):
-        arguments = command.split()
+        arguments = split(command)
     else:
         arguments = command
     return arguments
