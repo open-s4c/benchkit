@@ -122,10 +122,12 @@ def shell_out(
         str: the output of the shell command that completed successfully.
     """
 
+    #this will run the true command confirming the exit code instead of assuming it
     completedProcess = subprocess.run(["true"], timeout=None)
     sucsess_value = completedProcess.returncode
     def sucsess(value):
         return value == sucsess_value
+
 
     print_arguments = get_args(command)
     print_header(
@@ -140,9 +142,20 @@ def shell_out(
         asynced=False,
         remote_host=None,
     )
+
+    #splitting our command as needed
     arguments = get_args(command) if (split_arguments)  else command
 
+
     def flush_outlines(process):
+        """
+        prints and returns the current content of stdout for a given process
+        Args:
+            process (Popen):
+                process to log
+        Returns:
+            str: content of stdout.
+        """
         outlines = []
         outline = process.stdout.readline()
         while outline:
@@ -152,6 +165,16 @@ def shell_out(
         return outlines
 
     def flush_thread(process,output):
+        """
+        while process is running will log and store all stdout in real time
+        Args:
+            process (Popen):
+                process to log
+            output (Value(c_char_p)):
+                manager value to write result to
+        Returns:
+            None
+        """
         outlines = []
         retcode = process.poll()
         while retcode is None:
@@ -173,8 +196,12 @@ def shell_out(
     ) as shell_process:
         if output_is_log:
             try:
+                """
+                logging the process takes two threads since we need to wait for the timeout while logging stdout in real time
+                to accomplish this we use multiprocessing in combination with error catching to interupt the logging if needed
+                """
                 manager = Manager()
-                output_logger_process = manager.Value(c_char_p, "Hello")
+                output_logger_process = manager.Value(c_char_p, "")
                 logger_process = Process(target=flush_thread, args=(shell_process,output_logger_process,))
                 logger_process.start()
                 retcode = shell_process.wait(timeout=timeout)
