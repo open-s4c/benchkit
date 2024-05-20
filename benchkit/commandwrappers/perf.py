@@ -450,7 +450,7 @@ class PerfStatWrap(CommandWrapper):
         # should contain the name of one of these events.
         with open(perf_stat_pathname, "r") as perf_stat_file:
             first_line_filter = filter(
-                lambda row: not row.strip().startswith("#") and row.strip() is not "",
+                lambda row: not row.strip().startswith("#") and row.strip() != "",
                 perf_stat_file,
             )
             row = next(first_line_filter)
