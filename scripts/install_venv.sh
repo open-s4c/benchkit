@@ -46,4 +46,4 @@ else
   echo "No requirement file found, proceeding without installing any package." >&2
 fi
 
-"${script_dir}/add_paths_venv.sh" ${venv_path}
+"${script_dir}/add_paths_venv.py" ${venv_path}
