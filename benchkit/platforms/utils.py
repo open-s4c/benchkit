@@ -39,13 +39,35 @@ def get_nb_cpus_total(comm_layer: CommunicationLayer) -> int:
     Returns:
         int: the total number of CPUs of the provided host.
     """
-    result1 = int(
-        comm_layer.shell(
-            command="nproc --all",
-            print_input=False,
-            print_output=False,
-        ).strip()
-    )
+    # Try different commands to get the amount of CPUs
+    try:
+        # Linux
+        result1 = int(
+            comm_layer.shell(
+                command="nproc --all",
+                print_input=False,
+                print_output=False,
+            ).strip()
+        )
+    except FileNotFoundError:
+        try:
+            # Darwin
+            result1 = int(
+                comm_layer.shell(
+                    command="sysctl -n hw.ncpu",
+                    print_input=False,
+                    print_output=False,
+                ).strip()
+            )
+        except FileNotFoundError:
+            # Windows
+            result1 =  int(
+                comm_layer.shell(
+                    command="wmic cpu get numberofcores",
+                    print_input=False,
+                    print_output=False,
+                ).strip().split()[1])
+    
     if comm_layer.is_local:
         result2 = os.cpu_count()
         if result1 != result2:
@@ -63,7 +85,12 @@ def get_nb_cpus_isolated(comm_layer: CommunicationLayer) -> int:
     Returns:
         int: the number of CPUs that are currently isolated on the provided host.
     """
-    isolated_str = comm_layer.read_file("/sys/devices/system/cpu/isolated").strip()
+    # Some operating systems might not provide this information
+    try:
+        isolated_str = comm_layer.read_file("/sys/devices/system/cpu/isolated").strip()
+    except FileNotFoundError:
+        return 0
+        
     isolated_cpus = _parse_list_ranges(list_ranges=isolated_str)
 
     return len(isolated_cpus)
