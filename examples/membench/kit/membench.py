@@ -266,8 +266,3 @@ def membench_campaign(
         results_dir=results_dir,
         pretty=pretty,
     )
-
-if __name__ == "__main__":
-    
-    campaign = membench_campaign(post_run_hooks=[],command_wrappers=[], src_dir="./membench/")
-    campaign.run()
