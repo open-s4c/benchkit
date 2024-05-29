@@ -138,7 +138,7 @@ class MemBenchBench(Benchmark):
 
         # Generate file to be benchmarked
         self.platform.comm.shell(
-            command=f"dd if=/dev/urandom of=/mnt/mem/file bs=100M count=8",
+            command=f"dd if=/dev/urandom of=benchfile bs=100M count=8",
             current_dir=src_dir,
             output_is_log=True,
         )
