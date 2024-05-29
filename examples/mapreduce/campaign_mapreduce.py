@@ -4,7 +4,7 @@
 Example of campaign script for Metis/MapReduce benchmark.
 """
 
-from metis import metis_campaign
+from mapreduce import metis_campaign
 
 from benchkit.campaign import CampaignSuite
 from benchkit.utils.dir import get_curdir
