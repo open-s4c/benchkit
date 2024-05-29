@@ -168,7 +168,7 @@ class MemBenchBench(Benchmark):
             **kwargs,
         )
 
-        file_path = "examples/" + benchfile_name
+        file_path = self._bench_src_path + "examples/" + benchfile_name
         
         run_command = [
             "./membench",
