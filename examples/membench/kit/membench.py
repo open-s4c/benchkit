@@ -209,7 +209,7 @@ def membench_campaign(
     # Membench allows for granular control over benchmarks via files
     # When creating benchmarks, just created new ones inside the /examples folder
     # And include the file name in this list
-    benchfile: Iterable[str] = ("example1.txt", "example2.txt", "example3.txt"),
+    benchfile: Iterable[str] = ("example1.txt", "example2.txt"), # Benchmark does not end: "example3.txt"
     src_dir: Optional[PathType] = None,
     build_dir: Optional[str] = None,
     results_dir: Optional[PathType] = None,
