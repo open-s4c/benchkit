@@ -120,6 +120,12 @@ class MemBenchBench(Benchmark):
         self.tilt.build_single_lock(**kwargs)
 
     def prebuild_bench(self, **_kwargs) -> None:
+        pass
+
+    def build_bench(
+        self,
+        **kwargs,
+    ) -> None:
         src_dir = self._bench_src_path
         
         # Make the project
@@ -142,12 +148,6 @@ class MemBenchBench(Benchmark):
             current_dir=src_dir,
             output_is_log=True,
         )
-
-    def build_bench(
-        self,
-        **kwargs,
-    ) -> None:
-        pass
 
     def clean_bench(self) -> None:
         src_dir = self._bench_src_path
