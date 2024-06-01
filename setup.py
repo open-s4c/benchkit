@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(name="benchkit",
-      packages=[ "benchkit" ],
+      packages=find_packages(
+            include = ["benchkit*", "plotbench*"]
+      ),
 )
