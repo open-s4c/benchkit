@@ -114,7 +114,7 @@ class PhoronixDownload:
                     data = response.read()
                     
                     # validate the data before writing it to a file
-                    if self._validate_data(data) or True:
+                    if self._validate_data(data):
                         file.write(data)
                         return
                     else:
