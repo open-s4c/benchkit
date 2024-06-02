@@ -11,12 +11,12 @@ from typing import Iterable, Optional
 from benchkit.shell.utils import get_args, print_header
 from benchkit.utils.types import Command, Environment, PathType
 
-from multiprocessing import Process,Manager
-from ctypes import c_char_p
+from multiprocessing import Process,Queue
 
 def pipe_shell_out(
     command: Command,
     current_dir: Optional[PathType] = None,
+    print_output: bool = True,
 ) -> str:
     """
     Run a command that is a composition of shell through pipes.
@@ -38,6 +38,7 @@ def pipe_shell_out(
         shell = True,
         print_shell_cmd=True,
         split_arguments=False,
+        print_output=print_output
     )
 
 
@@ -164,7 +165,7 @@ def shell_out(
             outline = process.stdout.readline()
         return outlines
 
-    def flush_thread(process,output):
+    def flush_thread(process,output_queue):
         """
         while process is running will log and store all stdout in real time
         Args:
@@ -183,7 +184,7 @@ def shell_out(
         outlines += flush_outlines(process)
         sys.stdout.flush()
         sys.stderr.flush()
-        output.value = "".join(outlines)
+        output_queue.put( "".join(outlines))
      
     with subprocess.Popen(
         arguments,
@@ -191,7 +192,7 @@ def shell_out(
         cwd=current_dir,
         env=environment,
         stdout=subprocess.PIPE,
-        stdin=std_input,
+        stdin=subprocess.PIPE,
         text=True,
     ) as shell_process:
         if output_is_log:
@@ -200,23 +201,25 @@ def shell_out(
                 logging the process takes two threads since we need to wait for the timeout while logging stdout in real time
                 to accomplish this we use multiprocessing in combination with error catching to interupt the logging if needed
                 """
-                manager = Manager()
-                output_logger_process = manager.Value(c_char_p, "")
-                logger_process = Process(target=flush_thread, args=(shell_process,output_logger_process,))
+                output_queue = Queue()
+                logger_process = Process(target=flush_thread, args=(shell_process,output_queue,))
                 logger_process.start()
-                retcode = shell_process.wait(timeout=timeout)
-                logger_process.join()
-                output = output_logger_process.value
+                outs, errs = shell_process.communicate(input=std_input, timeout=timeout)
+                retcode = shell_process.returncode
+                output = output_queue.get()
 
             except subprocess.TimeoutExpired as err:
+                shell_process.kill()
                 logger_process.terminate()
                 raise err
 
         else:
             try:
-                retcode = shell_process.wait(timeout=timeout)
-                output = shell_process.stdout.read()
+                outs, errs = shell_process.communicate(input=std_input, timeout=timeout)
+                retcode = shell_process.returncode
+                output = outs
             except subprocess.TimeoutExpired as err:
+                shell_process.kill()
                 raise err
 
         #not a sucsessfull execution and not an alowed exit code
@@ -224,7 +227,8 @@ def shell_out(
         if not sucsess(retcode) and retcode not in ignore_ret_codes:
             raise subprocess.CalledProcessError(
                 retcode,
-                shell_process.args,)
+                shell_process.args,
+                )
         #not a sucsessfull execution but an alowed exit code
         #append the error to the output
         if not sucsess(retcode):
