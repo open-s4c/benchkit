@@ -9,10 +9,13 @@
     name = "benchkit";
     overlay =  final: prev: {
     benchkit = {
-      benchkit = final.python3Packages.buildPythonPackage {
+      benchkit = let
+         pythonPackages = final.python3Packages;
+      in pythonPackages.buildPythonPackage {
         name = "benchkit";
         src = ./.;
         doCheck = false;
+        dependencies = with pythonPackages; [matplotlib pandas seaborn];
       };
 
       benchkit-python = final.python3.withPackages (ps: [ final.benchkit.benchkit ]);
