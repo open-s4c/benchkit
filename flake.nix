@@ -15,7 +15,7 @@
         name = "benchkit";
         src = ./.;
         doCheck = false;
-        dependencies = with pythonPackages; [matplotlib pandas seaborn];
+        propagatedBuildInputs = with pythonPackages; [matplotlib pandas seaborn];
       };
 
       benchkit-python = final.python3.withPackages (ps: [ final.benchkit.benchkit ]);
