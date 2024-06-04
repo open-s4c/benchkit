@@ -681,7 +681,20 @@ class SSHCommLayer(CommunicationLayer):
         raise NotImplementedError("TODO")
 
     def get_process_status(self, process_handle: subprocess.Popen) -> str:
-        raise NotImplementedError("TODO")
+        """
+        Add simple implementation of `get_process_status` which uses the status of the SSH process
+        and not of the `async process` in order to detect its termination
+        """
+        pid = process_handle.pid
+        status = shell_out(
+            f"ps -q {pid} -o state --no-headers",
+            print_input=False,
+            print_output=False,
+            print_env=False,
+            print_curdir=False,
+            print_file_shell_cmd=False,
+        )
+        return status.strip()
 
     def path_exists(self, path: PathType) -> bool:
         try:
