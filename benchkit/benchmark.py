@@ -901,7 +901,7 @@ class Benchmark:
         }
         tilt_variables = {
             k: record_parameters[k] for k in self.get_tilt_var_names() if k in record_parameters
-        }
+        } if self._use_tilt else {}
         other_variables = {
             k: record_parameters[k]
             for k in record_parameters

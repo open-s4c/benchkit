@@ -28,7 +28,7 @@ ${pip_exec} install --upgrade black black[d] black[jupyter]
 ${pip_exec} install --upgrade flake8
 
 ${pip_exec} install --upgrade "docopt<=0.6.2"
-${pip_exec} install --upgrade "libtmux<=0.21.10"
+${pip_exec} install --upgrade "libtmux<=0.37.0"
 
 requirement_file="requirements.txt"
 if [ -e "${requirement_file}" ]
