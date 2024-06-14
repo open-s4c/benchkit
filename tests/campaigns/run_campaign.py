@@ -32,7 +32,7 @@ class SimpleBenchmark(Benchmark):
 
     @staticmethod
     def get_run_var_names() -> List[str]:
-        return ["ignored_codes"]
+        return ["run_false"]
 
     def clean_bench(self) -> None:
         pass
@@ -51,20 +51,20 @@ class SimpleBenchmark(Benchmark):
 
     def single_run(
         self,
-        ignored_codes: Iterable[int],
+        run_false: bool,
         **kwargs,
     ) -> str:
         current_dir = self.bench_src_path
         environment = self._preload_env(
-            ignored_codes=ignored_codes,
+            run_false=run_false,
             **kwargs,
         )
 
-        run_command = ["/usr/bin/false"]
+        run_command = ["/usr/bin/false"] if run_false else ["/usr/bin/true"]
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
             environment=environment,
-            ignored_codes=ignored_codes,
+            run_false=run_false,
             **kwargs,
         )
 
@@ -75,6 +75,7 @@ class SimpleBenchmark(Benchmark):
             environment=environment,
             wrapped_environment=wrapped_environment,
             print_output=False,
+            ignore_ret_codes=(1,),
         )
         return output
 
@@ -94,8 +95,11 @@ def main() -> None:
         nb_runs=1,
         variables=[
             {
-                "ignored_codes": (1, 3),
-            }
+                "run_false": False,
+            },
+            {
+                "run_false": True,
+            },
         ],
         constants=None,
         debug=False,
