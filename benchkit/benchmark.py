@@ -696,6 +696,7 @@ class Benchmark:
         wrapped_environment: Environment,
         print_output: bool,
         timeout: int | None = None,
+        ignore_ret_codes: Iterable[int]=(),
         **kwargs,
     ) -> str | AsyncProcess:
         """
@@ -743,6 +744,7 @@ class Benchmark:
             environment=wrapped_environment,
             print_output=print_output,
             timeout=timeout,
+            ignore_ret_codes=ignore_ret_codes,
         )
         return output
 
