@@ -1,3 +1,5 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 """
 Command wrapper for the `ltrace` utility that allows to trace all dynamic library calls used in the wrapped
 command and output them into a file.
@@ -48,7 +50,6 @@ class LtraceWrap(CommandWrapper):
         self._show_time_in_call = show_time_in_call
         self._symbol_entry_point_pattern = symbol_entry_point_pattern
         
-
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
             PackageDependency("ltrace"),

@@ -1,25 +1,27 @@
-#!/usr/bin/env python3
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+from benchkit.benchmark import Benchmark, CommandWrapper, CommandAttachment, SharedLib, PreRunHook, PostRunHook
 import pathlib
-from typing import Any, Dict, Iterable, List
-
-from benchkit.benchmark import Benchmark
-from benchkit.campaign import CampaignIterateVariables, CampaignSuite
 from benchkit.utils.dir import caller_dir
+from typing import Any, Dict, List, Iterable
 
 
-class SimpleBenchmark(Benchmark):
+class SleepBench(Benchmark):
     def __init__(
         self,
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
+        shared_libs: Iterable[SharedLib] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
     ) -> None:
         super().__init__(
-            command_wrappers=(),
-            command_attachments=(),
-            shared_libs=(),
-            pre_run_hooks=(),
-            post_run_hooks=(),
+            command_wrappers=command_wrappers,
+            command_attachments=command_attachments,
+            shared_libs=shared_libs,
+            pre_run_hooks=pre_run_hooks,
+            post_run_hooks=post_run_hooks,
         )
 
     @property
@@ -32,7 +34,7 @@ class SimpleBenchmark(Benchmark):
 
     @staticmethod
     def get_run_var_names() -> List[str]:
-        return ["run_false"]
+        return ["duration_seconds"]
 
     def clean_bench(self) -> None:
         pass
@@ -51,20 +53,21 @@ class SimpleBenchmark(Benchmark):
 
     def single_run(
         self,
-        run_false: bool,
+        duration_seconds: int,
         **kwargs,
     ) -> str:
         current_dir = self.bench_src_path
         environment = self._preload_env(
-            run_false=run_false,
+            duration_seconds=duration_seconds,
             **kwargs,
         )
 
-        run_command = ["/usr/bin/false"] if run_false else ["/usr/bin/true"]
+        run_command = ["/usr/bin/sleep", f"{duration_seconds}s"]
+
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
             environment=environment,
-            run_false=run_false,
+            duration_seconds=duration_seconds,
             **kwargs,
         )
 
@@ -86,31 +89,3 @@ class SimpleBenchmark(Benchmark):
     ) -> Dict[str, Any]:
         result_dict = {}
         return result_dict
-
-
-def main() -> None:
-    campaign = CampaignIterateVariables(
-        name="simple",
-        benchmark=SimpleBenchmark(),
-        nb_runs=1,
-        variables=[
-            {
-                "run_false": False,
-            },
-            {
-                "run_false": True,
-            },
-        ],
-        constants=None,
-        debug=False,
-        gdb=False,
-        enable_data_dir=True,
-    )
-
-    campaign_suite = CampaignSuite(campaigns=[campaign])
-
-    campaign_suite.run_suite()
-
-
-if __name__ == "__main__":
-    main()
