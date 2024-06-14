@@ -16,6 +16,7 @@ from sysbench import sysbench_campaign
 from benchkit.campaign import CampaignSuite
 from benchkit.platforms import get_current_platform
 from benchkit.utils.types import PathType
+from benchkit.utils.git import clone_repo
 
 NB_RUNS = 1
 DURATION_SECONDS = 10
@@ -40,21 +41,6 @@ variables = [
         "master_thread_core": None,
     }
 ]
-
-
-def clone_repo(
-    repo_url: str,
-    repo_src_dir: PathType,
-    tag: str,
-) -> None:
-    """Clone given repository in the given directory and point to the given tag."""
-    if not repo_src_dir.is_dir():
-        os.makedirs(repo_src_dir, exist_ok=False)
-        git.Repo.clone_from(
-            url=repo_url,
-            to_path=repo_src_dir,
-            branch=tag,
-        )
 
 
 def main() -> None:
