@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+venv_path=$1
+[ -z "${venv_path}" ] && venv_path=venv
+
 script_dir=$(dirname "$(readlink -f "$0")")
 
 # dependencies: ${pythonex} ${pythonex}-venv ${pythonex}-dev
@@ -15,9 +18,9 @@ else
 fi
 
 
-${python_exec} -m venv venv
+${python_exec} -m venv ${venv_path}
 
-pip_execs=$(find venv/ -name "pip3*")
+pip_execs=$(find ${venv_path}/ -name "pip3*")
 pip_exec=$(echo "${pip_execs}" | head -n 1)
 
 ${pip_exec} install --upgrade pip
@@ -38,4 +41,4 @@ else
   echo "No requirement file found, proceeding without installing any package." >&2
 fi
 
-"${script_dir}/add_paths_venv.sh"
+"${script_dir}/add_paths_venv.sh" ${venv_path}
