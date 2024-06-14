@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 
 """
 Example of campaign script for Membench benchmark.
@@ -14,7 +16,7 @@ def main() -> None:
     """Main function of the campaign script."""
     membench_src_dir = (get_curdir(__file__) / "deps/membench/").resolve()
 
-    campaign = membench_campaign(post_run_hooks=[],command_wrappers=[], src_dir=membench_src_dir)
+    campaign = membench_campaign(src_dir=membench_src_dir)
 
     campaigns = [campaign]
     suite = CampaignSuite(campaigns=campaigns)

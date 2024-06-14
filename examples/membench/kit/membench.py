@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 """
 Benchkit support for Membench benchmark.
 See: https://github.com/nicktehrany/membench
@@ -28,7 +31,6 @@ class MemBenchBench(Benchmark):
         pre_run_hooks: Iterable[PreRunHook],
         post_run_hooks: Iterable[PostRunHook],
         platform: Platform | None = None,
-        build_dir: PathType | None = None,
     ) -> None:
         super().__init__(
             command_wrappers=command_wrappers,
@@ -143,6 +145,7 @@ class MemBenchBench(Benchmark):
         )
 
         # Generate file to be benchmarked
+        # TODO using random values might introduce unpredictability in results, find a constant way
         self.platform.comm.shell(
             command=f"dd if=/dev/urandom of=benchfile bs=100M count=8",
             current_dir=src_dir,
@@ -154,7 +157,7 @@ class MemBenchBench(Benchmark):
 
         # Generate file to be benchmarked
         self.platform.comm.shell(
-            command=f"rm benchfile",
+            command=f"rm -f benchfile",
             current_dir=src_dir,
             output_is_log=True,
         )
@@ -209,9 +212,9 @@ def membench_campaign(
     # Membench allows for granular control over benchmarks via files
     # When creating benchmarks, just created new ones inside the /examples folder
     # And include the file name in this list
-    benchfile: Iterable[str] = ("example1.txt", "example2.txt"), # Benchmark does not end: "example3.txt"
+    benchfile: Iterable[str] = ("example1.txt", "example2.txt"),  # Benchmark does not end: "example3.txt"
+    # TODO remove the example and use the parameters as used in the examples directly with the command line
     src_dir: Optional[PathType] = None,
-    build_dir: Optional[str] = None,
     results_dir: Optional[PathType] = None,
     command_wrappers: Iterable[CommandWrapper] = (),
     command_attachments: Iterable[CommandAttachment] = (),
@@ -249,7 +252,6 @@ def membench_campaign(
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,
             platform=platform,
-            build_dir=build_dir,
         )
 
     return CampaignCartesianProduct(
