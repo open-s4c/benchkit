@@ -26,12 +26,17 @@ pip_exec=$(echo "${pip_execs}" | head -n 1)
 ${pip_exec} install --upgrade pip
 ${pip_exec} install --upgrade setuptools
 ${pip_exec} install --upgrade wheel
-${pip_exec} install --upgrade pycodestyle isort pylint
-${pip_exec} install --upgrade black black[d] black[jupyter]
-${pip_exec} install --upgrade flake8
 
-${pip_exec} install --upgrade "docopt<=0.6.2"
-${pip_exec} install --upgrade "libtmux<=0.37.0"
+${pip_exec} install --upgrade \
+    "pycodestyle<=2.11.1" \
+    "isort<=5.13.2" \
+    "pylint<=3.2.3" \
+    "black<=24.4.2" \
+    "black[d]<=24.4.2" \
+    "black[jupyter]<=24.4.2" \
+    "flake8<=7.0.0" \
+    "docopt<=0.6.2" \
+    "libtmux<=0.37.0"
 
 requirement_file="requirements.txt"
 if [ -e "${requirement_file}" ]
