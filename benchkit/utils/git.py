@@ -4,9 +4,12 @@
 Utilities to manipulate git repositories.
 """
 
-from benchkit.utils.types import PathType
 import os
+import pathlib
+
 import git
+
+from benchkit.utils.types import PathType
 
 
 def clone_repo(
@@ -20,6 +23,7 @@ def clone_repo(
     if tag and commit:
         raise ValueError("tag and commit cannot be specified at the same time")
 
+    repo_src_dir = pathlib.Path(repo_src_dir)
     if not repo_src_dir.is_dir():
         os.makedirs(repo_src_dir, exist_ok=False)
 
@@ -34,5 +38,10 @@ def clone_repo(
                 url=repo_url,
                 to_path=repo_src_dir,
             )
-        if commit:
-            repo.git.checkout(commit)
+    else:
+        repo = git.Repo(path=repo_src_dir)
+
+    if tag:
+        repo.git.checkout(tag)
+    if commit:
+        repo.git.checkout(commit)
