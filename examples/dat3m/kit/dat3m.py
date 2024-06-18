@@ -1,30 +1,9 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from pythainer.builders import (
-    DockerBuilder,
-    DockerfileDockerBuilder,
-    UbuntuDockerBuilder,
-)
+from pythainer.builders import UbuntuDockerBuilder
 from pythainer.builders.utils import project_git_clone
 from pythainer.examples.builders import get_user_builder
-
-from benchkit.utils.git import clone_repo
-
-
-def vsyncer_builder() -> DockerBuilder:
-    clone_repo(
-        repo_url="https://github.com/open-s4c/vsyncer.git",
-        repo_src_dir="/tmp/vsyncer",
-        commit="2a040dc00d03a806aeb07aeb2489b89eb33d59ff",
-    )
-    builder = DockerfileDockerBuilder(
-        tag="pyvsyncer",
-        dockerfile_path="/tmp/vsyncer/Dockerfile",
-        build_dir="/tmp/vsyncer",
-        use_uid_gid=False,
-    )
-    return builder
 
 
 def standalone_dat3m_builder() -> UbuntuDockerBuilder:
@@ -70,18 +49,25 @@ def standalone_dat3m_builder() -> UbuntuDockerBuilder:
     builder.env(name="DAT3M_HOME", value=dat3m_home)
     builder.env(name="DAT3M_OUTPUT", value=f"{work_dir}/output")
     builder.env(name="CFLAGS", value='"-I$DAT3M_HOME/include"')
+    optflags_lst = [
+        "-mem2reg",
+        "-sroa",
+        "-early-cse",
+        "-indvars",
+        "-loop-unroll",
+        "-fix-irreducible",
+        "-loop-simplify",
+        "-simplifycfg",
+        "-gvn",
+    ]
+    optflags_str = " ".join(optflags_lst)
     builder.env(
         name="OPTFLAGS",
-        value='"-mem2reg -sroa -early-cse -indvars -loop-unroll -fix-irreducible -loop-simplify -simplifycfg -gvn"',
+        value=f'"{optflags_str}"',
     )
     builder.space()
 
     builder.user()
     builder.workdir(path=f"{work_dir}/{dat3m_name}")
-
-    builder.run(
-        f'echo "java -jar dartagnan/target/dartagnan.jar cat/aarch64.cat --target=arm8 benchmarks/locks/ttas.c" > {dat3m_home}/run.sh'
-    )  # TODO
-    builder.run(f"chmod +x {dat3m_home}/run.sh")
 
     return builder

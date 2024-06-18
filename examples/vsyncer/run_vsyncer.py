@@ -2,7 +2,7 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from dat3m import vsyncer_builder
+from vsyncer import vsyncer_builder
 
 from benchkit.communication.docker import DockerCommLayer
 from benchkit.platforms import Platform

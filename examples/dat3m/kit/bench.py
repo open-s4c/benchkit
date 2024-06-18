@@ -128,14 +128,23 @@ class Dat3mBench(Benchmark):
         # Sanitize input variables
         if memory_model not in self.dat3m_memorymodels:
             raise ValueError(
-                f"Unknown memory model: {memory_model}\nSupported memory models: {self.dat3m_memorymodels}"
+                (
+                    f"Unknown memory model: "
+                    f"{memory_model}\n"
+                    f"Supported memory models: {self.dat3m_memorymodels}"
+                )
             )
         if target_arch not in self.dat3m_targets:
             raise ValueError(
-                f"Unknown target architecture: {target_arch}\nSupported targets: {self.dat3m_targets}"
+                (
+                    f"Unknown target architecture: "
+                    f"{target_arch}\nSupported targets: {self.dat3m_targets}"
+                )
             )
         if lock_name not in self.dat3m_locks:
-            raise ValueError(f"Unknown lock name: {lock_name}\nSupported locks: {self.dat3m_locks}")
+            raise ValueError(
+                (f"Unknown lock name: " f"{lock_name}\nSupported locks: {self.dat3m_locks}")
+            )
 
         # Generate environment
         environment = self._preload_env(
@@ -147,11 +156,20 @@ class Dat3mBench(Benchmark):
             **kwargs,
         )
 
+        dat3m_home_env = self.platform.comm.shell(
+            command="printenv DAT3M_HOME",
+            print_output=False,
+            print_curdir=False,
+        ).strip()
+        dat3m_home = pathlib.Path(dat3m_home_env) if dat3m_home_env else ""
+        dat3m_jar = dat3m_home / "dartagnan/target/dartagnan.jar"
+        dat3m_lock = dat3m_home / f"benchmarks/locks/{lock_name}.c"
+
         # Generate dat3m command line using variables
         command_head = [
             "java",
             "-jar",
-            "dartagnan/target/dartagnan.jar",
+            f"{dat3m_jar}",
         ]
         command_opts = [
             f"cat/{memory_model}.cat",
@@ -159,9 +177,7 @@ class Dat3mBench(Benchmark):
         ]
         if bound is not None:
             command_opts.append(f"--bound={bound}")
-        command_tail = [
-            f"benchmarks/locks/{lock_name}.c",
-        ]
+        command_tail = [f"{dat3m_lock}"]
         run_command = command_head + command_opts + command_tail
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
@@ -200,7 +216,7 @@ class Dat3mBench(Benchmark):
         for line in summary_lines:
             if "Verification finished" in line:
                 break
-            elif secs_match := secs_pattern.match(line):
+            if secs_match := secs_pattern.match(line):
                 key, value = secs_match.groups()
                 key = key.lstrip("-- ")
                 key = key.replace("#", "Nb ")

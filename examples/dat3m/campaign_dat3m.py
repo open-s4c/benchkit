@@ -19,8 +19,9 @@ def get_local_docker_platform(docker_runner: ConcreteDockerRunner) -> Platform:
 
 def get_dat3m_docker_platform() -> Platform:
     dat3m_builder = standalone_dat3m_builder()
-    # TODO building images does not support yet remote, the plan would be to give an optional shell_out callback
-    # to that build() function and provide with the platform.shell from the selected host.
+    # TODO building images does not support yet remote, the plan would be to give an optional
+    #  shell_out callback to that build() function and provide with the platform.shell from the
+    #  selected host.
     dat3m_builder.build()
     dar3m_runner = dat3m_builder.get_runner()
     platform = get_local_docker_platform(docker_runner=dar3m_runner)
@@ -45,7 +46,7 @@ def main():
             "memory_model": ["aarch64"],
             "target_arch": ["arm8"],
             "lock_name": list(dat3m_bench.dat3m_locks),
-            "bound": [None, 1, 3],
+            "bound": [1, 3],
         },
         constants={},
         debug=False,
