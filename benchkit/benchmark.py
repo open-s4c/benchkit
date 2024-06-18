@@ -623,13 +623,13 @@ class Benchmark:
         Returns:
             int: time it took, in seconds.
         """
-        raise NotImplementedError
+        return 0
 
     def clean_bench(self) -> None:
         """
         Clean the benchmark from build files.
         """
-        raise NotImplementedError
+        pass
 
     def build_bench(
         self,
