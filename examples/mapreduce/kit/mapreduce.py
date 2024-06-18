@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 """
 Benchkit support for Metis/MapReduce benchmark.
 See: https://github.com/ydmao/Metis
@@ -28,7 +32,6 @@ class MapReduceBench(Benchmark):
         pre_run_hooks: Iterable[PreRunHook],
         post_run_hooks: Iterable[PostRunHook],
         platform: Platform | None = None,
-        build_dir: PathType | None = None,
     ) -> None:
         super().__init__(
             command_wrappers=command_wrappers,
@@ -46,7 +49,7 @@ class MapReduceBench(Benchmark):
                 f"Invalid Metis source path: {bench_src_path}\n"
                 "src_dir argument can be defined manually."
             )
-        
+
         self._bench_src_path = bench_src_path
 
         # Build dir is automatically picked by Metis
@@ -59,17 +62,17 @@ class MapReduceBench(Benchmark):
     @staticmethod
     def get_build_var_names() -> List[str]:
         return [
-           # "memory_allocator",
+            # "memory_allocator",
             "sorting_algorithm",
-            "data_structure", 
-            "mode"
+            "data_structure",
+            "mode",
         ]
 
     @staticmethod
     def get_run_var_names() -> List[str]:
         return [
             "bench_name",
-            "nb_threads"
+            "nb_threads",
         ]
 
     @staticmethod
@@ -81,15 +84,25 @@ class MapReduceBench(Benchmark):
         output: str,
         nb_threads: int,
         configuration_params: List[str],
-        configuration_params_values: List[str]
+        configuration_params_values: List[str],
     ) -> Dict[str, str]:
-        runtime_line = next(line for line in output.split('\n') if line.strip().startswith('Sample'))
-    
+        runtime_line = next(
+            line for line in output.split("\n") if line.strip().startswith("Sample")
+        )
+
         # Extract all numbers from this line
-        numbers = re.findall(r'\d+', runtime_line)
+        numbers = re.findall(r"\d+", runtime_line)
         values = list(map(int, numbers)) + [nb_threads] + configuration_params_values
 
-        names = ["sample_ms", "map_ms", "reduce_ms", "merge_ms", "sum_ms", "real_ms", "nb_threads"] + configuration_params
+        names = [
+            "sample_ms",
+            "map_ms",
+            "reduce_ms",
+            "merge_ms",
+            "sum_ms",
+            "real_ms",
+            "nb_threads",
+        ] + configuration_params
 
         result_dict = dict(zip(names, values))
 
@@ -110,23 +123,29 @@ class MapReduceBench(Benchmark):
 
     def build_bench(
         self,
-        #memory_allocator: str,
+        # memory_allocator: str,
         data_structure: str,
         sorting_algorithm: str,
         mode: str,
         **kwargs,
     ) -> None:
         src_dir = self._bench_src_path
-        
+
         self.platform.comm.shell(
-            command=f"./configure --enable-map-ds="+ data_structure + " --enable-mode="+ mode + " --enable-sort="+ sorting_algorithm, #+ " --with-malloc=" + memory_allocator,
+            command=[
+                "./configure",
+                f"--enable-map-ds={data_structure}",
+                f"--enable-mode={mode}",
+                f"--enable-sort={sorting_algorithm}",
+                # f" --with-malloc={memory_allocator}",
+            ],
             current_dir=src_dir,
             output_is_log=True,
         )
 
         # Build benchmarking files to src_dir/out
         self.platform.comm.shell(
-            command=f"make",
+            command="make",
             current_dir=src_dir,
             output_is_log=True,
         )
@@ -146,6 +165,7 @@ class MapReduceBench(Benchmark):
 
         # Use the same parameters mentioned in the Metis test suite
         # These are benchmark specific
+        bench_params = []
         if bench_name == "wrmem":
             bench_params = []
         elif bench_name == "kmeans":
@@ -155,8 +175,6 @@ class MapReduceBench(Benchmark):
         elif bench_name == "matrix_mult":
             bench_params = ["-l 2048", "-l 100"]
 
-
-        
         run_command = [
             "./obj/" + bench_name,
             *bench_params,
@@ -190,20 +208,25 @@ class MapReduceBench(Benchmark):
         nb_threads = int(run_variables["nb_threads"])
 
         configuration_params = [
-           # "memory_allocator",
+            # "memory_allocator",
             "sorting_algorithm",
-            "data_structure", 
-            "mode"
+            "data_structure",
+            "mode",
         ]
 
         configuration_params_values = [
             # build_variables["memory_allocator"],
             build_variables["sorting_algorithm"],
             build_variables["data_structure"],
-            build_variables["mode"]
+            build_variables["mode"],
         ]
 
-        result_dict = self._parse_results(output=command_output, nb_threads=nb_threads, configuration_params=configuration_params, configuration_params_values=configuration_params_values)
+        result_dict = self._parse_results(
+            output=command_output,
+            nb_threads=nb_threads,
+            configuration_params=configuration_params,
+            configuration_params_values=configuration_params_values,
+        )
 
         return result_dict
 
@@ -211,9 +234,8 @@ class MapReduceBench(Benchmark):
 def metis_campaign(
     name: str = "metis_campaign",
     benchmark: Optional[MapReduceBench] = None,
-    bench_name: Iterable[str] = ("wrmem", "pca", "matrix_mult"), #, "kmeans"
+    bench_name: Iterable[str] = ("wrmem", "pca", "matrix_mult"),  # , "kmeans"
     src_dir: Optional[PathType] = None,
-    build_dir: Optional[str] = None,
     results_dir: Optional[PathType] = None,
     command_wrappers: Iterable[CommandWrapper] = (),
     command_attachments: Iterable[CommandAttachment] = (),
@@ -224,9 +246,14 @@ def metis_campaign(
     nb_runs: int = 1,
     data_structure: Iterable[str] = ("btree", "array", "append"),
     sorting_algorithm: Iterable[str] = ("psrs", "mergesort"),
-    mode: Iterable[str] = ("metis", "single_btree", "single_append-group_first", "single_append-merge_first"),
+    mode: Iterable[str] = (
+        "metis",
+        "single_btree",
+        "single_append-group_first",
+        "single_append-merge_first",
+    ),
     benchmark_duration_seconds: int = 5,
-    nb_threads: Iterable[int] = (1,2,4,8,16),
+    nb_threads: Iterable[int] = (1, 2, 4, 8),
     debug: bool = False,
     gdb: bool = False,
     enable_data_dir: bool = False,
@@ -243,8 +270,8 @@ def metis_campaign(
         "nb_threads": nb_threads,
         "bench_name": bench_name,
         "sorting_algorithm": sorting_algorithm,
-        "data_structure": data_structure, 
-        "mode": mode
+        "data_structure": data_structure,
+        "mode": mode,
     }
 
     if pretty is not None:
@@ -262,7 +289,6 @@ def metis_campaign(
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,
             platform=platform,
-            build_dir=build_dir,
         )
 
     return CampaignCartesianProduct(
@@ -280,6 +306,11 @@ def metis_campaign(
         pretty=pretty,
     )
 
+
 if __name__ == "__main__":
-    campaign = metis_campaign(post_run_hooks=[],command_wrappers=[], src_dir="./Metis/")
+    campaign = metis_campaign(
+        post_run_hooks=[],
+        command_wrappers=[],
+        src_dir="./Metis/",
+    )
     campaign.run()
