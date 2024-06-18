@@ -16,6 +16,11 @@ import subprocess
 from shutil import which
 from typing import Iterable
 
+from benchkit.communication.utils import (
+    command_with_env,
+    format_arg,
+    remote_shell_command,
+)
 from benchkit.shell.shell import shell_out
 from benchkit.utils.types import Command, Environment, PathType, SplitCommand
 
@@ -580,12 +585,12 @@ class LocalCommLayer(CommunicationLayer):
 
     def which(self, cmd: str) -> pathlib.Path | None:
         result = which(cmd=cmd)
-        
+
         # If result is None, pathlib.Path will throw an error because it
         # expects bytes or string.
-        if result is None: 
+        if result is None:
             return None
-        
+
         return pathlib.Path(result)
 
 
@@ -646,19 +651,11 @@ class SSHCommLayer(CommunicationLayer):
         output_is_log: bool = False,
         ignore_ret_codes: Iterable[int] = (),
     ) -> str:
-        full_environment = {}
-        full_environment |= self._additional_environment
-        if environment is not None:
-            full_environment |= environment
-
-        remote_env_lst = [f"{k}={full_environment[k]}" for k in full_environment]
-        remote_env_str = " ".join(remote_env_lst)
-
-        if isinstance(command, str):
-            env_command = f"{remote_env_str} {command}"
-        else:
-            env_command = remote_env_lst + command
-
+        env_command = command_with_env(
+            command=command,
+            environment=environment,
+            additional_environment=self._additional_environment,
+        )
         full_command = self._remote_shell_command(
             remote_command=env_command,
             remote_current_dir=current_dir,
@@ -728,30 +725,16 @@ class SSHCommLayer(CommunicationLayer):
         remote_command: Command,
         remote_current_dir: PathType | None = None,
     ) -> SplitCommand:
-        host = self._host
-
-        if isinstance(remote_command, list):
-
-            def format_arg(arg: str):
-                if any(c.isspace() for c in arg):
-                    # the arg has whitespace, we add " " to avoid split of the shell
-                    return f'"{arg}"'
-                return arg
-
-            remote_formatted_command = " ".join(format_arg(a) for a in remote_command)
-        else:
-            remote_formatted_command = remote_command
-
-        if remote_current_dir:
-            cd_remote_command = f"cd {remote_current_dir} && {remote_formatted_command}"
-        else:
-            cd_remote_command = remote_formatted_command
+        remote_command = remote_shell_command(
+            remote_command=remote_command,
+            remote_current_dir=remote_current_dir,
+        )
 
         full_command = [
             "ssh",
             "-t",
-            host,
-            cd_remote_command,
+            self._host,
+            remote_command,
         ]
 
         return full_command

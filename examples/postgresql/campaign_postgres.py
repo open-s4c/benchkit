@@ -9,13 +9,11 @@ import os
 import os.path
 import pathlib
 
-import git
 from postgresql import PostgreSQLServer
 from sysbench import sysbench_campaign
 
 from benchkit.campaign import CampaignSuite
 from benchkit.platforms import get_current_platform
-from benchkit.utils.types import PathType
 from benchkit.utils.git import clone_repo
 
 NB_RUNS = 1

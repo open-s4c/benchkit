@@ -18,6 +18,7 @@ GitPython<=3.1.36
 matplotlib<=3.8.0
 netifaces<=0.11.0
 pandas<=2.1.0
+pythainer
 seaborn<=0.12.2
 wget<=3.2
 EOF
