@@ -623,13 +623,13 @@ class Benchmark:
         Returns:
             int: time it took, in seconds.
         """
-        raise NotImplementedError
+        return 0
 
     def clean_bench(self) -> None:
         """
         Clean the benchmark from build files.
         """
-        raise NotImplementedError
+        pass
 
     def build_bench(
         self,
@@ -696,6 +696,7 @@ class Benchmark:
         wrapped_environment: Environment,
         print_output: bool,
         timeout: int | None = None,
+        ignore_ret_codes: Iterable[int]=(),
         **kwargs,
     ) -> str | AsyncProcess:
         """
@@ -743,6 +744,7 @@ class Benchmark:
             environment=wrapped_environment,
             print_output=print_output,
             timeout=timeout,
+            ignore_ret_codes=ignore_ret_codes,
         )
         return output
 
@@ -901,7 +903,7 @@ class Benchmark:
         }
         tilt_variables = {
             k: record_parameters[k] for k in self.get_tilt_var_names() if k in record_parameters
-        }
+        } if self._use_tilt else {}
         other_variables = {
             k: record_parameters[k]
             for k in record_parameters
