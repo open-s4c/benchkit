@@ -308,8 +308,8 @@ class CommunicationLayer:
 
     def copy_from_host(self, source: PathType, destination: PathType) -> None:
         """Copy a file from the host (the machine benchkit is run on), to the
-           target machine the benchmark will be performed on
-        
+           target machine the benchmark will be performed on.
+
         Args:
             source (PathType): The source path where the file or folder is stored.
             destination: (PathType): The destination path where the file has to be
@@ -319,8 +319,8 @@ class CommunicationLayer:
 
     def copy_to_host(self, source: PathType, destination: PathType) -> None:
         """Copy a file to the host (the machine benchkit is run on), from the
-           target machine the benchmark will be performed on
-        
+           target machine the benchmark will be performed on.
+
         Args:
             source (PathType): The source path where the file or folder is stored on the remote.
             destination: (PathType): The destination path where the file has to be

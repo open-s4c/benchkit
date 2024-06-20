@@ -6,12 +6,12 @@ from benchkit.campaign import CampaignCartesianProduct, Constants, CampaignSuite
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.commandwrappers.strace import StraceWrap
 from benchkit.commandwrappers.env import EnvWrap
-from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap
+from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap, enable_non_sudo_perf
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import CpuOrder, PathType, Environment
-from benchkit.platforms import get_remote_platform
+from benchkit.platforms import get_remote_platform, get_current_platform
 
 RUN_REMOTELY = False
 REMOTE_ADDR = "ssh://root@example.com:2222"
@@ -231,13 +231,16 @@ def create_campaign(
 def main():
     source_dir = "./CppPathTracer"
     bench_src_dir = "./CppPathTracer"
-    platform = None
     copy_src_to_build = False
 
     if RUN_REMOTELY:
         platform = get_remote_platform(REMOTE_ADDR)
         bench_src_dir = "/tmp/CppPathTracer"
         copy_src_to_build = True
+    else:
+        platform = get_current_platform()
+
+    enable_non_sudo_perf(platform.comm)
 
     # The variables that have to be iterated through for the benchmark
 
