@@ -60,6 +60,7 @@ class DockerCommLayer(CommunicationLayer):
         timeout: int | None = None,
         output_is_log: bool = False,
         ignore_ret_codes: Iterable[int] = (),
+        split_arguments: bool = True,
     ) -> str:
         env_command = command_with_env(
             command=command,
@@ -80,6 +81,7 @@ class DockerCommLayer(CommunicationLayer):
             timeout=timeout,
             output_is_log=output_is_log,
             ignore_ret_codes=ignore_ret_codes,
+            split_arguments=split_arguments,
         )
 
         return output
