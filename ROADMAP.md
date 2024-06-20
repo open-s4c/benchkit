@@ -5,11 +5,37 @@ future.
 
 ## Benchmarks to be supported
 
-- memcached
-- mariadb
-- redis
-- dpdk
-- NAS Parallel Benchmarks (https://www.nas.nasa.gov/software/npb.html)
+[ ] memcached
+[ ] mariadb
+[ ] redis
+[ ] dpdk
+[ ] From "Thread Clustering: Sharing-Aware Scheduling on SMP-CMP-SMT Multiprocessors"
+    [ ] VolanoMark
+    [ ] SPECjbb2013 (retired?)
+    [ ] Rubis & MySQL
+[ ] From "Coherence Stalls or Latency Tolerance: Informed CPU Scheduling for Socket and Core Sharing"
+    [ ] SPEC-CPU 2017
+    [ ] PARSEC
+    [ ] GraphLab / TuriCreate (maybe retired)
+    [ ] Singular Value Decomposition
+        [ ] other graph benchmarks
+        [ ] other machine learning and filtering applications
+[ ] From "Thread-Placement Learning"
+    [ ] Metis MapReduce
+[ ] From "Online Thread Auto-Tuning for Performance Improvement and Resource Saving"
+    [ ] NAS Parallel Benchmarks (https://www.nas.nasa.gov/software/npb.html)
+    [ ] Ligra
+    [ ] GAP
+[ ] From "Pandia: comprehensive contention-sensitive thread placement"
+    [ ] SPEC OMP 2012
+[ ] From "OS Scheduling with Nest: Keeping Tasks Close Together on Warm Cores"
+    [ ] TPC-H (on Postgres)
+    [ ] Linux kernel compilation gcc benchmark
+    [ ] Wired Tiger BTree benchmark
+        [ ] FaceRec
+        [ ] Graph500
+    [ ] Hackbench
+        [ ] DaCapo
 
 ## Functional changes
 
