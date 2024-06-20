@@ -13,6 +13,7 @@ import os
 import os.path
 import pathlib
 import subprocess
+import getpass
 from shutil import which
 from typing import Iterable, Dict, List
 from functools import lru_cache
@@ -597,7 +598,7 @@ class LocalCommLayer(CommunicationLayer):
         self.shell(["rsync", "-azPv", str(source), str(destination)])
 
     def current_user(self) -> str:
-        return os.getlogin()
+        return getpass.getuser()
 
     def realpath(self, path: PathType) -> pathlib.Path:
         output = os.path.realpath(path)
