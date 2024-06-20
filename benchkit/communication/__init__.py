@@ -305,6 +305,29 @@ class CommunicationLayer:
         """
         raise NotImplementedError
 
+    def copy_from_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
+        """Copy a file from the host (the machine benchkit is run on), to the
+           target machine the benchmark will be performed on
+        
+        Args:
+            source (Path): The source path where the file or folder is stored.
+            destination: (Path): The destination path where the file has to be 
+                                 copied to on the remote.
+        """
+        raise NotImplementedError("Copy from host is not implemented for your remote platform")
+
+    def copy_to_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
+        """Copy a file to the host (the machine benchkit is run on), from the
+           target machine the benchmark will be performed on
+        
+        Args:
+            source (Path): The source path where the file or folder is stored on the remote.
+            destination: (Path): The destination path where the file has to be 
+                                 copied to on the host.
+        """
+        raise NotImplementedError("Copy to host is not implemented for your remote platform")
+
+
     def hostname(self) -> str:
         """Get hostname of the target host.
 
@@ -566,6 +589,12 @@ class LocalCommLayer(CommunicationLayer):
             with open(output_filename, "a") as file:
                 file.writelines([rline])
 
+    def copy_from_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
+        self.shell(["rsync", "-av", str(source), str(destination)])
+
+    def copy_to_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
+        self.shell(["rsync", "-av", str(source), str(destination)])
+
     def current_user(self) -> str:
         return os.getlogin()
 
@@ -719,6 +748,30 @@ class SSHCommLayer(CommunicationLayer):
             command=f"{prefix}tee -a {output_filename}",
             std_input=line + "\n",
         )
+
+    def _get_ssh_host_and_port(self) -> tuple[str, str]:
+        port = 22
+        host = self._host
+
+        # We do assume that the user does not specify and esoteric ssh
+        # URI's. In other words we assume ssh://[user@]host[:port]
+        
+        if host.startswith("ssh://"):
+            host = host.split("://")[1]
+            parts = host.split(":")
+            if len(parts) == 2 and parts[1].isdigit():
+                host = parts[0]
+                port = int(parts[1])
+
+        return host, port
+
+    def copy_from_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
+        host, port = self._get_ssh_host_and_port()
+        shell_out(["rsync", "-av", "--progress", "-e", f"ssh -p {port}", str(source), f"{host}:{destination}"])
+
+    def copy_to_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
+        host, port = self._get_ssh_host_and_port()
+        shell_out(["rsync", "-a", "--progress", "-e", f"ssh -p {port}", f"{host}:{source}", str(destination)])
 
     def _remote_shell_command(
         self,
