@@ -14,7 +14,8 @@ import os.path
 import pathlib
 import subprocess
 from shutil import which
-from typing import Iterable
+from typing import Iterable, Dict, List
+from functools import lru_cache
 
 from benchkit.communication.utils import (
     command_with_env,
@@ -305,27 +306,27 @@ class CommunicationLayer:
         """
         raise NotImplementedError
 
-    def copy_from_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
+    def copy_from_host(self, source: PathType, destination: PathType) -> None:
         """Copy a file from the host (the machine benchkit is run on), to the
            target machine the benchmark will be performed on
         
         Args:
-            source (Path): The source path where the file or folder is stored.
-            destination: (Path): The destination path where the file has to be 
-                                 copied to on the remote.
+            source (PathType): The source path where the file or folder is stored.
+            destination: (PathType): The destination path where the file has to be
+                                     copied to on the remote.
         """
-        raise NotImplementedError("Copy from host is not implemented for your remote platform")
+        raise NotImplementedError("Copy from host is not implemented for this communication layer")
 
-    def copy_to_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
+    def copy_to_host(self, source: PathType, destination: PathType) -> None:
         """Copy a file to the host (the machine benchkit is run on), from the
            target machine the benchmark will be performed on
         
         Args:
-            source (Path): The source path where the file or folder is stored on the remote.
-            destination: (Path): The destination path where the file has to be 
-                                 copied to on the host.
+            source (PathType): The source path where the file or folder is stored on the remote.
+            destination: (PathType): The destination path where the file has to be
+                                     copied to on the host.
         """
-        raise NotImplementedError("Copy to host is not implemented for your remote platform")
+        raise NotImplementedError("Copy to host is not implemented for this communication layer")
 
 
     def hostname(self) -> str:
@@ -589,11 +590,11 @@ class LocalCommLayer(CommunicationLayer):
             with open(output_filename, "a") as file:
                 file.writelines([rline])
 
-    def copy_from_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
-        self.shell(["rsync", "-av", str(source), str(destination)])
+    def copy_from_host(self, source: PathType, destination: PathType,) -> None:
+        self.shell(["rsync", "-azPv", str(source), str(destination)])
 
-    def copy_to_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
-        self.shell(["rsync", "-av", str(source), str(destination)])
+    def copy_to_host(self, source: PathType, destination: PathType,) -> None:
+        self.shell(["rsync", "-azPv", str(source), str(destination)])
 
     def current_user(self) -> str:
         return os.getlogin()
@@ -634,6 +635,9 @@ class SSHCommLayer(CommunicationLayer):
         super().__init__()
         self._host = host
         self._additional_environment = environment if environment is not None else {}
+
+        self._ssh_host_info = self._get_ssh_info(host=host)
+        self._in_ssh_config = self._is_in_ssh_config(host=host)
 
     @property
     def remote_host(self) -> str | None:
@@ -749,29 +753,27 @@ class SSHCommLayer(CommunicationLayer):
             std_input=line + "\n",
         )
 
-    def _get_ssh_host_and_port(self) -> tuple[str, str]:
-        port = 22
-        host = self._host
+    def copy_from_host(self, source: PathType, destination: PathType) -> None:
+        if self._in_ssh_config:
+            command = ["rsync", "-azPv", str(source), f"{self._host}:{destination}"]
+        else:
+            user = self._ssh_host_info["user"]
+            hostname = self._ssh_host_info["hostname"]
+            port = self._ssh_host_info["port"]
+            command = ["rsync", "-av", "--progress", "-e", f"ssh -p {port}", str(source), f"{user}@{hostname}:{destination}"]
 
-        # We do assume that the user does not specify and esoteric ssh
-        # URI's. In other words we assume ssh://[user@]host[:port]
-        
-        if host.startswith("ssh://"):
-            host = host.split("://")[1]
-            parts = host.split(":")
-            if len(parts) == 2 and parts[1].isdigit():
-                host = parts[0]
-                port = int(parts[1])
+        shell_out(command=command)
 
-        return host, port
+    def copy_to_host(self, source: PathType, destination: PathType) -> None:
+        if self._in_ssh_config:
+            command = ["rsync", "-azPv", f"{self._host}:{source}", str(destination)]
+        else:
+            user = self._ssh_host_info["user"]
+            hostname = self._ssh_host_info["hostname"]
+            port = self._ssh_host_info["port"]
+            command = ["rsync", "-a", "--progress", "-e", f"ssh -p {port}", f"{user}@{hostname}:{source}", str(destination)]
 
-    def copy_from_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
-        host, port = self._get_ssh_host_and_port()
-        shell_out(["rsync", "-av", "--progress", "-e", f"ssh -p {port}", str(source), f"{host}:{destination}"])
-
-    def copy_to_host(self, source: pathlib.Path, destination: pathlib.Path) -> None:
-        host, port = self._get_ssh_host_and_port()
-        shell_out(["rsync", "-a", "--progress", "-e", f"ssh -p {port}", f"{host}:{source}", str(destination)])
+        shell_out(command=command)
 
     def _remote_shell_command(
         self,
@@ -791,3 +793,23 @@ class SSHCommLayer(CommunicationLayer):
         ]
 
         return full_command
+
+    @staticmethod
+    def _get_ssh_info(host: str) -> Dict[str, str]:
+        output = shell_out(command=["ssh", "-G", str(host)], print_input=False, print_output=False)
+        ssh_host_info = dict([line.split(" ", maxsplit=1) for line in output.splitlines()])
+        return ssh_host_info
+
+    @staticmethod
+    def _is_in_ssh_config(host: str) -> bool:
+        list_hosts = SSHCommLayer._list_ssh_hosts()
+        return host.strip() in list_hosts
+
+    @staticmethod
+    @lru_cache(maxsize=None)
+    def _list_ssh_hosts() -> List[str]:
+        if not pathlib.Path("/usr/bin/fish").is_file():
+            return []
+        output = shell_out(command=["/usr/bin/fish", "-c", "__fish_print_hostnames"], print_input=False, print_output=False,)
+        list_hosts = [line.strip() for line in output.splitlines()]
+        return list_hosts
