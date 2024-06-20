@@ -33,6 +33,13 @@ def main():
     ssh_download_dir = pathlib.Path("/tmp/benchkit/dl_ssh_files")
     ssh_comm.copy_to_host(source=f"{ssh_target_dir}/", destination=f"{ssh_download_dir}/")
 
+    # TODO: implement for Docker comm layer
+    # docker_comm = DockerCommLayer()
+    # docker_target_dir = pathlib.Path("/tmp/benchkit/target_docker_files")
+    # docker_comm.copy_from_host(source=f"{host_dir}/", destination=f"{docker_target_dir}/")
+    # docker_download_dir = pathlib.Path("/tmp/benchkit/dl_docker_files")
+    # docker_comm.copy_to_host(source=f"{docker_target_dir}/", destination=f"{docker_download_dir}/")
+
 
 if __name__ == '__main__':
     main()
