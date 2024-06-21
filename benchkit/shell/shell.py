@@ -186,6 +186,7 @@ def shell_out(
                     env=environment,
                     timeout=timeout,
                     input=std_input,
+                    stderr=subprocess.STDOUT,
                     text=True,
                 )
 
@@ -196,6 +197,7 @@ def shell_out(
                     cwd=current_dir,
                     env=environment,
                     timeout=timeout,
+                    stderr=subprocess.STDOUT,
                     text=True,
                 )
         except subprocess.CalledProcessError as err:
