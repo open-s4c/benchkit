@@ -6,22 +6,33 @@ from benchmarks.sleep import SleepBench
 
 from benchkit.campaign import CampaignIterateVariables
 from benchkit.commandwrappers.perf import PerfStatWrap, enable_non_sudo_perf
-from benchkit.commandwrappers.strace import StraceWrap
-from benchkit.platforms import get_current_platform
+from benchkit.platforms import get_current_platform, get_remote_platform
 
 
 def main() -> None:
-    platform = get_current_platform()
+    remote = False
+
+    if remote:
+        platform = get_remote_platform(host="laptop", environment=None)
+    else:
+        platform = get_current_platform()
+
     enable_non_sudo_perf(comm_layer=platform.comm)
 
     events = ["cache-misses", "instructions", "cycles"]
-    perfstatwrap = PerfStatWrap(events=events, separator=";")
+    perfstatwrap = PerfStatWrap(
+        events=events,
+        use_json=True,
+        # separator=";",
+        platform=platform,
+    )
 
     CampaignIterateVariables(
         name="strace",
         benchmark=SleepBench(
             command_wrappers=[perfstatwrap],
             post_run_hooks=[perfstatwrap.post_run_hook_update_results],
+            platform=platform,
         ),
         nb_runs=1,
         variables=[

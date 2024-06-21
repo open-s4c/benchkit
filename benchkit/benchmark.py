@@ -927,6 +927,8 @@ class Benchmark:
                 return True
 
     def _temp_record_prefix(self) -> pathlib.Path:
+        # TODO warning, does not support concurrent execution
+        # for this, need a unique record path for each benchmark run
         return pathlib.Path("/tmp/benchkit_record")
 
     def _temp_record_data_dir(self, record_data_dir: pathlib.Path):

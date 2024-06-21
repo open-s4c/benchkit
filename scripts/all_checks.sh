@@ -23,7 +23,7 @@ seaborn<=0.12.2
 wget<=3.2
 EOF
     cat > ./dependency-paths.txt << EOF
-benchkit
+.
 examples/benchmarksql/kit
 examples/kyotocabinet/kit
 examples/leveldb/kit

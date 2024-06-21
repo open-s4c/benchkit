@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from benchkit.benchmark import Benchmark, CommandWrapper, CommandAttachment, SharedLib, PreRunHook, PostRunHook
+from benchkit.platforms import Platform
 import pathlib
 from benchkit.utils.dir import caller_dir
 from typing import Any, Dict, List, Iterable
@@ -15,6 +16,7 @@ class SleepBench(Benchmark):
         shared_libs: Iterable[SharedLib] = (),
         pre_run_hooks: Iterable[PreRunHook] = (),
         post_run_hooks: Iterable[PostRunHook] = (),
+        platform: Platform = None,
     ) -> None:
         super().__init__(
             command_wrappers=command_wrappers,
@@ -23,6 +25,8 @@ class SleepBench(Benchmark):
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,
         )
+        if platform is not None:
+            self.platform = platform
 
     @property
     def bench_src_path(self) -> pathlib.Path:
