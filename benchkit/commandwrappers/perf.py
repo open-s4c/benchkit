@@ -305,7 +305,7 @@ class PerfStatWrap(CommandWrapper):
             if self._quiet:
                 pro.append("--quiet")
             if self._separator is not None:
-                pro.append(f"-x{self._separator}")
+                pro.append(f"-x'{self._separator}'")
             self._perf_stat_options = pro
         return self._perf_stat_options
 
@@ -770,7 +770,7 @@ class PerfReportWrap(CommandWrapper):
         current_owner = path.owner()
         user = self.platform.current_user()
         if current_owner != user:
-            shell_out(f"sudo chown {user}:{user} {path}", print_output=False)
+            shell_out(["sudo", "chown", f"{user}:{user}", str(path)], print_output=False)
 
     def _perf_report_command(self, perf_data_pathname: PathType) -> SplitCommand:
         command = [
