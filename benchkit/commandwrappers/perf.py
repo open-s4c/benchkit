@@ -531,6 +531,7 @@ class PerfReportWrap(CommandWrapper):
         call_graph: Optional[str] = "dwarf",
         stdio: bool = False,
         flamegraph_path: Optional[PathType] = None,
+        perf_record_options: Optional[List[str]] = None,
     ):
         super().__init__()
         self.platform = get_current_platform()
@@ -546,7 +547,7 @@ class PerfReportWrap(CommandWrapper):
         self._stdio = stdio
         self._flamegraph_path = flamegraph_path
 
-        self._perf_record_options = None
+        self._perf_record_options = perf_record_options
         self._perf_report_options = None
 
     @property
