@@ -13,6 +13,7 @@ import os
 import os.path
 import pathlib
 import subprocess
+import getpass
 from shutil import which
 from typing import Iterable, Dict, List
 from functools import lru_cache
@@ -328,7 +329,6 @@ class CommunicationLayer:
         """
         raise NotImplementedError("Copy to host is not implemented for this communication layer")
 
-
     def hostname(self) -> str:
         """Get hostname of the target host.
 
@@ -411,6 +411,20 @@ class CommunicationLayer:
         self.shell(
             command=command,
             print_command=False,
+            print_output=False,
+        )
+    
+    def remove(self, path: PathType, recursive: bool) -> None:
+        """Remove a file or directory on the target host.
+
+        Args:
+            path (PathType): path of file or directory that needs to be removed on the target host.
+            recursive (bool): whether to recursively delete everything in this path.
+        """
+        command = ["rm"] + (["-r"] if recursive else []) + [str(path)]
+        self.shell(
+            command=command,
+            print_input=False,
             print_output=False,
         )
 
@@ -613,7 +627,7 @@ class LocalCommLayer(CommunicationLayer):
         self.shell(["rsync", "-azPv", str(source), str(destination)])
 
     def current_user(self) -> str:
-        return os.getlogin()
+        return getpass.getuser()
 
     def realpath(self, path: PathType) -> pathlib.Path:
         output = os.path.realpath(path)
