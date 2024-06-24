@@ -205,7 +205,7 @@ def shell_out(
                 logger_process = Process(target=flush_thread, args=(shell_process,output_queue,))
                 logger_process.start()
                 outs, errs = shell_process.communicate(input=std_input, timeout=timeout)
-                retcode = shell_process.returncode
+                retcode = shell_process.poll()
                 output = output_queue.get()
 
             except subprocess.TimeoutExpired as err:
@@ -216,7 +216,7 @@ def shell_out(
         else:
             try:
                 outs, errs = shell_process.communicate(input=std_input, timeout=timeout)
-                retcode = shell_process.returncode
+                retcode = shell_process.poll()
                 output = outs
             except subprocess.TimeoutExpired as err:
                 shell_process.kill()
