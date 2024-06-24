@@ -34,7 +34,7 @@ def _read(
     output = comm_layer.shell(
         command=command,
         shell=True,
-        print_input=False,
+        print_command=False,
         print_output=False,
     ).strip()
     return output
@@ -51,7 +51,7 @@ def _write(
     output = comm_layer.shell(
         command=command,
         shell=True,
-        print_input=False,
+        print_command=False,
         print_output=False,
     ).strip()
     print(output)

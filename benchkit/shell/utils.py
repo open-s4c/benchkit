@@ -124,7 +124,7 @@ def print_header(
     arguments: SplitCommand,
     current_dir: Optional[PathType],
     environment: Environment,
-    print_input: bool,
+    print_command: bool,
     print_env: bool,
     print_curdir: bool,
     print_shell_cmd: bool,
@@ -142,8 +142,8 @@ def print_header(
             current directory where the command is executed.
         environment (Environment):
             environment variables passed to the command.
-        print_input (bool):
-            whether to print the command. TODO rename print_command
+        print_command (bool):
+            whether to print the command.
         print_env (bool):
             whether to print the environment variables.
         print_curdir (bool):
@@ -157,13 +157,13 @@ def print_header(
         remote_host (str | None):
             if the command is ran remotelly, the name of the remote host where it is executed.
     """
-    if print_curdir and print_input and current_dir is not None:
+    if print_curdir and print_command and current_dir is not None:
         _print_cd(current_dir)
 
     if print_env and environment is not None:
         _print_env(environment)
 
-    if print_input:
+    if print_command:
         _print_run(arguments=arguments, asynced=asynced, remote_host=remote_host)
     if print_shell_cmd:
         _print_shell_cmd(

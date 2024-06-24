@@ -161,4 +161,4 @@ class TestShell(unittest.TestCase):
     @patch("sys.stdout", new_callable=StringIO)
     def test_print_header(self, mock_stdout):
         """test print_header"""
-        # TODO: Why argument print_input prints command arguments?
+

@@ -65,7 +65,7 @@ def _which(executable: str) -> Optional[PathType]:
 
     try:
         result = shell_out(
-            command=f"which {executable}", print_input=False, print_output=False
+            command=f"which {executable}", print_command=False, print_output=False
         ).strip()
     except subprocess.CalledProcessError:
         pass
@@ -78,7 +78,7 @@ def _find_perf_bin(search_path: Optional[PathType]) -> PathType:
     result = None
     kernel = shell_out(
         "uname -r",
-        print_input=False,
+        print_command=False,
         print_output=False,
     ).strip()
 
@@ -113,7 +113,7 @@ def _get_available_events(
 ) -> Tuple[List[PerfEvent], Dict[str, Dict[PerfEvent, str]]]:
     raw_output = shell_out(
         command=f"{perf_bin} list --no-desc",
-        print_input=False,
+        print_command=False,
         print_output=False,
     )
     events = []

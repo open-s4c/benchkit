@@ -42,7 +42,7 @@ def get_nb_cpus_total(comm_layer: CommunicationLayer) -> int:
     result1 = int(
         comm_layer.shell(
             command="nproc --all",
-            print_input=False,
+            print_command=False,
             print_output=False,
         ).strip()
     )

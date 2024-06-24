@@ -177,7 +177,7 @@ def ping(ip_address: str) -> bool:
     try:
         shell_out(
             command=ping_cmd,
-            print_input=False,
+            print_command=False,
             print_output=False,
         )
     except subprocess.CalledProcessError:

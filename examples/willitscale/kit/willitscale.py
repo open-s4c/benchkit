@@ -102,7 +102,7 @@ class WillItScaleBench(Benchmark):
         self.platform.comm.shell(
             command="make clean",
             current_dir=self.bench_src_path,
-            print_input=True,
+            print_command=True,
             print_output=True,
         )
 
@@ -110,7 +110,7 @@ class WillItScaleBench(Benchmark):
         self.platform.comm.shell(
             command=f"make {test_name} WARMUP_ITERATIONS={warmup_str}",
             current_dir=self.bench_src_path,
-            print_input=True,
+            print_command=True,
             print_output=True,
         )
 

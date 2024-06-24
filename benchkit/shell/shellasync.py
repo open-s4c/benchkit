@@ -184,7 +184,7 @@ def shell_async(
     platform: Platform,
     current_dir: Optional[PathType] = None,
     environment: Environment = None,
-    print_input: bool = True,
+    print_command: bool = True,
     print_env: bool = True,
     print_curdir: bool = True,
     print_shell_cmd: bool = False,
@@ -208,8 +208,8 @@ def shell_async(
         environment (Environment, optional):
             environment variables to pass to the command.
             Defaults to None.
-        print_input (bool, optional):
-            whether to print the command. TODO should be renamed "print_command"
+        print_command (bool, optional):
+            whether to print the command.
             Defaults to True.
         print_env (bool, optional):
             whether to print the environment variables when they are defined.
@@ -233,7 +233,7 @@ def shell_async(
         arguments=arguments,
         current_dir=current_dir,
         environment=environment,
-        print_input=print_input,
+        print_command=print_command,
         print_env=print_env,
         print_curdir=print_curdir,
         print_shell_cmd=print_shell_cmd,

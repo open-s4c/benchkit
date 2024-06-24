@@ -224,13 +224,13 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
     def _host_shell_out(
         command: Command,
         timeout: Optional[int] = None,
-        print_input: bool = False,
+        print_command: bool = False,
         print_output: bool = False,
     ) -> str:
         output = shell_out(
             command=command,
             timeout=timeout,
-            print_input=print_input,
+            print_command=print_command,
             print_output=print_output,
         )
         return output
@@ -335,7 +335,7 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
         command = ["adb", f"wait-for{transport_str}-{state}"]
         self._host_shell_out(
             command=command,
-            print_input=True,
+            print_command=True,
             print_output=True,
         )
 

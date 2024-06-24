@@ -54,7 +54,7 @@ class DockerCommLayer(CommunicationLayer):
         current_dir: PathType | None = None,
         environment: Environment = None,
         shell: bool = False,
-        print_input: bool = True,
+        print_command: bool = True,
         print_output: bool = True,
         print_curdir: bool = True,
         timeout: int | None = None,
@@ -76,7 +76,7 @@ class DockerCommLayer(CommunicationLayer):
             command=full_command,
             std_input=std_input,
             current_dir=None,
-            print_input=print_input,
+            print_command=print_command,
             print_output=print_output,
             timeout=timeout,
             output_is_log=output_is_log,
@@ -94,7 +94,7 @@ class DockerCommLayer(CommunicationLayer):
 
     def path_exists(self, path: PathType) -> bool:
         try:
-            self.shell(command=f"[ -e {path} ]", print_input=False, print_output=False)
+            self.shell(command=f"[ -e {path} ]", print_command=False, print_output=False)
         except subprocess.CalledProcessError as cpe:
             if 1 == cpe.returncode:
                 return False
@@ -104,7 +104,7 @@ class DockerCommLayer(CommunicationLayer):
     def read_file(self, path: PathType) -> str:
         return self.shell(
             command=f"cat {path}",
-            print_input=False,
+            print_command=False,
             print_output=False,
         )
 

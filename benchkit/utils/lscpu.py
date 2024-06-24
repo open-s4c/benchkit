@@ -16,7 +16,7 @@ from benchkit.communication import CommunicationLayer
 def _gen_lscpu_dict(comm_layer: CommunicationLayer):
     lscpu_output = comm_layer.shell(
         command="lscpu -J",
-        print_input=False,
+        print_command=False,
         print_output=False,
     )
     lscpu_json = json.loads(lscpu_output)

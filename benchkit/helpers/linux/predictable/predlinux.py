@@ -217,7 +217,7 @@ class PredLinux:
             self._platform.comm.shell(
                 command=f"sudo tee {watchdog_file}",
                 std_input=value_str,
-                print_input=False,
+                print_command=False,
                 print_output=False,
             )
 

@@ -91,7 +91,7 @@ class Fastboot:  # TODO add commlayer for "host"
         shell_out(
             command=f"fastboot flash {partition} ./{filename}",
             current_dir=filedir,
-            print_input=True,
+            print_command=True,
             print_output=True,
             output_is_log=True,
         )

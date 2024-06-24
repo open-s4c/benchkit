@@ -106,7 +106,7 @@ class KernelModuleDependency(PackageDependency):
         return self.platform.comm.shell_succeed(
             command=f"modinfo {self.name}",
             print_output=False,
-            print_input=False,
+            print_command=False,
         )
 
 
@@ -130,5 +130,5 @@ class DockerDependency(PackageDependency):
         return self.platform.comm.shell_succeed(
             command=f"modinfo {self.name}",
             print_output=False,
-            print_input=False,
+            print_command=False,
         )

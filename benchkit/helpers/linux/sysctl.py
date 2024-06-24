@@ -22,7 +22,7 @@ def read(
     """
     sysctl_command = ["sysctl", "-n", f"{variable}"]
     command = sysctl_command
-    output = comm_layer.shell(command=command, print_input=False, print_output=False).strip()
+    output = comm_layer.shell(command=command, print_command=False, print_output=False).strip()
     return output
 
 

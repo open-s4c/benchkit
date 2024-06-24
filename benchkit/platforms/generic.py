@@ -105,7 +105,7 @@ class Platform:
         if self._architecture is None:
             self._architecture = self.comm.shell(
                 "uname -m",
-                print_input=False,
+                print_command=False,
                 print_output=False,
             ).strip()
         return self._architecture

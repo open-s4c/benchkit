@@ -89,7 +89,7 @@ def _lsusb() -> List[UsbDevice]:
 
     output = shell_out(
         command="lsusb",
-        print_input=False,
+        print_command=False,
         print_output=False,
     ).strip()
     devices = [usbdevice_from_line(line=line.strip()) for line in output.splitlines()]
@@ -121,14 +121,14 @@ def usb_down_up() -> None:
     shell_out(
         command=f"sudo tee {auth_path}",
         std_input="0",
-        print_input=False,
+        print_command=False,
         print_output=False,
     )
     time.sleep(1)
     shell_out(
         command=f"sudo tee {auth_path}",
         std_input="1",
-        print_input=False,
+        print_command=False,
         print_output=False,
     )
     time.sleep(3)

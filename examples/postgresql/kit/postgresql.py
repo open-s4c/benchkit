@@ -203,7 +203,7 @@ class PostgreSQLClient(SQLClient):
             command=shell_command,
             current_dir=self._build_dir,
             environment=env,
-            print_input=print_info,
+            print_command=print_info,
             print_output=print_info,
             print_curdir=print_info,
         )
@@ -404,7 +404,7 @@ class PostgreSQLServerInstance(DBMSInstance):
             self.platform.comm.shell(
                 command=cmd,
                 current_dir=data_dir,
-                print_input=True,
+                print_command=True,
                 print_curdir=True,
                 output_is_log=True,
             )

@@ -48,7 +48,7 @@ def shell_out(
     current_dir: Optional[PathType] = None,
     environment: Environment = None,
     shell: bool = False,
-    print_input: bool = True,
+    print_command: bool = True,
     print_output: bool = True,
     print_env: bool = True,
     print_curdir: bool = True,
@@ -78,8 +78,8 @@ def shell_out(
             whether to run the command in a shell environment (like "bash") or as a real command
             given to "exec".
             Defaults to False.
-        print_input (bool, optional):
-            whether to print the command. TODO should be renamed "print_command"
+        print_command (bool, optional):
+            whether to print the command.
             Defaults to True.
         print_output (bool, optional):
             whether to print the output.
@@ -135,7 +135,7 @@ def shell_out(
         arguments=print_arguments,
         current_dir=current_dir,
         environment=environment,
-        print_input=print_input,
+        print_command=print_command,
         print_env=print_env,
         print_curdir=print_curdir,
         print_shell_cmd=print_shell_cmd,
@@ -249,7 +249,7 @@ def shell_interactive(
     current_dir: Optional[PathType] = None,
     environment: Environment = None,
     shell: bool = False,
-    print_input: bool = True,
+    print_command: bool = True,
     print_env: bool = True,
     print_curdir: bool = True,
     print_shell_cmd: bool = False,
@@ -272,8 +272,8 @@ def shell_interactive(
             whether to run the command in a shell environment (like "bash") or as a real command
             given to "exec".
             Defaults to False.
-        print_input (bool, optional):
-            whether to print the command. TODO should be renamed "print_command"
+        print_command (bool, optional):
+            whether to print the command.
             Defaults to True.
         print_env (bool, optional):
             whether to print the environment variables when they are defined.
@@ -303,7 +303,7 @@ def shell_interactive(
         arguments=arguments,
         current_dir=current_dir,
         environment=environment,
-        print_input=print_input,
+        print_command=print_command,
         print_env=print_env,
         print_curdir=print_curdir,
         print_shell_cmd=print_shell_cmd,

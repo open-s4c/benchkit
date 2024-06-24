@@ -77,7 +77,7 @@ class CPUPower:
         """
         raw_output = self._comm_layer.shell(
             command=f"sudo cpupower --cpu {cpu} frequency-info",
-            print_input=False,
+            print_command=False,
             print_output=False,
         )
         output_lines = raw_output.strip().splitlines()

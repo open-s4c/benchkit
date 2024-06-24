@@ -24,7 +24,7 @@ def get_threads_of_process(pid: int) -> List[int]:
     """
     ps_output = shell_out(
         f"ps -T -p {pid}",
-        print_input=False,
+        print_command=False,
         print_output=False,
     )
 

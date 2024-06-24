@@ -122,7 +122,7 @@ class Apt(PackageManager):
         command = f"apt-cache search --names-only ^{expected_package}$"
         output = platform.comm.shell(
             command=command,
-            print_input=False,
+            print_command=False,
             print_output=False,
         ).strip()
 
@@ -138,7 +138,7 @@ class Apt(PackageManager):
     ) -> bool:
         return platform.comm.shell_succeed(
             command=f"dpkg --status {package_name}",
-            print_input=False,
+            print_command=False,
             print_output=False,
         )
 
@@ -168,7 +168,7 @@ class Dnf(PackageManager):
     ) -> bool:
         return platform.comm.shell_succeed(
             command=f"dnf list {package_name}",
-            print_input=False,
+            print_command=False,
             print_output=False,
         )
 
@@ -179,7 +179,7 @@ class Dnf(PackageManager):
     ) -> bool:
         return platform.comm.shell_succeed(
             command=f"dnf list installed {package_name}",
-            print_input=False,
+            print_command=False,
             print_output=False,
         )
 
@@ -211,7 +211,7 @@ class Pacman(PackageManager):
         # the given package exists.
         return platform.comm.shell_succeed(
             command=f"pacman -Ss ^{package_name}$",
-            print_input=False,
+            print_command=False,
             print_output=False,
         )
 
@@ -222,7 +222,7 @@ class Pacman(PackageManager):
     ) -> bool:
         return platform.comm.shell_succeed(
             command=f"pacman -Q {package_name}",
-            print_input=False,
+            print_command=False,
             print_output=False,
         )
 

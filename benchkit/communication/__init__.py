@@ -58,7 +58,7 @@ class CommunicationLayer:
         current_dir: PathType | None = None,
         environment: Environment = None,
         shell: bool = False,
-        print_input: bool = True,
+        print_command: bool = True,
         print_output: bool = True,
         print_curdir: bool = True,
         timeout: int | None = None,
@@ -79,7 +79,7 @@ class CommunicationLayer:
                 environment to pass to the command to run. Defaults to None.
             shell (bool, optional):
                 whether a shell must be created to run the command. Defaults to False.
-            print_input (bool, optional):
+            print_command (bool, optional):
                 whether to print the command on benchkit logs. Defaults to True.
             print_output (bool, optional):
                 whether to print the command output on benchkit logs. Defaults to True.
@@ -108,7 +108,7 @@ class CommunicationLayer:
         current_dir: PathType | None = None,
         environment: Environment = None,
         shell: bool = False,
-        print_input: bool = True,
+        print_command: bool = True,
         print_output: bool = True,
         print_curdir: bool = True,
         timeout: int | None = None,
@@ -129,7 +129,7 @@ class CommunicationLayer:
                 environment to pass to the command to run. Defaults to None.
             shell (bool, optional):
                 whether a shell must be created to run the command. Defaults to False.
-            print_input (bool, optional):
+            print_command (bool, optional):
                 whether to print the command on benchkit logs. Defaults to True.
             print_output (bool, optional):
                 whether to print the command output on benchkit logs. Defaults to True.
@@ -157,7 +157,7 @@ class CommunicationLayer:
                 current_dir=current_dir,
                 environment=environment,
                 shell=shell,
-                print_input=print_input,
+                print_command=print_command,
                 print_output=print_output,
                 print_curdir=print_curdir,
                 timeout=timeout,
@@ -337,7 +337,7 @@ class CommunicationLayer:
         """
         result = self.shell(
             command="hostname",
-            print_input=False,
+            print_command=False,
             print_output=False,
         ).strip()
         return result
@@ -350,7 +350,7 @@ class CommunicationLayer:
         """
         result = self.shell(
             command="whoami",
-            print_input=False,
+            print_command=False,
             print_output=False,
         ).strip()
         return result
@@ -367,7 +367,7 @@ class CommunicationLayer:
         """
         output = self.shell(
             command=f"readlink -fm {path}",
-            print_input=False,
+            print_command=False,
             print_output=False,
         ).strip()
         result = pathlib.Path(output)
@@ -396,7 +396,21 @@ class CommunicationLayer:
         exist_opt = " -p " if exist_ok else ""
         self.shell(
             command=f"mkdir{exist_opt} {path}",
-            print_input=False,
+            print_command=False,
+            print_output=False,
+        )
+    
+    def remove(self, path: PathType, recursive: bool) -> None:
+        """Remove a file or directory on the target host.
+
+        Args:
+            path (PathType): path of file or directory that needs to be removed on the target host.
+            recursive (bool): whether to recursively delete everything in this path.
+        """
+        command = ["rm"] + (["-r"] if recursive else []) + [str(path)]
+        self.shell(
+            command=command,
+            print_command=False,
             print_output=False,
         )
 
@@ -425,7 +439,7 @@ class CommunicationLayer:
         command = f"which {cmd}"
         which_succeed = self.shell_succeed(
             command=command,
-            print_input=False,
+            print_command=False,
             print_output=False,
         )
 
@@ -434,7 +448,7 @@ class CommunicationLayer:
 
         path = self.shell(
             command=command,
-            print_input=False,
+            print_command=False,
             print_output=False,
         ).strip()
 
@@ -451,7 +465,7 @@ class CommunicationLayer:
     ) -> bool:
         succeed = True
         try:
-            self.shell(command=f"[ {opt} {path} ]", print_input=False, print_output=False)
+            self.shell(command=f"[ {opt} {path} ]", print_command=False, print_output=False)
         except subprocess.CalledProcessError as cpe:
             if 1 != cpe.returncode:
                 raise cpe
@@ -483,7 +497,7 @@ class LocalCommLayer(CommunicationLayer):
         current_dir: PathType | None = None,
         environment: Environment = None,
         shell: bool = False,
-        print_input: bool = True,
+        print_command: bool = True,
         print_output: bool = True,
         print_curdir: bool = True,
         timeout: int | None = None,
@@ -497,7 +511,7 @@ class LocalCommLayer(CommunicationLayer):
             current_dir=current_dir,
             environment=environment,
             shell=shell,
-            print_input=print_input,
+            print_command=print_command,
             print_output=print_output,
             print_curdir=print_curdir,
             timeout=timeout,
@@ -545,7 +559,7 @@ class LocalCommLayer(CommunicationLayer):
         pid = process_handle.pid
         status = shell_out(
             f"ps -q {pid} -o state --no-headers",
-            print_input=False,
+            print_command=False,
             print_output=False,
             print_env=False,
             print_curdir=False,
@@ -679,7 +693,7 @@ class SSHCommLayer(CommunicationLayer):
         current_dir: PathType | None = None,
         environment: Environment = None,
         shell: bool = False,
-        print_input: bool = True,
+        print_command: bool = True,
         print_output: bool = True,
         print_curdir: bool = True,
         timeout: int | None = None,
@@ -701,7 +715,7 @@ class SSHCommLayer(CommunicationLayer):
             command=full_command,
             std_input=std_input,
             current_dir=None,
-            print_input=print_input,
+            print_command=print_command,
             print_output=print_output,
             timeout=timeout,
             output_is_log=output_is_log,
@@ -719,7 +733,7 @@ class SSHCommLayer(CommunicationLayer):
 
     def path_exists(self, path: PathType) -> bool:
         try:
-            self.shell(command=f"[ -e {path} ]", print_input=False, print_output=False)
+            self.shell(command=f"[ -e {path} ]", print_command=False, print_output=False)
         except subprocess.CalledProcessError as cpe:
             if 1 == cpe.returncode:
                 return False
@@ -729,7 +743,7 @@ class SSHCommLayer(CommunicationLayer):
     def read_file(self, path: PathType) -> str:
         return self.shell(
             command=f"cat {path}",
-            print_input=False,
+            print_command=False,
             print_output=False,
         )
 
@@ -800,7 +814,7 @@ class SSHCommLayer(CommunicationLayer):
 
     @staticmethod
     def _get_ssh_info(host: str) -> Dict[str, str]:
-        output = shell_out(command=["ssh", "-G", str(host)], print_input=False, print_output=False)
+        output = shell_out(command=["ssh", "-G", str(host)], print_command=False, print_output=False)
         ssh_host_info = dict([line.split(" ", maxsplit=1) for line in output.splitlines()])
         return ssh_host_info
 
@@ -814,6 +828,6 @@ class SSHCommLayer(CommunicationLayer):
     def _list_ssh_hosts() -> List[str]:
         if not pathlib.Path("/usr/bin/fish").is_file():
             return []
-        output = shell_out(command=["/usr/bin/fish", "-c", "__fish_print_hostnames"], print_input=False, print_output=False,)
+        output = shell_out(command=["/usr/bin/fish", "-c", "__fish_print_hostnames"], print_command=False, print_output=False,)
         list_hosts = [line.strip() for line in output.splitlines()]
         return list_hosts

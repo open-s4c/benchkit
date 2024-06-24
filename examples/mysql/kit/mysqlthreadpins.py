@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 
     def shell_out(
         cmd: str,
-        print_input: bool = True,
+        print_command: bool = True,
         print_output: bool = True,
         **_kwargs,
     ) -> str:
@@ -27,13 +27,13 @@ except ModuleNotFoundError:
 
         Args:
             cmd (str): command to execute.
-            print_input (bool, optional): whether to print the command. Defaults to True.
+            print_command (bool, optional): whether to print the command. Defaults to True.
             print_output (bool, optional): whether to print the output. Defaults to True.
 
         Returns:
             str: the output return by the executed command.
         """
-        if print_input:
+        if print_command:
             print(f"[CMD] {cmd}")
         output = subprocess.check_output(
             cmd.split(),
@@ -163,7 +163,7 @@ def get_current_mysqld_pid() -> int:
     """
     succeed = True
     try:
-        out = shell_out("pgrep mysqld", print_input=False, print_output=False)
+        out = shell_out("pgrep mysqld", print_command=False, print_output=False)
     except subprocess.CalledProcessError:
         succeed = False
     if not succeed:

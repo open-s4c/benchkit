@@ -73,7 +73,7 @@ def gitrootdir(path: PathType) -> pathlib.Path:
     output = shell_out(
         "git rev-parse --show-toplevel",
         current_dir=dir_path,
-        print_input=False,
+        print_command=False,
         print_output=False,
     ).strip()
     result = pathlib.Path(output)
@@ -91,14 +91,14 @@ def gitmainrootdir() -> pathlib.Path:
     reldir = shell_out(
         command="git rev-parse --show-superproject-working-tree",
         current_dir=this_dir,
-        print_input=False,
+        print_command=False,
         print_output=False,
     ).strip()
     if not reldir:
         reldir = shell_out(
             command="git rev-parse --show-toplevel",
             current_dir=this_dir,
-            print_input=False,
+            print_command=False,
             print_output=False,
         ).strip()
     result = pathlib.Path(reldir).resolve()
