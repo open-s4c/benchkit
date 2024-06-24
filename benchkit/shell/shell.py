@@ -171,8 +171,8 @@ def shell_out(
         Args:
             process (Popen):
                 process to log
-            output (Value(c_char_p)):
-                manager value to write result to
+            output_queue (Queue):
+                Queue to write the returned value to
         Returns:
             None
         """
