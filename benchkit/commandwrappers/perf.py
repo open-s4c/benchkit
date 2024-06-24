@@ -6,6 +6,7 @@ when executing the wrapped command. Wrappers can execute "perf record" and "perf
 """
 
 import csv
+import json
 import os
 import os.path
 import pathlib
@@ -23,7 +24,7 @@ from benchkit.helpers.linux import ps, sysctl
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.shell.shell import shell_interactive, shell_out
 from benchkit.shell.shellasync import AsyncProcess, SplitCommand
-from benchkit.utils.types import PathType
+from benchkit.utils.types import Environment, PathType
 
 PerfEvent = str
 
@@ -250,11 +251,11 @@ class PerfStatWrap(CommandWrapper):
     """Command wrapper for the `perf stat` utility."""
 
     _perf_stat_csv_field_names = [
-        "counter_value",
-        "counter_unit",
-        "event_name",
-        "run_time",
-        "percentage_counter_cover",
+        "counter-value",
+        "unit",
+        "event",
+        "event-runtime",
+        "pcnt-running",  # percentage_counter_cover
         "comment1",
         "comment2",
     ]
@@ -266,11 +267,16 @@ class PerfStatWrap(CommandWrapper):
         freq: Optional[int] = None,
         quiet: Optional[bool] = None,
         output_filename: Optional[PathType] = "perf-stat.txt",
+        use_json: bool = True,
         separator: Optional[str] = None,
         remove_absent_event: bool = False,
+        platform: Platform | None = None
     ):
+        if use_json and separator is not None:
+            raise ValueError("PerfStatWrap: Cannot use json format and provide a CSV separator at the same time.")
+
         super().__init__()
-        self.platform = get_current_platform()
+        self.platform = get_current_platform() if platform is None else platform
 
         self._perf_bin = _find_perf_bin(search_path=perf_path)
 
@@ -285,6 +291,7 @@ class PerfStatWrap(CommandWrapper):
         self._freq = freq
         self._quiet = quiet
         self._output_filename = output_filename
+        self._use_json = use_json
         self._separator = separator  # if None, does not use `-x` option
 
         self._perf_stat_options = None
@@ -304,8 +311,16 @@ class PerfStatWrap(CommandWrapper):
                 pro.extend(["-I", f"{self._freq}"])
             if self._quiet:
                 pro.append("--quiet")
-            if self._separator is not None:
-                pro.append(f"-x'{self._separator}'")
+            if self._use_json:
+                pro.append("--json")
+            elif self._separator is not None:
+                # TODO We have to break the abstraction here, because sanitize only work for remote
+                # We might want to find a better way to pass command to ssh and other remote
+                # mechanisms in the future.
+                if self.platform.comm.is_local:
+                    pro.append(f"-x{self._separator}")
+                else:
+                    pro.append(f"-x'{self._separator}'")
             self._perf_stat_options = pro
         return self._perf_stat_options
 
@@ -360,6 +375,10 @@ class PerfStatWrap(CommandWrapper):
         cmd_prefix = perf_prefix + ["stat"] + self.perf_stat_options + output_option + cmd_prefix
 
         return cmd_prefix
+
+    def updated_environment(self, environment: Environment) -> Environment:
+        # Force locale to avoid confusion with "," and "." in json output:
+        return environment | {"LC_NUMERIC": "en_US.UTF-8"}
 
     def attach_every_thread(
         self,
@@ -438,7 +457,7 @@ class PerfStatWrap(CommandWrapper):
         return output_dict
 
     def _align_field_names(
-        self, perf_stat_pathname: PathType, events: List[str], field_names: List[str]
+        self, perf_stat_pathname: PathType, events: List[str], field_names: List[str],
     ) -> List[str]:
         # For reasons beyond my understanding, perf stat returns a CSV file format that contains
         # optional fields without giving you the header of the file. To combat this, we try to
@@ -468,16 +487,40 @@ class PerfStatWrap(CommandWrapper):
             # of the other fields (maybe a comment field) in the CSV contains a string
             # that matches the event name.
             idx_in_row = sorted(event_idxes)[0]
-            idx_in_fieldnames = field_names.index("event_name")
+            idx_in_fieldnames = field_names.index("event")
             padding_events = [f"bogus-column{i}" for i in range(idx_in_row - idx_in_fieldnames)]
             return [*padding_events, *field_names]
+
+    def _parse(
+        self,
+        perf_stat_pathname: PathType,
+        field_names: List[str],
+    ) -> List[Dict[str, str]]:
+        if self._use_json:
+            return self._parse_json(perf_stat_pathname=perf_stat_pathname, field_names=field_names)
+        else:
+            return self._parse_csv(perf_stat_pathname=perf_stat_pathname, field_names=field_names)
+
+    def _parse_json(
+        self,
+        perf_stat_pathname: PathType,
+        field_names: List[str],
+    ) -> List[Dict[str, str]]:
+        with open(perf_stat_pathname, "r") as perf_stat_file:
+            lines = [line.strip() for line in perf_stat_file]
+        json_lines = [json.loads(line) for line in lines]
+        return json_lines
 
     def _parse_csv(
         self,
         perf_stat_pathname: PathType,
         field_names: List[str],
     ) -> List[Dict[str, str]]:
-        field_names = self._align_field_names(perf_stat_pathname, self._events, field_names)
+        field_names = self._align_field_names(
+            perf_stat_pathname=perf_stat_pathname,
+            events=self._events,
+            field_names=field_names,
+        )
 
         with open(perf_stat_pathname, "r") as perf_stat_file:
             comments_filtered_file = filter(
@@ -497,7 +540,7 @@ class PerfStatWrap(CommandWrapper):
         self,
         perf_stat_pathname: PathType,
     ) -> RecordResult:
-        counter_rows = self._parse_csv(
+        counter_rows = self._parse_csv(  # TODO adapt for json
             perf_stat_pathname=perf_stat_pathname,
             field_names=["taskname-pid"] + self._perf_stat_csv_field_names,
         )
@@ -532,25 +575,25 @@ class PerfStatWrap(CommandWrapper):
         self,
         perf_stat_pathname: PathType,
     ) -> RecordResult:
-        counter_rows = self._parse_csv(
+        counter_rows = self._parse(
             perf_stat_pathname=perf_stat_pathname,
             field_names=self._perf_stat_csv_field_names,
         )
 
         output_dict = {}
         for counter_row in counter_rows:
-            event_name = counter_row["event_name"]
+            event_name = counter_row["event"]
             if event_name.endswith("/"):
                 event_name = event_name[:-1]
-            counter_value = counter_row["counter_value"]
-            unit = counter_row["counter_unit"]
-            run_time = counter_row["run_time"]
-            coverage = counter_row["percentage_counter_cover"]
+            counter_value = counter_row["counter-value"]
+            unit = counter_row["unit"]
+            run_time = counter_row["event-runtime"]
+            coverage = counter_row["pcnt-running"]  # percentage_counter_cover
 
             output_dict[f"perf-stat/{event_name}"] = counter_value
             output_dict[f"perf-stat/{event_name}.unit"] = unit
             output_dict[f"perf-stat/{event_name}.rt"] = run_time
-            output_dict[f"perf-stat/{event_name}.cov"] = coverage
+            output_dict[f"perf-stat/{event_name}.cov"] = str(coverage)
 
         return output_dict
 
@@ -747,7 +790,7 @@ class PerfReportWrap(CommandWrapper):
         )
 
     def fzf_flamegraph(self, search_dir: PathType) -> None:
-        """Generate all flamegrable browsable with fzf dynamic CLI.
+        """Generate all flamegraphs browsable with fzf dynamic CLI.
 
         Args:
             search_dir (PathType): path where to look for the flamegraph files.
@@ -767,7 +810,7 @@ class PerfReportWrap(CommandWrapper):
 
     def _chown(self, pathname: PathType) -> None:
         path = pathlib.Path(pathname)
-        current_owner = path.owner()
+        current_owner = path.owner()  # TODO only works on local platforms
         user = self.platform.current_user()
         if current_owner != user:
             shell_out(["sudo", "chown", f"{user}:{user}", str(path)], print_output=False)
@@ -798,7 +841,8 @@ class PerfReportWrap(CommandWrapper):
         ]
         files = [os.path.relpath(f, search_dir) for f in paths]
 
-        shell_out(f'sudo chown {user}:{user} {" ".join(paths)}')
+        for path in paths:
+            self._chown(pathname=path)
 
         while chosen_file := shell_out(
             command=["fzf", "--header", header],

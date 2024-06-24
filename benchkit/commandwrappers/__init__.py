@@ -42,6 +42,18 @@ class CommandWrapper:
         """
         return []
 
+    def updated_environment(self, environment: Environment) -> Environment:
+        """Define a new environment based on the given environment and the new key-values to add to
+        the environment for this wrapper.
+
+        Args:
+            environment (Environment): the environment to wrap.
+
+        Returns:
+            Environment: the new environment with updated keys and values.
+        """
+        return environment
+
     def wrap(
         self,
         command: SplitCommand,
@@ -63,5 +75,6 @@ class CommandWrapper:
         """
         wrapped_command = self.command_prefix(**kwargs) + list(command)
         wrapped_environment = environment if environment is not None else {}
+        wrapped_environment = self.updated_environment(environment=wrapped_environment)
 
         return wrapped_command, wrapped_environment
