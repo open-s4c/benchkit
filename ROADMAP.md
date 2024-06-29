@@ -36,6 +36,14 @@ future.
         [ ] Graph500
     [ ] Hackbench
         [ ] DaCapo
+[ ] PQC algorithms
+    [ ] Kyber
+        https://eprint.iacr.org/2019/489
+        https://github.com/mupq/nttm4
+        https://pq-crystals.org/
+    [ ] Dilithium
+[ ] MiBench suite
+    https://ieeexplore.ieee.org/document/990739
 
 ## Functional changes
 
