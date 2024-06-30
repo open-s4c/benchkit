@@ -1,0 +1,12 @@
+diff --git a/include/vsync/atomic/internal/arm64.h b/include/vsync/atomic/internal/arm64.h
+index aa0ea10..5fe6375 100644
+--- a/include/vsync/atomic/internal/arm64.h
++++ b/include/vsync/atomic/internal/arm64.h
+@@ -517,6 +517,7 @@
+             V_CODE_ALIGN                                                       \
+             "1:\n"                                                             \
+             V_WFE                                                              \
++            V_PRFM(a) \
+             V_LD_WFE(mo, V_MAP_R(P), val, a)                                   \
+             V_CMP(V_MAP_R(P), val, exp)                                        \
+             V_AWAIT_BNOT(eq, 1b)                                               \
