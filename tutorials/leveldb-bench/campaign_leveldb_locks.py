@@ -58,7 +58,7 @@ def get_campaign(
         },
         nb_runs=3,
         benchmark_duration_seconds=10,
-        nb_threads=list(range(1, 9)),
+        nb_threads=[1, 2, 4, 8, 16, 24, 32, 48, 64, 72, 96, 128, 138, 180, 200, 256],
     )
 
 
