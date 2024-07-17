@@ -13,10 +13,17 @@ import os
 import os.path
 import pathlib
 import subprocess
+import getpass
 from shutil import which
-from typing import Iterable
+from benchkit.shell.shell import pipe_shell_out, shell_out
+from typing import Iterable, Dict, List, Optional
+from functools import lru_cache
 
-from benchkit.shell.shell import shell_out
+from benchkit.communication.utils import (
+    command_with_env,
+    format_arg,
+    remote_shell_command,
+)
 from benchkit.utils.types import Command, Environment, PathType, SplitCommand
 
 
@@ -43,6 +50,14 @@ class CommunicationLayer:
         Returns:
             bool: whether the communication layer happens locally on the host.
         """
+        raise NotImplementedError()
+
+    def pipe_shell(
+        self,
+        command: Command,
+        current_dir: Optional[PathType] = None,
+        shell: bool = False,
+    ):
         raise NotImplementedError()
 
     def shell(
@@ -300,6 +315,28 @@ class CommunicationLayer:
         """
         raise NotImplementedError
 
+    def copy_from_host(self, source: PathType, destination: PathType) -> None:
+        """Copy a file from the host (the machine benchkit is run on), to the
+           target machine the benchmark will be performed on.
+
+        Args:
+            source (PathType): The source path where the file or folder is stored.
+            destination: (PathType): The destination path where the file has to be
+                                     copied to on the remote.
+        """
+        raise NotImplementedError("Copy from host is not implemented for this communication layer")
+
+    def copy_to_host(self, source: PathType, destination: PathType) -> None:
+        """Copy a file to the host (the machine benchkit is run on), from the
+           target machine the benchmark will be performed on.
+
+        Args:
+            source (PathType): The source path where the file or folder is stored on the remote.
+            destination: (PathType): The destination path where the file has to be
+                                     copied to on the host.
+        """
+        raise NotImplementedError("Copy to host is not implemented for this communication layer")
+
     def hostname(self) -> str:
         """Get hostname of the target host.
 
@@ -367,6 +404,20 @@ class CommunicationLayer:
         exist_opt = " -p " if exist_ok else ""
         self.shell(
             command=f"mkdir{exist_opt} {path}",
+            print_input=False,
+            print_output=False,
+        )
+    
+    def remove(self, path: PathType, recursive: bool) -> None:
+        """Remove a file or directory on the target host.
+
+        Args:
+            path (PathType): path of file or directory that needs to be removed on the target host.
+            recursive (bool): whether to recursively delete everything in this path.
+        """
+        command = ["rm"] + (["-r"] if recursive else []) + [str(path)]
+        self.shell(
+            command=command,
             print_input=False,
             print_output=False,
         )
@@ -446,6 +497,25 @@ class LocalCommLayer(CommunicationLayer):
     @property
     def is_local(self) -> bool:
         return True
+
+    def pipe_shell(
+        self,
+        command: Command,
+        current_dir: Optional[PathType] = None,
+        shell: bool = True,
+        print_command: bool = True,
+    ):
+        """
+            Pipe_shell allows running a command with pipe (e.g., "ls | grep test").
+
+            `shell` parameter needs to be True for local execution based on test_pipe_shell.py
+        """
+        return pipe_shell_out(
+            command=command,
+            current_dir=current_dir,
+            shell=shell,
+            print_command=print_command,
+        )
 
     def shell(
         self,
@@ -561,8 +631,14 @@ class LocalCommLayer(CommunicationLayer):
             with open(output_filename, "a") as file:
                 file.writelines([rline])
 
+    def copy_from_host(self, source: PathType, destination: PathType,) -> None:
+        self.shell(["rsync", "-azPv", str(source), str(destination)])
+
+    def copy_to_host(self, source: PathType, destination: PathType,) -> None:
+        self.shell(["rsync", "-azPv", str(source), str(destination)])
+
     def current_user(self) -> str:
-        return os.getlogin()
+        return getpass.getuser()
 
     def realpath(self, path: PathType) -> pathlib.Path:
         output = os.path.realpath(path)
@@ -580,12 +656,12 @@ class LocalCommLayer(CommunicationLayer):
 
     def which(self, cmd: str) -> pathlib.Path | None:
         result = which(cmd=cmd)
-        
+
         # If result is None, pathlib.Path will throw an error because it
         # expects bytes or string.
-        if result is None: 
+        if result is None:
             return None
-        
+
         return pathlib.Path(result)
 
 
@@ -600,6 +676,9 @@ class SSHCommLayer(CommunicationLayer):
         super().__init__()
         self._host = host
         self._additional_environment = environment if environment is not None else {}
+
+        self._ssh_host_info = self._get_ssh_info(host=host)
+        self._in_ssh_config = self._is_in_ssh_config(host=host)
 
     @property
     def remote_host(self) -> str | None:
@@ -632,6 +711,43 @@ class SSHCommLayer(CommunicationLayer):
             preexec_fn=os.setsid,
         )
 
+    def pipe_shell(
+        self,
+        command: Command,
+        current_dir: Optional[PathType] = None,
+        shell: bool = False,
+        print_command: bool = True,
+    ):
+        """
+            Pipe_shell allows running a command with pipe (e.g., "ls | grep test").
+
+            `shell` parameter needs to be False for remote execution based on test_pipe_shell.py
+        """
+        full_environment = {}
+        full_environment |= self._additional_environment
+
+        remote_env_lst = [f"{k}={full_environment[k]}" for k in full_environment]
+        remote_env_str = " ".join(remote_env_lst)
+
+        if isinstance(command, str):
+            env_command = f"{remote_env_str} {command}"
+        else:
+            env_command = remote_env_lst + command
+
+        full_command = self._remote_shell_command(
+            remote_command=env_command,
+            remote_current_dir=current_dir,
+        )
+
+        output = pipe_shell_out(
+            command=full_command,
+            current_dir=None,
+            shell=shell,
+            print_command=print_command,
+        )
+
+        return output
+
     def shell(
         self,
         command: Command,
@@ -646,19 +762,11 @@ class SSHCommLayer(CommunicationLayer):
         output_is_log: bool = False,
         ignore_ret_codes: Iterable[int] = (),
     ) -> str:
-        full_environment = {}
-        full_environment |= self._additional_environment
-        if environment is not None:
-            full_environment |= environment
-
-        remote_env_lst = [f"{k}={full_environment[k]}" for k in full_environment]
-        remote_env_str = " ".join(remote_env_lst)
-
-        if isinstance(command, str):
-            env_command = f"{remote_env_str} {command}"
-        else:
-            env_command = remote_env_lst + command
-
+        env_command = command_with_env(
+            command=command,
+            environment=environment,
+            additional_environment=self._additional_environment,
+        )
         full_command = self._remote_shell_command(
             remote_command=env_command,
             remote_current_dir=current_dir,
@@ -681,7 +789,20 @@ class SSHCommLayer(CommunicationLayer):
         raise NotImplementedError("TODO")
 
     def get_process_status(self, process_handle: subprocess.Popen) -> str:
-        raise NotImplementedError("TODO")
+        """
+        Add simple implementation of `get_process_status` which uses the status of the SSH process
+        and not of the `async process` in order to detect its termination
+        """
+        pid = process_handle.pid
+        status = shell_out(
+            f"ps -q {pid} -o state --no-headers",
+            print_input=False,
+            print_output=False,
+            print_env=False,
+            print_curdir=False,
+            print_file_shell_cmd=False,
+        )
+        return status.strip()
 
     def path_exists(self, path: PathType) -> bool:
         try:
@@ -723,35 +844,63 @@ class SSHCommLayer(CommunicationLayer):
             std_input=line + "\n",
         )
 
+    def copy_from_host(self, source: PathType, destination: PathType) -> None:
+        if self._in_ssh_config:
+            command = ["rsync", "-azPv", str(source), f"{self._host}:{destination}"]
+        else:
+            user = self._ssh_host_info["user"]
+            hostname = self._ssh_host_info["hostname"]
+            port = self._ssh_host_info["port"]
+            command = ["rsync", "-av", "--progress", "-e", f"ssh -p {port}", str(source), f"{user}@{hostname}:{destination}"]
+
+        shell_out(command=command)
+
+    def copy_to_host(self, source: PathType, destination: PathType) -> None:
+        if self._in_ssh_config:
+            command = ["rsync", "-azPv", f"{self._host}:{source}", str(destination)]
+        else:
+            user = self._ssh_host_info["user"]
+            hostname = self._ssh_host_info["hostname"]
+            port = self._ssh_host_info["port"]
+            command = ["rsync", "-a", "--progress", "-e", f"ssh -p {port}", f"{user}@{hostname}:{source}", str(destination)]
+
+        shell_out(command=command)
+
     def _remote_shell_command(
         self,
         remote_command: Command,
         remote_current_dir: PathType | None = None,
     ) -> SplitCommand:
-        host = self._host
-
-        if isinstance(remote_command, list):
-
-            def format_arg(arg: str):
-                if any(c.isspace() for c in arg):
-                    # the arg has whitespace, we add " " to avoid split of the shell
-                    return f'"{arg}"'
-                return arg
-
-            remote_formatted_command = " ".join(format_arg(a) for a in remote_command)
-        else:
-            remote_formatted_command = remote_command
-
-        if remote_current_dir:
-            cd_remote_command = f"cd {remote_current_dir} && {remote_formatted_command}"
-        else:
-            cd_remote_command = remote_formatted_command
+        remote_command = remote_shell_command(
+            remote_command=remote_command,
+            remote_current_dir=remote_current_dir,
+        )
 
         full_command = [
             "ssh",
             "-t",
-            host,
-            cd_remote_command,
+            self._host,
+            remote_command,
         ]
 
         return full_command
+
+    @staticmethod
+    def _get_ssh_info(host: str) -> Dict[str, str]:
+        output = shell_out(command=["ssh", "-G", str(host)], print_input=False, print_output=False)
+        ssh_host_info = dict([line.split(" ", maxsplit=1) for line in output.splitlines()])
+        return ssh_host_info
+
+    @staticmethod
+    def _is_in_ssh_config(host: str) -> bool:
+        list_hosts = SSHCommLayer._list_ssh_hosts()
+        return host.strip() in list_hosts
+
+    @staticmethod
+    @lru_cache(maxsize=None)
+    def _list_ssh_hosts() -> List[str]:
+        if not pathlib.Path("/usr/bin/fish").is_file():
+            return []
+        output = shell_out(command=["/usr/bin/fish", "-c", "__fish_print_hostnames"], print_input=False, print_output=False,)
+        list_hosts = [line.strip() for line in output.splitlines()]
+        return list_hosts
