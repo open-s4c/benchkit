@@ -15,7 +15,8 @@ import pathlib
 import subprocess
 import getpass
 from shutil import which
-from typing import Iterable, Dict, List
+from benchkit.shell.shell import pipe_shell_out, shell_out
+from typing import Iterable, Dict, List, Optional
 from functools import lru_cache
 
 from benchkit.communication.utils import (
@@ -23,7 +24,6 @@ from benchkit.communication.utils import (
     format_arg,
     remote_shell_command,
 )
-from benchkit.shell.shell import shell_out
 from benchkit.utils.types import Command, Environment, PathType, SplitCommand
 
 
@@ -50,6 +50,14 @@ class CommunicationLayer:
         Returns:
             bool: whether the communication layer happens locally on the host.
         """
+        raise NotImplementedError()
+
+    def pipe_shell(
+        self,
+        command: Command,
+        current_dir: Optional[PathType] = None,
+        shell: bool = False,
+    ):
         raise NotImplementedError()
 
     def shell(
@@ -490,6 +498,25 @@ class LocalCommLayer(CommunicationLayer):
     def is_local(self) -> bool:
         return True
 
+    def pipe_shell(
+        self,
+        command: Command,
+        current_dir: Optional[PathType] = None,
+        shell: bool = True,
+        print_command: bool = True,
+    ):
+        """
+            Pipe_shell allows running a command with pipe (e.g., "ls | grep test").
+
+            `shell` parameter needs to be True for local execution based on test_pipe_shell.py
+        """
+        return pipe_shell_out(
+            command=command,
+            current_dir=current_dir,
+            shell=shell,
+            print_command=print_command,
+        )
+
     def shell(
         self,
         command: Command,
@@ -683,6 +710,43 @@ class SSHCommLayer(CommunicationLayer):
             env=env,
             preexec_fn=os.setsid,
         )
+
+    def pipe_shell(
+        self,
+        command: Command,
+        current_dir: Optional[PathType] = None,
+        shell: bool = False,
+        print_command: bool = True,
+    ):
+        """
+            Pipe_shell allows running a command with pipe (e.g., "ls | grep test").
+
+            `shell` parameter needs to be False for remote execution based on test_pipe_shell.py
+        """
+        full_environment = {}
+        full_environment |= self._additional_environment
+
+        remote_env_lst = [f"{k}={full_environment[k]}" for k in full_environment]
+        remote_env_str = " ".join(remote_env_lst)
+
+        if isinstance(command, str):
+            env_command = f"{remote_env_str} {command}"
+        else:
+            env_command = remote_env_lst + command
+
+        full_command = self._remote_shell_command(
+            remote_command=env_command,
+            remote_current_dir=current_dir,
+        )
+
+        output = pipe_shell_out(
+            command=full_command,
+            current_dir=None,
+            shell=shell,
+            print_command=print_command,
+        )
+
+        return output
 
     def shell(
         self,
