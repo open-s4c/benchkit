@@ -101,13 +101,18 @@ def _generate_chart_from_df(
     plt.close()
 
 
-def _read_csv(csv_pathname: PathType):
-    return pd.read_csv(
+def _read_csv(
+    csv_pathname: PathType,
+    nan_replace: bool,
+):
+    result = pd.read_csv(
         csv_pathname,
         sep=";",
         comment="#",
         engine="python",
+        keep_default_na=nan_replace,  # when True, input values "None" are interpreted as "NaN"
     )
+    return result
 
 
 class DataframeProcessor(Protocol):
@@ -118,8 +123,7 @@ class DataframeProcessor(Protocol):
     def __call__(
         self,
         dataframe: DataFrame,
-    ) -> DataFrame:
-        ...
+    ) -> DataFrame: ...
 
 
 def identical_dataframe(dataframe: DataFrame) -> DataFrame:
@@ -139,6 +143,7 @@ def generate_chart_from_single_csv(
     csv_pathname: PathType,
     plot_name: str | List[str],
     output_dir: PathType = "/tmp/figs",
+    nan_replace: bool = True,
     **kwargs,
 ) -> None:
     """
@@ -152,10 +157,13 @@ def generate_chart_from_single_csv(
         output_dir (PathType, optional):
             directory where to create the file of the chart.
             Defaults to "/tmp/figs".
+        nan_replace (bool, optional):
+            whether to fill NaN values to replace None, empty strings, etc.
+            when parsing the dataset.
     """
     df = None
     try:
-        df = _read_csv(csv_pathname=csv_pathname)
+        df = _read_csv(csv_pathname=csv_pathname, nan_replace=nan_replace)
     except pd.errors.EmptyDataError:
         pass
 
@@ -176,6 +184,7 @@ def generate_chart_from_multiple_csvs(
     output_dir: PathType = "/tmp/figs",
     xlabel: str | None = None,
     ylabel: str | None = None,
+    nan_replace: bool = True,
     process_dataframe: DataframeProcessor = identical_dataframe,
     **kwargs,
 ) -> None:
@@ -195,6 +204,9 @@ def generate_chart_from_multiple_csvs(
             Defaults to None.
         ylabel (str | None, optional):
             label of the y-axis. Defaults to None.
+        nan_replace (bool, optional):
+            whether to fill NaN values to replace None, empty strings, etc.
+            when parsing the dataset.
         process_dataframe (DataframeProcessor, optional):
             function to process the dataframe to apply a transformation before plotting.
             Defaults to identical_dataframe.
@@ -203,7 +215,11 @@ def generate_chart_from_multiple_csvs(
         _print_warning()
         return
 
-    dataframes = [df for p in csv_pathnames if (df := _read_csv(csv_pathname=p)) is not None]
+    dataframes = [
+        df
+        for p in csv_pathnames
+        if (df := _read_csv(csv_pathname=p, nan_replace=nan_replace)) is not None
+    ]
     global_dataframe = pd.concat(dataframes)
     processed_dataframe = process_dataframe(dataframe=global_dataframe)
 

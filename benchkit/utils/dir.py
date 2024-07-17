@@ -244,3 +244,9 @@ def caller_file_abs_path(
     frame_filename = pathlib.Path(frame.filename)
     result = frame_filename.resolve()
     return result
+
+
+def caller_dir() -> pathlib.Path:
+    caller_filepath = caller_file_abs_path()
+    caller_parent = caller_filepath.parent.resolve()
+    return caller_parent

@@ -623,13 +623,13 @@ class Benchmark:
         Returns:
             int: time it took, in seconds.
         """
-        raise NotImplementedError
+        return 0
 
     def clean_bench(self) -> None:
         """
         Clean the benchmark from build files.
         """
-        raise NotImplementedError
+        pass
 
     def build_bench(
         self,
@@ -696,6 +696,7 @@ class Benchmark:
         wrapped_environment: Environment,
         print_output: bool,
         timeout: int | None = None,
+        ignore_ret_codes: Iterable[int]=(),
         **kwargs,
     ) -> str | AsyncProcess:
         """
@@ -743,6 +744,7 @@ class Benchmark:
             environment=wrapped_environment,
             print_output=print_output,
             timeout=timeout,
+            ignore_ret_codes=ignore_ret_codes,
         )
         return output
 
@@ -901,7 +903,7 @@ class Benchmark:
         }
         tilt_variables = {
             k: record_parameters[k] for k in self.get_tilt_var_names() if k in record_parameters
-        }
+        } if self._use_tilt else {}
         other_variables = {
             k: record_parameters[k]
             for k in record_parameters
@@ -923,6 +925,18 @@ class Benchmark:
                         break
             if same_record:
                 return True
+
+    def _temp_record_prefix(self) -> pathlib.Path:
+        # TODO warning, does not support concurrent execution
+        # for this, need a unique record path for each benchmark run
+        return pathlib.Path("/tmp/benchkit_record")
+
+    def _temp_record_data_dir(self, record_data_dir: pathlib.Path):
+        # The ./ prefix is necessary since pathlib ignores the first
+        # argument to the / operator if the second argument is an 
+        # absolute path. So we need to ensure the second argument is
+        # never an absolute path. 
+        return self._temp_record_prefix() / f"./{record_data_dir}"
 
     def _run_single_run(
         self,
@@ -1004,11 +1018,18 @@ class Benchmark:
                         teeprint(content="# Continuing campaign execution", file=csv_output_file)
                 continue
 
+            # Replace record_data_dir with a temporary data directory for the 
+            # wrapper to write their files to. (Only if the host is remote)
+            temp_record_data_dir = record_data_dir
+            if not self.platform.comm.is_local:
+                temp_record_data_dir = self._temp_record_data_dir(record_data_dir)
+                self.platform.comm.makedirs(temp_record_data_dir, True)
+
             for pre_run_hook in self._pre_run_hooks:
                 pre_run_hook(
                     build_variables=build_variables,
                     run_variables=run_variables,
-                    record_data_dir=record_data_dir,
+                    record_data_dir=temp_record_data_dir,
                 )
 
             if barrier is not None:
@@ -1020,7 +1041,7 @@ class Benchmark:
                 platform=self.platform,
                 benchmark_duration_seconds=self._benchmark_duration_seconds,
                 build_variables=build_variables,
-                record_data_dir=record_data_dir,
+                record_data_dir=temp_record_data_dir,
                 **run_variables,
             )
 
@@ -1034,6 +1055,14 @@ class Benchmark:
                 single_run_output = single_run_process.output()
             else:
                 single_run_output: str = single_run_return
+
+            # If the host was remote, all the wrappers generated files on the remote machine and
+            # these need to be copied back to the host machine.
+            if not self.platform.comm.is_local:
+                self.platform.comm.copy_to_host(f"{temp_record_data_dir}/", f"{record_data_dir}/")
+                # Clean up nicely after ourselves
+                self.platform.comm.remove(self._temp_record_prefix(), recursive=True)
+            
             single_run_results = self.parse_output_to_results(
                 command_output=single_run_output,
                 build_variables=build_variables,
