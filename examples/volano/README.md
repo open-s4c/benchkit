@@ -1,9 +1,12 @@
 # Volano
 
 ## Download VOLANO Benchmark
-# For more information take a look at: https://www.volano.com/benchmarks.html#:~:text=The%20VOLANO%20Benchmark%2C%20also%20known,running%20the%20VOLANO%20chat%20server.
+
+For more information, please visit [Volano website](https://www.volano.com/benchmarks.html).
+
 
 ```bash
+sudo apt update && sudo apt install -y openjdk-21-jre-headless
 cd examples/volano/kit/
 mkdir deps
 cd deps
@@ -34,5 +37,5 @@ cd ../../..
 ```bash
 cd examples/volano/kit
 . ./venv/bin/activate
-python3 volano.py
+python3 benchmark_volano.py
 ```
