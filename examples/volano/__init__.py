@@ -1,1 +1,2 @@
-#No clue what command should come here
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT

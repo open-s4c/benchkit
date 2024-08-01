@@ -34,7 +34,7 @@ while getopts "s:r:u:c:p:h:" opt; do
 done
 
 # Check if all parameters are provided
-if [ -z "$START" ] || [ -z "$ROOMS" ] || [ -z "$USERS" ] || [ -z "$COUNT" ] || [ -z "$PAUSE" ] || [ -z "&HOST" ]; then
+if [ -z "$START" ] || [ -z "$ROOMS" ] || [ -z "$USERS" ] || [ -z "$COUNT" ] || [ -z "$PAUSE" ] || [ -z "$HOST" ]; then
   usage
 fi
 

@@ -1,8 +1,11 @@
-# Legal heading should be added.
-#
+#!/usr/bin/env python3
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 """
 Benchkit support for Volano
 """
+
 import subprocess
 import time
 import os
@@ -13,13 +16,10 @@ from typing import Any, Dict, Iterable, List, Optional
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignCartesianProduct, Constants
 from benchkit.commandwrappers import CommandWrapper
-from benchkit.commandwrappers.perf import PerfReportWrap
-from benchkit.commandwrappers.strace import StraceWrap
-from benchkit.commandwrappers.perf import PerfStatWrap
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
-from benchkit.utils.types import CpuOrder, PathType
+from benchkit.utils.types import PathType
 
 
 class CounterBenchmark(Benchmark):
@@ -74,12 +74,12 @@ class CounterBenchmark(Benchmark):
     @staticmethod
     def get_run_var_names() -> List[str]:
         return [
-            "start", # starting room (1)
-            "rooms", # number of rooms (50)
-            "users", # number of users per room (20)
-            "count", # messages per user or 0 for no limit (100)
-            "pause", # message pause in second or 0 for  pacing (0)
-            "host",  # server host name (localhost)
+            "start",  # starting room (1)
+            "rooms",  # number of rooms (50)
+            "users",  # number of users per room (20)
+            "count",  # messages per user or 0 for no limit (100)
+            "pause",  # message pause in second or 0 for  pacing (0)
+            "host",   # server host name (localhost)
         ]
 
     @staticmethod
@@ -89,7 +89,7 @@ class CounterBenchmark(Benchmark):
     @staticmethod
     def _parse_results(
         output: str,
-    ) -> Dict[str, str]:
+    ) -> Dict[str, Any]:
         # Use regular expression to find the average throughput
         match = re.search(r'Average throughput\s*=\s*(\d+)\s*messages per second', output)
         if match:
@@ -98,8 +98,7 @@ class CounterBenchmark(Benchmark):
             result_dict = {"average_throughput": average_throughput}
             print(result_dict)
         else:
-            print('Average throughput not found')
-        
+            raise ValueError('Average throughput not found')
 
         return result_dict
 
@@ -138,7 +137,6 @@ class CounterBenchmark(Benchmark):
         host: str = "localhost",
         **kwargs,
     ) -> str:
-        
         environment = self._preload_env(
             start=start,
             rooms=rooms,
@@ -190,7 +188,7 @@ def counter_campaign(
     benchmark: Optional[CounterBenchmark] = None,
     src_dir: Optional[PathType] = "./",
     build_dir: Optional[str] = "./",
-    results_dir: Optional[PathType] = "./",
+    results_dir: Optional[PathType] = None,
     command_wrappers: Iterable[CommandWrapper] = (),
     command_attachments: Iterable[CommandAttachment] = (),
     shared_libs: Iterable[SharedLib] = (),
@@ -200,14 +198,14 @@ def counter_campaign(
     nb_runs: int = 2,
     benchmark_duration_seconds: int = 5,
     start: Iterable[int] = (1, ),
-    rooms: Iterable[int]  = (20, 25, 30, 35 , 40, 45, 50, 55, 60 ),
-    users: Iterable[int]  = (20, ),
-    count: Iterable[int]  = (100, ),
-    pause: Iterable[int]  = (0, ),
-    host: Iterable[str]  = ("localhost", ),
+    rooms: Iterable[int] = (20, 25, 30, 35, 40, 45, 50, 55, 60),
+    users: Iterable[int] = (20, ),
+    count: Iterable[int] = (100, ),
+    pause: Iterable[int] = (0, ),
+    host: Iterable[str] = ("localhost", ),
     debug: bool = False,
     gdb: bool = False,
-    enable_data_dir: bool = False,
+    enable_data_dir: bool = True,
     continuing: bool = False,
     constants: Constants = None,
     pretty: Optional[Dict[str, str]] = None,
@@ -245,16 +243,15 @@ def counter_campaign(
         constants=constants,
         debug=debug,
         gdb=gdb,
-        enable_data_dir=True,
+        enable_data_dir=enable_data_dir,
         continuing=continuing,
         benchmark_duration_seconds=benchmark_duration_seconds,
         results_dir=results_dir,
         pretty=pretty,
     )
 
-if __name__ == "__main__":
 
-
+def main():
     # Define the command to be executed
     command = "./startup.sh server loop openjdk"
 
@@ -266,9 +263,9 @@ if __name__ == "__main__":
         raise FileNotFoundError(f"The directory {working_directory} does not exist")
 
     process = subprocess.Popen(
-            command,
-            shell=True,
-            cwd=working_directory,
+        command,
+        shell=True,
+        cwd=working_directory,
     )
 
     print(f"Started volano server process with PID: {process.pid}")
@@ -276,10 +273,14 @@ if __name__ == "__main__":
     # Example: Wait for 10 seconds before terminating the process
     time.sleep(5)
     print("start bench")
-    strace = StraceWrap()
-    campaign = counter_campaign(post_run_hooks=[],command_wrappers=[], src_dir="./", build_dir="./")
+    campaign = counter_campaign(
+        post_run_hooks=[],
+        command_wrappers=[],
+        src_dir="./",
+        build_dir="./",
+    )
     campaign.run()
-    
+
     process.terminate()
 
     campaign.generate_graph(
@@ -287,3 +288,7 @@ if __name__ == "__main__":
         x="rooms",
         y="average_throughput",
     )
+
+
+if __name__ == "__main__":
+    main()
