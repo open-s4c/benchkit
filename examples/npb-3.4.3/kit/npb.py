@@ -177,8 +177,8 @@ class NPBBench(Benchmark):
         return result_dict
 
 
-def nas_campaign(
-    name: str = "nas_campaign",
+def npb_campaign(
+    name: str = "npb_campaign",
     benchmark: Optional[NPBBench] = None,
     src_dir: Optional[PathType] = None,
     results_dir: Optional[PathType] = None,
