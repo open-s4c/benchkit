@@ -44,6 +44,11 @@ future.
     [ ] Dilithium
 [ ] MiBench suite
     https://ieeexplore.ieee.org/document/990739
+[ ] Servo & web rendering framework
+    - they use a lot of parallelism
+    - many big stakeholders are interested (Google, Apple, Huawei)
+    - it's also an embedded use case
+    - we can show neutral numbers
 
 ## Functional changes
 
