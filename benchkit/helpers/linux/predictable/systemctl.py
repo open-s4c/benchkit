@@ -32,14 +32,16 @@ class Systemctl:
         """
         output = self._comm_layer.shell(
             command=f"systemctl status {service_name}",
-            ignore_ret_codes=(3,),
+            ignore_ret_codes=(3, 4,),
             print_output=False,
         )
-        output_lines = output.splitlines()
 
+        if f"Unit {service_name}.service could not be found" in output:
+            return False, False
+
+        output_lines = output.splitlines()
         enabled = "enabled" in output_lines[1]
         active = "inactive" not in output_lines[2]
-
         return enabled, active
 
     def is_active(
@@ -55,3 +57,17 @@ class Systemctl:
             bool: whether the given service is active.
         """
         return self.status(service_name)[1]
+
+    def stop(
+        self,
+        service_name: str,
+    ) -> None:
+        """Stop the given service.
+
+        Args:
+            service_name (str): the name of the queried service.
+        """
+        self._comm_layer.shell(
+            command=f"sudo systemctl stop {service_name}",
+            print_output=True,
+        )
