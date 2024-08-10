@@ -9,9 +9,9 @@ information from the Performance Monitoring Counters (PMCs).
 from leveldb import leveldb_campaign
 
 from benchkit.campaign import CampaignSuite
+from benchkit.commandwrappers.perf import PerfStatWrap, enable_non_sudo_perf
 from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import get_curdir
-from benchkit.commandwrappers.perf import PerfStatWrap, enable_non_sudo_perf
 
 
 def main() -> None:

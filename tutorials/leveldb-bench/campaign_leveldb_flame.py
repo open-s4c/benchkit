@@ -8,10 +8,9 @@ Example of campaign script for LevelDB benchmarks, generating one flamegraph per
 from leveldb import leveldb_campaign
 
 from benchkit.campaign import CampaignSuite
-from benchkit.platforms import get_current_platform
-from benchkit.utils.dir import get_curdir
 from benchkit.commandwrappers.perf import PerfReportWrap, enable_non_sudo_perf
-from benchkit.utils.dir import caller_dir
+from benchkit.platforms import get_current_platform
+from benchkit.utils.dir import caller_dir, get_curdir
 
 
 def main() -> None:
