@@ -20,6 +20,7 @@ from benchkit.sharedlibs import SharedLib
 from benchkit.sharedlibs.precompiled import PrecompiledSharedLib
 from benchkit.utils.dir import caller_dir, get_curdir
 
+
 tiltlocks_dir = caller_dir() / "tiltlocks"
 vsync_dir = (tiltlocks_dir / "../deps/libvsync/").resolve()
 
@@ -110,17 +111,24 @@ def main() -> None:
     suite.print_durations()
     suite.run_suite()
 
+    title = "LevelDB readrandom w/wo tilt locks"
     suite.generate_graph(
-        plot_name="pointplot",
+        plot_name="lineplot",
         x="nb_threads",
         y="throughput",
         hue="mutex",
+        style="mutex",
+        markers=True,
+        dashes=False,
+        title=title,
     )
     suite.generate_graph(
         plot_name="scatterplot",
         x="nb_threads",
         y="throughput",
         hue="mutex",
+        style="mutex",
+        title=title,
     )
 
 
