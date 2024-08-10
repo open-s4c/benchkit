@@ -19,8 +19,9 @@ fi
 
 
 ${python_exec} -m venv ${venv_path}
+python_exec=${venv_path}/bin/${python_exec}
 
-pip_execs=$(find ${venv_path}/ -name "pip3*")
+pip_execs=$(find "${venv_path}/" -name "pip3*")
 pip_exec=$(echo "${pip_execs}" | head -n 1)
 
 ${pip_exec} install --upgrade pip
@@ -46,4 +47,4 @@ else
   echo "No requirement file found, proceeding without installing any package." >&2
 fi
 
-"${script_dir}/add_paths_venv.py" ${venv_path}
+"${python_exec}" "${script_dir}/add_paths_venv.py" ${venv_path}
