@@ -93,6 +93,8 @@ def _generate_chart_from_df(
     output_path = pathlib.Path(output_dir)
     while (fig_path := output_path / f"benchkit-{prefix}{timestamp}-{fig_id:02}").exists():
         fig_id += 1
+    with open(fig_path, 'x'):  # avoid overwriting if the figures aren't created yet (race issue)
+        pass
 
     fig.savefig(f"{fig_path}.png", transparent=False)
     fig.savefig(f"{fig_path}.pdf", transparent=False)
@@ -161,6 +163,10 @@ def generate_chart_from_single_csv(
             whether to fill NaN values to replace None, empty strings, etc.
             when parsing the dataset.
     """
+    if not _LIBRARIES_ENABLED:
+        _print_warning()
+        return
+
     df = None
     try:
         df = _read_csv(csv_pathname=csv_pathname, nan_replace=nan_replace)
