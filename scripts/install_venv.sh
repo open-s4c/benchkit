@@ -17,6 +17,12 @@ else
   python_exec=python3.10
 fi
 
+if ! which ${python_exec}
+then
+  echo "The right Python version (${python_exec}) for the benchmark is not installed on the system." >&2
+  echo "On Ubuntu, you need to install the following packages: ${python_exec} ${python_exec}-venv ${python_exec}-dev" >&2
+  exit 1
+fi
 
 ${python_exec} -m venv ${venv_path}
 python_exec=${venv_path}/bin/${python_exec}
