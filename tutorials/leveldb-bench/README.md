@@ -61,3 +61,14 @@ git checkout cd9ee4c4449775a2f867acf31c84b7fe4b132ad5
 cd ../..
 ./campaign_leveldb_flame.py
 ```
+
+You can also try different VSync locks in LevelDB using tilt.
+The steps:
+
+```bash
+cd tutorials/leveldb-bench/deps/
+git clone https://github.com/open-s4c/tilt.git
+git clone https://github.com/open-s4c/libvsync.git
+cd ../
+./campaign_leveldb_locks.py
+```

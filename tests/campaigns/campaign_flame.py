@@ -31,7 +31,7 @@ def main() -> None:
     )
 
     campaign = CampaignIterateVariables(
-        name="strace",
+        name="flame",
         benchmark=SleepBench(
             command_wrappers=[perf_wrapper],
             post_run_hooks=[
@@ -43,6 +43,9 @@ def main() -> None:
         variables=[
             {
                 "duration_seconds": 1,
+            },
+            {
+                "duration_seconds": 2,
             },
         ],
         constants=None,
