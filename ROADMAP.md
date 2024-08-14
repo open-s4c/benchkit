@@ -49,6 +49,10 @@ future.
     - many big stakeholders are interested (Google, Apple, Huawei)
     - it's also an embedded use case
     - we can show neutral numbers
+[ ] LMbench
+    - OS-specific benchmarks
+    - used in Huawei OSDI'24 paper
+    - ref: https://lmbench.sourceforge.net/why_lmbench.html
 
 ## Functional changes
 
