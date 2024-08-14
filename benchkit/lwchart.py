@@ -91,14 +91,18 @@ def _generate_chart_from_df(
     fig_id = 1
     timestamp = datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
     output_path = pathlib.Path(output_dir)
-    while (fig_path := output_path / f"benchkit-{prefix}{timestamp}-{fig_id:02}").exists():
+    while (fig_path_png := output_path / f"benchkit-{prefix}{timestamp}-{fig_id:02}.png").exists():
         fig_id += 1
-    with open(fig_path, 'x'):  # avoid overwriting if the figures aren't created yet (race issue)
+    with open(fig_path_png, 'x'):  # avoid overwriting if the figures aren't created yet (race issue)
         pass
 
-    fig.savefig(f"{fig_path}.png", transparent=False)
+    fig.savefig(f"{fig_path_png}", transparent=False)
+    print(f'[INFO] Saving campaign figure in "{fig_path_png}"')
+
+    fig_path = pathlib.Path(fig_path_png.with_name(fig_path_png.stem))
     fig.savefig(f"{fig_path}.pdf", transparent=False)
-    print(f'[INFO] Saving campaign figure in "{fig_path}.png"')
+    print(f'[INFO] Saving campaign figure in "{fig_path}.pdf"')
+
     plt.show()
     plt.close()
 
