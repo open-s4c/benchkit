@@ -18,6 +18,9 @@ def _get_linux_boot_args() -> str:
 def _get_windows_boot_args() -> str:
     return "<boot args fetching is unsupported on Windows>"
 
+def _get_netbsd_boot_args() -> str:
+    return "<boot args fetching is unsupported on NetBSD>"
+
 
 def get_boot_args() -> str:
     """
@@ -34,6 +37,8 @@ def get_boot_args() -> str:
             result = _get_linux_boot_args()
         case "Windows":
             result = _get_windows_boot_args()
+        case "NetBSD":
+            result = _get_netbsd_boot_args()
         case other:
             raise ValueError(f"Unsupported operating system: {other}")
     return result
