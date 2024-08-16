@@ -20,5 +20,5 @@ add_subdirectory(${LIBVSYNC_DIR})
 configure_file(${CMAKE_SOURCE_DIR}/include/config.h.in ${CMAKE_BINARY_DIR}/include/config.h)
 
 add_executable(${PROJECT_NAME} src/${PROJECT_NAME}.c)
-target_link_libraries(${PROJECT_NAME} vsync)
+target_link_libraries(${PROJECT_NAME} vsync pthread)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/include)
