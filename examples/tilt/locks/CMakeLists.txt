@@ -6,6 +6,7 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libvsync/ build_libvsync)
 
 include_directories(include ${CMAKE_SOURCE_DIR}/../deps/tilt/include/)
 
+add_library(taslock SHARED taslock.c)
 add_library(caslock SHARED caslock.c)
 add_library(vcaslock-lse SHARED vcaslock.c)
 add_library(vcaslock-nolse SHARED vcaslock.c)
