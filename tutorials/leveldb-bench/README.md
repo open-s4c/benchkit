@@ -66,9 +66,12 @@ You can also try different VSync locks in LevelDB using tilt.
 The steps:
 
 ```bash
-cd tutorials/leveldb-bench/deps/
+cd examples/tilt/
+mkdir -p deps/
+cd deps/
 git clone https://github.com/open-s4c/tilt.git
 git clone https://github.com/open-s4c/libvsync.git
-cd ../
+cd ../../../tutorials/leveldb-bench/
+. ./venv/bin/activate
 ./campaign_leveldb_locks.py
 ```

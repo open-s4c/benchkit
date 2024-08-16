@@ -17,7 +17,7 @@ else
   python_exec=python3.10
 fi
 
-if ! which ${python_exec}
+if ! which ${python_exec} > /dev/null
 then
   echo "The right Python version (${python_exec}) for the benchmark is not installed on the system." >&2
   echo "On Ubuntu, you need to install the following packages: ${python_exec} ${python_exec}-venv ${python_exec}-dev" >&2
