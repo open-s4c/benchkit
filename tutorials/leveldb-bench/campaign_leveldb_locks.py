@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2023 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 """
 Example of campaign script for LevelDB benchmarks using different locks.
@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Iterable, Tuple
 
 from leveldb import leveldb_campaign
+from tiltlib import TiltLib
 
 from benchkit.campaign import (
     CampaignCartesianProduct,
@@ -20,28 +21,25 @@ from benchkit.sharedlibs import SharedLib
 from benchkit.sharedlibs.precompiled import PrecompiledSharedLib
 from benchkit.utils.dir import caller_dir, get_curdir
 
-
-tiltlocks_dir = caller_dir() / "tiltlocks"
-vsync_dir = (tiltlocks_dir / "../deps/libvsync/").resolve()
+this_dir = caller_dir()
+tilt_locks_dir = (this_dir / "../../examples/tilt/locks").resolve()
+vsync_dir = (tilt_locks_dir / "../deps/libvsync/").resolve()
+patch_path = (tilt_locks_dir / "prefetch.diff").resolve()
 
 
 def build_locks(platform: Platform) -> Tuple[Path, Path]:
-    build_cmd = "cmake -DCMAKE_BUILD_TYPE=Release .."
-
+    tilt_ok = TiltLib(tilt_locks_dir=tilt_locks_dir, build_prefix="build_ok")
     platform.comm.shell(
         command="git checkout -- include/vsync/atomic/internal/arm64.h",
         current_dir=vsync_dir,
     )
-    build_ok = (tiltlocks_dir / "build_ok").resolve()
-    platform.comm.makedirs(path=build_ok, exist_ok=True)
-    platform.comm.shell(command=build_cmd, current_dir=build_ok)
-    platform.comm.shell(command="make", current_dir=build_ok)
+    tilt_ok.build()
+    build_ok = tilt_ok.build_dir
 
-    platform.comm.shell(command="git apply ../../tiltlocks/prefetch.diff", current_dir=vsync_dir)
-    build_regression = (tiltlocks_dir / "build_reg").resolve()
-    platform.comm.makedirs(path=build_regression, exist_ok=True)
-    platform.comm.shell(command=build_cmd, current_dir=build_regression)
-    platform.comm.shell(command="make", current_dir=build_regression)
+    tilt_reg = TiltLib(tilt_locks_dir=tilt_locks_dir, build_prefix="build_reg")
+    platform.comm.shell(command=f"git apply {patch_path}", current_dir=vsync_dir)
+    tilt_reg.build()
+    build_regression = tilt_reg.build_dir
 
     return build_ok, build_regression
 
@@ -82,18 +80,34 @@ def get_caslock_campaign(build_path: Path) -> CampaignCartesianProduct:
     )
 
 
-def get_vcaslock_campaign(build_path: Path) -> CampaignCartesianProduct:
-    vcaslocklib_path = (build_path / "libvcaslock.so").resolve()
+def get_vcaslock_nolse_campaign(build_path: Path) -> CampaignCartesianProduct:
+    vcaslocklib_path = (build_path / "libvcaslock-nolse.so").resolve()
     return get_campaign(
-        mutex_constant="CAS lock (VSync)",
+        mutex_constant="CAS lock (VSync, no LSE)",
         shared_libs=[PrecompiledSharedLib(path=vcaslocklib_path, env_vars=None)],
     )
 
 
-def get_vcaslock_prefetch_campaign(build_path: Path) -> CampaignCartesianProduct:
-    vcaslocklib_path = (build_path / "libvcaslock.so").resolve()
+def get_vcaslock_lse_campaign(build_path: Path) -> CampaignCartesianProduct:
+    vcaslocklib_path = (build_path / "libvcaslock-lse.so").resolve()
     return get_campaign(
-        mutex_constant="CAS lock (VSync, prefetch)",
+        mutex_constant="CAS lock (VSync, LSE)",
+        shared_libs=[PrecompiledSharedLib(path=vcaslocklib_path, env_vars=None)],
+    )
+
+
+def get_vcaslock_nolse_prefetch_campaign(build_path: Path) -> CampaignCartesianProduct:
+    vcaslocklib_path = (build_path / "libvcaslock-nolse.so").resolve()
+    return get_campaign(
+        mutex_constant="CAS lock (VSync, no LSE, prefetch)",
+        shared_libs=[PrecompiledSharedLib(path=vcaslocklib_path, env_vars=None)],
+    )
+
+
+def get_vcaslock_lse_prefetch_campaign(build_path: Path) -> CampaignCartesianProduct:
+    vcaslocklib_path = (build_path / "libvcaslock-lse.so").resolve()
+    return get_campaign(
+        mutex_constant="CAS lock (VSync, LSE, prefetch)",
         shared_libs=[PrecompiledSharedLib(path=vcaslocklib_path, env_vars=None)],
     )
 
@@ -104,8 +118,10 @@ def main() -> None:
     campaigns = [
         get_baseline_campaign(),
         get_caslock_campaign(build_path=build_ok),
-        get_vcaslock_campaign(build_path=build_ok),
-        get_vcaslock_prefetch_campaign(build_path=build_regression),
+        get_vcaslock_nolse_campaign(build_path=build_ok),
+        get_vcaslock_lse_campaign(build_path=build_ok),
+        get_vcaslock_nolse_prefetch_campaign(build_path=build_regression),
+        get_vcaslock_lse_prefetch_campaign(build_path=build_regression),
     ]
     suite = CampaignSuite(campaigns=campaigns)
     suite.print_durations()
