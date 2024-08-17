@@ -72,6 +72,14 @@ def get_baseline_campaign() -> CampaignCartesianProduct:
     )
 
 
+def get_taslock_campaign(build_path: Path) -> CampaignCartesianProduct:
+    taslocklib_path = (build_path / "libtaslock.so").resolve()
+    return get_campaign(
+        mutex_constant="TAS lock (std atomic)",
+        shared_libs=[PrecompiledSharedLib(path=taslocklib_path, env_vars=None)],
+    )
+
+
 def get_caslock_campaign(build_path: Path) -> CampaignCartesianProduct:
     caslocklib_path = (build_path / "libcaslock.so").resolve()
     return get_campaign(
@@ -114,9 +122,11 @@ def get_vcaslock_lse_prefetch_campaign(build_path: Path) -> CampaignCartesianPro
 
 def main() -> None:
     platform = get_current_platform()
+    hostname = platform.hostname
     build_ok, build_regression = build_locks(platform=platform)
     campaigns = [
         get_baseline_campaign(),
+        get_taslock_campaign(build_path=build_ok),
         get_caslock_campaign(build_path=build_ok),
         get_vcaslock_nolse_campaign(build_path=build_ok),
         get_vcaslock_lse_campaign(build_path=build_ok),
@@ -127,7 +137,7 @@ def main() -> None:
     suite.print_durations()
     suite.run_suite()
 
-    title = "LevelDB readrandom w/wo tilt locks"
+    title = f"LevelDB readrandom w/wo tilt locks - Host: {hostname}"
     suite.generate_graph(
         plot_name="lineplot",
         x="nb_threads",

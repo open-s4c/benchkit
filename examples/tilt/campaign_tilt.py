@@ -118,7 +118,7 @@ def main() -> None:
             benchmark=Bench(shared_libs=[tiltlib]),
             nb_runs=1,
             variables={
-                "lock": ["", "caslock", "vcaslock-nolse", "vcaslock-lse"],
+                "lock": ["", "taslock", "caslock", "vcaslock-nolse", "vcaslock-lse"],
             },
             constants=None,
             debug=False,
