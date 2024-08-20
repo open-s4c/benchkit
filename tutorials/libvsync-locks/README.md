@@ -6,23 +6,21 @@
 cd tutorials/libvsync-locks/microbench/
 mkdir deps
 cd deps
-git clone <libvsync-repo-url> libvsync
-# TODO git checkout <tag>
-cd ../../../..
+git clone https://github.com/open-s4c/libvsync.git
+cd ../..
 ```
 
-## Generate venv & configure it
+In the following we assume you are in the `libvsync-locks` directory.
+
+## Generate venv, configure it and activate it
 
 ```bash
-cd tutorials/libvsync-locks
 ./configure.sh
-cd ../..
+. ./venv/bin/activate
 ```
 
 ## Run campaign of locks
 
 ```bash
-cd tutorials/libvsync-locks
-. ./venv/bin/activate
 ./campaign_locks.py
 ```
