@@ -218,6 +218,7 @@ class LevelDBBench(Benchmark):
             environment=environment,
             cpu_order=cpu_order,
             master_thread_core=master_thread_core,
+            nb_threads=nb_threads,
             **kwargs,
         )
 
