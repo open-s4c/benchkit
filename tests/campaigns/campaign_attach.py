@@ -13,7 +13,7 @@ import pathlib
 def main() -> None:
     platform = get_current_platform()
 
-    def strace_attach(
+    def perf_attach(
             process: AsyncProcess,
             record_data_dir: PathType,
     ) -> None:
@@ -31,10 +31,10 @@ def main() -> None:
         )
 
     CampaignIterateVariables(
-        name="strace",
+        name="attach",
         benchmark=CProgramBench(
             command_attachments=[
-                strace_attach
+                perf_attach
             ],
         ),
         nb_runs=1,
