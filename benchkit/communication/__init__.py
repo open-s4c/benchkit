@@ -184,6 +184,7 @@ class CommunicationLayer:
         stderr: PathType,
         cwd: PathType | None,
         env: dict | None,
+        establish_new_connection: bool = False,
     ) -> subprocess.Popen:
         """Start a background process with the provided command.
 
@@ -552,6 +553,7 @@ class LocalCommLayer(CommunicationLayer):
         stderr: PathType,
         cwd: PathType | None,
         env: dict | None,
+        establish_new_connection: bool = False,
     ) -> subprocess.Popen:
         # Create background process in its own group id using os.setsid
         # This allows to easily kill all children of this background process
@@ -695,10 +697,12 @@ class SSHCommLayer(CommunicationLayer):
         stderr: PathType,
         cwd: PathType | None,
         env: dict | None,
+        establish_new_connection: bool = False,
     ) -> subprocess.Popen:
         full_command = self._remote_shell_command(
             remote_command=command,
             remote_current_dir=cwd,
+            establish_new_connection=establish_new_connection,
         )
 
         # Create background process in its own group id using os.setsid
@@ -870,6 +874,7 @@ class SSHCommLayer(CommunicationLayer):
         self,
         remote_command: Command,
         remote_current_dir: PathType | None = None,
+        establish_new_connection: bool = False,
     ) -> SplitCommand:
         remote_command = remote_shell_command(
             remote_command=remote_command,
@@ -878,6 +883,10 @@ class SSHCommLayer(CommunicationLayer):
 
         full_command = [
             "ssh",
+            "-oControlPath=none",
+        ] if establish_new_connection else ["ssh"]
+
+        full_command = full_command + [
             "-t",
             self._host,
             remote_command,
