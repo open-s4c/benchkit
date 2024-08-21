@@ -166,11 +166,20 @@ class LevelDBBench(Benchmark):
         **kwargs,
     ) -> str:
         if freshdb_foreach_run:
+            size = 1000000
+
+            if bench_name in [
+                "readreverse",
+                "readsequential",
+            ]:
+                size = 8 * nb_threads * 1000000
+
             db_init_command = [
                 "./db_bench",
                 "--threads=1",
                 "--benchmarks=fillseq",
                 f"--db={self._tmpdb_dir}",
+                f"--num={size}",
             ]
             self.platform.comm.shell(
                 command=db_init_command,
