@@ -45,22 +45,27 @@ class TasksetWrap(CommandWrapper):
 
         mtc = master_thread_core
 
-        if mtc is None:
-            if cpu_order is None:
+        if self.set_all_cpus:
+            if cpu_order is None or nb_threads is None:
                 return []
 
             cpu_order_list = self.platform.cpu_order(provided_order=cpu_order)
 
-            mtc = self.platform.master_thread_core_id(
-                cpu_order_list=cpu_order_list,
-            )
-
-        if self.set_all_cpus and nb_threads is not None:
             cpu_order_list = [str(x) for x in cpu_order_list[0:nb_threads]]
             cpu_order_str = ','.join(cpu_order_list)
 
             cmd_prefix = ["taskset", "--cpu-list", cpu_order_str] + cmd_prefix
         else:
+            if mtc is None:
+                if cpu_order is None:
+                    return []
+
+                cpu_order_list = self.platform.cpu_order(provided_order=cpu_order)
+
+                mtc = self.platform.master_thread_core_id(
+                    cpu_order_list=cpu_order_list,
+                )
+
             cmd_prefix = ["taskset", "--cpu-list", str(mtc)] + cmd_prefix
 
         return cmd_prefix
