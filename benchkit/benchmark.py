@@ -877,6 +877,7 @@ class Benchmark:
         self.clean_bench()
         self.build_bench(
             benchmark_duration_seconds=self._benchmark_duration_seconds,
+            constants=self._constants,
             **build_variables,
         )
         return True
@@ -1040,6 +1041,7 @@ class Benchmark:
             single_run_return = self.single_run(
                 platform=self.platform,
                 benchmark_duration_seconds=self._benchmark_duration_seconds,
+                constants=self._constants,
                 build_variables=build_variables,
                 record_data_dir=temp_record_data_dir,
                 **run_variables,
