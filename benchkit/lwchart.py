@@ -43,6 +43,11 @@ def _print_warning() -> None:
     )
 
 
+def _generate_timestamp() -> str:
+    result = datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
+    return result
+
+
 def _generate_chart_from_df(
     df: DataFrame,
     plot_name: str | List[str],
@@ -89,7 +94,7 @@ def _generate_chart_from_df(
     os.makedirs(output_dir, exist_ok=True)
 
     fig_id = 1
-    timestamp = datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = _generate_timestamp()
     output_path = pathlib.Path(output_dir)
     while (fig_path_png := output_path / f"benchkit-{prefix}{timestamp}-{fig_id:02}.png").exists():
         fig_id += 1
@@ -225,12 +230,7 @@ def generate_chart_from_multiple_csvs(
         _print_warning()
         return
 
-    dataframes = [
-        df
-        for p in csv_pathnames
-        if (df := _read_csv(csv_pathname=p, nan_replace=nan_replace)) is not None
-    ]
-    global_dataframe = pd.concat(dataframes)
+    global_dataframe = get_global_dataframe(csv_pathnames=csv_pathnames, nan_replace=nan_replace)
     processed_dataframe = process_dataframe(dataframe=global_dataframe)
 
     _generate_chart_from_df(
@@ -241,3 +241,35 @@ def generate_chart_from_multiple_csvs(
         ylabel=ylabel,
         **kwargs,
     )
+
+
+def get_global_dataframe(
+    csv_pathnames: List[PathType],
+    nan_replace: bool = True,
+) -> DataFrame:
+    if not _LIBRARIES_ENABLED:
+        _print_warning()
+        return
+
+    dataframes = [
+        df
+        for p in csv_pathnames
+        if (df := _read_csv(csv_pathname=p, nan_replace=nan_replace)) is not None
+    ]
+    result = pd.concat(dataframes)
+    return result
+
+
+def generate_global_csv_file(
+    csv_pathnames: List[PathType],
+    output_dir: PathType = "/tmp/figs",
+    nan_replace: bool = True,
+) -> None:
+    if not _LIBRARIES_ENABLED:
+        _print_warning()
+        return
+
+    ts = _generate_timestamp().replace("-", "_")
+    output_file = pathlib.Path(output_dir) / f"benchmark_{ts}.csv"
+    global_dataframe = get_global_dataframe(csv_pathnames=csv_pathnames, nan_replace=nan_replace)
+    global_dataframe.to_csv(path_or_buf=output_file, sep=";", index=False)
