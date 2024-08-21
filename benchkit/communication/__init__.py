@@ -57,6 +57,7 @@ class CommunicationLayer:
         command: Command,
         current_dir: Optional[PathType] = None,
         shell: bool = False,
+        ignore_ret_codes: Iterable[int] = (),
     ):
         raise NotImplementedError()
 
@@ -504,6 +505,7 @@ class LocalCommLayer(CommunicationLayer):
         current_dir: Optional[PathType] = None,
         shell: bool = True,
         print_command: bool = True,
+        ignore_ret_codes: Iterable[int] = (),
     ):
         """
             Pipe_shell allows running a command with pipe (e.g., "ls | grep test").
@@ -515,6 +517,7 @@ class LocalCommLayer(CommunicationLayer):
             current_dir=current_dir,
             shell=shell,
             print_command=print_command,
+            ignore_ret_codes=ignore_ret_codes,
         )
 
     def shell(
@@ -717,6 +720,7 @@ class SSHCommLayer(CommunicationLayer):
         current_dir: Optional[PathType] = None,
         shell: bool = False,
         print_command: bool = True,
+        ignore_ret_codes: Iterable[int] = (),
     ):
         """
             Pipe_shell allows running a command with pipe (e.g., "ls | grep test").
@@ -744,6 +748,7 @@ class SSHCommLayer(CommunicationLayer):
             current_dir=None,
             shell=shell,
             print_command=print_command,
+            ignore_ret_codes=ignore_ret_codes,
         )
 
         return output

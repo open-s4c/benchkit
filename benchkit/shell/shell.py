@@ -17,6 +17,7 @@ def pipe_shell_out(
     current_dir: Optional[PathType] = None,
     shell: bool = True,
     print_command: bool = True,
+    ignore_ret_codes: Iterable[int] = (),
 ) -> str:
     """
     Run a command that is a composition of shell through pipes.
@@ -46,7 +47,22 @@ def pipe_shell_out(
             asynced=False,
             remote_host=None,
         )
-    return subprocess.check_output(command, cwd=current_dir, shell=shell, text=True)
+
+    try:
+        output = subprocess.check_output(
+            command,
+            cwd=current_dir,
+            shell=shell,
+            text=True
+        )
+
+    except subprocess.CalledProcessError as err:
+        retcode = err.returncode
+        if retcode not in ignore_ret_codes:
+            raise err
+        output = err.output
+
+    return output
 
 
 def shell_out(
