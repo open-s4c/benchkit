@@ -10,7 +10,7 @@ import subprocess
 import sys
 from typing import Optional
 
-from benchkit.platforms import Platform
+from benchkit.platforms import Platform, get_current_platform
 from benchkit.shell.utils import get_args, print_header
 from benchkit.utils.types import Command, Environment, PathType, SplitCommand
 
@@ -51,6 +51,7 @@ class AsyncProcess:
             stderr=self._stderr_handle,
             cwd=current_dir,
             env=environment,
+            establish_new_connection=True,
         )
 
     @property
@@ -122,6 +123,44 @@ class AsyncProcess:
                 returncode=self._error_code,
             )
 
+    def find_matching_ssh(self, local_pid):
+        line = get_current_platform().comm.pipe_shell(
+            command=f"netstat -tp | grep {local_pid}" + " | awk '{print $4}'",
+            print_command = False,
+        )
+        port = line.split(':')[-1].split('\n')[0]
+
+        line = self._platform.comm.pipe_shell(
+            command=f"sudo netstat -tp | grep {port}" + " | awk '{print $7}'",
+            print_command = False,
+        )
+
+        remote_pid = line.split('/')[0].split('\n')[0]
+
+        return remote_pid
+
+    def kill_remote_process_hierarchy(self, remote_pid):
+
+        children = self._platform.comm.pipe_shell(
+            command=f"ps -o pid= --ppid {remote_pid}",
+            print_command = False,
+            ignore_ret_codes = [1],
+        )
+
+        if children != "":
+
+            children = children.strip().split(' ')
+
+            for child in children:
+                self.kill_remote_process_hierarchy(child)
+
+        self._platform.comm.pipe_shell(
+            command=f"sudo kill {remote_pid}",
+            print_command = False,
+            ignore_ret_codes = [1],
+        )
+
+
     def stop(self) -> None:
         """
         Stop a running asynchronous process.
@@ -142,6 +181,12 @@ class AsyncProcess:
 
         # Kill assynchronous process and all processes on the same group id
         # As we create a new group id for each background process, this will kill its children
+
+        # If using a remote call, kill the remote process
+        if self._platform.comm.remote_host() is not None:
+            remote_pid = self.find_matching_ssh(self._process.pid)
+            self.kill_remote_process_hierarchy(remote_pid)
+
         os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
         self._process.wait()
 
