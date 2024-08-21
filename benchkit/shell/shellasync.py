@@ -182,8 +182,10 @@ class AsyncProcess:
         # Kill assynchronous process and all processes on the same group id
         # As we create a new group id for each background process, this will kill its children
 
-        remote_pid = self.find_matching_ssh(self._process.pid)
-        self.kill_remote_process_hierarchy(remote_pid)
+        # If using a remote call, kill the remote process
+        if self._platform.comm.remote_host() is not None:
+            remote_pid = self.find_matching_ssh(self._process.pid)
+            self.kill_remote_process_hierarchy(remote_pid)
 
         os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
         self._process.wait()
