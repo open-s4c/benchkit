@@ -16,9 +16,14 @@ from . import CommandWrapper, PackageDependency
 class TasksetWrap(CommandWrapper):
     """Command wrapper for the `taskset` utility."""
 
-    def __init__(self, platform: Platform | None = None):
+    def __init__(
+            self,
+            platform: Platform | None = None,
+            set_all_cpus: bool = False,
+        ):
         super().__init__()
         self.platform = platform if platform is not None else get_current_platform()
+        self.set_all_cpus = set_all_cpus
 
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
@@ -29,6 +34,7 @@ class TasksetWrap(CommandWrapper):
         self,
         cpu_order: CpuOrder = None,
         master_thread_core: Optional[int] = None,
+        nb_threads: Optional[int] = None,
         **kwargs,
     ) -> List[str]:
         cmd_prefix = super().command_prefix(
@@ -49,5 +55,12 @@ class TasksetWrap(CommandWrapper):
                 cpu_order_list=cpu_order_list,
             )
 
-        cmd_prefix = ["taskset", "--cpu-list", str(mtc)] + cmd_prefix
+        if self.set_all_cpus and nb_threads is not None:
+            cpu_order_list = [str(x) for x in cpu_order_list[0:nb_threads]]
+            cpu_order_str = ','.join(cpu_order_list)
+
+            cmd_prefix = ["taskset", "--cpu-list", cpu_order_str] + cmd_prefix
+        else:
+            cmd_prefix = ["taskset", "--cpu-list", str(mtc)] + cmd_prefix
+
         return cmd_prefix
