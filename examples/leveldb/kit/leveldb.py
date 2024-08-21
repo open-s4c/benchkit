@@ -77,6 +77,7 @@ class LevelDBBench(Benchmark):
             "atomics",
             "use_lse",
             "freshdb_foreach_run",
+            "num",
         ]
 
     @staticmethod
@@ -262,6 +263,7 @@ def leveldb_campaign(
     use_lse: Iterable[bool] = (),
     atomics: Iterable[str] = (),
     nb_threads: Iterable[int] = (1,),
+    num: Iterable[int] = (1000000,),
     freshdb_foreach_run: Iterable[bool] = (False,),
     debug: bool = False,
     gdb: bool = False,
@@ -280,6 +282,7 @@ def leveldb_campaign(
         "nb_threads": nb_threads,
         "bench_name": bench_name,
         "freshdb_foreach_run": freshdb_foreach_run,
+        "num": num,
     }
     if pretty is not None:
         pretty = {"lock": pretty}
