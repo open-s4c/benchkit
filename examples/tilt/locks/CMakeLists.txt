@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(caslock C)
+project(tiltlock C)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/../deps/libvsync/ build_libvsync)
 
