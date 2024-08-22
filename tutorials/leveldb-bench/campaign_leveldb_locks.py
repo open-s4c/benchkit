@@ -137,6 +137,8 @@ def main() -> None:
     suite.print_durations()
     suite.run_suite()
 
+    suite.generate_global_csv()
+
     title = f"LevelDB readrandom w/wo tilt locks - Host: {hostname}"
     suite.generate_graph(
         plot_name="lineplot",

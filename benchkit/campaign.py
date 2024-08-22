@@ -21,6 +21,7 @@ from benchkit.lwchart import (
     generate_chart_from_multiple_csvs,
     generate_chart_from_single_csv,
     identical_dataframe,
+    generate_global_csv_file,
 )
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.utils.dir import parentdir
@@ -272,6 +273,13 @@ class CampaignSuite:
     ):
         self._campaigns = list(campaigns)
         self._durations = None
+        self._result_csv_paths = None
+
+    @property
+    def result_csv_paths(self):
+        if self._result_csv_paths is None:
+            self._result_csv_paths = [pathlib.Path(os.path.abspath(c.parameters["result_csv_path"])) for c in self._campaigns]
+        return self._result_csv_paths
 
     def durations(self) -> List[int]:
         """
@@ -347,7 +355,7 @@ class CampaignSuite:
         plot_name: str | List[str],
         process_dataframe: DataframeProcessor = identical_dataframe,
         **kwargs,
-    ):
+    ) ->  None:
         """Generate a global graph for all the campaigns in the suite.
 
         Args:
@@ -357,10 +365,6 @@ class CampaignSuite:
                 callback function to process the dataframe before it is plotted.
                 Defaults to identical_dataframe.
         """
-        result_csv_paths = [
-            pathlib.Path(os.path.abspath(c.parameters["result_csv_path"])) for c in self._campaigns
-        ]
-
         campaign_paths = [bdd for c in self._campaigns if (bdd := c.base_data_dir()) is not None]
         suite_path_tentative = os.path.commonprefix(campaign_paths)
         if os.path.isdir(suite_path_tentative):
@@ -368,14 +372,14 @@ class CampaignSuite:
         elif suite_path_tentative:
             suite_path = parentdir(suite_path_tentative)
         else:
-            suite_path_tentative = os.path.commonprefix(result_csv_paths)
+            suite_path_tentative = os.path.commonprefix(self.result_csv_paths)
             if os.path.isdir(suite_path_tentative):
                 suite_path = pathlib.Path(suite_path_tentative)
             else:
                 suite_path = parentdir(suite_path_tentative)
 
         generate_chart_from_multiple_csvs(
-            csv_pathnames=result_csv_paths,
+            csv_pathnames=self.result_csv_paths,
             plot_name=plot_name,
             output_dir=suite_path,
             process_dataframe=process_dataframe,
@@ -392,6 +396,18 @@ class CampaignSuite:
         """
         for campaign in self._campaigns:
             campaign.generate_graph(**kwargs)
+
+    def generate_global_csv(
+        self,
+        process_dataframe: DataframeProcessor = identical_dataframe,
+        **kwargs,
+    ) -> None:
+        output_dir = pathlib.Path(os.path.commonpath(self.result_csv_paths))
+        generate_global_csv_file(
+            csv_pathnames=self.result_csv_paths,
+            output_dir=output_dir,
+        )
+
 
 
 class CampaignTemplate(Campaign):
