@@ -12,6 +12,7 @@ import multiprocessing
 import os
 import os.path
 import pathlib
+import shutil
 import sys
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -28,6 +29,9 @@ from benchkit.utils.dir import parentdir
 from benchkit.utils.misc import seconds2pretty
 from benchkit.utils.types import Constants, PathType, Pretty
 from benchkit.utils.variables import cartesian_product
+
+
+_BENCHKIT_CAMPAIGN_CMD_FILE = "/tmp/benchkit-campaign.sh"
 
 
 class Campaign:
@@ -74,6 +78,11 @@ class Campaign:
             debug=debug,
             gdb=gdb,
         )
+
+        # Workaround to trunc this global file, before logging refactoring TODO
+        with open(_BENCHKIT_CAMPAIGN_CMD_FILE, "w") as f:
+            header = ["#!/bin/sh", "set -e", ""]
+            f.writelines(f"{line}\n" for line in header)
 
     def csv_file(
         self,
@@ -190,6 +199,7 @@ class Campaign:
             barrier=barrier,
             continuing=self._continuing,
         )
+        self._move_cmd_file()
 
     def run(self):
         """
@@ -260,6 +270,13 @@ class Campaign:
 
         if "nb_runs" not in self.parameters:
             raise ValueError('Campaign parameters dict has no "nb_runs" field.')
+
+    def _move_cmd_file(self) -> None:
+        bdd = self.base_data_dir()
+        if bdd is not None:
+            dst_path = pathlib.Path(bdd) / "commands.sh"
+            shutil.move(_BENCHKIT_CAMPAIGN_CMD_FILE, dst_path)
+
 
 
 class CampaignSuite:
