@@ -2,9 +2,16 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from benchkit.campaign import CampaignCartesianProduct
+
+from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 from benchkit.platforms import get_current_platform
 from tests.campaigns.benchmarks.sleep import SleepBench
+from pandas import DataFrame
+
+
+def add_ms(dataframe: DataFrame) -> DataFrame:
+    dataframe["duration_ms"] = dataframe["duration_seconds"] / 1000.0
+    return dataframe
 
 
 def main() -> None:
@@ -33,6 +40,24 @@ def main() -> None:
         plot_name="barplot",
         x="duration_seconds",
         y="duration_seconds",
+    )
+    campaign.generate_graph(
+        plot_name="barplot",
+        process_dataframe=add_ms,
+        x="duration_ms",
+        y="duration_ms",
+    )
+
+    campaign_suite = CampaignSuite(campaigns=[campaign])
+    campaign_suite.generate_global_csv()
+    campaign_suite.generate_graph(
+        plot_name="lineplot",
+        process_dataframe=add_ms,
+        x="duration_ms",
+        y="duration_ms",
+        hue="rep",
+        markers=True,
+        dashes=False,
     )
 
 
