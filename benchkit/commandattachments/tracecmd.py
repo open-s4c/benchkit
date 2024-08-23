@@ -12,14 +12,13 @@ class TraceCmd:
 
     def __init__(self, events: List[str] = (), platform: Platform = None,) -> None:
         self.events = [str(e) for e in events]
-        self.platform = platform
+        self.platform = platform if platform is not None else get_current_platform()
+        
     def attachement(
         self,
         process: AsyncProcess,
         record_data_dir: PathType,
     ) -> None:
-        if self.platform == None:
-            get_current_platform()
 
         rdd = pathlib.Path(record_data_dir)
         out_file = rdd / "trace.dat"
