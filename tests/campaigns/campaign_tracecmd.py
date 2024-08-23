@@ -16,7 +16,7 @@ def main() -> None:
     CampaignIterateVariables(
         name="attach",
         benchmark=CProgramBench(
-            command_attachments=[TraceCmd(["sched"]).attachement],
+            command_attachments=[TraceCmd(["sched"], platform).attachement],
         ),
         nb_runs=1,
         variables=[{}],
