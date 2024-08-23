@@ -32,7 +32,7 @@ class TraceCmd:
             command.extend(["-e", event])
 
         # Add the PID and output file arguments
-        command.extend(["-P", f"{pid}", "-o", f"{out_file}"])
+        command.extend(["-P", f"{self.pid}", "-o", f"{out_file}"])
 
         AsyncProcess(
             platform=self.platform,
