@@ -76,6 +76,8 @@ class LevelDBBench(Benchmark):
             "lock",
             "atomics",
             "use_lse",
+            "freshdb_foreach_run",
+            "num",
         ]
 
     @staticmethod
@@ -160,9 +162,23 @@ class LevelDBBench(Benchmark):
         atomics: Optional[str] = None,
         bench_name: str = "readrandom",
         master_thread_core: Optional[int] = None,
-        num: int = 40000,
+        num: int = 1000000,
+        freshdb_foreach_run: bool = False,
         **kwargs,
     ) -> str:
+        if freshdb_foreach_run:
+            db_init_command = [
+                "./db_bench",
+                "--threads=1",
+                "--benchmarks=fillseq",
+                f"--db={self._tmpdb_dir}",
+            ]
+            self.platform.comm.shell(
+                command=db_init_command,
+                current_dir=self._build_dir,
+                print_output=False
+            )
+
         environment = self._preload_env(
             lock=lock,
             use_lse=use_lse,
@@ -175,7 +191,8 @@ class LevelDBBench(Benchmark):
         if bench_name in ["readrandom", "readmissing", "readhot", "seekrandom"]:
             duration_num = f"--duration={benchmark_duration_seconds}"
         else:
-            duration_num = f"--num={num}"
+            duration_num = f"--num={num // nb_threads}"
+
 
         if bench_name in [
             "fillseq",
@@ -183,12 +200,10 @@ class LevelDBBench(Benchmark):
             "fillsync",
             "fill100K",
         ]:
-            # TODO these benchmarks require different logic for the previously created database
-            raise NotImplementedError(
-                f'LevelDB benchmark named "{bench_name}" is not currently supported.'
-            )
+            use_existing_db = False
+        else:
+            use_existing_db = True
 
-        use_existing_db = True
 
         run_command = [
             "./db_bench",
@@ -203,6 +218,7 @@ class LevelDBBench(Benchmark):
             environment=environment,
             cpu_order=cpu_order,
             master_thread_core=master_thread_core,
+            nb_threads=nb_threads,
             **kwargs,
         )
 
@@ -248,6 +264,8 @@ def leveldb_campaign(
     use_lse: Iterable[bool] = (),
     atomics: Iterable[str] = (),
     nb_threads: Iterable[int] = (1,),
+    num: Iterable[int] = (1000000,),
+    freshdb_foreach_run: Iterable[bool] = (False,),
     debug: bool = False,
     gdb: bool = False,
     enable_data_dir: bool = False,
@@ -264,6 +282,8 @@ def leveldb_campaign(
         "atomics": atomics,
         "nb_threads": nb_threads,
         "bench_name": bench_name,
+        "freshdb_foreach_run": freshdb_foreach_run,
+        "num": num,
     }
     if pretty is not None:
         pretty = {"lock": pretty}

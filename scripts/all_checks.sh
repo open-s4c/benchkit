@@ -18,11 +18,12 @@ GitPython<=3.1.36
 matplotlib<=3.8.0
 netifaces<=0.11.0
 pandas<=2.1.0
+pythainer
 seaborn<=0.12.2
 wget<=3.2
 EOF
     cat > ./dependency-paths.txt << EOF
-benchkit
+.
 examples/benchmarksql/kit
 examples/kyotocabinet/kit
 examples/leveldb/kit
@@ -41,13 +42,14 @@ EOF
     echo "-- venv created. --"
   fi
 
+  py3=$(readlink -f "${venv_dir}/bin/python3")
   pylint=$(readlink -f "${venv_dir}/bin/pylint")
   flake8=$(readlink -f "${venv_dir}/bin/flake8")
   isort=$(readlink -f "${venv_dir}/bin/isort")
   black=$(readlink -f "${venv_dir}/bin/black")
 
   echo "-- check copyright. --"
-  ./scripts/list_missing_copyright.sh
+  ${py3} ./scripts/list_missing_copyright.py
 
   echo "-- running pylint. --"
   ${pylint} benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/ || true

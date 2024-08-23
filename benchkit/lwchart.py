@@ -33,6 +33,30 @@ else:
     _LIBRARIES_ENABLED = True
 
 
+class DataframeProcessor(Protocol):
+    """
+    Functions that apply a modification on a dataframe before it is plotted.
+    """
+
+    def __call__(
+        self,
+        dataframe: DataFrame,
+    ) -> DataFrame: ...
+
+
+def identical_dataframe(dataframe: DataFrame) -> DataFrame:
+    """
+    Dataframe processor that does not do any change to the dataframe.
+
+    Args:
+        dataframe (DataFrame): the given dataframe to not touch.
+
+    Returns:
+        DataFrame: the given dataframe, untouched.
+    """
+    return dataframe
+
+
 def _print_warning() -> None:
     print(
         (
@@ -43,6 +67,11 @@ def _print_warning() -> None:
     )
 
 
+def _generate_timestamp() -> str:
+    result = datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
+    return result
+
+
 def _generate_chart_from_df(
     df: DataFrame,
     plot_name: str | List[str],
@@ -50,11 +79,16 @@ def _generate_chart_from_df(
     prefix: str = "",
     xlabel: str | None = None,
     ylabel: str | None = None,
+    process_dataframe: DataframeProcessor = identical_dataframe,
     **kwargs,
 ) -> None:
     if not _LIBRARIES_ENABLED:
         _print_warning()
         return
+
+    df = process_dataframe(dataframe=df)
+    if not isinstance(df, DataFrame):
+        raise ValueError("process_dataframe callback is not returning a pandas DataFrame.")
 
     # TODO refactor with the other df management routines:
     if "global_count" in df.columns and "duration" in df.columns and "throughput" not in df.columns:
@@ -89,56 +123,44 @@ def _generate_chart_from_df(
     os.makedirs(output_dir, exist_ok=True)
 
     fig_id = 1
-    timestamp = datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = _generate_timestamp()
     output_path = pathlib.Path(output_dir)
-    while (fig_path := output_path / f"benchkit-{prefix}{timestamp}-{fig_id:02}").exists():
+    while (fig_path_png := output_path / f"benchkit-{prefix}{timestamp}-{fig_id:02}.png").exists():
         fig_id += 1
+    with open(fig_path_png, 'x'):  # avoid overwriting if the figures aren't created yet (race issue)
+        pass
 
-    fig.savefig(f"{fig_path}.png", transparent=False)
+    fig.savefig(f"{fig_path_png}", transparent=False)
+    print(f'[INFO] Saving campaign figure in "{fig_path_png}"')
+
+    fig_path = pathlib.Path(fig_path_png.with_name(fig_path_png.stem))
     fig.savefig(f"{fig_path}.pdf", transparent=False)
-    print(f'[INFO] Saving campaign figure in "{fig_path}.png"')
+    print(f'[INFO] Saving campaign figure in "{fig_path}.pdf"')
+
     plt.show()
     plt.close()
 
 
-def _read_csv(csv_pathname: PathType):
-    return pd.read_csv(
+def _read_csv(
+    csv_pathname: PathType,
+    nan_replace: bool,
+):
+    result = pd.read_csv(
         csv_pathname,
         sep=";",
         comment="#",
         engine="python",
+        keep_default_na=nan_replace,  # when True, input values "None" are interpreted as "NaN"
     )
-
-
-class DataframeProcessor(Protocol):
-    """
-    Functions that apply a modification on a dataframe before it is plotted.
-    """
-
-    def __call__(
-        self,
-        dataframe: DataFrame,
-    ) -> DataFrame:
-        ...
-
-
-def identical_dataframe(dataframe: DataFrame) -> DataFrame:
-    """
-    Dataframe processor that does not do any change to the dataframe.
-
-    Args:
-        dataframe (DataFrame): the given dataframe to not touch.
-
-    Returns:
-        DataFrame: the given dataframe, untouched.
-    """
-    return dataframe
+    return result
 
 
 def generate_chart_from_single_csv(
     csv_pathname: PathType,
     plot_name: str | List[str],
     output_dir: PathType = "/tmp/figs",
+    nan_replace: bool = True,
+    process_dataframe: DataframeProcessor = identical_dataframe,
     **kwargs,
 ) -> None:
     """
@@ -152,10 +174,20 @@ def generate_chart_from_single_csv(
         output_dir (PathType, optional):
             directory where to create the file of the chart.
             Defaults to "/tmp/figs".
+        nan_replace (bool, optional):
+            whether to fill NaN values to replace None, empty strings, etc.
+            when parsing the dataset.
+        process_dataframe (DataframeProcessor, optional):
+            function to process the dataframe to apply a transformation before plotting.
+            Defaults to identical_dataframe.
     """
+    if not _LIBRARIES_ENABLED:
+        _print_warning()
+        return
+
     df = None
     try:
-        df = _read_csv(csv_pathname=csv_pathname)
+        df = _read_csv(csv_pathname=csv_pathname, nan_replace=nan_replace)
     except pd.errors.EmptyDataError:
         pass
 
@@ -164,6 +196,7 @@ def generate_chart_from_single_csv(
 
     _generate_chart_from_df(
         df=df,
+        process_dataframe=process_dataframe,
         plot_name=plot_name,
         output_dir=output_dir,
         **kwargs,
@@ -176,6 +209,7 @@ def generate_chart_from_multiple_csvs(
     output_dir: PathType = "/tmp/figs",
     xlabel: str | None = None,
     ylabel: str | None = None,
+    nan_replace: bool = True,
     process_dataframe: DataframeProcessor = identical_dataframe,
     **kwargs,
 ) -> None:
@@ -195,6 +229,9 @@ def generate_chart_from_multiple_csvs(
             Defaults to None.
         ylabel (str | None, optional):
             label of the y-axis. Defaults to None.
+        nan_replace (bool, optional):
+            whether to fill NaN values to replace None, empty strings, etc.
+            when parsing the dataset.
         process_dataframe (DataframeProcessor, optional):
             function to process the dataframe to apply a transformation before plotting.
             Defaults to identical_dataframe.
@@ -203,15 +240,47 @@ def generate_chart_from_multiple_csvs(
         _print_warning()
         return
 
-    dataframes = [df for p in csv_pathnames if (df := _read_csv(csv_pathname=p)) is not None]
-    global_dataframe = pd.concat(dataframes)
-    processed_dataframe = process_dataframe(dataframe=global_dataframe)
+    global_dataframe = get_global_dataframe(csv_pathnames=csv_pathnames, nan_replace=nan_replace)
 
     _generate_chart_from_df(
-        df=processed_dataframe,
+        df=global_dataframe,
+        process_dataframe=process_dataframe,
         plot_name=plot_name,
         output_dir=output_dir,
         xlabel=xlabel,
         ylabel=ylabel,
         **kwargs,
     )
+
+
+def get_global_dataframe(
+    csv_pathnames: List[PathType],
+    nan_replace: bool = True,
+) -> DataFrame:
+    if not _LIBRARIES_ENABLED:
+        _print_warning()
+        return
+
+    dataframes = [
+        df
+        for p in csv_pathnames
+        if (df := _read_csv(csv_pathname=p, nan_replace=nan_replace)) is not None
+    ]
+    result = pd.concat(dataframes)
+    return result
+
+
+def generate_global_csv_file(
+    csv_pathnames: List[PathType],
+    output_dir: PathType = "/tmp/figs",
+    nan_replace: bool = True,
+) -> None:
+    if not _LIBRARIES_ENABLED:
+        _print_warning()
+        return
+
+    ts = _generate_timestamp().replace("-", "_")
+    output_file = pathlib.Path(output_dir) / f"benchmark_{ts}.csv"
+    global_dataframe = get_global_dataframe(csv_pathnames=csv_pathnames, nan_replace=nan_replace)
+    global_dataframe.to_csv(path_or_buf=output_file, sep=";", index=False)
+    print(f'[INFO] Saving campaigns common CSV file in "{output_file}"')

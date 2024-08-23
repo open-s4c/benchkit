@@ -35,7 +35,43 @@ features of `benchkit` (the `helpers/linux/predictable` folder).
 To run it, run the following:
 
 ```bash
-cd tutorials/leveldb-bench/
-. ./venv/bin/activate
 ./campaign_leveldb_stable.py
+```
+
+Another possible use case is `perf` that can be used as a command wrapper to
+collect performance monitoring information into the CSV file or the data
+directory.
+Here follow a campaign to showcase it (see the source code for more
+information):
+
+```bash
+./campaign_leveldb_perf.py
+```
+
+Finally, `perf` can also be used to generate a flamegraph, useful to debug
+the performance of specific records.
+The flamegraph repository must be cloned first, then the following campaign
+generates a flamegraph for each record (each "dot" in the generated graphs):
+
+```bash
+cd tutorials/leveldb-bench/deps/
+git clone https://github.com/brendangregg/FlameGraph.git
+cd FlameGraph/
+git checkout cd9ee4c4449775a2f867acf31c84b7fe4b132ad5
+cd ../..
+./campaign_leveldb_flame.py
+```
+
+You can also try different VSync locks in LevelDB using tilt.
+The steps:
+
+```bash
+cd examples/tilt/
+mkdir -p deps/
+cd deps/
+git clone https://github.com/open-s4c/tilt.git
+git clone https://github.com/open-s4c/libvsync.git
+cd ../../../tutorials/leveldb-bench/
+. ./venv/bin/activate
+./campaign_leveldb_locks.py
 ```

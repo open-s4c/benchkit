@@ -26,6 +26,7 @@ class PredLinux:
         platform: Platform | None = None,
     ):
         self._platform = platform if platform is not None else get_current_platform()
+        self._systemctl = Systemctl(comm_layer=self._platform.comm)
 
     def predverifydo(
         self,
@@ -73,8 +74,8 @@ class PredLinux:
             bypass_isolation_check (bool, optional):
                 if true, do not check that CPUs are isolated. Defaults to False.
         """
-        self.disable_irqbalance()
-        self.disable_numabalance()
+        self.stop_irqbalance()
+        self.stop_numabalance()
         self.check_isolcpus(
             expected_nb_isolated_cpus=expected_nb_isolated_cpus,
             bypass_isolation_check=bypass_isolation_check,
@@ -87,9 +88,7 @@ class PredLinux:
         """
         Check whether irqbalance is disabled
         """
-        systemctl = Systemctl(comm_layer=self._platform.comm)
-        irqbalance_active = systemctl.is_active("irqbalance")
-        if irqbalance_active:
+        if self._systemctl.is_active("irqbalance"):
             raise PredLinuxError(
                 (
                     "Error: IRQ balancer daemon is not disabled. "
@@ -98,11 +97,12 @@ class PredLinux:
                 )
             )
 
-    def disable_irqbalance(self):
+    def stop_irqbalance(self):
         """
         Disable irqbalance daemon for this boot
         """
-        self._platform.comm.shell(command="sudo systemctl stop irqbalance")
+        if self._systemctl.is_active("irqbalance"):
+            self._systemctl.stop("irqbalance")
 
     def check_numabalance(self) -> None:
         """
@@ -110,9 +110,11 @@ class PredLinux:
         To disable even after reboot, add the following line to '/etc/sysctl.conf':
           kernel.numa_balancing=0
         """
-        numa_balance_filecontent = self._platform.comm.read_file(
-            path="/proc/sys/kernel/numa_balancing"
-        ).strip()
+        numabalance_path = "/proc/sys/kernel/numa_balancing"
+        if not self._platform.comm.isfile(path=numabalance_path):
+            return  # numa balance not available on this platform, check not required.
+
+        numa_balance_filecontent = self._platform.comm.read_file(path=numabalance_path).strip()
 
         numa_balance_status = int(numa_balance_filecontent)
 
@@ -127,10 +129,14 @@ class PredLinux:
                 )
             )
 
-    def disable_numabalance(self):
+    def stop_numabalance(self):
         """
         Disable numabalance daemon for this boot
         """
+        numabalance_path = "/proc/sys/kernel/numa_balancing"
+        if not self._platform.comm.isfile(path=numabalance_path):
+            return  # numa balance not available on this platform, check not required.
+
         sysctl.write(
             variable="kernel.numa_balancing",
             value="0",
@@ -209,17 +215,25 @@ class PredLinux:
         """
 
         watchdog_file = "/proc/sys/kernel/watchdog_thresh"
-        if os.path.isfile(watchdog_file):
-            # The timeout is 2x the written value.
-            # So the softlockup will be fired after 120 seconds in the default case.
-            actual_value = timeout_value // 2
-            value_str = f"{actual_value}\n"
-            self._platform.comm.shell(
-                command=f"sudo tee {watchdog_file}",
-                std_input=value_str,
-                print_input=False,
-                print_output=False,
-            )
+        if not self._platform.comm.isfile(watchdog_file):
+            return
+
+        # The timeout is 2x the written value.
+        # So the softlockup will be fired after 120 seconds in the default case.
+        value_to_set = timeout_value // 2
+
+        current_value = int(self._platform.comm.read_file(path=watchdog_file).strip())
+        if value_to_set == current_value:
+            return
+
+        value_str = f"{value_to_set}\n"
+        self._platform.comm.shell(
+            command=f"sudo tee {watchdog_file}",
+            std_input=value_str,
+            print_input=False,
+            print_output=False,
+            shell=True,
+        )
 
 
 def main():

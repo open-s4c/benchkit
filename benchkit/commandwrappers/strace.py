@@ -12,9 +12,6 @@ from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.utils.types import PathType
 
-# TODO ltrace command wrapper
-
-
 class StraceWrap(CommandWrapper):
     """Command wrapper for the `strace` utility."""
 

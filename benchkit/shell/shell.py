@@ -15,6 +15,9 @@ from benchkit.utils.types import Command, Environment, PathType
 def pipe_shell_out(
     command: Command,
     current_dir: Optional[PathType] = None,
+    shell: bool = True,
+    print_command: bool = True,
+    ignore_ret_codes: Iterable[int] = (),
 ) -> str:
     """
     Run a command that is a composition of shell through pipes.
@@ -31,19 +34,35 @@ def pipe_shell_out(
         str: the output of the piped command.
     """
     arguments = get_args(command)
-    print_header(
-        arguments=arguments,
-        current_dir=current_dir,
-        environment=None,
-        print_input=True,
-        print_env=True,
-        print_curdir=True,
-        print_shell_cmd=True,
-        print_file_shell_cmd=True,
-        asynced=False,
-        remote_host=None,
-    )
-    return subprocess.check_output(command, cwd=current_dir, shell=True, text=True)
+    if print_command:
+        print_header(
+            arguments=arguments,
+            current_dir=current_dir,
+            environment=None,
+            print_input=True,
+            print_env=True,
+            print_curdir=True,
+            print_shell_cmd=True,
+            print_file_shell_cmd=True,
+            asynced=False,
+            remote_host=None,
+        )
+
+    try:
+        output = subprocess.check_output(
+            command,
+            cwd=current_dir,
+            shell=shell,
+            text=True
+        )
+
+    except subprocess.CalledProcessError as err:
+        retcode = err.returncode
+        if retcode not in ignore_ret_codes:
+            raise err
+        output = err.output
+
+    return output
 
 
 def shell_out(
