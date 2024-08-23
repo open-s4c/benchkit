@@ -35,7 +35,7 @@ class TraceCmd:
         command.extend(["-P", f"{pid}", "-o", f"{out_file}"])
 
         AsyncProcess(
-            platform=platform,
+            platform=self.platform,
             arguments=command,
             stdout_path=rdd / "trace-cmd.out",
             stderr_path=rdd / "trace-cmd.err",
