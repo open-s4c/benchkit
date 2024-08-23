@@ -6,7 +6,7 @@ from benchkit.utils.types import PathType
 from benchkit.platforms import get_current_platform
 import pathlib
 
-class trace_cmd_attachement():
+class TraceCmd():
 
     def __init__(
         self,
