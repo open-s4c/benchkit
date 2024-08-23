@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
 from benchkit.platforms import get_current_platform
