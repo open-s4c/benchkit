@@ -14,8 +14,8 @@ def main() -> None:
     platform = get_current_platform()
 
     def perf_attach(
-            process: AsyncProcess,
-            record_data_dir: PathType,
+        process: AsyncProcess,
+        record_data_dir: PathType,
     ) -> None:
         rdd = pathlib.Path(record_data_dir)
 

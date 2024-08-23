@@ -5,6 +5,7 @@ Utilities related to shell commands.
 """
 
 import os
+import pathlib
 import re
 import sys
 import tempfile
@@ -117,6 +118,13 @@ def _print_file_shell_cmd(
     lines = [f"{line}\n" for line in header + remote_header + cd + [full_cmd_shell] + remote_footer]
     with open(pathname, "a") as shell_file:
         shell_file.writelines(lines)
+
+    # TODO workaround before we implement more decent logging:
+    campaign_log_path = pathlib.Path("/tmp/benchkit-campaign.sh")
+    if campaign_log_path.is_file():
+        with open(campaign_log_path, "a") as shell_file:
+            shell_file.writelines(lines)
+
 
 
 def print_header(
