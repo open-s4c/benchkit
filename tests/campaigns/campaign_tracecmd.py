@@ -8,7 +8,6 @@ from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
 from benchkit.platforms import get_current_platform
 from benchkit.commandattachments.tracecmd import TraceCmd
-import pathlib
 
 
 def main() -> None:
@@ -17,9 +16,7 @@ def main() -> None:
     CampaignIterateVariables(
         name="attach",
         benchmark=CProgramBench(
-            command_attachments=[
-                TraceCmd(["sched"]).attachement
-            ],
+            command_attachments=[TraceCmd(["sched"]).attachement],
         ),
         nb_runs=1,
         variables=[{}],
