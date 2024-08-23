@@ -13,6 +13,7 @@ class TraceCmd:
     def __init__(self, events: List[str] = (), platform: Platform = None,) -> None:
         self.events = [str(e) for e in events]
         self.platform = platform if platform is not None else get_current_platform()
+        self.pid = None
         
     def attachement(
         self,
@@ -23,7 +24,7 @@ class TraceCmd:
         rdd = pathlib.Path(record_data_dir)
         out_file = rdd / "trace.dat"
 
-        pid = process.pid
+        self.pid = process.pid
         command = ["sudo", "trace-cmd", "record"]
 
         # Add "-e" and each event to the command list
@@ -40,3 +41,23 @@ class TraceCmd:
             stderr_path=rdd / "trace-cmd.err",
             current_dir=rdd,
         )
+
+    def post_run_hook(
+        self,
+        record_data_dir: PathType,
+        **kwargs
+        ) -> None:
+        
+        rdd = pathlib.Path(record_data_dir)
+        print(rdd)
+        
+        command = ["trace-cmd", "report", "trace.dat"]
+            
+        AsyncProcess(
+            platform=self.platform,
+            arguments=command,
+            stdout_path=rdd / "generate-graph.out",
+            stderr_path=rdd / "generate-graph.err",
+            current_dir=rdd,
+        )
+        

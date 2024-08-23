@@ -13,10 +13,12 @@ from benchkit.commandattachments.tracecmd import TraceCmd
 def main() -> None:
     platform = get_current_platform()
 
+    traceCmd = TraceCmd(["sched"], platform)
     CampaignIterateVariables(
         name="attach",
         benchmark=CProgramBench(
-            command_attachments=[TraceCmd(["sched"], platform).attachement],
+            command_attachments=[traceCmd.attachement],
+            post_run_hooks=[traceCmd.post_run_hook]
         ),
         nb_runs=1,
         variables=[{}],
