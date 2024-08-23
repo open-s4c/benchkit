@@ -10,7 +10,7 @@ import pathlib
 
 class TraceCmd:
 
-    def __init__(self, events: List[str] = (), platform: Platform = None):
+    def __init__(self, events: List[str] = (), platform: Platform = None,) -> None:
         self.events = [str(e) for e in events]
         self.platform = platform
     def attachement(
