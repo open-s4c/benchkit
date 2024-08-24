@@ -70,8 +70,8 @@ def main():
         title=f"dat3m locks verification time ({nb_runs} runs)",
         kind="bar",
         col="memory_model",
-        x="lock_name",
-        y="benchkit/runtime_s",
+        y="lock_name",
+        x="benchkit/runtime_s",
         hue="version",
         nan_replace=False,
     )
