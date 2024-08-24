@@ -4,8 +4,6 @@
 
 from benchmarks.cprogram import CProgramBench
 from benchkit.campaign import CampaignIterateVariables
-from benchkit.shell.shellasync import AsyncProcess
-from benchkit.utils.types import PathType
 from benchkit.platforms import get_current_platform
 from benchkit.commandattachments.tracecmd import TraceCmd
 
@@ -13,10 +11,12 @@ from benchkit.commandattachments.tracecmd import TraceCmd
 def main() -> None:
     platform = get_current_platform()
 
+    traceCmd = TraceCmd(["sched"], platform)
     CampaignIterateVariables(
         name="attach",
         benchmark=CProgramBench(
-            command_attachments=[TraceCmd(["sched"], platform).attachement],
+            command_attachments=[traceCmd.attachment],
+            post_run_hooks=[traceCmd.post_run_hook]
         ),
         nb_runs=1,
         variables=[{}],
