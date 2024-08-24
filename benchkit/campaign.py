@@ -79,10 +79,6 @@ class Campaign:
             gdb=gdb,
         )
 
-        # Workaround to trunc this global file, before logging refactoring TODO
-        with open(_BENCHKIT_CAMPAIGN_CMD_FILE, "w") as f:
-            header = ["#!/bin/sh", "set -e", ""]
-            f.writelines(f"{line}\n" for line in header)
 
     def csv_file(
         self,
@@ -190,6 +186,9 @@ class Campaign:
             barrier (Optional[multiprocessing.Barrier]):
                 if needed, the barrier used to synchronize different benchmarks.
         """
+        # Workaround to trunc this global file, before logging refactoring TODO
+        self._init_cmd_file()
+
         csv_output_dir = os.path.dirname(self.csv_output_abs_path())
         os.makedirs(csv_output_dir, exist_ok=True)
 
@@ -270,6 +269,11 @@ class Campaign:
 
         if "nb_runs" not in self.parameters:
             raise ValueError('Campaign parameters dict has no "nb_runs" field.')
+
+    def _init_cmd_file(self) -> None:
+        with open(_BENCHKIT_CAMPAIGN_CMD_FILE, "w") as f:
+            header = ["#!/bin/sh", "set -e", ""]
+            f.writelines(f"{line}\n" for line in header)
 
     def _move_cmd_file(self) -> None:
         bdd = self.base_data_dir()
