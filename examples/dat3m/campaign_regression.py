@@ -67,7 +67,7 @@ def main():
     campaign_suite.generate_global_csv()
     campaign_suite.generate_graph(
         plot_name="catplot",
-        title=f"dat3m locks verification time (target {selected_target}, {nb_runs} runs)",
+        title=f"dat3m locks verification time ({nb_runs} runs)",
         kind="bar",
         col="memory_model",
         x="lock_name",
