@@ -28,7 +28,7 @@ class DockerCommLayer(CommunicationLayer):
 
     @property
     def is_local(self) -> bool:
-        return False
+        return True  # TODO temporarily to avoid implementing copy_to_host
 
     def _get_command_prefix(self) -> SplitCommand:
         if self._command_prefix is None:
