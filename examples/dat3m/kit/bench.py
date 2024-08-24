@@ -194,7 +194,7 @@ class Dat3mBench(Benchmark):
                 current_dir=self._build_dir,
                 environment=environment,
                 wrapped_environment=wrapped_environment,
-                print_output=False,
+                print_output=True,
             )
         self._tmp_results["benchkit/runtime_s"] = time_measure.duration_seconds
 
