@@ -56,6 +56,17 @@ future.
 
 ## Functional changes
 
+- Parallel runner: allows to queue the benchmarks of a single campaign to
+  execute them as fast as possible. With m CPUs, m benchmark instances
+  can be running in parallel, and the other ones are queuing. This is useful
+  for single-cpu simulation or model checking for example.
+  To facilitate some experiments, we can also stop the whole thing once the
+  first benchmark finishes.
+
+- Generation of static HTML with charts: instead of generating PNG and PDF,
+  we can generate a self-contained HTML page with an interactive graph,
+  generated with plotly or altair for example.
+
 - Caching of results:
   skip *building* the benchmark if we can detect that all result records
   underlying the specific build are already in cache.
