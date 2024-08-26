@@ -148,13 +148,23 @@ class CounterBenchmark(Benchmark):
         )
 
         run_command = [
-            "./run-volano.sh",
-            f"-s {start}",
-            f"-r {rooms}",
-            f"-u {users}",
-            f"-c {count}",
-            f"-p {pause}",
-            f"-h {host}"
+            "java",
+            "-cp",
+            "deps/lib/volano-chat-server.jar",
+            "COM.volano.Mark",
+            "-run",
+            "-start",
+            f"{start}",
+            "-rooms",
+            f"{rooms}",
+            "-users",
+            f"{users}",
+            "-count",
+            f"{count}",
+            "-pause",
+            f"{pause}",
+            "-host",
+            f"{host}"
         ]
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
