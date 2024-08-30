@@ -19,6 +19,7 @@ class StraceWrap(CommandWrapper):
         self,
         summary: bool = True,
         summary_only: bool = False,
+        trace_forks: bool = False,
         output_separately: bool = False,
     ):
         super().__init__()
@@ -26,6 +27,7 @@ class StraceWrap(CommandWrapper):
         self._summary = summary
         self._summary_only = summary_only
         self._output_separately = output_separately
+        self._trace_forks = trace_forks
 
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
@@ -53,6 +55,8 @@ class StraceWrap(CommandWrapper):
             options.append("--summary-only")
         if self._output_separately:
             options.append("--output-separately")
+        if self._trace_forks:
+            options.append("-f")
 
         cmd_prefix = (
             ["strace"]
