@@ -696,7 +696,8 @@ class Benchmark:
         wrapped_environment: Environment,
         print_output: bool,
         timeout: int | None = None,
-        ignore_ret_codes: Iterable[int]=(),
+        ignore_ret_codes: Iterable[int] = (),
+        ignore_any_error_code: bool = False,
         **kwargs,
     ) -> str | AsyncProcess:
         """
@@ -715,6 +716,11 @@ class Benchmark:
                 environment wrapped with everything configured in the benchmark.
             print_output (bool):
                 whether to print the output of the benchmark command.
+            ignore_ret_codes (Iterable[int], optional):
+                List of error code to ignore if it is the return code of the command.
+                Defaults to () (empty collection).
+            ignore_any_error_code (bool, optional):
+                whether to error any error code returned by the command.
 
         Returns:
             str | AsyncProcess:
@@ -745,6 +751,7 @@ class Benchmark:
             print_output=print_output,
             timeout=timeout,
             ignore_ret_codes=ignore_ret_codes,
+            ignore_any_error_code=ignore_any_error_code,
         )
         return output
 

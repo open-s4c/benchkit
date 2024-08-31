@@ -80,6 +80,7 @@ def shell_out(
     timeout: Optional[int] = None,
     output_is_log: bool = False,
     ignore_ret_codes: Iterable[int] = (),
+    ignore_any_error_code: bool = False,
 ) -> str:
     """
     Run a shell command on the host system.
@@ -131,6 +132,8 @@ def shell_out(
             This allows to avoid an exception to be raised for commands that do not end with 0 even
             if they are successful.
             Defaults to ().
+        ignore_any_error_code (bool, optional):
+            whether to error any error code returned by the command.
 
     Raises:
         subprocess.CalledProcessError:
@@ -219,7 +222,11 @@ def shell_out(
                 )
         except subprocess.CalledProcessError as err:
             retcode = err.returncode
-            if retcode not in ignore_ret_codes:
+            if ignore_any_error_code:
+                pass
+            elif retcode in ignore_ret_codes:
+                pass
+            else:
                 raise err
             output = err.output
 

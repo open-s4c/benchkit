@@ -74,6 +74,7 @@ class CommunicationLayer:
         timeout: int | None = None,
         output_is_log: bool = False,
         ignore_ret_codes: Iterable[int] = (),
+        ignore_any_error_code: bool = False,
     ) -> str:
         """Run a shell command on the target host.
 
@@ -105,6 +106,8 @@ class CommunicationLayer:
             ignore_ret_codes (Iterable[int], optional):
                 List of error code to ignore if it is the return code of the command.
                 Defaults to () (empty collection).
+            ignore_any_error_code (bool, optional):
+                whether to error any error code returned by the command.
 
         Returns:
             str: the output of the command.
@@ -534,6 +537,7 @@ class LocalCommLayer(CommunicationLayer):
         timeout: int | None = None,
         output_is_log: bool = False,
         ignore_ret_codes: Iterable[int] = (),
+        ignore_any_error_code: bool = False,
     ) -> str:
         return shell_out(
             command=command,
@@ -547,6 +551,7 @@ class LocalCommLayer(CommunicationLayer):
             timeout=timeout,
             output_is_log=output_is_log,
             ignore_ret_codes=ignore_ret_codes,
+            ignore_any_error_code=ignore_any_error_code,
         )
 
     def background_subprocess(
@@ -770,6 +775,7 @@ class SSHCommLayer(CommunicationLayer):
         timeout: int | None = None,
         output_is_log: bool = False,
         ignore_ret_codes: Iterable[int] = (),
+        ignore_any_error_code: bool = False,
     ) -> str:
         env_command = command_with_env(
             command=command,
@@ -790,6 +796,7 @@ class SSHCommLayer(CommunicationLayer):
             timeout=timeout,
             output_is_log=output_is_log,
             ignore_ret_codes=ignore_ret_codes,
+            ignore_any_error_code=ignore_any_error_code,
         )
 
         return output
