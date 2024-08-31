@@ -27,6 +27,10 @@ class DockerCommLayer(CommunicationLayer):
         self._command_prefix = None
 
     @property
+    def remote_host(self) -> str | None:
+        return None
+
+    @property
     def is_local(self) -> bool:
         return True  # TODO temporarily to avoid implementing copy_to_host
 
@@ -42,9 +46,24 @@ class DockerCommLayer(CommunicationLayer):
         stderr: PathType,
         cwd: PathType | None,
         env: dict | None,
+        establish_new_connection: bool=False
     ) -> subprocess.Popen:
-        raise NotImplementedError(
-            "Will follow in the future, with inspiration from the SSH equivalent class"
+        env_command = command_with_env(
+            command=command,
+            environment=env,
+            additional_environment=self._additional_environment,
+        )
+        full_command = self._remote_shell_command(
+            remote_command=env_command,
+            remote_current_dir=cwd
+        )
+
+        return subprocess.Popen(
+            full_command,
+            stdout=stdout,
+            stderr=stderr,
+            env=env,
+            preexec_fn=None
         )
 
     def shell(
