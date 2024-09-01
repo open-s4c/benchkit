@@ -7,7 +7,7 @@ from benchkit.benchmark import Benchmark
 from benchkit.commandwrappers.strace import StraceWrap
 from benchkit.utils.types import PathType
 from benchkit.commandwrappers.valgrind import ValgrindWrapper
-from benchkit.campaign import CampaignCartesianProduct
+from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 
 from benchkit.benchmark import (
     RecordResult,
@@ -187,20 +187,18 @@ def main():
         nb_runs=1,
         benchmark=SequentialDPLL(
             src_dir="./",
-            post_run_hooks = [post_run_hook_valgrind_allocations],
-            command_wrappers= [vg_wrapper]),
+            post_run_hooks=[post_run_hook_valgrind_allocations],
+            command_wrappers=[vg_wrapper]),
         instances=instances_sat[:-1],
         implementation_dirs=implementation_dirs_seq,
     )
     campaign_multithreaded_lock_free = create_campaign(
         name="Multithreaded lock-free",
         nb_runs=nb_runs,
-        benchmark=ParallelDPLL(
-            src_dir="./"
-        ),
+        benchmark=ParallelDPLL(src_dir="./"),
         instances=instances_unsat,
         implementation_dirs=implementation_dirs_par,
-        num_threads=[4]
+        num_threads=[4],
     )
     campaign_multithreaded = create_campaign(
         name="Multithreaded queue size 100",
@@ -210,7 +208,7 @@ def main():
         ),
         instances=instances_unsat,
         implementation_dirs=["./pooled"],
-        num_threads=[2,4,8]
+        num_threads=[2,4,8],
     )
     campaign_multithreaded_strace = create_campaign(
         name="Multithreaded strace queue size 100",
@@ -222,105 +220,112 @@ def main():
         ),
         instances=instances_unsat,
         implementation_dirs=["./pooled"],
-        num_threads=[2,4,8]
+        num_threads=[2,4,8],
     )
 
-    ### Campaigns Run ###
-    campaign_init_fast.run()
+    ### Campaigns Runs ###
+    campaigns = [
+        campaign_init_fast,
+        campaign_init_slow,
+        campaign_valgrind,
+        campaign_valgrind_better_allocs,
+        campaign_seq_vs_ba_fast,
+        campaign_seq_vs_ba_slow,
+        campaign_seq_vs_ba_fast_allocations_throughput,
+        campaign_multithreaded_lock_free,
+        campaign_multithreaded,
+        campaign_multithreaded_strace,
+    ]
+    suite = CampaignSuite(campaigns=campaigns)
+    suite.print_durations()
+    suite.run_suite()
+
+    ### Campaigns Graphs Generation ###
     campaign_init_fast.generate_graph(
         plot_name="barplot",
         title=f"Runtime sequential algorithm ({nb_runs})",
         y="runtime_s",
         x="instance",
-        hue="implementation"
+        hue="implementation",
     )
 
-    campaign_init_slow.run()
     campaign_init_slow.generate_graph(
         plot_name="barplot",
         title=f"Runtime sequential algorithm ({nb_runs})",
         y="runtime_s",
         x="instance",
-        hue="implementation"
+        hue="implementation",
     )
 
-    campaign_valgrind.run()
     campaign_valgrind.generate_graph(
         plot_name="barplot",
         title=f"Memory usage sequential algorithm ({nb_runs})",
         y="bytes_allocated",
         x="instance",
-        hue="implementation"
+        hue="implementation",
     )
 
-    campaign_valgrind_better_allocs.run()
     campaign_valgrind_better_allocs.generate_graph(
         plot_name="barplot",
         title=f"Memory usage sequential algorithm better allocations ({nb_runs})",
         y="bytes_allocated",
         x="instance",
-        hue="implementation"
+        hue="implementation",
     )
     campaign_valgrind_better_allocs.generate_graph(
         plot_name="barplot",
         title=f"Allocations sequential algorithm better allocations ({nb_runs})",
         y="allocs",
         x="instance",
-        hue="implementation"
+        hue="implementation",
     )
 
-    campaign_seq_vs_ba_fast.run()
     campaign_seq_vs_ba_fast.generate_graph(
         plot_name="barplot",
         title=f"Runtime Sequential vs Better allocation nb runs: {nb_runs}",
         y="runtime_s",
         x="instance",
-        hue="implementation"
+        hue="implementation",
     )
 
-    campaign_seq_vs_ba_slow.run()
     campaign_seq_vs_ba_slow.generate_graph(
         plot_name="barplot",
         title=f"Runtime Sequential vs Better allocation nb runs: {nb_runs}",
         y="runtime_s",
         x="instance",
-        hue="implementation"
+        hue="implementation",
     )
 
-    campaign_seq_vs_ba_fast_allocations_throughput.run()
     campaign_seq_vs_ba_fast_allocations_throughput.generate_graph(
         plot_name="barplot",
         title=f"Runtime Sequential vs Better allocation nb runs: {nb_runs}",
         y="allocations_throughput",
         x="instance",
-        hue="implementation"
+        hue="implementation",
     )
 
-    campaign_multithreaded_lock_free.run()
     campaign_multithreaded_lock_free.generate_graph(
         plot_name="barplot",
         title=f"Runtime comparison lock-free and pooled nb_runs: {nb_runs}",
         y="runtime_s",
         x="instance",
-        hue="implementation"
+        hue="implementation",
     )
 
-    campaign_multithreaded.run()
     campaign_multithreaded.generate_graph(
         plot_name="barplot",
         title=f"Pooled version nb runs {nb_runs}",
         y="runtime_s",
         x="instance",
-        hue="num_threads"
+        hue="num_threads",
     )
 
-    campaign_multithreaded_strace.run()
     campaign_multithreaded_strace.generate_graph(
         plot_name="barplot",
         title=f"Pooled version nb runs {nb_runs}",
         y="futex_calls",
         x="instance",
-        hue="num_threads"
+        hue="num_threads",
     )
 
     campaign_multithreaded_strace.generate_graph(
@@ -335,7 +340,7 @@ def main():
         title=f"Pooled version nb runs {nb_runs}",
         y="futex_percentage",
         x="instance",
-        hue="num_threads"
+        hue="num_threads",
     )
 
 
