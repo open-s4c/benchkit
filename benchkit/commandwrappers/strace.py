@@ -56,7 +56,7 @@ class StraceWrap(CommandWrapper):
         if self._output_separately:
             options.append("--output-separately")
         if self._trace_forks:
-            options.append("-f")
+            options.append("--follow-forks")
 
         cmd_prefix = (
             ["strace"]
