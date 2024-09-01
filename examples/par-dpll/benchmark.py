@@ -42,7 +42,7 @@ class SequentialDPLL(Benchmark):
             raise ValueError(
                 f"Invalid source path: {bench_src_path}\n"
                 "src_dir argument can be defined manually."
-            )    
+            )
         self.platform = get_current_platform()
         self._bench_src_path = bench_src_path
         self._build_dir = bench_src_path
@@ -57,7 +57,7 @@ class SequentialDPLL(Benchmark):
 
     @staticmethod
     def get_run_var_names() -> List[str]:
-        return ["instance","implementation"]
+        return ["instance", "implementation"]
 
     @staticmethod
     def get_tilt_var_names() -> List[str]:
@@ -98,11 +98,11 @@ class SequentialDPLL(Benchmark):
     ) -> str:
         environment = {}
         print(benchmark_duration_seconds)
-        run_command =[implementation + "/Main",instance]
+        run_command = [implementation + "/Main", instance]
         wrap_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
             environment=environment,
-            **kwargs
+            **kwargs,
         )
 
         with TimeMeasure() as time_measure:
@@ -112,13 +112,10 @@ class SequentialDPLL(Benchmark):
                 current_dir=self._build_dir,
                 environment=environment,
                 wrapped_environment=wrapped_environment,
-                print_output=False
-        )
+                print_output=False,
+            )
         self._tmp_results["runtime_s"] = time_measure.duration_seconds
         return output
-
-       
-
 
     def parse_output_to_results(  # pylint: disable=arguments-differ
         self,
@@ -131,7 +128,6 @@ class SequentialDPLL(Benchmark):
         result_dict["implementation"] = pathlib.Path(run_variables["implementation"]).stem
         # Parsing summary
         return result_dict | self._tmp_results
-   
 
 
 class ParallelDPLL(Benchmark):
@@ -166,7 +162,6 @@ class ParallelDPLL(Benchmark):
         self._bench_src_path = bench_src_path
         self._build_dir = bench_src_path
 
-       
     @property
     def bench_src_path(self) -> pathlib.Path:
         return self._bench_src_path
@@ -177,7 +172,7 @@ class ParallelDPLL(Benchmark):
 
     @staticmethod
     def get_run_var_names() -> List[str]:
-        return ["instance","implementation","num_threads"]
+        return ["instance", "implementation", "num_threads"]
 
     @staticmethod
     def get_tilt_var_names() -> List[str]:
@@ -218,11 +213,11 @@ class ParallelDPLL(Benchmark):
         **kwargs,
     ) -> str:
         environment = {}
-        run_command =[implementation + "/Main",instance, "-t", str(num_threads)]
+        run_command = [implementation + "/Main", instance, "-t", str(num_threads)]
         wrap_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
             environment=environment,
-            **kwargs
+            **kwargs,
         )
 
         with TimeMeasure() as time_measure:
@@ -232,13 +227,10 @@ class ParallelDPLL(Benchmark):
                 current_dir=self._build_dir,
                 environment=environment,
                 wrapped_environment=wrapped_environment,
-                print_output=False
-        )
+                print_output=False,
+            )
         self._tmp_results["runtime_s"] = time_measure.duration_seconds
         return output
-
-       
-
 
     def parse_output_to_results(  # pylint: disable=arguments-differ
         self,
@@ -246,8 +238,6 @@ class ParallelDPLL(Benchmark):
         run_variables: Dict[str, Any],
         **_kwargs,
     ) -> Dict[str, Any]:
-
-       
 
         result_dict = {}
         result_dict["instance"] = pathlib.Path(run_variables["instance"]).stem
