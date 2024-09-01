@@ -48,6 +48,11 @@ class DockerCommLayer(CommunicationLayer):
         env: dict | None,
         establish_new_connection: bool=False
     ) -> subprocess.Popen:
+        # TODO This is a solution that's a bit dangerous, as the user would commonly expect the
+        # background process to run inside the docker container. We should keep this use case
+        # in mind when revamping the shell commands, and perhaps refactor this code again.
+        print("[WARNING] Potentially unexpected behaviour of docker background subprocess method")
+
         env_command = command_with_env(
             command=command,
             environment=env,
