@@ -15,8 +15,6 @@ from benchkit.benchmark import (
 )
 
 
-
-
 def _parse_alloc_string(allocs_string: str) -> RecordResult:
     results = {}
     splitted = allocs_string.replace(",","").removeprefix("total heap usage: ").split(" ")
@@ -27,13 +25,13 @@ def _parse_alloc_string(allocs_string: str) -> RecordResult:
     results["bytes_allocated"] = int(filtered_results[2]) 
     return results
 
+
 def _parse_results(results_out_file: PathType) -> RecordResult:
     val_output_string = open(results_out_file,"r").read()
     allocs_match = re.search(r"total heap usage: (\d+|,+)+ allocs, (\d+|,+)+ frees, (\d+|,+)+ bytes allocated",
                              val_output_string)
     if allocs_match is not None:
         return _parse_alloc_string(allocs_match.group(0))
-
 
 
 def post_run_hook_valgrind_allocations(
@@ -47,7 +45,6 @@ def post_run_hook_valgrind_allocations(
     assert experiment_results_lines
     assert write_record_file_fun
 
-    results = {}
     output_name="valgrind-out.txt"
     valgrind_out_path = os.path.join(record_data_dir,output_name)
     results = _parse_results(valgrind_out_path)
@@ -75,9 +72,6 @@ def _parse_strace_futex(strace_out_path: str) -> RecordResult:
             "futex_usecs_calls": data[2],
             "futex_calls": data[3]
         }
-        
-
-
 
 
 def post_run_hook_extract_futex(
@@ -92,18 +86,14 @@ def post_run_hook_extract_futex(
     return _parse_strace_futex(strace_out_path)
 
 
-
 def create_campaign(
-        name: str,
-        nb_runs: int,
-        benchmark: Benchmark,
-        instances: Iterable[str] = [],
-        num_threads: Iterable[int] = [],
-        implementation_dirs: Iterable[str] = []
-        ):
-
-   
-    
+    name: str,
+    nb_runs: int,
+    benchmark: Benchmark,
+    instances: Iterable[str] = (),
+    num_threads: Iterable[int] = (),
+    implementation_dirs: Iterable[str] = (),
+) -> CampaignCartesianProduct:
     return CampaignCartesianProduct(
         name=name,
         benchmark=benchmark,
@@ -112,7 +102,6 @@ def create_campaign(
             "instance": instances,
             "implementation": implementation_dirs,
             "num_threads": num_threads
-
         },
         constants={},
         debug=False,
@@ -123,11 +112,7 @@ def create_campaign(
     )
 
 
-
-
 def main():
-
-
     implementation_dirs_seq = [
         "./sequential",
         "./better_allocations_sequential"
@@ -147,7 +132,21 @@ def main():
     instances_unsat = [ os.fspath(p.absolute()) for p in instance_dir_unsat.iterdir()]
 
 
-       
+    ### Campaigns Init ###
+    campaign_init_fast = create_campaign(
+        name="Initial benchmarks sequential",
+        nb_runs=nb_runs,
+        benchmark=SequentialDPLL(src_dir="./"),
+        instances=instances_sat[0:-2],
+        implementation_dirs=["./sequential"],
+    )
+    campaign_init_slow = create_campaign(
+        name="Initial benchmarks sequential",
+        nb_runs=nb_runs,
+        benchmark=SequentialDPLL(src_dir="./"),
+        instances=instances_sat,
+        implementation_dirs=["./sequential"],
+    )
     campaign_valgrind = create_campaign(
         name="Valgrind",
         nb_runs=1,
@@ -156,9 +155,8 @@ def main():
             post_run_hooks = [post_run_hook_valgrind_allocations],
             command_wrappers= [vg_wrapper]),
         instances=instances_sat[0:1],
-        implementation_dirs=["./sequential"]
+        implementation_dirs=["./sequential"],
     )
-
     campaign_valgrind_better_allocs = create_campaign(
         name="Valgrind",
         nb_runs=1,
@@ -167,21 +165,15 @@ def main():
             post_run_hooks = [post_run_hook_valgrind_allocations],
             command_wrappers= [vg_wrapper]),
         instances=instances_sat,
-        implementation_dirs=["./better_allocations_sequential"]
+        implementation_dirs=["./better_allocations_sequential"],
     )
-
-
-
-
     campaign_seq_vs_ba_fast = create_campaign(
         name="Sequential vs Better allocs",
         nb_runs=nb_runs,
-        benchmark=SequentialDPLL(
-            src_dir="./"),
+        benchmark=SequentialDPLL(src_dir="./"),
         instances=instances_sat[0:-2],
-        implementation_dirs=implementation_dirs_seq
+        implementation_dirs=implementation_dirs_seq,
     )
-
     campaign_seq_vs_ba_slow = create_campaign(
         name="Sequential vs Better allocs",
         nb_runs=nb_runs,
@@ -190,7 +182,6 @@ def main():
         instances=instances_sat[-2:],
         implementation_dirs=implementation_dirs_seq
     )
-
     campaign_seq_vs_ba_fast_allocations_throughput = create_campaign(
         name="Allocations throughput Sequential vs Better allocs",
         nb_runs=1,
@@ -199,9 +190,18 @@ def main():
             post_run_hooks = [post_run_hook_valgrind_allocations],
             command_wrappers= [vg_wrapper]),
         instances=instances_sat[:-1],
-        implementation_dirs=implementation_dirs_seq)
-
-    
+        implementation_dirs=implementation_dirs_seq,
+    )
+    campaign_multithreaded_lock_free = create_campaign(
+        name="Multithreaded lock-free",
+        nb_runs=nb_runs,
+        benchmark=ParallelDPLL(
+            src_dir="./"
+        ),
+        instances=instances_unsat,
+        implementation_dirs=implementation_dirs_par,
+        num_threads=[4]
+    )
     campaign_multithreaded = create_campaign(
         name="Multithreaded queue size 100",
         nb_runs=nb_runs,
@@ -212,8 +212,6 @@ def main():
         implementation_dirs=["./pooled"],
         num_threads=[2,4,8]
     )
-
-
     campaign_multithreaded_strace = create_campaign(
         name="Multithreaded strace queue size 100",
         nb_runs=nb_runs,
@@ -227,28 +225,8 @@ def main():
         num_threads=[2,4,8]
     )
 
-
-
-
-    campaign_init_fast = create_campaign(
-        name="Initial benchmarks sequential",
-        nb_runs=nb_runs,
-        benchmark=SequentialDPLL(src_dir="./"),
-        instances=instances_sat[0:-2],
-        implementation_dirs=["./sequential"],
-    )
-
-
-    campaign_init_slow = create_campaign(
-        name="Initial benchmarks sequential",
-        nb_runs=nb_runs,
-        benchmark=SequentialDPLL(src_dir="./"),
-        instances=instances_sat,
-        implementation_dirs=["./sequential"],
-    )
-
+    ### Campaigns Run ###
     campaign_init_fast.run()
-
     campaign_init_fast.generate_graph(
         plot_name="barplot",
         title=f"Runtime sequential algorithm ({nb_runs})",
@@ -283,7 +261,6 @@ def main():
         x="instance",
         hue="implementation"
     )
-
     campaign_valgrind_better_allocs.generate_graph(
         plot_name="barplot",
         title=f"Allocations sequential algorithm better allocations ({nb_runs})",
@@ -301,8 +278,6 @@ def main():
         hue="implementation"
     )
 
-
-
     campaign_seq_vs_ba_slow.run()
     campaign_seq_vs_ba_slow.generate_graph(
         plot_name="barplot",
@@ -311,7 +286,6 @@ def main():
         x="instance",
         hue="implementation"
     )
-
 
     campaign_seq_vs_ba_fast_allocations_throughput.run()
     campaign_seq_vs_ba_fast_allocations_throughput.generate_graph(
@@ -322,17 +296,6 @@ def main():
         hue="implementation"
     )
 
-    campaign_multithreaded_lock_free = create_campaign(
-        name="Multithreaded lock-free",
-        nb_runs=nb_runs,
-        benchmark=ParallelDPLL(
-            src_dir="./"
-        ),
-        instances=instances_unsat,
-        implementation_dirs=implementation_dirs_par,
-        num_threads=[4]
-    )
-
     campaign_multithreaded_lock_free.run()
     campaign_multithreaded_lock_free.generate_graph(
         plot_name="barplot",
@@ -341,19 +304,6 @@ def main():
         x="instance",
         hue="implementation"
     )
-
-
-    campaign_multithreaded.run()
-    campaign_multithreaded.generate_graph(
-        plot_name="barplot",
-        title=f"Pooled version nb runs {nb_runs}",
-        y="runtime_s",
-        x="instance",
-        hue="num_threads"
-    )
-
-
-
 
     campaign_multithreaded.run()
     campaign_multithreaded.generate_graph(
@@ -374,20 +324,19 @@ def main():
     )
 
     campaign_multithreaded_strace.generate_graph(
-            plot_name="barplot",
-            title=f"Pooled version nb runs {nb_runs}",
-            y="futex_time",
-            x="instance",
-            hue="num_threads"
-        )
-
+        plot_name="barplot",
+        title=f"Pooled version nb runs {nb_runs}",
+        y="futex_time",
+        x="instance",
+        hue="num_threads",
+    )
     campaign_multithreaded_strace.generate_graph(
-            plot_name="barplot",
-            title=f"Pooled version nb runs {nb_runs}",
-            y="futex_percentage",
-            x="instance",
-            hue="num_threads"
-        )
+        plot_name="barplot",
+        title=f"Pooled version nb runs {nb_runs}",
+        y="futex_percentage",
+        x="instance",
+        hue="num_threads"
+    )
 
 
 if __name__ == "__main__":
