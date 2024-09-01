@@ -1,35 +1,34 @@
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import Iterable, List
-from benchmark import SequentialDPLL,ParallelDPLL
-from benchkit.benchmark import Benchmark
-from benchkit.commandwrappers.strace import StraceWrap
-from benchkit.utils.types import PathType
-from benchkit.commandwrappers.valgrind import ValgrindWrapper
-from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 
-from benchkit.benchmark import (
-    RecordResult,
-    WriteRecordFileFunction,
-)
+from benchmark import ParallelDPLL, SequentialDPLL
+
+from benchkit.benchmark import Benchmark, RecordResult, WriteRecordFileFunction
+from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
+from benchkit.commandwrappers.strace import StraceWrap
+from benchkit.commandwrappers.valgrind import ValgrindWrapper
+from benchkit.utils.types import PathType
 
 
 def _parse_alloc_string(allocs_string: str) -> RecordResult:
     results = {}
-    splitted = allocs_string.replace(",","").removeprefix("total heap usage: ").split(" ")
-    filtered_results = list(filter(lambda x: x.isnumeric() ,splitted))
+    splitted = allocs_string.replace(",", "").removeprefix("total heap usage: ").split(" ")
+    filtered_results = list(filter(lambda x: x.isnumeric(), splitted))
     assert len(filtered_results) == 3
     results["allocs"] = int(filtered_results[0])
     results["frees"] = int(filtered_results[1])
-    results["bytes_allocated"] = int(filtered_results[2]) 
+    results["bytes_allocated"] = int(filtered_results[2])
     return results
 
 
 def _parse_results(results_out_file: PathType) -> RecordResult:
-    val_output_string = open(results_out_file,"r").read()
-    allocs_match = re.search(r"total heap usage: (\d+|,+)+ allocs, (\d+|,+)+ frees, (\d+|,+)+ bytes allocated",
-                             val_output_string)
+    val_output_string = open(results_out_file, "r").read()
+    allocs_match = re.search(
+        r"total heap usage: (\d+|,+)+ allocs, (\d+|,+)+ frees, (\d+|,+)+ bytes allocated",
+        val_output_string,
+    )
     if allocs_match is not None:
         return _parse_alloc_string(allocs_match.group(0))
 
@@ -45,44 +44,42 @@ def post_run_hook_valgrind_allocations(
     assert experiment_results_lines
     assert write_record_file_fun
 
-    output_name="valgrind-out.txt"
-    valgrind_out_path = os.path.join(record_data_dir,output_name)
+    output_name = "valgrind-out.txt"
+    valgrind_out_path = os.path.join(record_data_dir, output_name)
     results = _parse_results(valgrind_out_path)
     for line in experiment_results_lines:
         if "runtime_s" in line:
-            line["allocations_throughput"] = int(results["allocs"])/line["runtime_s"]
+            line["allocations_throughput"] = int(results["allocs"]) / line["runtime_s"]
     return results
 
 
 def _parse_strace_futex(strace_out_path: str) -> RecordResult:
     strace_out = open(strace_out_path).read()
-    num_futexes = re.search(
-       r" \d*\.\d*\s*\d*\.\d*\s*\d*\s*\d*\s*\d*\s*futex",
-       strace_out)
+    num_futexes = re.search(r" \d*\.\d*\s*\d*\.\d*\s*\d*\s*\d*\s*\d*\s*futex", strace_out)
 
     if num_futexes is None:
         return {}
     else:
         num_futexes_str = num_futexes.group(0)
-        data = [token for token in num_futexes_str.split(" ") if token != '']
-        assert len(data)>= 3
+        data = [token for token in num_futexes_str.split(" ") if token != ""]
+        assert len(data) >= 3
         return {
-            "futex_percentage":data[0],
+            "futex_percentage": data[0],
             "futex_time": data[1],
             "futex_usecs_calls": data[2],
-            "futex_calls": data[3]
+            "futex_calls": data[3],
         }
 
 
 def post_run_hook_extract_futex(
-        experiment_results_lines: List[RecordResult],
-        record_data_dir: PathType,
-        write_record_file_fun: WriteRecordFileFunction,
-    ) -> RecordResult:
+    experiment_results_lines: List[RecordResult],
+    record_data_dir: PathType,
+    write_record_file_fun: WriteRecordFileFunction,
+) -> RecordResult:
     assert experiment_results_lines
     assert write_record_file_fun
     output_name = "strace.txt"
-    strace_out_path = os.path.join(record_data_dir,output_name)
+    strace_out_path = os.path.join(record_data_dir, output_name)
     return _parse_strace_futex(strace_out_path)
 
 
@@ -101,7 +98,7 @@ def create_campaign(
         variables={
             "instance": instances,
             "implementation": implementation_dirs,
-            "num_threads": num_threads
+            "num_threads": num_threads,
         },
         constants={},
         debug=False,
@@ -115,22 +112,21 @@ def create_campaign(
 def main():
     implementation_dirs_seq = [
         "./sequential",
-        "./better_allocations_sequential"
+        "./better_allocations_sequential",
     ]
 
     implementation_dirs_par = [
         "./lock-free",
-        "./pooled"
+        "./pooled",
     ]
 
     nb_runs = 3
-    vg_wrapper=ValgrindWrapper()
+    vg_wrapper = ValgrindWrapper()
     instance_dir_sat = Path("./instances/sat_instances")
     instance_dir_unsat = Path("./instances/unsat_instances")
 
-    instances_sat = [ os.fspath(p.absolute()) for p in instance_dir_sat.iterdir()]
-    instances_unsat = [ os.fspath(p.absolute()) for p in instance_dir_unsat.iterdir()]
-
+    instances_sat = [os.fspath(p.absolute()) for p in instance_dir_sat.iterdir()]
+    instances_unsat = [os.fspath(p.absolute()) for p in instance_dir_unsat.iterdir()]
 
     ### Campaigns Init ###
     campaign_init_fast = create_campaign(
@@ -152,8 +148,9 @@ def main():
         nb_runs=1,
         benchmark=SequentialDPLL(
             src_dir="./",
-            post_run_hooks = [post_run_hook_valgrind_allocations],
-            command_wrappers= [vg_wrapper]),
+            post_run_hooks=[post_run_hook_valgrind_allocations],
+            command_wrappers=[vg_wrapper],
+        ),
         instances=instances_sat[0:1],
         implementation_dirs=["./sequential"],
     )
@@ -162,8 +159,9 @@ def main():
         nb_runs=1,
         benchmark=SequentialDPLL(
             src_dir="./",
-            post_run_hooks = [post_run_hook_valgrind_allocations],
-            command_wrappers= [vg_wrapper]),
+            post_run_hooks=[post_run_hook_valgrind_allocations],
+            command_wrappers=[vg_wrapper],
+        ),
         instances=instances_sat,
         implementation_dirs=["./better_allocations_sequential"],
     )
@@ -177,10 +175,9 @@ def main():
     campaign_seq_vs_ba_slow = create_campaign(
         name="Sequential vs Better allocs",
         nb_runs=nb_runs,
-        benchmark=SequentialDPLL(
-            src_dir="./"),
+        benchmark=SequentialDPLL(src_dir="./"),
         instances=instances_sat[-2:],
-        implementation_dirs=implementation_dirs_seq
+        implementation_dirs=implementation_dirs_seq,
     )
     campaign_seq_vs_ba_fast_allocations_throughput = create_campaign(
         name="Allocations throughput Sequential vs Better allocs",
@@ -188,7 +185,8 @@ def main():
         benchmark=SequentialDPLL(
             src_dir="./",
             post_run_hooks=[post_run_hook_valgrind_allocations],
-            command_wrappers=[vg_wrapper]),
+            command_wrappers=[vg_wrapper],
+        ),
         instances=instances_sat[:-1],
         implementation_dirs=implementation_dirs_seq,
     )
@@ -203,12 +201,10 @@ def main():
     campaign_multithreaded = create_campaign(
         name="Multithreaded queue size 100",
         nb_runs=nb_runs,
-        benchmark=ParallelDPLL(
-            src_dir="./"
-        ),
+        benchmark=ParallelDPLL(src_dir="./"),
         instances=instances_unsat,
         implementation_dirs=["./pooled"],
-        num_threads=[2,4,8],
+        num_threads=[2, 4, 8],
     )
     campaign_multithreaded_strace = create_campaign(
         name="Multithreaded strace queue size 100",
@@ -220,7 +216,7 @@ def main():
         ),
         instances=instances_unsat,
         implementation_dirs=["./pooled"],
-        num_threads=[2,4,8],
+        num_threads=[2, 4, 8],
     )
 
     ### Campaigns Runs ###
