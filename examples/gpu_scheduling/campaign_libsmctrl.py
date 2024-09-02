@@ -23,9 +23,6 @@ from generate_config import generate_config
 GUEST_SRC_DIR = "/home/user/src/cuda_scheduling_examiner_mirror"
 GUEST_RESULTS_DIR = "/home/user/src/cuda_scheduling_examiner_mirror/results"
 
-def sanitize_path(pathstring):
-    return pathstring.replace('(', r'\(').replace(')', r'\)').replace(' ', r'\ ',).replace("'", r"\'")
-
 class GpuSchedulingBench(Benchmark):
     def __init__(
         self,
@@ -119,12 +116,22 @@ class GpuSchedulingBench(Benchmark):
 
         rel_output_path = output_path.relative_to(os.getcwd())
 
+        output_path = rel_output_path / "output"
+        command = [
+            f"python2",
+            "./scripts/view_blocksbysm.py",
+            "-v",
+            "1200",
+            "-w",
+            "1200",
+            "-d",
+            f"{output_path}",
+            "-o",
+        ]
         self.platform.comm.shell(
-            command=f"python2 ./scripts/view_blocksbysm.py -v 1200 -w 1200 -d {sanitize_path(f"{rel_output_path / "output"}")} -o",
+            command=command,
             current_dir=current_dir,
         )
-
-        self._record_data_dir(build_variables,1)
 
         return build_variables
 
@@ -161,7 +168,7 @@ def get_docker_platform() -> Platform:
 
     if pathlib.Path('./patches/cuda_scheduling_examiner_mirror_makefile.patch').is_file():
         builder.copy('cuda_scheduling_examiner_mirror_makefile.patch', '/home/user/src/cuda_scheduling_examiner_mirror')
-        builder.run_multiple(command="git apply cuda_scheduling_examiner_mirror_makefile.patch")
+        builder.run(command="git apply cuda_scheduling_examiner_mirror_makefile.patch")
 
 
     builder.copy('cuda_scheduling_examiner_mirror.patch', '/home/user/src/cuda_scheduling_examiner_mirror')
@@ -179,6 +186,7 @@ def get_docker_platform() -> Platform:
     # TODO use builtin runner
     # docker_runner = builder.get_runner()
 
+    os.makedirs(host_src_dir, exist_ok=True)
     docker_runner = ConcreteDockerRunner(
         image=image_name,
         environment_variables={},
@@ -243,6 +251,9 @@ def main():
         benchmark_duration_seconds=None,
     )
 
+    K = 1000
+    M = K*K
+
     campaign2 = CampaignCartesianProduct(
         name="gpuscheduling",
         benchmark=bench2,
@@ -254,7 +265,7 @@ def main():
             "additional_infos": [(None,None)],
             "release_times": [(0,0)],
             "sm_masks": [(None, None), ("0xffffffffffffffe0","0xfffffffffffff01f"), ("0xffffffffffffff80", "0xffffffffffffc07f")],
-            "data_sizes": [(500000000, 500000000), (100000000, 100000000)],
+            "data_sizes": [(200*M, 200*M), (100*M, 100*M)],
             "iterations": [1,2],
         },
         constants={},
@@ -265,7 +276,10 @@ def main():
         benchmark_duration_seconds=None,
     )
 
-    campaign_suite = CampaignSuite(campaigns=[campaign, campaign2])
+    campaign_suite = CampaignSuite(campaigns=[
+        campaign,
+        campaign2,
+    ])
     campaign_suite.run_suite()
 
     get_current_platform().comm.shell(
