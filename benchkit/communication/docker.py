@@ -84,6 +84,7 @@ class DockerCommLayer(CommunicationLayer):
         timeout: int | None = None,
         output_is_log: bool = False,
         ignore_ret_codes: Iterable[int] = (),
+        ignore_any_error_code: bool = False,
     ) -> str:
         env_command = command_with_env(
             command=command,
