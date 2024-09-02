@@ -7,10 +7,10 @@ future.
 
 [ ] memcached
 [ ] mariadb
-[ ] redis
+[X] redis
 [ ] dpdk
 [ ] From "Thread Clustering: Sharing-Aware Scheduling on SMP-CMP-SMT Multiprocessors"
-    [ ] VolanoMark
+    [X] VolanoMark
     [ ] SPECjbb2013 (retired?)
     [ ] Rubis & MySQL
 [ ] From "Coherence Stalls or Latency Tolerance: Informed CPU Scheduling for Socket and Core Sharing"
@@ -66,6 +66,38 @@ future.
 - Generation of static HTML with charts: instead of generating PNG and PDF,
   we can generate a self-contained HTML page with an interactive graph,
   generated with plotly or altair for example.
+  We could also have some functions to start from a CSV file or a pandas
+  DataFrame.
+
+- Aggregation of results over time: the CSV files of benchkit can be archived
+  in a repository and then a chart can be generated with x-axis being time,
+  y-axis being the aggregated performance, and the color being the different
+  considered variants/platforms. The aggregation can be the geometric mean
+  over all dimensions (e.g. threads).
+  "On each platform, one pick a set of thread options, a set of campaigns
+   (queue, map, etc), and a set of possible flags (LSE/LLSC/builtin, whatever
+   else). Then one select which of these dimensions should be variants.
+   Eg, LSE/LLSC/builtin. The rest is aggregated via geometric mean. So you get
+   on a platform for each variant, a geometric mean measurement of the
+   performance over the versions of the software."
+  We can run that for every release of a library.
+
+- Platform Identification: a small util that identifies exactly the platform
+  on which you run the experiments: processor model, number of sockets,
+  motherboard model, amount of ram, gpu model, etc.
+  Some kind of summary like the info displayed when running the neofetch
+  command. Some string that uniquely identifies the characteristics of the
+  platform used; and then this can be used in further comparison.
+  E.g.: MySQL sysbench performance is actually influenced by the total amount
+  of RAM in the system, here is how the performance evolved across systems
+  when increasing available RAM.
+
+- Differential Performance Testing: to identify regression, we can add tools
+  to make the comparison of repos or repo+patch easier. And integrate for
+  example "Differential Flame Graphs" from Brendan Gregg.
+  Developing tools that can show impact of "changes" (like software or
+  hardware changes: removing a line in the code, changing the frequency,
+  or executing in a docker container).
 
 - Caching of results:
   skip *building* the benchmark if we can detect that all result records
@@ -108,6 +140,8 @@ future.
   Notice that some of these information could be optional.
 
 ## Non-functional changes
+
+- Release as a pip package!
 
 - Use standard logging instead of print() calls.
 
