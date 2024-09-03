@@ -1,9 +1,9 @@
-
-import time
-import pyopencl as cl
-import numpy as np
-import pathlib
 import argparse
+import pathlib
+import time
+
+import numpy as np
+import pyopencl as cl
 
 parser = argparse.ArgumentParser()
 parser.add_argument("BLOCK_SIZE", type=int)
@@ -18,7 +18,7 @@ queue = cl.CommandQueue(context, properties=cl.command_queue_properties.PROFILIN
 program = cl.Program(context, kernel).build()
 
 n = 1024
-size = n*n
+size = n * n
 
 h_a = np.full(size, 1).astype(np.int32)
 h_b = np.full(size, 2).astype(np.int32)
@@ -32,9 +32,9 @@ program.matmul.set_scalar_arg_dtypes([None, None, None, np.int32])
 start_time = time.time()
 local_size = int(args.BLOCK_SIZE)
 print(local_size)
-event = program.matmul(queue, (n,n), (local_size, local_size), d_a, d_b, d_c, np.int32(n))
+event = program.matmul(queue, (n, n), (local_size, local_size), d_a, d_b, d_c, np.int32(n))
 event.wait()
-elapsed = (event.profile.end - event.profile.start)/1e6
+elapsed = (event.profile.end - event.profile.start) / 1e6
 
 cl.enqueue_copy(queue, h_c, d_c)
 queue.finish()
