@@ -2,27 +2,25 @@
 
 import time
 
-from benchkit.benchmark import CommandAttachment
-from benchkit.utils.types import PathType
-from benchkit.shell.shellasync import AsyncProcess
 from benchmarks.cuda_bench import CudaBench
-from benchmarks.sycl_bench import SyclBench
 from benchmarks.opcl_bench import OpclBench
-from sycl import sycl_builder, adaptivecpp_builder
-from pythainer.runners import ConcreteDockerRunner, DockerRunner
-from pythainer.examples.runners import gpu_runner, personal_runner
+from benchmarks.sycl_bench import SyclBench
 from pythainer.examples.builders import get_user_gui_builder, opencl_builder
+from pythainer.examples.runners import gpu_runner, personal_runner
+from pythainer.runners import ConcreteDockerRunner, DockerRunner
+from sycl import adaptivecpp_builder, sycl_builder
 
+from benchkit.benchmark import CommandAttachment
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 from benchkit.communication.docker import DockerCommLayer
 from benchkit.platforms import Platform
-
+from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.dir import caller_dir
-
+from benchkit.utils.types import PathType
 
 GUEST_SRC_DIR = "/home/user/src"
 CUDA_METRICS = []  # ["gpu__time_active", "gpu__time_duration", "gpu__compute_memory_throughput"]
-SMI_METRICS = ["memory.used","utilization.gpu","utilization.memory"]
+SMI_METRICS = ["memory.used", "utilization.gpu", "utilization.memory"]
 ENV_VARS = {}
 
 
@@ -30,7 +28,7 @@ def get_docker_platform() -> Platform:
     image_name = "syclcudabenchkit"
     builder = get_user_gui_builder(
         image_name=image_name,
-        base_ubuntu_image="nvidia/cuda:12.2.0-devel-ubuntu22.04"
+        base_ubuntu_image="nvidia/cuda:12.2.0-devel-ubuntu22.04",
     )
 
     builder.space()
@@ -67,7 +65,7 @@ def get_docker_platform() -> Platform:
         devices=[],
         network="host",
         workdir=GUEST_SRC_DIR,
-        root=True
+        root=True,
     )
 
     # for profiling
@@ -98,9 +96,10 @@ def smi_attachment(current_dir: PathType) -> CommandAttachment:
             process._platform.comm.shell(
                 command=smi_command,
                 current_dir=current_dir,
-                output_is_log=True
+                output_is_log=True,
             )
             time.sleep(0.3)
+
     return _smi_attachment
 
 
@@ -158,13 +157,11 @@ def main():
         name="add_cuda",
         benchmark=cudabench_vecadd,
         nb_runs=runs,
-        variables={
-            "block_size": [1, 4, 8, 32, 64, 128, 256, 512, 1024]
-        },
+        variables={"block_size": [1, 4, 8, 32, 64, 128, 256, 512, 1024]},
         constants={
             # "enable_profiling": ENABLE_PROFILING,
             "profiling_metrics": CUDA_METRICS,
-            "smi_metrics": SMI_METRICS
+            "smi_metrics": SMI_METRICS,
         },
         debug=False,
         gdb=False,
@@ -177,13 +174,8 @@ def main():
         name="add_sycl",
         benchmark=syclbench_vecadd,
         nb_runs=runs,
-        variables={
-            "block_size": [1, 4, 8, 32, 64, 128, 256, 512, 1024]
-        },
-        constants={
-            "profiling_metrics": CUDA_METRICS,
-            "smi_metrics": SMI_METRICS
-        },
+        variables={"block_size": [1, 4, 8, 32, 64, 128, 256, 512, 1024]},
+        constants={"profiling_metrics": CUDA_METRICS, "smi_metrics": SMI_METRICS},
         debug=False,
         gdb=False,
         enable_data_dir=True,
@@ -195,12 +187,8 @@ def main():
         name="add_opcl",
         benchmark=opclbench_vecadd,
         nb_runs=runs,
-        variables={
-            "block_size": [1, 4, 8, 32, 64, 128, 256, 512, 1024]
-        },
-        constants={
-            "smi_metrics": SMI_METRICS
-        },
+        variables={"block_size": [1, 4, 8, 32, 64, 128, 256, 512, 1024]},
+        constants={"smi_metrics": SMI_METRICS},
         debug=False,
         gdb=False,
         enable_data_dir=True,
@@ -212,13 +200,8 @@ def main():
         name="matmul_cuda",
         benchmark=cudabench_matmul,
         nb_runs=runs,
-        variables={
-            "block_size": [1, 2, 4, 8, 16, 32]
-        },
-        constants={
-            "profiling_metrics": CUDA_METRICS,
-            "smi_metrics": SMI_METRICS
-        },
+        variables={"block_size": [1, 2, 4, 8, 16, 32]},
+        constants={"profiling_metrics": CUDA_METRICS, "smi_metrics": SMI_METRICS},
         debug=False,
         gdb=False,
         enable_data_dir=True,
@@ -230,13 +213,8 @@ def main():
         name="matmul_sycl",
         benchmark=syclbench_matmul,
         nb_runs=runs,
-        variables={
-            "block_size": [1, 2, 4, 8, 16, 32]
-        },
-        constants={
-            "profiling_metrics": CUDA_METRICS,
-            "smi_metrics": SMI_METRICS
-        },
+        variables={"block_size": [1, 2, 4, 8, 16, 32]},
+        constants={"profiling_metrics": CUDA_METRICS, "smi_metrics": SMI_METRICS},
         debug=False,
         gdb=False,
         enable_data_dir=True,
@@ -248,12 +226,8 @@ def main():
         name="matmul_opcl",
         benchmark=opclbench_matmul,
         nb_runs=runs,
-        variables={
-            "block_size": [1, 2, 4, 8, 16, 32]
-        },
-        constants={
-            "smi_metrics": SMI_METRICS
-        },
+        variables={"block_size": [1, 2, 4, 8, 16, 32]},
+        constants={"smi_metrics": SMI_METRICS},
         debug=False,
         gdb=False,
         enable_data_dir=True,
@@ -262,29 +236,33 @@ def main():
     )
 
     start_time = time.time()
-    suite_vecadd = CampaignSuite(campaigns=[
-        cudacampaign_vecadd,
-        syclcampaign_vecadd,
-        opclcampaign_vecadd,
-    ])
-    suite_matmul = CampaignSuite(campaigns=[
-        cudacampaign_matmul,
-        syclcampaign_matmul,
-        opclcampaign_matmul,
-    ])
+    suite_vecadd = CampaignSuite(
+        campaigns=[
+            cudacampaign_vecadd,
+            syclcampaign_vecadd,
+            opclcampaign_vecadd,
+        ]
+    )
+    suite_matmul = CampaignSuite(
+        campaigns=[
+            cudacampaign_matmul,
+            syclcampaign_matmul,
+            opclcampaign_matmul,
+        ]
+    )
     suite_vecadd.print_durations()
     suite_matmul.print_durations()
     suite_vecadd.run_suite()
     suite_matmul.run_suite()
     stop_time = time.time()
-    print("benchmark duration:", stop_time-start_time)
+    print("benchmark duration:", stop_time - start_time)
 
     suite_vecadd.generate_graph(
         plot_name="barplot",
         title=f"vector add duration",
         y="duration",
         x="block_size",
-        hue="benchname"
+        hue="benchname",
     )
 
     suite_vecadd.generate_graph(
@@ -292,7 +270,7 @@ def main():
         title=f"vector add kernel time",
         y="kernel_time",
         x="block_size",
-        hue="benchname"
+        hue="benchname",
     )
 
     suite_vecadd.generate_graph(
@@ -300,7 +278,7 @@ def main():
         title="vector add gpu usage",
         y="utilization.gpu",
         x="block_size",
-        hue="benchname"
+        hue="benchname",
     )
 
     suite_matmul.generate_graph(
@@ -308,7 +286,7 @@ def main():
         title="vector add vram usage",
         y="memory.used",
         x="block_size",
-        hue="benchname"
+        hue="benchname",
     )
 
     suite_matmul.generate_graph(
@@ -316,7 +294,7 @@ def main():
         title="matrix multiplication duration",
         y="duration",
         x="block_size",
-        hue="benchname"
+        hue="benchname",
     )
 
     suite_matmul.generate_graph(
@@ -324,7 +302,7 @@ def main():
         title="matrix multiplication kernel time",
         y="kernel_time",
         x="block_size",
-        hue="benchname"
+        hue="benchname",
     )
 
     suite_matmul.generate_graph(
@@ -332,7 +310,7 @@ def main():
         title="matrix multiplication gpu usage",
         y="utilization.gpu",
         x="block_size",
-        hue="benchname"
+        hue="benchname",
     )
 
     suite_matmul.generate_graph(
@@ -340,7 +318,7 @@ def main():
         title="matrix multiplication vram usage",
         y="memory.used",
         x="block_size",
-        hue="benchname"
+        hue="benchname",
     )
 
 
