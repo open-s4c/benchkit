@@ -19,7 +19,7 @@ def sycl_builder() -> PartialDockerBuilder:
     builder = PartialDockerBuilder()
     builder.space()
     builder.root()
-    builder.add_packages(packages={
+    builder.add_packages(packages=[
         "lsb-release",
         "wget",
         "software-properties-common",
@@ -27,19 +27,19 @@ def sycl_builder() -> PartialDockerBuilder:
         "python3",
         "cmake",
         "libboost-all-dev",
-        "build-essential"
-    })
+        "build-essential",
+    ])
     builder.run_multiple(commands=[
         "wget https://apt.llvm.org/llvm.sh",
         "chmod +x llvm.sh",
         "sudo ./llvm.sh 16",
     ])
-    builder.add_packages(packages={
+    builder.add_packages(packages=[
         "libclang-16-dev",
          "clang-tools-16",
          "libomp-16-dev",
          "llvm-16-dev",
-         "lld-16"  
-    })
+         "lld-16",
+    ])
     builder.user()
     return builder

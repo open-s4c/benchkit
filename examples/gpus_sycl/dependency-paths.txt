@@ -1,3 +1,2 @@
 ../..
 ./kit
-./kit/benchmarks
