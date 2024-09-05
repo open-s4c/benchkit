@@ -128,7 +128,7 @@ class RedisBench(Benchmark):
 
         self.platform.comm.pipe_shell(
             "cat ../redis.conf | "
-            "sed -e 's/io-threads 4/io-threads {nb_threads}/' "
+            f"sed -e 's/io-threads 4/io-threads {nb_threads}/' "
             "> ../redis-benchkit.conf-tmp",
             current_dir=self._bench_bin_path,
             shell=False,
