@@ -11,12 +11,10 @@ HOST_FILE = ".gitignore"
 TMP_FILE = "cloned-gitignore"
 TARGET_FILE = "/storage/media/100/local/testing/.gitignore"
 
-devices = HarmonyDebugBridge._devices()
-device = devices[0]
-
+device = OpenHarmonyDeviceConnector.query_devices(lambda _: True)[0]
 print(device)
 
-bridge = HarmonyDebugBridge(device)
+bridge = OpenHarmonyDeviceConnector(device)
 output = bridge._target_shell_out("cd data && ls")
 print(output)
 

@@ -1,49 +1,50 @@
 # SPDX-License-Identifier: MIT
 """
-Module to handle hdc (harmony debug bridge) interactions between host and remote phone.
+Module to handle hdc (OpenHarmony Device Connector) interactions between host and remote phone.
 """
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Callable
+from enum import Enum
 
 from benchkit.shell.shell import get_args, shell_out
 from benchkit.utils.types import Command, PathType
 
 
-def _identifier_from(ip_addr: str, port: int) -> str:
-    return f"{ip_addr}:{port}"
-
-
 class HDCError(Exception):
-    """Handle for errors from adb."""
+    """Handle for errors from hdc."""
 
+class DeviceIdentifierKind(Enum):
+    IP_AND_PORT = 0,
+    SERIAL = 1,
+    DONT_CARE = 2,
 
 class HDCDevice:
     """Representation of a device connected through hdc."""
 
     def __init__(
         self,
-        ip_addr: str,
-        port: str,
+        identifier: str,
+        kind: DeviceIdentifierKind = DeviceIdentifierKind.DONT_CARE,
     ) -> None:
-        self.ip_addr = ip_addr
-        self.port = port
+        self.identifier = identifier
+        self.kind = kind
 
     def __str__(self) -> str:
-        return f"{self.ip_addr}:{self.port}"
+        return f"{self.identifier}"
     
 
-class HarmonyDebugBridge:
+class OpenHarmonyDeviceConnector:
     """Operations with the phone for high-level hdc operations."""
 
     def __init__(
         self,
-        ip_addr: str,
-        port: int = 5555,
+        identifier: str,
+        kind: DeviceIdentifierKind = DeviceIdentifierKind.DONT_CARE,
         keep_connected: bool = False,
         wait_connected: bool = False,
         expected_os: Optional[str] = None,
     ) -> None:
-        self._ip = ip_addr
-        self._port = port
+        self.identifier = identifier
+        self.kind = kind
         self._keep_connected = keep_connected
         self._wait_connected = wait_connected
         self._expected_os = expected_os
@@ -56,21 +57,11 @@ class HarmonyDebugBridge:
         wait_connected: bool = False,
         expected_os: Optional[str] = None,
     ) -> None:
-        self._ip = device.ip_addr
-        self._port = device.port
+        self.identifier = device.identifier
+        self.kind = device.kind
         self._keep_connected = keep_connected
         self._wait_connected = wait_connected
         self._expected_os = expected_os
-
-
-    @property
-    def identifier(self) -> str:
-        """Get hdc identifier of current device.
-
-        Returns:
-            str: hdc identifier of current device.
-        """
-        return _identifier_from(ip_addr=self._ip, port=self._port)
 
 
     def _find_device(self) -> Optional[HDCDevice]:
@@ -88,22 +79,31 @@ class HarmonyDebugBridge:
     def _devices() -> Iterable[str]:
         """Get list of devices recognized by hdc.
 
-        Raises:
-            HDCError: if hdc is not working as expected.
-
         Returns:
             Iterable[HDCDevice]: list of devices recognized by hdc.
         """
-        output = HarmonyDebugBridge._host_shell_out(command="hdc list targets")
+        output = OpenHarmonyDeviceConnector._host_shell_out(command="hdc list targets")
         device_ids = output.strip().splitlines()
         devices = []
         for dev in device_ids:
-            device = dev.split(":")
-            if len(device) != 2:
-                raise HDCError("Could not parse hdc output")
-            devices.append(HDCDevice(device[0], device[1]))
+            if ":" in dev:
+                devices.append(HDCDevice(dev, DeviceIdentifierKind.IP_AND_PORT))
+            else:
+                devices.append(HDCDevice(dev, DeviceIdentifierKind.SERIAL))
         
         return devices
+    
+    
+    @staticmethod
+    def query_devices(filter: Callable[[HDCDevice], bool]) -> Iterable[HDCDevice]:
+        """Get filtered list of devices recognized by hdc.
+
+        Returns:
+            Iterable[HDCDevice]: filtered list of devices recognized by hdc.
+        """
+        devices = OpenHarmonyDeviceConnector._devices()
+        filtered = [dev for dev in devices if filter(dev)]
+        return filtered
 
 
     @staticmethod
