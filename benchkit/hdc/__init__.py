@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 """
 Module to handle hdc (OpenHarmony Device Connector) interactions between host and remote phone.
+HDC documentation: https://docs.openharmony.cn/pages/v5.0/en/application-dev/dfx/hdc.md 
 """
 from typing import Iterable, Optional, Callable
 from enum import Enum
