@@ -6,5 +6,5 @@ setup(
     version="1.0.0",
     url="https://github.com/open-s4c/benchkit",
     author="Antonio Paolillo",
-    packages=find_packages(),
+    packages=find_packages(include=["benchkit", "benchkit.*"]),
 )
