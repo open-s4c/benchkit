@@ -83,7 +83,7 @@ class OpenHarmonyDeviceConnector:
         Returns:
             Iterable[HDCDevice]: list of devices recognized by hdc.
         """
-        output = OpenHarmonyDeviceConnector._host_shell_out(command="hdc list targets")
+        output = OpenHarmonyDeviceConnector._host_shell_out(command="hdc.exe list targets")
         device_ids = output.strip().splitlines()
         devices = []
         for dev in device_ids:
@@ -96,7 +96,7 @@ class OpenHarmonyDeviceConnector:
     
     
     @staticmethod
-    def query_devices(filter: Callable[[HDCDevice], bool]) -> Iterable[HDCDevice]:
+    def query_devices(filter: Callable[[HDCDevice], bool] = lambda _: True) -> Iterable[HDCDevice]:
         """Get filtered list of devices recognized by hdc.
 
         Returns:
@@ -133,7 +133,7 @@ class OpenHarmonyDeviceConnector:
         command_args = dir_args + get_args(command)
 
         hdc_command = [
-            "hdc",
+            "hdc.exe",
             "-t",
             f"{self.identifier}",
             "shell"
@@ -186,7 +186,7 @@ class OpenHarmonyDeviceConnector:
             remote_path (PathType): path where to push the file on the device.
         """
         command = [
-            "hdc",
+            "hdc.exe",
             "-t",
             f"{self.identifier}",
             "file",
@@ -209,7 +209,7 @@ class OpenHarmonyDeviceConnector:
             local_path (PathType): path where to pull the file on the host.
         """
         commmand = [
-            "hdc",
+            "hdc.exe",
             "-t",
             f"{self.identifier}",
             "file",
