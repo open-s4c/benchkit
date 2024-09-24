@@ -56,11 +56,11 @@ class TraceCmd:
         self._process.wait()
 
         command = ["trace-cmd", "report", "trace.dat"]
-            
-        AsyncProcess(
-            platform=self._platform,
-            arguments=command,
-            stdout_path=rdd / "generate-graph.out",
-            stderr_path=rdd / "generate-graph.err",
+                
+        output = self._platform.comm.shell(
+            command=command,
             current_dir=rdd,
+            print_output=False
         )
+        write_record_file_fun(output, "generate-graph.out")
+        
