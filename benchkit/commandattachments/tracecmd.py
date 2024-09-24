@@ -7,7 +7,6 @@ from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
 from benchkit.platforms import get_current_platform, Platform
 import pathlib
-import time
 
 
 class TraceCmd:
