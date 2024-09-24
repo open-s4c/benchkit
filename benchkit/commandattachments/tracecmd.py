@@ -54,7 +54,7 @@ class TraceCmd:
         print(rdd)
 
         self._process.wait()
-        
+
         command = ["trace-cmd", "report", "trace.dat"]
                 
         output = self._platform.comm.shell(
