@@ -21,14 +21,11 @@ def main() -> None:
     # Define the campaign, associated with the Graph500 benchmark
     campaign = graph500_campaign(
         src_dir=graph500_src_dir,
-        version=[
-            "bfs",
-            "bfs_sssp"
-        ],
+        version=["bfs", "bfs_sssp"],
         nb_runs=3,
         benchmark_duration_seconds=3,
-        scale=[1,2,4,8],
-        non_power_of_two=[False]
+        scale=[1, 2, 4, 8],
+        non_power_of_two=[False],
     )
 
     # Define the campaign suite and run the benchmarks in the suite

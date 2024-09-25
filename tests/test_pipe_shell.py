@@ -6,6 +6,7 @@ Module to test the use of pipe in local and remote execution.
 """
 
 import sys
+
 from benchkit.platforms import get_current_platform, get_remote_platform
 
 
@@ -28,9 +29,7 @@ def run_single_case(host, shell, expected_to_work) -> None:
             shell=shell,
             print_command=False,
         )
-        print(
-            f"{is_expected[expected_to_work]} - Success with {host} execution and shell={shell}"
-        )
+        print(f"{is_expected[expected_to_work]} - Success with {host} execution and shell={shell}")
         print(output)
     except:
         print(

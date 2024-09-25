@@ -53,7 +53,7 @@ def pipe_shell_out(
             command,
             cwd=current_dir,
             shell=shell,
-            text=True
+            text=True,
         )
 
     except subprocess.CalledProcessError as err:
@@ -168,20 +168,24 @@ def shell_out(
                 raw_outline = process.stdout.readline()
 
         outlines = []
-        with subprocess.Popen(
-            arguments,
-            shell=shell,
-            cwd=current_dir,
-            env=environment,
-            stdout=subprocess.PIPE,
-        ) if std_input is None else subprocess.Popen(
-            arguments,
-            shell=shell,
-            cwd=current_dir,
-            env=environment,
-            stdout=subprocess.PIPE,
-            stdin=std_input,
-            text=True,
+        with (
+            subprocess.Popen(
+                arguments,
+                shell=shell,
+                cwd=current_dir,
+                env=environment,
+                stdout=subprocess.PIPE,
+            )
+            if std_input is None
+            else subprocess.Popen(
+                arguments,
+                shell=shell,
+                cwd=current_dir,
+                env=environment,
+                stdout=subprocess.PIPE,
+                stdin=std_input,
+                text=True,
+            )
         ) as process:
             retcode = process.poll()
             while retcode is None:

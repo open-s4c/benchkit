@@ -4,8 +4,8 @@
 
 from bench import Dat3mBench
 from dat3m import get_dat3m_docker_platform
-from benchkit.campaign import CampaignIterateVariables, CampaignSuite
 
+from benchkit.campaign import CampaignIterateVariables, CampaignSuite
 
 considered_dat3m_versions = {
     "v4.1.0": "4.1.0",

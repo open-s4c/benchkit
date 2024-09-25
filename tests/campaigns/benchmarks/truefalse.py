@@ -1,10 +1,11 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from benchkit.benchmark import Benchmark
 import pathlib
-from benchkit.utils.dir import caller_dir
 from typing import Any, Dict, List
+
+from benchkit.benchmark import Benchmark
+from benchkit.utils.dir import caller_dir
 
 
 class TrueFalseBench(Benchmark):

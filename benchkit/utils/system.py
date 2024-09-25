@@ -18,6 +18,7 @@ def _get_linux_boot_args() -> str:
 def _get_windows_boot_args() -> str:
     return "<boot args fetching is unsupported on Windows>"
 
+
 def _get_netbsd_boot_args() -> str:
     return "<boot args fetching is unsupported on NetBSD>"
 

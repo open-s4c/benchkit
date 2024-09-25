@@ -46,7 +46,7 @@ class DockerCommLayer(CommunicationLayer):
         stderr: PathType,
         cwd: PathType | None,
         env: dict | None,
-        establish_new_connection: bool=False
+        establish_new_connection: bool = False,
     ) -> subprocess.Popen:
         # TODO This is a solution that's a bit dangerous, as the user would commonly expect the
         # background process to run inside the docker container. We should keep this use case
@@ -60,7 +60,7 @@ class DockerCommLayer(CommunicationLayer):
         )
         full_command = self._remote_shell_command(
             remote_command=env_command,
-            remote_current_dir=cwd
+            remote_current_dir=cwd,
         )
 
         return subprocess.Popen(
@@ -68,7 +68,7 @@ class DockerCommLayer(CommunicationLayer):
             stdout=stdout,
             stderr=stderr,
             env=env,
-            preexec_fn=None
+            preexec_fn=None,
         )
 
     def shell(

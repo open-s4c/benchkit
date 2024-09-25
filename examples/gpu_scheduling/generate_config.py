@@ -3,10 +3,12 @@
 import json
 import random
 
+
 def first_el(mytup, index):
     if type(mytup) is tuple:
         return mytup[index]
     return mytup
+
 
 def generate_benchmark(index, config_dict, output_folder):
     number = index + 1
@@ -24,6 +26,7 @@ def generate_benchmark(index, config_dict, output_folder):
     benchmark["sm_mask"] = config_dict.get("sm_masks", None)
     benchmark["release_time"] = config_dict.get("release_times", None)
     return {k: v for k, v in benchmark.items() if v is not None}
+
 
 def generate_config(config_dict, output_folder):
 

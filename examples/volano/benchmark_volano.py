@@ -6,11 +6,11 @@
 Benchkit support for Volano
 """
 
+import os
+import pathlib
+import re
 import subprocess
 import time
-import os
-import re
-import pathlib
 from typing import Any, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
@@ -79,7 +79,7 @@ class CounterBenchmark(Benchmark):
             "users",  # number of users per room (20)
             "count",  # messages per user or 0 for no limit (100)
             "pause",  # message pause in second or 0 for  pacing (0)
-            "host",   # server host name (localhost)
+            "host",  # server host name (localhost)
         ]
 
     @staticmethod
@@ -91,21 +91,19 @@ class CounterBenchmark(Benchmark):
         output: str,
     ) -> Dict[str, Any]:
         # Use regular expression to find the average throughput
-        match = re.search(r'Average throughput\s*=\s*(\d+)\s*messages per second', output)
+        match = re.search(r"Average throughput\s*=\s*(\d+)\s*messages per second", output)
         if match:
             average_throughput = int(match.group(1))
-            print(f'Average throughput: {average_throughput} messages per second')
+            print(f"Average throughput: {average_throughput} messages per second")
             result_dict = {"average_throughput": average_throughput}
             print(result_dict)
         else:
-            raise ValueError('Average throughput not found')
+            raise ValueError("Average throughput not found")
 
         return result_dict
 
     def dependencies(self) -> List[PackageDependency]:
-        return super().dependencies() + [
-            PackageDependency("java")
-        ]
+        return super().dependencies() + [PackageDependency("java")]
 
     def build_tilt(self, **kwargs) -> None:
         self.tilt.build_single_lock(**kwargs)
@@ -164,7 +162,7 @@ class CounterBenchmark(Benchmark):
             "-pause",
             f"{pause}",
             "-host",
-            f"{host}"
+            f"{host}",
         ]
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
@@ -207,12 +205,12 @@ def counter_campaign(
     platform: Platform | None = None,
     nb_runs: int = 2,
     benchmark_duration_seconds: int = 5,
-    start: Iterable[int] = (1, ),
+    start: Iterable[int] = (1,),
     rooms: Iterable[int] = (20, 25, 30, 35, 40, 45, 50, 55, 60),
-    users: Iterable[int] = (20, ),
-    count: Iterable[int] = (100, ),
-    pause: Iterable[int] = (0, ),
-    host: Iterable[str] = ("localhost", ),
+    users: Iterable[int] = (20,),
+    count: Iterable[int] = (100,),
+    pause: Iterable[int] = (0,),
+    host: Iterable[str] = ("localhost",),
     debug: bool = False,
     gdb: bool = False,
     enable_data_dir: bool = True,

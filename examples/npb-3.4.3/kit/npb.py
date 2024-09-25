@@ -163,10 +163,10 @@ class NPBBench(Benchmark):
         benchmark_duration_seconds: int,
         **kwargs,
     ) -> Dict[str, Any]:
-        
-        total_time = command_output.strip().split('seconds =')[1].split('\n')[0].strip()
-        mops_total = command_output.strip().split('Mop/s total     =')[1].split('\n')[0].strip()
-        mops_thread = command_output.strip().split('Mop/s/thread    =')[1].split('\n')[0].strip()
+
+        total_time = command_output.strip().split("seconds =")[1].split("\n")[0].strip()
+        mops_total = command_output.strip().split("Mop/s total     =")[1].split("\n")[0].strip()
+        mops_thread = command_output.strip().split("Mop/s/thread    =")[1].split("\n")[0].strip()
 
         result_dict = {
             "duration": total_time,

@@ -1,25 +1,22 @@
 #!/usr/bin/env python3
 
-from benchkit.commandwrappers.perf import PerfReportWrap
 from cgol_cpu import cgol_campaign
 
 from benchkit.campaign import CampaignSuite
+from benchkit.commandwrappers.perf import PerfReportWrap
 from benchkit.utils.dir import get_curdir
+
 
 def create_campaign_for_version(perf_assignment_dir, flamegraph_dir, version_nr):
     version_src_dir = perf_assignment_dir / f"version-{version_nr}"
     wrapper = PerfReportWrap(
-        flamegraph_path=flamegraph_dir, 
-        perf_record_options=["--call-graph", "dwarf", "-g", "--all-user"]
+        flamegraph_path=flamegraph_dir,
+        perf_record_options=["--call-graph", "dwarf", "-g", "--all-user"],
     )
 
     campaign = cgol_campaign(
-        command_wrappers= [
-            wrapper
-        ],
-        post_run_hooks= [
-            wrapper.post_run_hook_flamegraph
-        ],
+        command_wrappers=[wrapper],
+        post_run_hooks=[wrapper.post_run_hook_flamegraph],
         src_dir=version_src_dir,
         build_dir=version_src_dir / "build",
         bench_name=["generation_based"],
@@ -28,18 +25,17 @@ def create_campaign_for_version(perf_assignment_dir, flamegraph_dir, version_nr)
         nb_generations=[5],
         nb_runs=1,
         enable_data_dir=True,
-        constants= {
-            "bench_version": f"version-{version_nr}"
-        }
+        constants={"bench_version": f"version-{version_nr}"},
     )
     return campaign
+
 
 def main() -> None:
     """Main function of the campaign script."""
 
     # Root directory where the Conway's Game of Life implementation is located
     perf_assignment_dir = (get_curdir(__file__).parent.parent.parent.parent).resolve()
-    flamegraph_dir="../../../../FlameGraph"
+    flamegraph_dir = "../../../../FlameGraph"
 
     # Define the campaign for the different CPU versions
     campaign_1 = create_campaign_for_version(perf_assignment_dir, flamegraph_dir, 1)
@@ -63,6 +59,7 @@ def main() -> None:
     suite = CampaignSuite(campaigns=campaigns)
     suite.print_durations()
     suite.run_suite()
+
 
 if __name__ == "__main__":
     main()

@@ -2,9 +2,10 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from benchkit.commandwrappers.ltrace import LtraceWrap
-from benchkit.campaign import CampaignIterateVariables
 from benchmarks.sleep import SleepBench
+
+from benchkit.campaign import CampaignIterateVariables
+from benchkit.commandwrappers.ltrace import LtraceWrap
 
 
 def main() -> None:
@@ -24,5 +25,5 @@ def main() -> None:
     ).run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
