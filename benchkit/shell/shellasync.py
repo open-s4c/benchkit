@@ -126,16 +126,16 @@ class AsyncProcess:
     def find_matching_ssh(self, local_pid):
         line = get_current_platform().comm.pipe_shell(
             command=f"netstat -tp | grep {local_pid}" + " | awk '{print $4}'",
-            print_command = False,
+            print_command=False,
         )
-        port = line.split(':')[-1].split('\n')[0]
+        port = line.split(":")[-1].split("\n")[0]
 
         line = self._platform.comm.pipe_shell(
             command=f"sudo netstat -tp | grep {port}" + " | awk '{print $7}'",
-            print_command = False,
+            print_command=False,
         )
 
-        remote_pid = line.split('/')[0].split('\n')[0]
+        remote_pid = line.split("/")[0].split("\n")[0]
 
         return remote_pid
 
@@ -143,23 +143,22 @@ class AsyncProcess:
 
         children = self._platform.comm.pipe_shell(
             command=f"ps -o pid= --ppid {remote_pid}",
-            print_command = False,
-            ignore_ret_codes = [1],
+            print_command=False,
+            ignore_ret_codes=[1],
         )
 
         if children != "":
 
-            children = children.strip().split(' ')
+            children = children.strip().split(" ")
 
             for child in children:
                 self.kill_remote_process_hierarchy(child)
 
         self._platform.comm.pipe_shell(
             command=f"sudo kill {remote_pid}",
-            print_command = False,
-            ignore_ret_codes = [1],
+            print_command=False,
+            ignore_ret_codes=[1],
         )
-
 
     def stop(self) -> None:
         """

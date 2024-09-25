@@ -176,7 +176,7 @@ class LevelDBBench(Benchmark):
             self.platform.comm.shell(
                 command=db_init_command,
                 current_dir=self._build_dir,
-                print_output=False
+                print_output=False,
             )
 
         environment = self._preload_env(
@@ -193,7 +193,6 @@ class LevelDBBench(Benchmark):
         else:
             duration_num = f"--num={num // nb_threads}"
 
-
         if bench_name in [
             "fillseq",
             "fillrandom",
@@ -203,7 +202,6 @@ class LevelDBBench(Benchmark):
             use_existing_db = False
         else:
             use_existing_db = True
-
 
         run_command = [
             "./db_bench",

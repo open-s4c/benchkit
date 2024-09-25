@@ -39,9 +39,11 @@ class Graph500Bench(Benchmark):
         )
 
         bench_src_path = pathlib.Path(src_dir / "src")
-        if not self.platform.comm.isdir(bench_src_path) or not self.platform.comm.isfile(bench_src_path / "Makefile"):
+        src_dir_there = self.platform.comm.isdir(bench_src_path)
+        makefile_there = self.platform.comm.isfile(bench_src_path / "Makefile")
+        if not src_dir_there or not makefile_there:
             raise ValueError(f"Invalid Graph500 source path: {bench_src_path}\n")
-        
+
         self._bench_src_path = bench_src_path
 
     @property
@@ -58,7 +60,7 @@ class Graph500Bench(Benchmark):
             "version",
             "scale",
             "skip_validation",
-            "skip_bfs"
+            "skip_bfs",
         ]
 
     @staticmethod
@@ -80,7 +82,7 @@ class Graph500Bench(Benchmark):
         non_power_of_two: bool = False,
         **kwargs,
     ) -> None:
-        
+
         # we need to make a small change to the makefile in order to set non_power_of_two
         # see https://github.com/graph500/graph500/blob/newreference/README
         makefile_path = self._bench_src_path / "Makefile"
@@ -93,7 +95,7 @@ class Graph500Bench(Benchmark):
                     lines[index] = line + " -DPROCS_PER_NODE_NOT_POWER_OF_TWO"
                 else:
                     lines[index] = line.replace("-DPROCS_PER_NODE_NOT_POWER_OF_TWO", "")
-        
+
         # save it to the file
         self.platform.comm.write_content_to_file("\n".join(lines), makefile_path)
         # build
@@ -116,22 +118,27 @@ class Graph500Bench(Benchmark):
         skip_bfs: bool = False,
         **kwargs,
     ) -> str:
-        
+
         environment = self._preload_env(**kwargs)
-        
+
         # set the environment correctly
-        if environment is None: environment = dict()
+        if environment is None:
+            environment = dict()
         environment["SKIP_VALIDATION"] = "1" if skip_validation else "0"
         environment["SKIP_BFS"] = "1" if skip_bfs else "0"
-        
+
         if version not in ["bfs", "bfs_sssp"]:
-            raise Exception("Invalid value given for version:", version, "given, but only bfs and bfs_sssp are accepted.")
+            raise Exception(
+                "Invalid value given for version:",
+                version,
+                "given, but only bfs and bfs_sssp are accepted.",
+            )
 
         run_command = [
             "./graph500_reference_" + version,
             str(scale),
         ]
-        
+
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
             environment=environment,
@@ -155,18 +162,18 @@ class Graph500Bench(Benchmark):
     ) -> Dict[str, Any]:
         lines = command_output.splitlines()
         result_dict = dict()
-        
+
         for line in lines:
-            if ':' in line:
+            if ":" in line:
                 # result lines look like:
                 # KEY:        VALUE
-                parts = line.split(':')
+                parts = line.split(":")
                 key = parts[0].strip()
                 value = float(parts[-1].replace("!", "").strip())
                 result_dict[key] = value
 
         return result_dict
-    
+
 
 def graph500_campaign(
     name: str = "graph500_campaign",
@@ -181,13 +188,11 @@ def graph500_campaign(
     platform: Platform | None = None,
     nb_runs: int = 1,
     benchmark_duration_seconds: int = 5,
-    
     version: Iterable[str] = (),
     scale: Iterable[int] = (),
     skip_validation: Iterable[bool] = (),
     skip_bfs: Iterable[bool] = (),
     non_power_of_two: Iterable[bool] = (),
-    
     debug: bool = False,
     gdb: bool = False,
     enable_data_dir: bool = False,
@@ -196,7 +201,7 @@ def graph500_campaign(
     pretty: Optional[Dict[str, str]] = None,
 ) -> CampaignCartesianProduct:
     """Return a cartesian product campaign configured for the LevelDB benchmark."""
-    
+
     variables = {
         "version": version,
         "scale": scale,
@@ -204,7 +209,7 @@ def graph500_campaign(
         "skip_bfs": skip_bfs,
         "non_power_of_two": non_power_of_two,
     }
-    
+
     if pretty is not None:
         pretty = {"lock": pretty}
 

@@ -32,7 +32,7 @@ class Systemctl:
         """
         output = self._comm_layer.shell(
             command=f"systemctl status {service_name}",
-            ignore_ret_codes=(3, 4,),
+            ignore_ret_codes=(3, 4),
             print_output=False,
         )
 

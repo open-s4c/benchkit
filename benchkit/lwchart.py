@@ -138,7 +138,8 @@ def _generate_chart_from_df(
     output_path = pathlib.Path(output_dir)
     while (fig_path_png := output_path / f"benchkit-{prefix}{timestamp}-{fig_id:02}.png").exists():
         fig_id += 1
-    with open(fig_path_png, 'x'):  # avoid overwriting if the figures aren't created yet (race issue)
+    # avoid overwriting if the figures aren't created yet (race issue):
+    with open(fig_path_png, "x"):
         pass
 
     fig.savefig(f"{fig_path_png}", transparent=False)

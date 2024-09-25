@@ -5,6 +5,7 @@ from cgol_cpu import cgol_campaign
 from benchkit.campaign import CampaignSuite
 from benchkit.utils.dir import get_curdir
 
+
 # Creates a campaign for a specific version of the code
 def create_campaign_for_version(perf_assignment_dir, version_nr):
     version_src_dir = perf_assignment_dir / f"version-{version_nr}"
@@ -13,14 +14,13 @@ def create_campaign_for_version(perf_assignment_dir, version_nr):
         build_dir=version_src_dir / "build",
         bench_name=["time_based"],
         nb_threads=[4],
-        size=[200,500,1000,2000,4000,6000,8000],
+        size=[200, 500, 1000, 2000, 4000, 6000, 8000],
         benchmark_duration_seconds=25,
         nb_runs=30,
-        constants= {
-            "bench_version": f"version-{version_nr}"
-        }
+        constants={"bench_version": f"version-{version_nr}"},
     )
     return campaign
+
 
 def main() -> None:
     """Main function of the campaign script."""
@@ -38,15 +38,7 @@ def main() -> None:
     campaign_7 = create_campaign_for_version(perf_assignment_dir, 7)
 
     # Define the campaign suite and run the benchmarks in the suite
-    campaigns = [
-        campaign_1,
-        campaign_2,
-        campaign_3,
-        campaign_4,
-        campaign_5,
-        campaign_6,
-        campaign_7
-    ]
+    campaigns = [campaign_1, campaign_2, campaign_3, campaign_4, campaign_5, campaign_6, campaign_7]
     suite = CampaignSuite(campaigns=campaigns)
     suite.print_durations()
     suite.run_suite()
@@ -58,6 +50,7 @@ def main() -> None:
         y="throughput",
         hue="bench_version",
     )
+
 
 if __name__ == "__main__":
     main()

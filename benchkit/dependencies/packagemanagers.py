@@ -17,6 +17,7 @@ _dnf_file2package = {}
 
 _pacman_file2package = {}
 
+
 class PackageManager:
     """
     Represent a package manager and the primitives to check existence, check presence and
@@ -183,9 +184,10 @@ class Dnf(PackageManager):
             print_output=False,
         )
 
+
 class Pacman(PackageManager):
     """
-    Represent the "pacman" package manager, installed on arch-based 
+    Represent the "pacman" package manager, installed on arch-based
     distributions such as Manjaro and Arch."
     """
 
@@ -207,7 +209,7 @@ class Pacman(PackageManager):
         package_name: str,
         platform: Platform,
     ) -> bool:
-        # This command uses a regex to get an exact match to see if 
+        # This command uses a regex to get an exact match to see if
         # the given package exists.
         return platform.comm.shell_succeed(
             command=f"pacman -Ss ^{package_name}$",
@@ -247,7 +249,7 @@ def get_package_manager(platform: Platform) -> PackageManager:
     dnf = platform.comm.which(cmd="dnf")
     if dnf is not None:
         return Dnf()
-    
+
     pacman = platform.comm.which(cmd="pacman")
     if pacman is not None:
         return Pacman()

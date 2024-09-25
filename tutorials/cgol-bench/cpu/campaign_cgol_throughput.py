@@ -5,6 +5,7 @@ from cgol_cpu import cgol_campaign
 from benchkit.campaign import CampaignSuite
 from benchkit.utils.dir import get_curdir
 
+
 # Creates a campaign for a specific version of the code
 def create_campaign_for_version(perf_assignment_dir, version_nr):
     version_src_dir = perf_assignment_dir / f"version-{version_nr}"
@@ -12,15 +13,14 @@ def create_campaign_for_version(perf_assignment_dir, version_nr):
         src_dir=version_src_dir,
         build_dir=version_src_dir / "build",
         bench_name=["time_based"],
-        nb_threads=[1,2,3,4],
+        nb_threads=[1, 2, 3, 4],
         size=[2000],
         benchmark_duration_seconds=25,
         nb_runs=30,
-        constants= {
-            "bench_version": f"version-{version_nr}"
-        }
+        constants={"bench_version": f"version-{version_nr}"},
     )
     return campaign
+
 
 def main() -> None:
     """Main function of the campaign script."""
@@ -58,6 +58,7 @@ def main() -> None:
         y="throughput",
         hue="bench_version",
     )
+
 
 if __name__ == "__main__":
     main()

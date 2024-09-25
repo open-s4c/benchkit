@@ -21,15 +21,14 @@ from benchkit.lwchart import (
     DataframeProcessor,
     generate_chart_from_multiple_csvs,
     generate_chart_from_single_csv,
-    identical_dataframe,
     generate_global_csv_file,
+    identical_dataframe,
 )
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.utils.dir import parentdir
 from benchkit.utils.misc import seconds2pretty
 from benchkit.utils.types import Constants, PathType, Pretty
 from benchkit.utils.variables import cartesian_product
-
 
 _BENCHKIT_CAMPAIGN_CMD_FILE = "/tmp/benchkit-campaign.sh"
 
@@ -78,7 +77,6 @@ class Campaign:
             debug=debug,
             gdb=gdb,
         )
-
 
     def csv_file(
         self,
@@ -282,7 +280,6 @@ class Campaign:
             shutil.move(_BENCHKIT_CAMPAIGN_CMD_FILE, dst_path)
 
 
-
 class CampaignSuite:
     """
     Represent a sequential suite of campaigns.
@@ -299,7 +296,10 @@ class CampaignSuite:
     @property
     def result_csv_paths(self):
         if self._result_csv_paths is None:
-            self._result_csv_paths = [pathlib.Path(os.path.abspath(c.parameters["result_csv_path"])) for c in self._campaigns]
+            self._result_csv_paths = [
+                pathlib.Path(os.path.abspath(c.parameters["result_csv_path"]))
+                for c in self._campaigns
+            ]
         return self._result_csv_paths
 
     def durations(self) -> List[int]:
@@ -376,7 +376,7 @@ class CampaignSuite:
         plot_name: str | List[str],
         process_dataframe: DataframeProcessor = identical_dataframe,
         **kwargs,
-    ) ->  None:
+    ) -> None:
         """Generate a global graph for all the campaigns in the suite.
 
         Args:
@@ -430,7 +430,6 @@ class CampaignSuite:
             csv_pathnames=self.result_csv_paths,
             output_dir=output_dir,
         )
-
 
 
 class CampaignTemplate(Campaign):

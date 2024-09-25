@@ -2,16 +2,19 @@ import pathlib
 from typing import Any, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
-from benchkit.campaign import CampaignCartesianProduct, Constants, CampaignSuite
+from benchkit.campaign import CampaignCartesianProduct, CampaignSuite, Constants
 from benchkit.commandwrappers import CommandWrapper
-from benchkit.commandwrappers.strace import StraceWrap
 from benchkit.commandwrappers.env import EnvWrap
-from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap, enable_non_sudo_perf
+from benchkit.commandwrappers.perf import (
+    PerfReportWrap,
+    PerfStatWrap,
+    enable_non_sudo_perf,
+)
+from benchkit.commandwrappers.strace import StraceWrap
 from benchkit.dependencies.packages import PackageDependency
-from benchkit.platforms import Platform
+from benchkit.platforms import Platform, get_current_platform, get_remote_platform
 from benchkit.sharedlibs import SharedLib
-from benchkit.utils.types import CpuOrder, PathType, Environment
-from benchkit.platforms import get_remote_platform, get_current_platform
+from benchkit.utils.types import CpuOrder, Environment, PathType
 
 RUN_REMOTELY = False
 REMOTE_ADDR = "ssh://root@example.com:2222"
@@ -25,7 +28,7 @@ BUILD_VARIABLES = [
     "work_square_size",
     "aabb_hit_implementation",
     "bvh_first_hit_caching",
-    "bvh_sah"
+    "bvh_sah",
 ]
 RUN_VARIABLES = ["nb_threads", "preset"]
 
@@ -156,7 +159,6 @@ class RayTracerBenchmark(Benchmark):
             preset,
             "--outfile",
             str(record_data_dir / "benchmark.bmp"),
-
         ]
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
@@ -201,7 +203,11 @@ def create_campaign(
     bench_src_dir: str,
     platform: Platform | None = None,
 ):
-    perfstat_wrapper = PerfStatWrap(freq=1000, separator=";", events=["cache-misses", "branch-misses"])
+    perfstat_wrapper = PerfStatWrap(
+        freq=1000,
+        separator=";",
+        events=["cache-misses", "branch-misses"],
+    )
 
     benchmark = RayTracerBenchmark(
         src_dir=source_dir,
@@ -265,9 +271,7 @@ def main():
     # of
     for v in variables.keys():
         if v not in BUILD_VARIABLES + RUN_VARIABLES:
-            raise ForgetFullException(
-                "You forgot to use the variables set here in the benchmark"
-            )
+            raise ForgetFullException("You forgot to use the variables set here in the benchmark")
 
     campaign = create_campaign(
         variables=variables,

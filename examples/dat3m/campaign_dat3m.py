@@ -4,6 +4,7 @@
 
 from bench import Dat3mBench
 from dat3m import get_dat3m_docker_platform
+
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 
 

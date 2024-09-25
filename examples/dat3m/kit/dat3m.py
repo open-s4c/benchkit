@@ -5,9 +5,9 @@ from pythainer.builders import UbuntuDockerBuilder
 from pythainer.builders.utils import project_git_clone
 from pythainer.examples.builders import get_user_builder
 from pythainer.runners import ConcreteDockerRunner
+
 from benchkit.communication.docker import DockerCommLayer
 from benchkit.platforms import Platform
-
 
 _DEFAULT_DAT3M_VERSION = "4.1.0"
 

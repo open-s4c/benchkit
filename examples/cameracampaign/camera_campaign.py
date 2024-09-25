@@ -1,20 +1,25 @@
 import pathlib
+import re
 from typing import Any, Dict, Iterable, List, Optional
+
+from pythainer.examples.builders import get_user_gui_builder
+from pythainer.examples.installs import (
+    opencv_lib_install_from_src,
+    realsense2_lib_install_from_src,
+)
+from pythainer.examples.runners import camera_runner, gui_runner, personal_runner
+from pythainer.runners import ConcreteDockerRunner
+
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignCartesianProduct
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.commandwrappers.perf import PerfStatWrap
 from benchkit.commandwrappers.strace import StraceWrap
 from benchkit.communication.docker import DockerCommLayer
-from benchkit.platforms import Platform, get_remote_platform, get_current_platform
+from benchkit.platforms import Platform, get_current_platform, get_remote_platform
 from benchkit.sharedlibs import SharedLib
-from benchkit.utils.types import PathType
 from benchkit.utils.dir import caller_dir
-from pythainer.examples.builders import get_user_gui_builder
-from pythainer.examples.installs import realsense2_lib_install_from_src, opencv_lib_install_from_src
-from pythainer.examples.runners import gui_runner, camera_runner, personal_runner
-from pythainer.runners import ConcreteDockerRunner
-import re
+from benchkit.utils.types import PathType
 
 DOCKER = True
 REMOTE = False
@@ -52,7 +57,7 @@ class CameraOCCBench(Benchmark):
         build_dir = (self._src_dir / "build").resolve()
         self.platform.comm.makedirs(path=build_dir, exist_ok=True)
 
-        cmake_command = ['cmake', str(self._src_dir), '-B', str(build_dir)]
+        cmake_command = ["cmake", str(self._src_dir), "-B", str(build_dir)]
         print(f"Running CMake: {' '.join(cmake_command)}")
         self.platform.comm.shell(
             command=cmake_command,
@@ -61,7 +66,7 @@ class CameraOCCBench(Benchmark):
         )
         self.platform.comm.shell(command=cmake_command, current_dir=build_dir)
 
-        make_command = ['make']
+        make_command = ["make"]
         print(f"Running Make: {' '.join(make_command)}")
         self.platform.comm.shell(
             command=make_command,
@@ -78,10 +83,7 @@ class CameraOCCBench(Benchmark):
         duration_seconds: int,
         **kwargs,
     ) -> str:
-        environment = self._preload_env(
-            duration_seconds=duration_seconds,
-            **kwargs
-        )
+        environment = self._preload_env(duration_seconds=duration_seconds, **kwargs)
         run_command = [
             "./CameraProcessing",
             f"{duration_seconds}",
@@ -90,7 +92,7 @@ class CameraOCCBench(Benchmark):
             run_command=run_command,
             environment=environment,
             duration_seconds=duration_seconds,
-            **kwargs
+            **kwargs,
         )
 
         output = self.run_bench_command(
@@ -113,7 +115,7 @@ class CameraOCCBench(Benchmark):
         record_data_dir: PathType,
         **kwargs,
     ):
-        benchmark_duration_seconds = int(run_variables["benchmark duration seconds"])# TODO?
+        benchmark_duration_seconds = int(run_variables["benchmark duration seconds"])  # TODO?
         match = re.search(r"Final counter value: (\d+)", command_output)
         if match:
             # Extract the number from the matched group and convert it to an integer
@@ -216,7 +218,7 @@ def main() -> None:
         extend_wrappers = True
 
     if extend_wrappers:
-        events = ['branch-misses', 'cache-misses', 'cpu-cycles']
+        events = ["branch-misses", "cache-misses", "cpu-cycles"]
         command_wrappers.append(PerfStatWrap(events=events))
         command_wrappers.append(StraceWrap())
 

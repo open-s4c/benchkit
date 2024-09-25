@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: MIT
 
 from benchmarks.cprogram import CProgramBench
+
 from benchkit.campaign import CampaignIterateVariables
-from benchkit.platforms import get_current_platform
 from benchkit.commandattachments.tracecmd import TraceCmd
+from benchkit.platforms import get_current_platform
 
 
 def main() -> None:
@@ -16,7 +17,7 @@ def main() -> None:
         name="attach",
         benchmark=CProgramBench(
             command_attachments=[traceCmd.attachment],
-            post_run_hooks=[traceCmd.post_run_hook]
+            post_run_hooks=[traceCmd.post_run_hook],
         ),
         nb_runs=1,
         variables=[{}],

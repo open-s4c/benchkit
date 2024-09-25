@@ -16,6 +16,7 @@ from benchkit.platforms.generic import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import Constants, PathType
 
+
 class CGOLBench(Benchmark):
     """Benchmark object for Conway's Game Of Life benchmark."""
 
@@ -52,7 +53,6 @@ class CGOLBench(Benchmark):
     @property
     def bench_src_path(self) -> pathlib.Path:
         return self._bench_src_path
-    
 
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
@@ -72,12 +72,11 @@ class CGOLBench(Benchmark):
             "size",
             "nb_generations",
         ]
-    
+
     @staticmethod
     def get_tilt_var_names() -> List[str]:
         return []
-    
-        
+
     def clean_bench(self) -> None:
         pass
 
@@ -90,11 +89,11 @@ class CGOLBench(Benchmark):
             current_dir=build_dir,
             output_is_log=True,
         )
-    
+
     def build_bench(self, **_kwargs) -> None:
         pass
 
-    def single_run( 
+    def single_run(
         self,
         benchmark_duration_seconds: int,
         threads_per_block: int = 32,
@@ -115,15 +114,18 @@ class CGOLBench(Benchmark):
         height = size
         run_command = [
             f"./cgol.exe",
-            "-tpb", f"{threads_per_block}",
-            "-w", f"{width}",
-            "-h", f"{height}",
-            *duration_flag
+            "-tpb",
+            f"{threads_per_block}",
+            "-w",
+            f"{width}",
+            "-h",
+            f"{height}",
+            *duration_flag,
         ]
         wrap_run_command, wrapperd_environment = self._wrap_command(
             run_command=run_command,
             environment=environment,
-            **_kwargs
+            **_kwargs,
         )
 
         output = self.run_bench_command(
@@ -132,16 +134,16 @@ class CGOLBench(Benchmark):
             current_dir=self._build_dir,
             environment=environment,
             wrapped_environment=wrapperd_environment,
-            print_output=False
+            print_output=False,
         )
         return output
-    
+
     @staticmethod
     def _parse_results(
         log_output: str,
         benchmark_duration_seconds: int,
     ) -> Dict[str, Any]:
-        
+
         nb_cells_updated_pattern = "Number of cells updated: (\d+)"
         nb_cells_updated = re.search(nb_cells_updated_pattern, log_output).group(1)
 
@@ -149,7 +151,7 @@ class CGOLBench(Benchmark):
             "global_count": int(nb_cells_updated),
             "duration": benchmark_duration_seconds,
         }
-    
+
     def parse_output_to_results(
         self,
         command_output: str,
@@ -157,9 +159,13 @@ class CGOLBench(Benchmark):
         benchmark_duration_seconds: int,
         **_kwargs,
     ) -> Dict[str, Any]:
-        result_dict = self._parse_results(log_output=command_output, benchmark_duration_seconds=benchmark_duration_seconds)
+        result_dict = self._parse_results(
+            log_output=command_output,
+            benchmark_duration_seconds=benchmark_duration_seconds,
+        )
         return result_dict
-    
+
+
 def cgol_campaign(
     name: str = "cgol_campaign",
     benchmark: Optional[CGOLBench] = None,

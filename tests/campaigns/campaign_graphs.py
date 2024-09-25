@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: MIT
 
 
+from pandas import DataFrame
+
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 from benchkit.platforms import get_current_platform
 from tests.campaigns.benchmarks.sleep import SleepBench
-from pandas import DataFrame
 
 
 def add_ms(dataframe: DataFrame) -> DataFrame:

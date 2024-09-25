@@ -31,7 +31,7 @@ class LtraceWrap(CommandWrapper):
         display_syscalls: bool = False,
         show_time: bool = False,
         show_time_in_call: bool = False,
-        symbol_entry_point_pattern: str = ""
+        symbol_entry_point_pattern: str = "",
     ):
         super().__init__()
 
@@ -49,7 +49,7 @@ class LtraceWrap(CommandWrapper):
         self._show_time = show_time
         self._show_time_in_call = show_time_in_call
         self._symbol_entry_point_pattern = symbol_entry_point_pattern
-        
+
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
             PackageDependency("ltrace"),
@@ -108,7 +108,7 @@ class LtraceWrap(CommandWrapper):
 
         if self._show_time_in_call:
             options.append("-T")
-            
+
         if self._symbol_entry_point_pattern != "":
             options.append("-x " + self._symbol_entry_point_pattern)
 

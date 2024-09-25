@@ -48,7 +48,7 @@ class MemBenchBench(Benchmark):
                 f"Invalid MemBench source path: {bench_src_path}\n"
                 "src_dir argument can be defined manually."
             )
-        
+
         self._bench_src_path = bench_src_path
 
     @property
@@ -71,16 +71,27 @@ class MemBenchBench(Benchmark):
 
     @staticmethod
     def _parse_results(
-        output: str
+        output: str,
     ) -> Dict[str, str]:
         attributes = [
-            'Engine', 'Flags', 'Iterations', 'Memcpy Iterations', 'Total Memcpy Calls',
-            'Total Runtime', 'File Size', 'Copy Size', 'Random Read', 'Data Copied',
-            'Minimum latency', 'Maximum latency', 'Average latency', 'Buffer Size'
+            "Engine",
+            "Flags",
+            "Iterations",
+            "Memcpy Iterations",
+            "Total Memcpy Calls",
+            "Total Runtime",
+            "File Size",
+            "Copy Size",
+            "Random Read",
+            "Data Copied",
+            "Minimum latency",
+            "Maximum latency",
+            "Average latency",
+            "Buffer Size",
         ]
-        
+
         section_data = MemBenchBench.parse_section(output.strip())
-        result = [section_data.get(attr, '') for attr in attributes]
+        result = [section_data.get(attr, "") for attr in attributes]
 
         result_dict = dict(zip(attributes, result))
 
@@ -89,25 +100,25 @@ class MemBenchBench(Benchmark):
     @staticmethod
     def convert_units(value):
         unit_conversions = {
-            'GiB': ('MiB', 1024),
-            'KiB': ('MiB', 1/1024),
-            'sec': ('usec', 1e6),
-            'msec': ('usec', 1e3),
-            'nsec': ('usec', 1e-3),
-            'usec': ('usec', 1),
+            "GiB": ("MiB", 1024),
+            "KiB": ("MiB", 1 / 1024),
+            "sec": ("usec", 1e6),
+            "msec": ("usec", 1e3),
+            "nsec": ("usec", 1e-3),
+            "usec": ("usec", 1),
         }
         for unit, (new_unit, factor) in unit_conversions.items():
             if unit in value:
-                number = float(re.search(r'[\d.]+', value).group())
+                number = float(re.search(r"[\d.]+", value).group())
                 converted_value = number * factor
-                return f'{converted_value:.2f} {new_unit}'
+                return f"{converted_value:.2f} {new_unit}"
         return value
-    
+
     @staticmethod
     def parse_section(section):
         section_data = {}
-        for line in section.strip().split('\n'):
-            key, value = re.match(r'(.*?):\s*(.*)', line).groups()
+        for line in section.strip().split("\n"):
+            key, value = re.match(r"(.*?):\s*(.*)", line).groups()
             section_data[key] = MemBenchBench.convert_units(value)
         return section_data
 
@@ -129,7 +140,7 @@ class MemBenchBench(Benchmark):
         **kwargs,
     ) -> None:
         src_dir = self._bench_src_path
-        
+
         # Make the project
         self.platform.comm.shell(
             command=f"make",
@@ -172,7 +183,7 @@ class MemBenchBench(Benchmark):
         )
 
         file_path = self._bench_src_path / "examples" / benchfile_name
-        
+
         run_command = [
             "./membench",
             f"-file={file_path}",
@@ -200,7 +211,7 @@ class MemBenchBench(Benchmark):
         command_output: str,
         **_kwargs,
     ) -> Dict[str, Any]:
-       
+
         result_dict = self._parse_results(output=command_output)
 
         return result_dict
@@ -212,7 +223,10 @@ def membench_campaign(
     # Membench allows for granular control over benchmarks via files
     # When creating benchmarks, just created new ones inside the /examples folder
     # And include the file name in this list
-    benchfile: Iterable[str] = ("example1.txt", "example2.txt"),  # Benchmark does not end: "example3.txt"
+    benchfile: Iterable[str] = (
+        "example1.txt",
+        "example2.txt",
+    ),  # Benchmark does not end: "example3.txt"
     # TODO remove the example and use the parameters as used in the examples directly with the command line
     src_dir: Optional[PathType] = None,
     results_dir: Optional[PathType] = None,
