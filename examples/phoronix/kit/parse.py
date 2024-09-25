@@ -1,3 +1,5 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 """Contains classes for parsing Phoronix test profiles."""
 
 import pathlib

@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 from phoronix import phoronix_test_profile_campaign
 
 from benchkit.campaign import CampaignSuite

@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 from pythainer.builders import PartialDockerBuilder
 from pythainer.builders.utils import project_git_cmake_build_install
 

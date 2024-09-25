@@ -1,3 +1,5 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 """
 Command wrapper for the "valgrind" utility.
 Simply collects heap usage of a program.

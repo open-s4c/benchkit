@@ -1,3 +1,5 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 """
 Benchkit support for Conway's game of life benchmark.
 See: https://github.com/guido589/conway-game-of-life-parallel
