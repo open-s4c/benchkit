@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 
 from cgol_cpu import cgol_campaign
 

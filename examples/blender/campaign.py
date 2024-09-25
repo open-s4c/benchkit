@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 import pathlib
 from typing import Any, Dict, Iterable, List, Optional
 
