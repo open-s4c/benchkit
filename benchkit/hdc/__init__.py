@@ -3,11 +3,13 @@
 Module to handle hdc (OpenHarmony Device Connector) interactions between host and remote phone.
 HDC documentation: https://docs.openharmony.cn/pages/v5.0/en/application-dev/dfx/hdc.md 
 """
-from typing import Iterable, Optional, Callable
+from typing import Iterable, Optional, Callable, List
 from enum import Enum
 
 from benchkit.shell.shell import get_args, shell_out
 from benchkit.utils.types import Command, PathType
+from benchkit.dependencies.packages import Dependency
+from benchkit.dependencies.executables import ExecutableDependency
 
 
 class HDCError(Exception):
@@ -63,6 +65,13 @@ class OpenHarmonyDeviceConnector:
         self._keep_connected = keep_connected
         self._wait_connected = wait_connected
         self._expected_os = expected_os
+
+    
+    @staticmethod
+    def dependencies() -> List[Dependency]:
+        return [
+            ExecutableDependency("hdc.exe")
+        ]
 
 
     def _find_device(self) -> Optional[HDCDevice]:
