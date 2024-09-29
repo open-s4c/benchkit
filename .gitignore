@@ -2,5 +2,6 @@ __pycache__/
 venv/
 .venv/
 .idea/
+.vscode/
 results/
 benchkit.egg-info/
