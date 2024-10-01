@@ -207,7 +207,6 @@ def parse_file(filename, first_pid=-1):
                     ):
                         cpu_usage[parsed_line["next_pid"]] = parsed_line[
                             "cpu"
-                        ]  ######This could be wrong
                         parsed_data.append(
                             {
                                 "type": "sched_switch",
