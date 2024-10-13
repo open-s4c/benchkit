@@ -4,7 +4,7 @@
 Module to test reading ftrace from android devices
 """
 
-import os, time
+import time
 
 from typing import List, Mapping
 from benchkit.adb import AndroidDebugBridge
