@@ -48,17 +48,33 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
 
     def __init__(
         self,
-        ip_addr: str,
-        port: int = 5555,
+        identifier: str,
+        # ip_addr: str,
+        # port: int = 5555,
         keep_connected: bool = False,
         wait_connected: bool = False,
         expected_os: Optional[str] = None,
     ) -> None:
-        self._ip = ip_addr
-        self._port = port
+        self.identifier = identifier
+        # self._ip = ip_addr
+        # self._port = port
         self._keep_connected = keep_connected
         self._wait_connected = wait_connected
         self._expected_os = expected_os
+
+    @staticmethod
+    def from_device(
+        device: ADBDevice,
+        keep_connected: bool = False,
+        wait_connected: bool = False,
+        expected_os: Optional[str] = None,
+    ) -> "AndroidDebugBridge":
+        return AndroidDebugBridge(
+            identifier=device.identifier,
+            keep_connected=keep_connected,
+            wait_connected=wait_connected,
+            expected_os=expected_os,
+        )
 
     def __enter__(self) -> "AndroidDebugBridge":
         if not self.is_connected():
@@ -74,14 +90,15 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
         if not self._keep_connected and self.is_connected():
             self._disconnect()
 
-    @property
-    def identifier(self) -> str:
-        """Get adb identifier of current device.
+    # TODO: this may or may not be enabled again, right now I don't see an easy way to connect to non-ip devices?
+    # @property
+    # def identifier(self) -> str:
+    #     """Get adb identifier of current device.
 
-        Returns:
-            str: adb identifier of current device.
-        """
-        return _identifier_from(ip_addr=self._ip, port=self._port)
+    #     Returns:
+    #         str: adb identifier of current device.
+    #     """
+    #     return _identifier_from(ip_addr=self._ip, port=self._port)
 
     def is_connected(self) -> bool:
         """Returns whether the device is connected to adb.
