@@ -5,6 +5,7 @@ Module to test reading ftrace from android devices
 """
 
 import time
+from perfetto.trace_processor import TraceProcessor
 
 from typing import List, Mapping
 from benchkit.adb import AndroidDebugBridge
@@ -54,90 +55,75 @@ def open_website(bridge: AndroidDebugBridge, url: str) -> None:
     bridge.shell_out(f"am start -a android.intent.action.VIEW -d \"{url}\" com.android.chrome")
 
 
-def collect_spans(file: str) -> List[Mapping]:
-    events = []
-    event_stack = []
-    
-    # TODO: fix this parsing, it seems to be incorrect
-    with open(file, "r") as f:
-        for line in f:
-            if "tracing_mark_write" in line:
-                line = line.strip()
-                parts = line.split('tracing_mark_write:')
-                timestamp: float
-                if len(parts) == 2:
-                    header, content = parts
-                    # Extract timestamp
-                    header_parts = header.strip().split()
-                    if len(header_parts) >= 1:
-                        timestamp_str = header_parts[-1].rstrip(':')
-                        try:
-                            timestamp = float(timestamp_str)
-                        except ValueError:
-                            # Skip lines with invalid timestamp
-                            continue
-                        content = content.strip()
-                        if content.startswith('B|'):
-                            # Begin event
-                            parts = content.split('|', 2)
-                            if len(parts) == 3:
-                                _, pid, event_name = parts
-                                event = {'name': event_name, 'start_time': timestamp, 'pid': pid}
-                                event_stack.append(event)
-                            else:
-                                # Invalid format, skip
-                                continue
-                        elif content.startswith('E'):
-                            # End event
-                            if event_stack:
-                                event = event_stack.pop()
-                                event_name = event['name']
-                                start_time = event['start_time']
-                                pid = event.get('pid', '')
-                                duration = timestamp - start_time
-                                event['end_time'] = timestamp
-                                event['duration'] = duration
-                                events.append(event)
-                            else:
-                                # No matching begin event
-                                continue
-                        else:
-                            # Instant event or other data
-                            event = {'timestamp': timestamp, 'content': content}
-                            events.append(event)
-                    else:
-                        # Invalid header format
-                        continue
+def print_ftrace_events(path: str) -> None:
+    tp = TraceProcessor(trace=path)
 
-    return events
+    NS_TO_MS = 1e-6
+
+    dutation_query = """
+    SELECT ts, dur, name
+    FROM slice
+    """
+
+    track_query = """
+    SELECT id AS track_id, name
+    FROM counter_track
+    """
+
+    counter_query = """
+    SELECT ts, value, track_id
+    FROM counter
+    """
+
+    print("Duration Events:")
+    duration_events = tp.query(dutation_query)
+    for row in duration_events:
+        ts = row.ts
+        name = row.name
+        duration = row.dur * NS_TO_MS
+        print(f"Duration Event ({ts}): {name}, Duration: {duration:.6f}ms")
+
+    print()
+
+    print("Counter Events:")
+    track_events = tp.query(track_query)
+    track_mapping = {row.track_id: row.name for row in track_events}
+
+    counter_events = tp.query(counter_query)
+
+    for row in counter_events:
+        ts = row.ts
+        track_id = row.track_id
+        value = row.value
+        counter_name = track_mapping.get(track_id, 'Unknown')
+
+        print(f"Counter Event ({ts}): {counter_name}, Value: {value}")
 
 
 def main() -> None:
     device = AndroidDebugBridge._devices()[0]
     bridge = AndroidDebugBridge.from_device(device)
 
+    # enable and start tracing
     enable_tracing(bridge)
     set_trace_buffer_size(bridge, TRACE_BUFFER_SIZE_KB)
     clear_trace_buffer(bridge)
     start_tracing(bridge)
 
-    # demo code
+    # demo code to be traced (touch your device for more actions)
     bridge.screen_tap(50, 50)
     open_website(bridge, EXAMPLE_WEBSITE)
     time.sleep(2)
     bridge.push_button_home()
-
     time.sleep(HOST_SLEEP_TIME)
 
+    # end tracing and pull data to pc
     stop_tracing(bridge)
     disable_tracing(bridge)
     dump_trace(bridge, DEVICE_DUMP_PATH)
-
     bridge.pull(DEVICE_DUMP_PATH, HOST_DUMP_PATH)
-    
-    events = collect_spans(HOST_DUMP_PATH)
-    for event in events:
-        print(event)
+
+    print_ftrace_events(HOST_DUMP_PATH)
 
 
 if __name__ == "__main__":
