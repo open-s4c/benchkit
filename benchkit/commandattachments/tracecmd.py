@@ -41,8 +41,6 @@ class TraceCmd:
 
         # Add the PID and output file arguments
         command.extend(["-P", f"{self._pid}", "-o", f"{out_file}"])
-
-        self._files_pid.append((rdd / "trace-cmd.out", self._pid))
         
         self._process = AsyncProcess(
             platform=self._platform,
@@ -67,3 +65,4 @@ class TraceCmd:
 
         output = self._platform.comm.shell(command=command, current_dir=rdd, print_output=False)
         write_record_file_fun(output, "generate-graph.out")
+        self._files_pid.append((rdd / "generate-graph.out", self._pid))
