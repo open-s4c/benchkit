@@ -21,6 +21,7 @@ class TraceCmd:
         self._platform = platform if platform is not None else get_current_platform()
         self._pid = None
         self._process = None
+        self._files_pid = []
 
     def attachment(
         self,
@@ -41,6 +42,8 @@ class TraceCmd:
         # Add the PID and output file arguments
         command.extend(["-P", f"{self._pid}", "-o", f"{out_file}"])
 
+        self._files_pid.append((rdd / "trace-cmd.out", self._pid))
+        
         self._process = AsyncProcess(
             platform=self._platform,
             arguments=command,
