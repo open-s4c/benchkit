@@ -7,8 +7,7 @@ Module to test reading ftrace from android devices
 import time
 from perfetto.trace_processor import TraceProcessor
 
-from typing import List, Mapping
-from benchkit.adb import AndroidDebugBridge
+from benchkit.adb import AndroidDebugBridge, ADBDevice
 
 
 TRACE_BUFFER_SIZE_KB: int = 96000 
@@ -61,7 +60,7 @@ def print_ftrace_events(path: str) -> None:
     NS_TO_MS = 1e-6
 
     dutation_query = """
-    SELECT ts, dur, name
+    SELECT id, ts, dur, name
     FROM slice
     """
 
@@ -101,7 +100,12 @@ def print_ftrace_events(path: str) -> None:
 
 
 def main() -> None:
-    device = AndroidDebugBridge._devices()[0]
+    devices = list(AndroidDebugBridge._devices())
+    device: ADBDevice
+    if devices:
+        device = devices[0]
+    else:
+        exit("No device found")
     bridge = AndroidDebugBridge.from_device(device)
 
     # enable and start tracing
