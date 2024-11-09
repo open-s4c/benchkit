@@ -19,7 +19,7 @@ class TraceCmd:
     ) -> None:
         self._events = [str(e) for e in events]
         self._platform = platform if platform is not None else get_current_platform()
-        self._pid = None
+        self.pid = None
         self._process = None
 
     def attachment(
@@ -31,7 +31,7 @@ class TraceCmd:
         rdd = pathlib.Path(record_data_dir)
         out_file = rdd / "trace.dat"
 
-        self._pid = process.pid
+        self.pid = process.pid
         command = ["sudo", "trace-cmd", "record"]
 
         # Add "-e" and each event to the command list
@@ -39,7 +39,7 @@ class TraceCmd:
             command.extend(["-e", event])
 
         # Add the PID and output file arguments
-        command.extend(["-P", f"{self._pid}", "-o", f"{out_file}"])
+        command.extend(["-P", f"{self.pid}", "-o", f"{out_file}"])
 
         self._process = AsyncProcess(
             platform=self._platform,
@@ -55,6 +55,8 @@ class TraceCmd:
         record_data_dir: PathType,
         write_record_file_fun: WriteRecordFileFunction,
     ) -> None:
+        assert experiment_results_lines
+
         rdd = pathlib.Path(record_data_dir)
         print(rdd)
 
