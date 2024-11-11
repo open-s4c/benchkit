@@ -5,7 +5,6 @@ Useful tools and configurations to reduce unpredictability of Linux and
 "stabilize" the target platform.
 """
 
-import os.path
 from typing import Optional
 
 from benchkit.helpers.linux import sysctl

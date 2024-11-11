@@ -3,7 +3,7 @@
 
 import pathlib
 import re
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List
 
 from pythainer.examples.builders import get_user_gui_builder
 from pythainer.examples.installs import (

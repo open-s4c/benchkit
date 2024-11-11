@@ -1,7 +1,8 @@
+# Copyright (C) 2023 Huawei Technologies Co., Ltd. All rights reserved.
 # SPDX-License-Identifier: MIT
 """
 Module to handle hdc (OpenHarmony Device Connector) interactions between host and remote phone.
-HDC documentation: https://docs.openharmony.cn/pages/v5.0/en/application-dev/dfx/hdc.md 
+See HDC documentation: https://docs.openharmony.cn/pages/v5.0/en/application-dev/dfx/hdc.md
 """
 from enum import Enum
 from platform import system as os_system

@@ -87,7 +87,7 @@ class CGOLBench(Benchmark):
         self.platform.comm.makedirs(path=build_dir, exist_ok=True)
 
         self.platform.comm.shell(
-            command=f"cmake ..",
+            command="cmake ..",
             current_dir=build_dir,
             output_is_log=True,
         )
@@ -120,7 +120,7 @@ class CGOLBench(Benchmark):
         width = size
         height = size
         run_command = [
-            f"./cgol",
+            "./cgol",
             "-t",
             f"{nb_threads}",
             "-w",
@@ -151,7 +151,7 @@ class CGOLBench(Benchmark):
         benchmark_duration_seconds: int,
     ) -> Dict[str, Any]:
 
-        nb_cells_updated_pattern = "Number of cells updated: (\d+)"
+        nb_cells_updated_pattern = r"Number of cells updated: (\d+)"
         nb_cells_updated = re.search(nb_cells_updated_pattern, log_output).group(1)
 
         return {

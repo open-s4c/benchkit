@@ -33,7 +33,7 @@ class ValgrindWrapper(CommandWrapper):
         self.output_file = output_file
         # Add extra tools here
         # No tools supported yet, need to deal with different output files
-        if not tool in self.tools and tool is not None:
+        if tool is not None and tool not in self.tools:
             raise ValueError(f"Tool: {tool} not supported. Supported tools: {self.tools}")
         else:
             self.tool = tool
