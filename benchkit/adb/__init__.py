@@ -8,11 +8,13 @@ import socket
 import subprocess
 import sys
 import time
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
 from benchkit.adb.usb import usb_down_up
+from benchkit.communication import CommunicationLayer
+from benchkit.communication.utils import command_with_env, remote_shell_command
 from benchkit.shell.shell import get_args, shell_out
-from benchkit.utils.types import Command, PathType
+from benchkit.utils.types import Command, Environment, PathType, SplitCommand
 
 
 def _identifier_from(ip_addr: str, port: int) -> str:
@@ -48,17 +50,33 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
 
     def __init__(
         self,
-        ip_addr: str,
-        port: int = 5555,
+        identifier: str,
+        # ip_addr: str,
+        # port: int = 5555,
         keep_connected: bool = False,
         wait_connected: bool = False,
         expected_os: Optional[str] = None,
     ) -> None:
-        self._ip = ip_addr
-        self._port = port
+        self.identifier = identifier
+        # self._ip = ip_addr
+        # self._port = port
         self._keep_connected = keep_connected
         self._wait_connected = wait_connected
         self._expected_os = expected_os
+
+    @staticmethod
+    def from_device(
+        device: ADBDevice,
+        keep_connected: bool = False,
+        wait_connected: bool = False,
+        expected_os: Optional[str] = None,
+    ) -> "AndroidDebugBridge":
+        return AndroidDebugBridge(
+            identifier=device.identifier,
+            keep_connected=keep_connected,
+            wait_connected=wait_connected,
+            expected_os=expected_os,
+        )
 
     def __enter__(self) -> "AndroidDebugBridge":
         if not self.is_connected():
@@ -74,14 +92,15 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
         if not self._keep_connected and self.is_connected():
             self._disconnect()
 
-    @property
-    def identifier(self) -> str:
-        """Get adb identifier of current device.
+    # TODO: this may or may not be enabled again, right now I don't see an easy way to connect to non-ip devices?
+    # @property
+    # def identifier(self) -> str:
+    #     """Get adb identifier of current device.
 
-        Returns:
-            str: adb identifier of current device.
-        """
-        return _identifier_from(ip_addr=self._ip, port=self._port)
+    #     Returns:
+    #         str: adb identifier of current device.
+    #     """
+    #     return _identifier_from(ip_addr=self._ip, port=self._port)
 
     def is_connected(self) -> bool:
         """Returns whether the device is connected to adb.
@@ -219,6 +238,20 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
         devices = [ADBDevice(*line.split("\t")) for line in device_lines]
 
         return devices
+
+    def query_devices(
+        self,
+        filter_callback: Callable[[ADBDevice], bool] = lambda _: True,
+    ) -> Iterable[ADBDevice]:
+        """Get filtered list of devices recognized by adb.
+
+        Returns:
+            Iterable[ADBDevice]: filtered list of devices recognized by adb.
+        """
+        devices = self._devices()
+        filtered = [dev for dev in devices if filter_callback(dev)]
+        return filtered
+
 
     @staticmethod
     def _host_shell_out(
@@ -440,3 +473,125 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
         output = self._target_shell_out(command)
         is_installed = f"package:{activity_name}" == output.strip()
         return is_installed
+
+    def enable_ftracing(self) -> None:
+        self.shell_out("echo 1 > /sys/kernel/tracing/events/irq/enable")
+        self.shell_out("echo 1 > /sys/kernel/tracing/events/sched/sched_wakeup/enable")
+
+    def disable_ftracing(self) -> None:
+        self.shell_out("echo 0 > /sys/kernel/tracing/events/irq/enable")
+        self.shell_out("echo 0 > /sys/kernel/tracing/events/sched/sched_wakeup/enable")
+
+    def start_ftracing(self) -> None:
+        self.shell_out("echo 1 > /sys/kernel/tracing/tracing_on")
+
+    def stop_ftracing(self) -> None:
+        self.shell_out("echo 0 > /sys/kernel/tracing/tracing_on")
+
+    def dump_ftrace(self, output: str) -> None:
+        self.shell_out(f"rm {output} || true") # delete file or ignore rm if fails (file not exists)
+        self.shell_out(f"cat /sys/kernel/tracing/trace > {output}")
+
+    def clear_ftrace_buffer(self) -> None:
+        self.shell_out("cat /dev/null > /sys/kernel/tracing/trace")
+
+    def set_ftrace_buffer_size(self, size_kb: int) -> None:
+        self.shell_out(f"echo {size_kb} > /sys/kernel/tracing/buffer_size_kb")
+
+
+
+class AndroidCommLayer(CommunicationLayer):
+    def __init__(
+        self,
+        bridge: AndroidDebugBridge,
+        environment: Optional[Environment] = None,
+    ) -> None:
+        super().__init__()
+        self._bridge = bridge
+        self._additional_environment = environment if environment is not None else {}
+        self._command_prefix = None
+
+    @property
+    def remote_host(self) -> Optional[str]:
+        return self._bridge.identifier
+
+    @property
+    def is_local(self) -> bool:
+        return False
+
+    def copy_from_host(self, source: PathType, destination: PathType) -> None:
+        self._bridge.push(source, destination)
+
+    def copy_to_host(self, source: PathType, destination: PathType) -> None:
+        self._bridge.pull(source, destination)
+    
+    def shell(
+        self,
+        command: Command,
+        std_input: str | None = None,
+        current_dir: PathType | None = None,
+        environment: Environment = None,
+        shell: bool = False,
+        print_input: bool = True,
+        print_output: bool = True,
+        print_curdir: bool = True,
+        timeout: int | None = None,
+        output_is_log: bool = False,
+        ignore_ret_codes: Iterable[int] = (), 
+        ignore_any_error_code: bool = False
+    ) -> str:
+        env_command = command_with_env(
+            command=command,
+            environment=environment,
+            additional_environment=self._additional_environment,
+        )
+        output = self._bridge.shell_out(
+            command=env_command,
+            current_dir=current_dir,
+            output_is_log=output_is_log,
+        )
+        return output
+
+    def pipe_shell(
+        self,
+        command: Command,
+        current_dir: Optional[PathType] = None,
+        shell: bool = False,
+        ignore_ret_codes: Iterable[int] = ()
+    ):
+        raise NotImplementedError("TODO")
+
+    
+    def background_subprocess(
+        self,
+        command: Command,
+        stdout: PathType,
+        stderr: PathType,
+        cwd: PathType | None,
+        env: dict | None,
+        establish_new_connection: bool = False
+    ) -> subprocess.Popen:
+        dir_args = ["cd", f"{cwd}", "&&"] if cwd is not None else []
+        command_args = dir_args + get_args(command)
+
+        adb_command = [
+            "adb",
+            "-s",
+            f"{self._bridge.identifier}",
+            "shell",
+        ] + command_args
+        
+        return subprocess.Popen(
+            adb_command,
+            stdout=stdout,
+            stderr=stderr,
+            env=env,
+            preexec_fn=os.setsid,
+        )
+
+    def get_process_status(self, process_handle: subprocess.Popen) -> str:
+        raise NotImplementedError("TODO")
+
+    def get_process_nb_threads(self, process_handle: subprocess.Popen) -> int:
+        raise NotImplementedError("TODO")
+
