@@ -19,7 +19,7 @@ class TraceCmd:
     ) -> None:
         self._events = [str(e) for e in events]
         self._platform = platform if platform is not None else get_current_platform()
-        self._pid = None
+        self.pid = None
         self._process = None
         self._files_pid = []
 
@@ -32,7 +32,7 @@ class TraceCmd:
         rdd = pathlib.Path(record_data_dir)
         out_file = rdd / "trace.dat"
 
-        self._pid = process.pid
+        self.pid = process.pid
         command = ["sudo", "trace-cmd", "record"]
 
         # Add "-e" and each event to the command list
@@ -40,7 +40,8 @@ class TraceCmd:
             command.extend(["-e", event])
 
         # Add the PID and output file arguments
-        command.extend(["-P", f"{self._pid}", "-o", f"{out_file}"])
+        command.extend(["-P", f"{self.pid}", "-o", f"{out_file}"])
+
         self._process = AsyncProcess(
             platform=self._platform,
             arguments=command,
@@ -55,6 +56,8 @@ class TraceCmd:
         record_data_dir: PathType,
         write_record_file_fun: WriteRecordFileFunction,
     ) -> None:
+        assert experiment_results_lines
+
         rdd = pathlib.Path(record_data_dir)
         print(rdd)
 
@@ -64,4 +67,4 @@ class TraceCmd:
 
         output = self._platform.comm.shell(command=command, current_dir=rdd, print_output=False)
         write_record_file_fun(output, "generate-graph.out")
-        self._files_pid.append((rdd / "generate-graph.out", self._pid))
+        self._files_pid.append((rdd / "generate-graph.out", self.pid))
