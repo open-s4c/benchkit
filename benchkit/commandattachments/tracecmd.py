@@ -41,7 +41,6 @@ class TraceCmd:
 
         # Add the PID and output file arguments
         command.extend(["-P", f"{self._pid}", "-o", f"{out_file}"])
-        
         self._process = AsyncProcess(
             platform=self._platform,
             arguments=command,
