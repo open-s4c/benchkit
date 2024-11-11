@@ -1,15 +1,13 @@
 import pathlib
-import os
-from typing import Any, Optional, Iterable, List, Dict
+from typing import Any, Iterable, List, Dict
 
-from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook, RecordResult
+from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignSuite, CampaignIterateVariables, Campaign
 from benchkit.commandwrappers import CommandWrapper
-# from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap, enable_non_sudo_perf
-# from benchkit.commandwrappers.ltrace import LtraceWrap
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import PathType
+from benchkit.utils.dir import caller_dir
 from benchkit.hdc import OpenHarmonyDeviceConnector
 
 BUILD_VARIABLES = []
@@ -85,20 +83,6 @@ class IPCBenchmark(Benchmark):
         }
         return parsed
     
-
-    def prebuild_bench(self, **kwargs) -> None:
-        if not self.mobile:
-            return
-
-        # TODO: setup for mobile
-        # build: (requires linux, wsl wrapped?) 
-        # export CARGO_TARGET_X86_64_UNKNOWN_LINUX_OHOS_LINKER=/<path>/linux/native/llvm/bin/x86_64-unknown-linux-ohos-clang
-        # cargo build 
-        # 
-        # back to windows:
-        # hdc send
-
-
     def build_bench(self, **kwargs) -> None:
         if self.mobile:
             return
@@ -158,7 +142,7 @@ def main() -> None:
     mobile = False
     skip_rebuild = False
 
-    bench_dir: str = "./examples/ipc/ipc_runner"
+    bench_dir: str = caller_dir() / "ipc_runner"
     platform: Platform | None = None
     hdc: OpenHarmonyDeviceConnector | None = None
 
