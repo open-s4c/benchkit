@@ -21,6 +21,7 @@ class TraceCmd:
         self._platform = platform if platform is not None else get_current_platform()
         self.pid = None
         self._process = None
+        self._files_pid = []
 
     def attachment(
         self,
@@ -66,3 +67,4 @@ class TraceCmd:
 
         output = self._platform.comm.shell(command=command, current_dir=rdd, print_output=False)
         write_record_file_fun(output, "generate-graph.out")
+        self._files_pid.append((rdd / "generate-graph.out", self.pid))
