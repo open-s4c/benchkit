@@ -115,7 +115,7 @@ class CGOLBench(Benchmark):
         width = size
         height = size
         run_command = [
-            f"./cgol.exe",
+            "./cgol.exe",
             "-tpb",
             f"{threads_per_block}",
             "-w",
@@ -146,7 +146,7 @@ class CGOLBench(Benchmark):
         benchmark_duration_seconds: int,
     ) -> Dict[str, Any]:
 
-        nb_cells_updated_pattern = "Number of cells updated: (\d+)"
+        nb_cells_updated_pattern = r"Number of cells updated: (\d+)"
         nb_cells_updated = re.search(nb_cells_updated_pattern, log_output).group(1)
 
         return {

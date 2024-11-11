@@ -18,11 +18,7 @@ from functools import lru_cache
 from shutil import which
 from typing import Dict, Iterable, List, Optional
 
-from benchkit.communication.utils import (
-    command_with_env,
-    format_arg,
-    remote_shell_command,
-)
+from benchkit.communication.utils import command_with_env, remote_shell_command
 from benchkit.shell.shell import pipe_shell_out, shell_out
 from benchkit.utils.types import Command, Environment, PathType, SplitCommand
 

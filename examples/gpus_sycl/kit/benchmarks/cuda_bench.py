@@ -44,7 +44,14 @@ class CudaBench(Benchmark):
 
     def build_bench(self, block_size: int, **kwargs) -> None:
         self.platform.comm.shell(
-            command=f"nvcc {self.file_name}.cu -O3 -DBLOCK_SIZE={block_size} -o {self.file_name}_cuda",
+            command=[
+                "nvcc",
+                f"{self.file_name}.cu",
+                "-O3",
+                f"-DBLOCK_SIZE={block_size}",
+                "-o",
+                f"{self.file_name}_cuda",
+            ],
             current_dir=f"{self._bench_src_path}",
             output_is_log=True,
         )

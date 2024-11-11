@@ -5,7 +5,8 @@ import os
 import pathlib
 
 from benchkit.communication import LocalCommLayer, SSHCommLayer
-from benchkit.communication.docker import DockerCommLayer
+
+# from benchkit.communication.docker import DockerCommLayer
 
 host_dir = pathlib.Path("/tmp/benchkit/host_files")
 remote = "ssh://localhost:2222/"
@@ -40,7 +41,10 @@ def main():
     # docker_target_dir = pathlib.Path("/tmp/benchkit/target_docker_files")
     # docker_comm.copy_from_host(source=f"{host_dir}/", destination=f"{docker_target_dir}/")
     # docker_download_dir = pathlib.Path("/tmp/benchkit/dl_docker_files")
-    # docker_comm.copy_to_host(source=f"{docker_target_dir}/", destination=f"{docker_download_dir}/")
+    # docker_comm.copy_to_host(
+    #     source=f"{docker_target_dir}/",
+    #     destination=f"{docker_download_dir}/",
+    # )
 
 
 if __name__ == "__main__":

@@ -2,22 +2,16 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
-from benchkit.campaign import CampaignCartesianProduct, CampaignSuite, Constants
+from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 from benchkit.commandwrappers import CommandWrapper
-from benchkit.commandwrappers.env import EnvWrap
-from benchkit.commandwrappers.perf import (
-    PerfReportWrap,
-    PerfStatWrap,
-    enable_non_sudo_perf,
-)
-from benchkit.commandwrappers.strace import StraceWrap
+from benchkit.commandwrappers.perf import PerfStatWrap, enable_non_sudo_perf
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform, get_current_platform, get_remote_platform
 from benchkit.sharedlibs import SharedLib
-from benchkit.utils.types import CpuOrder, Environment, PathType
+from benchkit.utils.types import PathType
 
 RUN_REMOTELY = False
 REMOTE_ADDR = "ssh://root@example.com:2222"
@@ -48,11 +42,11 @@ class RayTracerBenchmark(Benchmark):
         src_dir: PathType,
         bench_src_dir: PathType | None = None,
         copy_src_to_build: bool = False,
-        command_wrappers: Iterable[CommandWrapper] = [],
-        command_attachments: Iterable[CommandAttachment] = [],
-        shared_libs: Iterable[SharedLib] = [],
-        pre_run_hooks: Iterable[PreRunHook] = [],
-        post_run_hooks: Iterable[PostRunHook] = [],
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
+        shared_libs: Iterable[SharedLib] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
         platform: Platform = None,
     ) -> None:
         super().__init__(
@@ -111,13 +105,6 @@ class RayTracerBenchmark(Benchmark):
     @staticmethod
     def get_tilt_var_names() -> List[str]:
         return []
-
-    @staticmethod
-    def _parse_results(
-        output: str,
-        nb_threads: int,
-    ) -> Dict[str, str]:
-        return {}
 
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
@@ -191,7 +178,7 @@ class RayTracerBenchmark(Benchmark):
         nb_threads = int(run_variables["nb_threads"])
         try:
             duration = command_output.splitlines()[-1].split(": ")[1].split()[0]
-        except Exception:
+        except ValueError:
             print(command_output)
             duration = "N/A"
 

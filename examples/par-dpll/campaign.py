@@ -131,7 +131,7 @@ def main():
     instances_sat = [os.fspath(p.absolute()) for p in instance_dir_sat.iterdir()]
     instances_unsat = [os.fspath(p.absolute()) for p in instance_dir_unsat.iterdir()]
 
-    ### Campaigns Init ###
+    # Campaigns Init
     campaign_init_fast = create_campaign(
         name="Initial benchmarks sequential",
         nb_runs=nb_runs,
@@ -222,7 +222,7 @@ def main():
         num_threads=[2, 4, 8],
     )
 
-    ### Campaigns Runs ###
+    # Campaigns Runs
     campaigns = [
         campaign_init_fast,
         campaign_init_slow,
@@ -239,7 +239,7 @@ def main():
     suite.print_durations()
     suite.run_suite()
 
-    ### Campaigns Graphs Generation ###
+    # Campaigns Graphs Generation
     campaign_init_fast.generate_graph(
         plot_name="barplot",
         title=f"Runtime sequential algorithm ({nb_runs})",

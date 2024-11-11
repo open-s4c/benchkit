@@ -18,7 +18,27 @@ def clone_repo(
     tag: str = "",
     commit: str = "",
 ) -> None:
-    """Clone given repository in the given directory and point to the given tag or the given commit."""
+    """
+    Clone a Git repository into a specified directory and optionally check out
+    a specific tag or commit.
+
+    Args:
+        repo_url (str):
+            URL of the Git repository to clone.
+        repo_src_dir (PathType):
+            Path to the local directory where the repository should be cloned.
+            If the directory does not exist, it will be created.
+        tag (str, optional):
+            Specific Git tag to check out after cloning.
+            Cannot be set if `commit` is specified.
+        commit (str, optional):
+            Specific Git commit hash to check out after cloning.
+            Cannot be set if `tag` is specified.
+
+    Raises:
+        ValueError:
+            If both `tag` and `commit` are provided.
+    """
 
     if tag and commit:
         raise ValueError("tag and commit cannot be specified at the same time")

@@ -4,7 +4,7 @@
 
 from benchmarks.truefalse import TrueFalseBench
 
-from benchkit.campaign import CampaignIterateVariables, CampaignSuite
+from benchkit.campaign import CampaignIterateVariables
 
 
 def main() -> None:

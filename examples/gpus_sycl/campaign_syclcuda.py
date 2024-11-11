@@ -93,7 +93,14 @@ def smi_attachment(current_dir: PathType) -> CommandAttachment:
         record_data_dir: PathType,
     ) -> None:
         assert record_data_dir
-        smi_command = "nvidia-smi --query-gpu memory.used,utilization.gpu,utilization.memory --format=csv -lms 20 > smi.csv & sleep 0.3; kill $!"
+        smi_command = (
+            "nvidia-smi "
+            "--query-gpu memory.used,utilization.gpu,utilization.memory "
+            "--format=csv -lms 20 "
+            "> smi.csv "
+            "& sleep 0.3; "
+            "kill $!"
+        )
         while not process.is_finished():
             process._platform.comm.shell(
                 command=smi_command,
@@ -261,7 +268,7 @@ def main():
 
     suite_vecadd.generate_graph(
         plot_name="barplot",
-        title=f"vector add duration",
+        title="vector add duration",
         y="duration",
         x="block_size",
         hue="benchname",
@@ -269,7 +276,7 @@ def main():
 
     suite_vecadd.generate_graph(
         plot_name="barplot",
-        title=f"vector add kernel time",
+        title="vector add kernel time",
         y="kernel_time",
         x="block_size",
         hue="benchname",
