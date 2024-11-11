@@ -837,8 +837,6 @@ class PerfReportWrap(CommandWrapper):
         header: str,
         command_fun: Callable[[PathType], SplitCommand],
     ):
-        user = self.platform.current_user()
-
         paths = [
             f
             for f in _find(find_dir=search_dir, include_subdirs=False)

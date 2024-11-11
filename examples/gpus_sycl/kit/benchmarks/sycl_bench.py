@@ -58,7 +58,15 @@ class SyclBench(Benchmark):
             output_is_log=True,
         )
         self.platform.comm.shell(
-            command=f"cmake --build . --config Release --target {self._cmake_target}{self._parallel_make_str()}",
+            command=[
+                "cmake",
+                "--build",
+                ".",
+                "--config",
+                "Release",
+                "--target",
+                f"{self._cmake_target}{self._parallel_make_str()}",
+            ],
             current_dir=f"{build_dir}",
             output_is_log=True,
         )

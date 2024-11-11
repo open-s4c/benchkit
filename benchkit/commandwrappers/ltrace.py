@@ -1,8 +1,8 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 """
-Command wrapper for the `ltrace` utility that allows to trace all dynamic library calls used in the wrapped
-command and output them into a file.
+Command wrapper for the `ltrace` utility that allows to trace all dynamic
+library calls used in the wrapped command and output them into a file.
 """
 
 import os

@@ -1,8 +1,9 @@
-import re
-import sys
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 
-import matplotlib.colors as mcolors
-import mplcursors
+import re
+from typing import Dict
+
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
@@ -35,27 +36,55 @@ class Thread:
         self.termination_timestamp = timstamp
 
     def __repr__(self):
-        return f"Thread(pid={self.pid}, created on={self.creation_timestamp} events={self.events} switches:{self.switches})"
+        return (
+            f"Thread(pid={self.pid}, "
+            f"created on={self.creation_timestamp} "
+            f"events={self.events} "
+            f"switches:{self.switches})"
+        )
 
 
 def parse_line(line):
     exec_pattern = re.compile(
-        r"\s*(\S+)-(\d+)\s+\[(\d+)\]\s+.*?\s+(\d+\.\d+): sched_process_exec:\s+filename=(\S+)\s+pid=(\d+)\s+old_pid=(\d+)"
+        (
+            r"\s*(\S+)-(\d+)\s+\[(\d+)\]\s+.*?\s+(\d+\.\d+): "
+            r"sched_process_exec:\s+filename=(\S+)\s+pid=(\d+)\s+old_pid=(\d+)"
+        )
     )
     fork_pattern = re.compile(
-        r"\s*(\S+)-(\d+)\s+\[(\d+)\]\s+.*?\s+(\d+\.\d+): sched_process_fork:\s+comm=(\S+)\s+pid=(\d+)\s+child_comm=(\S+)\s+child_pid=(\d+)"
+        (
+            r"\s*(\S+)-(\d+)\s+\[(\d+)\]\s+.*?\s+(\d+\.\d+): "
+            r"sched_process_fork:\s+comm=(\S+)\s+pid=(\d+)\s+child_comm=(\S+)\s+child_pid=(\d+)"
+        )
     )
     migrate_pattern = re.compile(
-        r"\s*(\S+)-(\d+)\s+\[\d+\]\s+.*?\s+(\d+\.\d+): sched_migrate_task:\s+comm=(\S+)\s+pid=(\d+)\s+prio=(\d+)\s+orig_cpu=(\d+)\s+dest_cpu=(\d+)"
+        (
+            r"\s*(\S+)-(\d+)\s+\[\d+\]\s+.*?\s+(\d+\.\d+): "
+            r"sched_migrate_task:\s+"
+            r"comm=(\S+)\s+"
+            r"pid=(\d+)\s+"
+            r"prio=(\d+)\s+"
+            r"orig_cpu=(\d+)\s+"
+            r"dest_cpu=(\d+)"
+        )
     )
     switch_pattern = re.compile(
-        r"\s*(\S+)-(\d+)\s+\[(\d+)\]\s+.*?\s+(\d+\.\d+): sched_switch:\s+(\S+):(\d+) \[\d+\] \S+ ==> (\S+):(\d+) \[\d+\]"
+        (
+            r"\s*(\S+)-(\d+)\s+\[(\d+)\]\s+.*?\s+(\d+\.\d+): "
+            r"sched_switch:\s+(\S+):(\d+) \[\d+\] \S+ ==> (\S+):(\d+) \[\d+\]"
+        )
     )
     exit_pattern = re.compile(
-        r"\s*(\S+)-(\d+)\s+\[(\d+)\]\s+.*?\s+(\d+\.\d+): sched_process_exit:\s+comm=(\S+)\s+pid=(\d+)\s+prio=(\d+)"
+        (
+            r"\s*(\S+)-(\d+)\s+\[(\d+)\]\s+.*?\s+(\d+\.\d+): "
+            r"sched_process_exit:\s+comm=(\S+)\s+pid=(\d+)\s+prio=(\d+)"
+        )
     )
     wakeup_pattern = re.compile(
-        r"\s*(\S+)-(\d+)\s+\[(\d+)\]\s+.*?\s+(\d+\.\d+): sched_wakeup:\s+(\S+):(\d+)\s+\[\d+\]\s+CPU:(\d+)"
+        (
+            r"\s*(\S+)-(\d+)\s+\[(\d+)\]\s+.*?\s+(\d+\.\d+): "
+            r"sched_wakeup:\s+(\S+):(\d+)\s+\[\d+\]\s+CPU:(\d+)"
+        )
     )
 
     exec_match = exec_pattern.match(line)
@@ -136,15 +165,11 @@ def extract_cpu_count(line):
 def parse_file(filename, first_pid=-1):
     parsed_data = []
     exec_pids = set()
-    pid_to_cpu = {}  # Map pid to last seen CPU
     first_timestamp = -1
     last_timestamp = 0
     nb_of_cpus = 0
     cpu_usage = {}  # Track last known CPU for each PID
     line_nbr = 0
-
-    # Generate a list of colors
-    colors = list(mcolors.TABLEAU_COLORS.values())
 
     if first_pid > 0:
         print(first_pid)
@@ -205,8 +230,7 @@ def parse_file(filename, first_pid=-1):
                     elif parsed_line["type"] == "sched_switch" and (
                         parsed_line["prev_pid"] in exec_pids or parsed_line["next_pid"] in exec_pids
                     ):
-                        cpu_usage[parsed_line["next_pid"]] = parsed_line[
-                            "cpu"
+                        cpu_usage[parsed_line["next_pid"]] = parsed_line["cpu"]
                         parsed_data.append(
                             {
                                 "type": "sched_switch",
@@ -219,9 +243,8 @@ def parse_file(filename, first_pid=-1):
                     elif parsed_line["type"] == "sched_wakeup" and (
                         parsed_line["pid"] in exec_pids
                     ):
-                        cpu_usage[parsed_line["pid"]] = parsed_line[
-                            "target_cpu"
-                        ]  ######This could be wrong
+                        # TODO: the following could be wrong
+                        cpu_usage[parsed_line["pid"]] = parsed_line["target_cpu"]
                         parsed_data.append(
                             {
                                 "type": "sched_wakeup",
@@ -274,10 +297,6 @@ def parse_file(filename, first_pid=-1):
     return threads, last_timestamp, nb_of_cpus
 
 
-colors = ["red", "blue", "green", "yellow", "purple", "orange", "cyan", "magenta"]
-
-
-# Function to plot and save the graph
 def plot_and_save_graph(threads, last_timestamp, filename, nb_cpus):
     fig = make_subplots(rows=1, cols=1)
     pid_legend_added = set()

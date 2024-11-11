@@ -95,7 +95,7 @@ class NPBMZBench(Benchmark):
         **_kwargs,
     ) -> None:
         self.platform.comm.shell(
-            command=f"make clean",
+            command="make clean",
             current_dir=self.bench_src_path,
             print_input=True,
             print_output=True,
@@ -103,7 +103,7 @@ class NPBMZBench(Benchmark):
 
         if not self.platform.comm.isdir(self._bench_src_path / "bin"):
             self.platform.comm.shell(
-                command=f"mkdir -p bin",
+                command="mkdir -p bin",
                 current_dir=self.bench_src_path,
                 print_input=True,
                 print_output=True,

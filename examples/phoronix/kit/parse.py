@@ -49,7 +49,10 @@ def convert_to_bool(value: str):
 
 
 def file_if_exists(path: PathType, name: str):
-    """Returns a Phatlib Path if the file in the path with the given name exists, otherwise returns None."""
+    """
+    Returns a Phatlib Path if the file in the path with the given name exists,
+    otherwise returns None.
+    """
     full_path = pathlib.Path(path / name)
     if full_path.exists():
         return full_path
@@ -132,7 +135,9 @@ class PhoronixDownload:
                 print("Failed to write file from", url, "to a file.")
 
     def ensure_exists(self, src_path: PathType):
-        """Ensures the download exists on the system. Only downloads the file if it does not exist yet."""
+        """
+        Ensures the download exists on the system. Only downloads the file if it does not exist yet.
+        """
 
         if not self.exists(src_path):
             self.download(src_path)

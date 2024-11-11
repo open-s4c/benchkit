@@ -2,18 +2,14 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
-from benchkit.campaign import CampaignCartesianProduct, CampaignSuite, Constants
+from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 from benchkit.commandwrappers import CommandWrapper
-from benchkit.commandwrappers.env import EnvWrap
-from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap
-from benchkit.commandwrappers.strace import StraceWrap
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform, get_remote_platform
-from benchkit.sharedlibs import SharedLib
-from benchkit.utils.types import CpuOrder, Environment, PathType
+from benchkit.utils.types import PathType
 
 # Use "blender" if you have blender in your path, otherwise use the
 # exact path of the executable.
@@ -38,16 +34,16 @@ class BlenderBenchmark(Benchmark):
         bench_dir: PathType,
         outfile: str,
         copy_scenes_to_benchmark_dir: bool = False,
-        command_wrappers: Iterable[CommandWrapper] = [],
-        command_attachments: Iterable[CommandAttachment] = [],
-        pre_run_hooks: Iterable[PreRunHook] = [],
-        post_run_hooks: Iterable[PostRunHook] = [],
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
         platform: Platform = None,
     ) -> None:
         super().__init__(
             command_wrappers=command_wrappers,
             command_attachments=command_attachments,
-            shared_libs=[],
+            shared_libs=(),
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,
         )
@@ -172,7 +168,7 @@ class BlenderBenchmark(Benchmark):
             duration = int(hours) * 3600 + int(minutes) * 60 + float(seconds)
             duration = str(duration)
 
-        except Exception:
+        except ValueError:
             print(command_output)
             duration = "N/A"
 
@@ -231,7 +227,7 @@ def main():
         # Valid options are: 'CPU' 'CUDA' 'OPTIX' 'HIP' 'ONEAPI' 'METAL'.
         # Select one that your machine can provide, nvidia CUDA or OPTIX
         # if you have a newer card, macOS uses METAL, AMD uses HIP.
-        # Otherwise if you want to stress test a CPU, use CPU. It will
+        # Otherwise, if you want to stress test a CPU, use CPU. It will
         # automatically select the maximum number of cores.
         # To use both the CPU and the GPU at the same time, add +CPU at
         # the end of the GPU device.

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
+# Copyright (C) 2024 Huawei Technologies Co., Ltd. All rights reserved.
 # SPDX-License-Identifier: MIT
 """
 Module to test the HDC api basics
 """
 
+
 import os
 
-from benchkit.hdc import *
+from benchkit.hdc import OpenHarmonyDeviceConnector
 
 HOST_FILE = ".gitignore"
 TMP_FILE = "cloned-gitignore"

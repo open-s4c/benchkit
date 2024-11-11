@@ -120,7 +120,7 @@ class GpuSchedulingBench(Benchmark):
 
         output_path = rel_output_path / "output"
         command = [
-            f"python2",
+            "python2",
             "./scripts/view_blocksbysm.py",
             "-v",
             "1200",
@@ -165,7 +165,10 @@ def get_docker_platform() -> Platform:
     builder.run(command="make libsmctrl.a")
     builder.workdir("/home/user/src")
     builder.run(
-        command="git clone https://github.com/JoshuaJB/cuda_scheduling_examiner_mirror.git -b rtas23-ae"
+        command=(
+            "git clone https://github.com/JoshuaJB/cuda_scheduling_examiner_mirror.git "
+            "-b rtas23-ae"
+        )
     )
     builder.workdir("/home/user/src/cuda_scheduling_examiner_mirror")
 

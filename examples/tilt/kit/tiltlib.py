@@ -67,7 +67,10 @@ class TiltLib(FromSourceSharedLib):
                 ld_preloads.append(str(lib_path))
             else:
                 print(
-                    f"[WARNING] Tilt lib lock with name {lib_lockname} not found (in {lib_path}), not enabling.",
+                    (
+                        f"[WARNING] Tilt lib lock with name {lib_lockname} not found "
+                        f"(in '{lib_path}'), not enabling."
+                    ),
                     file=sys.stderr,
                 )
 

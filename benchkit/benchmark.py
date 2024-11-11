@@ -611,7 +611,7 @@ class Benchmark:
 
     def prebuild_bench(
         self,
-        **kwargs,
+        **_kwargs,
     ) -> int:
         """
         Do a build step that is independent of the build variables.
@@ -625,7 +625,6 @@ class Benchmark:
         """
         Clean the benchmark from build files.
         """
-        pass
 
     def build_bench(
         self,

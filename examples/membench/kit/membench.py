@@ -143,14 +143,14 @@ class MemBenchBench(Benchmark):
 
         # Make the project
         self.platform.comm.shell(
-            command=f"make",
+            command="make",
             current_dir=src_dir,
             output_is_log=True,
         )
 
         # Build benchmarking files to src_dir/out
         self.platform.comm.shell(
-            command=f"touch benchfile",
+            command="touch benchfile",
             current_dir=src_dir,
             output_is_log=True,
         )
@@ -158,7 +158,7 @@ class MemBenchBench(Benchmark):
         # Generate file to be benchmarked
         # TODO using random values might introduce unpredictability in results, find a constant way
         self.platform.comm.shell(
-            command=f"dd if=/dev/urandom of=benchfile bs=100M count=8",
+            command="dd if=/dev/urandom of=benchfile bs=100M count=8",
             current_dir=src_dir,
             output_is_log=True,
         )
@@ -168,7 +168,7 @@ class MemBenchBench(Benchmark):
 
         # Generate file to be benchmarked
         self.platform.comm.shell(
-            command=f"rm -f benchfile",
+            command="rm -f benchfile",
             current_dir=src_dir,
             output_is_log=True,
         )
@@ -227,7 +227,8 @@ def membench_campaign(
         "example1.txt",
         "example2.txt",
     ),  # Benchmark does not end: "example3.txt"
-    # TODO remove the example and use the parameters as used in the examples directly with the command line
+    # TODO remove the example and use the parameters as used in the examples
+    # directly with the command line
     src_dir: Optional[PathType] = None,
     results_dir: Optional[PathType] = None,
     command_wrappers: Iterable[CommandWrapper] = (),

@@ -52,7 +52,7 @@ class NPBBench(Benchmark):
 
     @property
     def bench_src_path(self) -> str:
-        return self._bench_src_path
+        return str(self._bench_src_path)
 
     @staticmethod
     def get_build_var_names() -> List[str]:
@@ -95,7 +95,7 @@ class NPBBench(Benchmark):
         **_kwargs,
     ) -> None:
         self.platform.comm.shell(
-            command=f"make clean",
+            command="make clean",
             current_dir=self.bench_src_path,
             print_input=True,
             print_output=True,

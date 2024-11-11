@@ -2,13 +2,14 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+import os
+
 from benchmarks.cprogram import CProgramBench
 
 from benchkit.campaign import CampaignIterateVariables
+from benchkit.charts.gant import parse_file, plot_and_save_graph
 from benchkit.commandattachments.tracecmd import TraceCmd
 from benchkit.platforms import get_current_platform
-import os
-from benchkit.charts.gant import parse_file, plot_and_save_graph
 
 
 def find_and_plot_graph_out(
@@ -46,6 +47,7 @@ def find_and_plot_graph_out(
                 )
             except Exception as e:
                 print(f"Error occurred while processing {graph_out_path}: {e}")
+
 
 def main() -> None:
     platform = get_current_platform()
