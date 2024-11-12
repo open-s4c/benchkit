@@ -9,10 +9,19 @@ from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import PathType
 from benchkit.utils.dir import caller_dir
 from benchkit.hdc import OpenHarmonyDeviceConnector
+from enum import Enum
+import re
+
 
 BUILD_VARIABLES = []
 RUN_VARIABLES = ["m"]
 TILT_VARIABELS = []
+
+
+class Target(Enum):
+    LOCAL = 1
+    MOBILE = 2
+    CONTAINER = 3
 
 
 class IPCBenchmark(Benchmark):
@@ -76,20 +85,24 @@ class IPCBenchmark(Benchmark):
         record_data_dir: PathType, 
         **kwargs
     ) -> Dict[str, Any]:
-        time_line = command_output.splitlines()[3]
-        time = time_line.split(" ")[1]
+        raw_output = command_output[command_output.index("Successfully roundtrip"):]
+        m = re.search(pattern=r"took:\s*([\d.]+)s", string=raw_output)
+        if m is None:
+            raise ValueError(f"Failed to parse output: '{raw_output}'")
+        time_value = m.group(1)
         parsed = {
-            "time": time,
+            "time_seconds": time_value,
         }
         return parsed
-    
+
     def build_bench(self, **kwargs) -> None:
         if self.mobile:
             return
         
         self.platform.comm.shell(
             command="cargo build",
-            current_dir=self.bench_dir
+            current_dir=self.bench_dir,
+            output_is_log=True,
         )
     
     def clean_bench(self) -> None:
@@ -99,7 +112,8 @@ class IPCBenchmark(Benchmark):
         if not self.skip_rebuild:
             self.platform.comm.shell(
                 command="cargo clean",
-                current_dir=self.bench_dir
+                current_dir=self.bench_dir,
+                output_is_log=True,
             )
     
     def single_run(self, m: int, **kwargs) -> str:
@@ -133,30 +147,37 @@ class IPCBenchmark(Benchmark):
                 print_output=True,
             )
 
-        return output    
+        return output
 
 
 def main() -> None:
     nb_runs = 2
     variables = [{ "m": 10 ** i } for i in range(1, 4)]
-    mobile = False
     skip_rebuild = False
+    target = Target.LOCAL
 
-    bench_dir: str = caller_dir() / "ipc_runner"
+    bench_dir: pathlib.Path | str = caller_dir() / "ipc_runner"
     platform: Platform | None = None
     hdc: OpenHarmonyDeviceConnector | None = None
 
-    if mobile:
-        bench_dir = "/data/testing/ipc/"
-        hdc = OpenHarmonyDeviceConnector.query_devices(lambda _: True)[0]
-    else:
-        platform = get_current_platform()
+    this_dir = caller_dir()
+
+    match target:
+        case Target.LOCAL:
+            platform = get_current_platform()
+        case Target.MOBILE:
+            bench_dir = "/data/testing/ipc/"
+            hdc = OpenHarmonyDeviceConnector.query_devices(lambda _: True)[0]
+        case Target.CONTAINER:
+            from rustcontainer import get_rust_docker_platform
+            platform = get_rust_docker_platform(host_dir=this_dir)
+            bench_dir = "/home/user/workspace/mnt/ipc_runner"
     
     benchmark = IPCBenchmark(
         bench_dir=bench_dir,
         platform=platform,
         hdc=hdc,
-        mobile=mobile,
+        mobile=(Target.MOBILE == target),
         skip_rebuild=skip_rebuild,
     )
 
@@ -175,6 +196,12 @@ def main() -> None:
     suite = CampaignSuite(campaigns=campaigns)
     suite.print_durations()
     suite.run_suite()
+
+    suite.generate_graph(
+        plot_name="lineplot",
+        x="m",
+        y="time_seconds",
+    )
 
 
 if __name__ == "__main__":
