@@ -16,8 +16,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install pylint black flake8
+        python3 -m pip install --upgrade pip
+        pip3 install pylint black flake8
 #    - name: Analysing the code with pylint
 #      run: |
 #        pylint $(git ls-files '*.py')
@@ -27,3 +27,5 @@ jobs:
       run: black -l 100 --check .
     - name: Run Flake8
       run: flake8 benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/
+    - name: Check copyright
+      run: python3 ./scripts/list_missing_copyright.py
