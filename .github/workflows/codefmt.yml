@@ -21,6 +21,8 @@ jobs:
 #    - name: Analysing the code with pylint
 #      run: |
 #        pylint $(git ls-files '*.py')
+    - name: Run isort
+      run: isort --check-only --profile=black benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/
     - name: Run Black
       run: black -l 100 --check .
     - name: Run Flake8
