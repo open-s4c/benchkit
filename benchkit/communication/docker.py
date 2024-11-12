@@ -167,6 +167,7 @@ class DockerCommLayer(CommunicationLayer):
 
         full_command = self._get_command_prefix() + [
             "bash",
+            "--login",
             "-c",
             remote_command,
         ]  # TODO maybe cleaner split in the future
