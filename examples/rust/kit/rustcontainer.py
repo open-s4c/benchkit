@@ -1,12 +1,13 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from benchkit.platforms import Platform
-from benchkit.communication.docker import DockerCommLayer
-from benchkit.utils.types import PathType
-from pythainer.runners import ConcreteDockerRunner, DockerRunner
 from pythainer.builders import DockerBuilder
 from pythainer.examples.builders import get_user_builder
+from pythainer.runners import ConcreteDockerRunner, DockerRunner
+
+from benchkit.communication.docker import DockerCommLayer
+from benchkit.platforms import Platform
+from benchkit.utils.types import PathType
 
 
 def get_local_docker_platform(docker_runner: ConcreteDockerRunner) -> Platform:
