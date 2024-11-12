@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+# Copyright (C) 2023 Huawei Technologies Co., Ltd. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 import pathlib
 import re
 from enum import Enum

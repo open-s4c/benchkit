@@ -70,11 +70,16 @@ def find_py_files(start_dir: str) -> Generator[str, None, None]:
                 yield os.path.join(root, file)
 
 
-def main() -> None:
+def main() -> int:
+    nb_invalid = 0
     for file_path in find_py_files("."):
         if not has_valid_header(file_path):
             print(f"{file_path} does not have the valid copyright header", file=sys.stderr)
+            nb_invalid += 1
+    return nb_invalid
 
 
 if __name__ == "__main__":
-    main()
+    nb_errors = main()
+    if nb_errors > 0:
+        sys.exit(1)

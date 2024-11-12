@@ -1,0 +1,28 @@
+name: benchkit code formatting
+
+on: [push]
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip3 install pylint black flake8
+#    - name: Analysing the code with pylint
+#      run: |
+#        pylint $(git ls-files '*.py')
+    - name: Run isort
+      run: isort --check-only --profile=black benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/
+    - name: Run Black
+      run: black -l 100 --check .
+    - name: Run Flake8
+      run: flake8 benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/
+    - name: Check copyright
+      run: python3 ./scripts/list_missing_copyright.py
