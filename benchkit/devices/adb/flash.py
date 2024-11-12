@@ -6,14 +6,14 @@ Single primitive to flash a boot image on a target phone through the RNDIS drive
 
 import time
 
-from benchkit.adb import AndroidDebugBridge
-from benchkit.adb.fastboot import Fastboot
-from benchkit.adb.netiface import (
+from benchkit.devices.adb import AndroidDebugBridge
+from benchkit.devices.adb.fastboot import Fastboot
+from benchkit.devices.adb.netiface import (
     NetifaceNoIfaceError,
     check_phone_netiface,
     configure_generic_phone_netiface,
 )
-from benchkit.adb.usb import usb_down_up
+from benchkit.devices.adb.usb import usb_down_up
 from benchkit.utils.misc import TimeMeasure
 from benchkit.utils.netplan import ping
 from benchkit.utils.types import PathType

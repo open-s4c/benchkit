@@ -10,7 +10,7 @@ from typing import Any, Dict, Iterable, List
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import Campaign, CampaignIterateVariables, CampaignSuite
 from benchkit.commandwrappers import CommandWrapper
-from benchkit.hdc import OpenHarmonyDeviceConnector
+from benchkit.devices.hdc import OpenHarmonyDeviceConnector
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.dir import caller_dir

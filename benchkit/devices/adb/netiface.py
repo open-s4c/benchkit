@@ -9,8 +9,8 @@ import sys
 import time
 from typing import List
 
-from benchkit.adb import AndroidDebugBridge
-from benchkit.adb.fastboot import Fastboot, FastbootError
+from benchkit.devices.adb import AndroidDebugBridge
+from benchkit.devices.adb.fastboot import Fastboot, FastbootError
 from benchkit.utils.netplan import Netplan, get_iface_current_ip, get_list_iface_names
 
 _IFACE_PREFIX = "enx"

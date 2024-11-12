@@ -10,7 +10,7 @@ import sys
 import time
 from typing import Iterable
 
-from benchkit.adb import AndroidDebugBridge
+from benchkit.devices.adb import AndroidDebugBridge
 from benchkit.shell.shell import shell_out
 from benchkit.utils.types import PathType
 
