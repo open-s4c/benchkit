@@ -8,7 +8,7 @@ Module to test the HDC api basics
 
 import os
 
-from benchkit.hdc import OpenHarmonyDeviceConnector
+from benchkit.devices.hdc import OpenHarmonyDeviceConnector
 
 HOST_FILE = ".gitignore"
 TMP_FILE = "cloned-gitignore"

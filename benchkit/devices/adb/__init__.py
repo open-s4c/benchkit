@@ -10,7 +10,7 @@ import sys
 import time
 from typing import Iterable, Optional
 
-from benchkit.adb.usb import usb_down_up
+from benchkit.devices.adb.usb import usb_down_up
 from benchkit.shell.shell import get_args, shell_out
 from benchkit.utils.types import Command, PathType
 
