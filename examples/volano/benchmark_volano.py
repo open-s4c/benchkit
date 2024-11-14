@@ -16,6 +16,7 @@ from typing import Any, Dict, Iterable, List, Optional
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignCartesianProduct, Constants
 from benchkit.commandwrappers import CommandWrapper
+from benchkit.commandattachments.tcpdump import TcpDump
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
@@ -183,7 +184,7 @@ class CounterBenchmark(Benchmark):
         return result_dict
 
 
-def counter_campaign(
+def volano_campaign(
     name: str = "volano_campaign",
     benchmark: Optional[CounterBenchmark] = None,
     src_dir: Optional[PathType] = "./",
@@ -267,15 +268,17 @@ def main():
         shell=True,
         cwd=working_directory,
     )
+    
+    tcpdump = TcpDump()
 
     print(f"Started volano server process with PID: {process.pid}")
 
     # Example: Wait for 10 seconds before terminating the process
     time.sleep(5)
     print("start bench")
-    campaign = counter_campaign(
-        post_run_hooks=[],
-        command_wrappers=[],
+    campaign = volano_campaign(
+        post_run_hooks=[tcpdump.post_run_hook],
+        command_attachments=[tcpdump.attachment],
         src_dir="./",
         build_dir="./",
     )
