@@ -5,7 +5,9 @@
 Module to test the use of pipe in local and remote execution.
 """
 
+import subprocess
 import sys
+
 from benchkit.platforms import get_current_platform, get_remote_platform
 
 
@@ -26,13 +28,10 @@ def run_single_case(host, shell, expected_to_work) -> None:
         output = my_host.comm.pipe_shell(
             "ls | grep QWERTY_zxcvb",
             shell=shell,
-            print_command=False,
         )
-        print(
-            f"{is_expected[expected_to_work]} - Success with {host} execution and shell={shell}"
-        )
+        print(f"{is_expected[expected_to_work]} - Success with {host} execution and shell={shell}")
         print(output)
-    except:
+    except subprocess.CalledProcessError:
         print(
             f"{is_expected[not expected_to_work]}"
             f" - Error occurs with {host} execution and shell={shell}"
@@ -53,7 +52,7 @@ def run_default(host) -> None:
         )
         print(f"Success with {host} execution and default shell")
         print(output)
-    except:
+    except subprocess.CalledProcessError:
         print(f"!!!!!!Error occurs with {host} execution and default shell!!!!!!")
 
 

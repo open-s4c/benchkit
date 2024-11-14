@@ -2,8 +2,9 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from benchkit.campaign import CampaignIterateVariables, CampaignSuite
 from benchmarks.truefalse import TrueFalseBench
+
+from benchkit.campaign import CampaignIterateVariables
 
 
 def main() -> None:

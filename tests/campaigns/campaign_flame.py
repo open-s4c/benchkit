@@ -7,8 +7,8 @@ from benchmarks.sleep import SleepBench
 from benchkit.campaign import CampaignIterateVariables
 from benchkit.commandwrappers.perf import PerfReportWrap, enable_non_sudo_perf
 from benchkit.platforms import get_current_platform
-from benchkit.utils.git import clone_repo
 from benchkit.utils.dir import caller_dir
+from benchkit.utils.git import clone_repo
 
 
 def main() -> None:
@@ -61,5 +61,5 @@ def main() -> None:
     perf_wrapper.fzf_flamegraph(search_dir=results_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

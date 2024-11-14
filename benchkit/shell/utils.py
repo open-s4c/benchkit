@@ -126,7 +126,6 @@ def _print_file_shell_cmd(
             shell_file.writelines(lines)
 
 
-
 def print_header(
     arguments: SplitCommand,
     current_dir: Optional[PathType],

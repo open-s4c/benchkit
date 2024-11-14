@@ -53,7 +53,7 @@ def pipe_shell_out(
             command,
             cwd=current_dir,
             shell=shell,
-            text=True
+            text=True,
         )
 
     except subprocess.CalledProcessError as err:
@@ -80,6 +80,7 @@ def shell_out(
     timeout: Optional[int] = None,
     output_is_log: bool = False,
     ignore_ret_codes: Iterable[int] = (),
+    ignore_any_error_code: bool = False,
 ) -> str:
     """
     Run a shell command on the host system.
@@ -131,6 +132,8 @@ def shell_out(
             This allows to avoid an exception to be raised for commands that do not end with 0 even
             if they are successful.
             Defaults to ().
+        ignore_any_error_code (bool, optional):
+            whether to error any error code returned by the command.
 
     Raises:
         subprocess.CalledProcessError:
@@ -165,20 +168,24 @@ def shell_out(
                 raw_outline = process.stdout.readline()
 
         outlines = []
-        with subprocess.Popen(
-            arguments,
-            shell=shell,
-            cwd=current_dir,
-            env=environment,
-            stdout=subprocess.PIPE,
-        ) if std_input is None else subprocess.Popen(
-            arguments,
-            shell=shell,
-            cwd=current_dir,
-            env=environment,
-            stdout=subprocess.PIPE,
-            stdin=std_input,
-            text=True,
+        with (
+            subprocess.Popen(
+                arguments,
+                shell=shell,
+                cwd=current_dir,
+                env=environment,
+                stdout=subprocess.PIPE,
+            )
+            if std_input is None
+            else subprocess.Popen(
+                arguments,
+                shell=shell,
+                cwd=current_dir,
+                env=environment,
+                stdout=subprocess.PIPE,
+                stdin=std_input,
+                text=True,
+            )
         ) as process:
             retcode = process.poll()
             while retcode is None:
@@ -219,7 +226,11 @@ def shell_out(
                 )
         except subprocess.CalledProcessError as err:
             retcode = err.returncode
-            if retcode not in ignore_ret_codes:
+            if ignore_any_error_code:
+                pass
+            elif retcode in ignore_ret_codes:
+                pass
+            else:
                 raise err
             output = err.output
 

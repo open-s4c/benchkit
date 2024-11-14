@@ -49,8 +49,7 @@ class WriteRecordFileFunction(Protocol):
         self,
         file_content: str,
         filename: PathType,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class PreRunHook(Protocol):
@@ -63,8 +62,7 @@ class PreRunHook(Protocol):
         build_variables: RecordResult,
         run_variables: RecordResult,
         record_data_dir: PathType,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class PostRunHook(Protocol):
@@ -77,8 +75,7 @@ class PostRunHook(Protocol):
         experiment_results_lines: List[RecordResult],
         record_data_dir: PathType,
         write_record_file_fun: WriteRecordFileFunction,
-    ) -> Optional[RecordResult]:
-        ...
+    ) -> Optional[RecordResult]: ...
 
 
 class CommandAttachment(Protocol):
@@ -90,8 +87,7 @@ class CommandAttachment(Protocol):
         self,
         process: AsyncProcess,
         record_data_dir: PathType,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class Benchmark:
@@ -615,7 +611,7 @@ class Benchmark:
 
     def prebuild_bench(
         self,
-        **kwargs,
+        **_kwargs,
     ) -> int:
         """
         Do a build step that is independent of the build variables.
@@ -629,7 +625,6 @@ class Benchmark:
         """
         Clean the benchmark from build files.
         """
-        pass
 
     def build_bench(
         self,
@@ -696,7 +691,8 @@ class Benchmark:
         wrapped_environment: Environment,
         print_output: bool,
         timeout: int | None = None,
-        ignore_ret_codes: Iterable[int]=(),
+        ignore_ret_codes: Iterable[int] = (),
+        ignore_any_error_code: bool = False,
         **kwargs,
     ) -> str | AsyncProcess:
         """
@@ -715,6 +711,11 @@ class Benchmark:
                 environment wrapped with everything configured in the benchmark.
             print_output (bool):
                 whether to print the output of the benchmark command.
+            ignore_ret_codes (Iterable[int], optional):
+                List of error code to ignore if it is the return code of the command.
+                Defaults to () (empty collection).
+            ignore_any_error_code (bool, optional):
+                whether to error any error code returned by the command.
 
         Returns:
             str | AsyncProcess:
@@ -745,6 +746,7 @@ class Benchmark:
             print_output=print_output,
             timeout=timeout,
             ignore_ret_codes=ignore_ret_codes,
+            ignore_any_error_code=ignore_any_error_code,
         )
         return output
 
@@ -902,9 +904,11 @@ class Benchmark:
         run_variables = {
             k: record_parameters[k] for k in self.get_run_var_names() if k in record_parameters
         }
-        tilt_variables = {
-            k: record_parameters[k] for k in self.get_tilt_var_names() if k in record_parameters
-        } if self._use_tilt else {}
+        tilt_variables = (
+            {k: record_parameters[k] for k in self.get_tilt_var_names() if k in record_parameters}
+            if self._use_tilt
+            else {}
+        )
         other_variables = {
             k: record_parameters[k]
             for k in record_parameters
@@ -934,9 +938,9 @@ class Benchmark:
 
     def _temp_record_data_dir(self, record_data_dir: pathlib.Path):
         # The ./ prefix is necessary since pathlib ignores the first
-        # argument to the / operator if the second argument is an 
+        # argument to the / operator if the second argument is an
         # absolute path. So we need to ensure the second argument is
-        # never an absolute path. 
+        # never an absolute path.
         return self._temp_record_prefix() / f"./{record_data_dir}"
 
     def _run_single_run(
@@ -1019,7 +1023,7 @@ class Benchmark:
                         teeprint(content="# Continuing campaign execution", file=csv_output_file)
                 continue
 
-            # Replace record_data_dir with a temporary data directory for the 
+            # Replace record_data_dir with a temporary data directory for the
             # wrapper to write their files to. (Only if the host is remote)
             temp_record_data_dir = record_data_dir
             if not self.platform.comm.is_local:
@@ -1064,7 +1068,7 @@ class Benchmark:
                 self.platform.comm.copy_to_host(f"{temp_record_data_dir}/", f"{record_data_dir}/")
                 # Clean up nicely after ourselves
                 self.platform.comm.remove(self._temp_record_prefix(), recursive=True)
-            
+
             single_run_results = self.parse_output_to_results(
                 command_output=single_run_output,
                 build_variables=build_variables,

@@ -4,13 +4,25 @@
 from pythainer.builders import UbuntuDockerBuilder
 from pythainer.builders.utils import project_git_clone
 from pythainer.examples.builders import get_user_builder
+from pythainer.runners import ConcreteDockerRunner
+
+from benchkit.communication.docker import DockerCommLayer
+from benchkit.platforms import Platform
+
+_DEFAULT_DAT3M_VERSION = "4.1.0"
 
 
-def standalone_dat3m_builder() -> UbuntuDockerBuilder:
+def standalone_dat3m_builder(
+    version_acronym: str = "",
+    dat3m_commit: str = _DEFAULT_DAT3M_VERSION,
+) -> UbuntuDockerBuilder:
     work_dir = "/home/${USER_NAME}/workspace"
 
+    suffix = f"-{version_acronym}" if version_acronym else ""
+    image_name = f"dat3mbenchkit{suffix}"
+
     builder = get_user_builder(
-        image_name="dat3mbenchkit",
+        image_name=image_name,
         base_ubuntu_image="ubuntu:22.04",
         user_name="tony",
         packages=[
@@ -32,7 +44,7 @@ def standalone_dat3m_builder() -> UbuntuDockerBuilder:
         builder=builder,
         workdir=work_dir,
         git_url="https://github.com/hernanponcedeleon/Dat3M.git",
-        commit="4.1.0",
+        commit=dat3m_commit,
         single_run_command=True,
     )
     dat3m_home = f"{work_dir}/{dat3m_name}"
@@ -71,3 +83,26 @@ def standalone_dat3m_builder() -> UbuntuDockerBuilder:
     builder.workdir(path=f"{work_dir}/{dat3m_name}")
 
     return builder
+
+
+def get_local_docker_platform(docker_runner: ConcreteDockerRunner) -> Platform:
+    docker_comm = DockerCommLayer(docker_runner=docker_runner)
+    platform = Platform(comm_layer=docker_comm)
+    return platform
+
+
+def get_dat3m_docker_platform(
+    version_acronym: str = "",
+    dat3m_commit: str = _DEFAULT_DAT3M_VERSION,
+) -> Platform:
+    dat3m_builder = standalone_dat3m_builder(
+        version_acronym=version_acronym,
+        dat3m_commit=dat3m_commit,
+    )
+    # TODO building images does not support yet remote, the plan would be to give an optional
+    #  shell_out callback to that build() function and provide with the platform.shell from the
+    #  selected host.
+    dat3m_builder.build()
+    dar3m_runner = dat3m_builder.get_runner()
+    platform = get_local_docker_platform(docker_runner=dar3m_runner)
+    return platform

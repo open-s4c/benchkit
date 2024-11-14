@@ -27,8 +27,12 @@ class DockerCommLayer(CommunicationLayer):
         self._command_prefix = None
 
     @property
+    def remote_host(self) -> str | None:
+        return None
+
+    @property
     def is_local(self) -> bool:
-        return False
+        return True  # TODO temporarily to avoid implementing copy_to_host
 
     def _get_command_prefix(self) -> SplitCommand:
         if self._command_prefix is None:
@@ -42,9 +46,29 @@ class DockerCommLayer(CommunicationLayer):
         stderr: PathType,
         cwd: PathType | None,
         env: dict | None,
+        establish_new_connection: bool = False,
     ) -> subprocess.Popen:
-        raise NotImplementedError(
-            "Will follow in the future, with inspiration from the SSH equivalent class"
+        # TODO This is a solution that's a bit dangerous, as the user would commonly expect the
+        # background process to run inside the docker container. We should keep this use case
+        # in mind when revamping the shell commands, and perhaps refactor this code again.
+        print("[WARNING] Potentially unexpected behaviour of docker background subprocess method")
+
+        env_command = command_with_env(
+            command=command,
+            environment=env,
+            additional_environment=self._additional_environment,
+        )
+        full_command = self._remote_shell_command(
+            remote_command=env_command,
+            remote_current_dir=cwd,
+        )
+
+        return subprocess.Popen(
+            full_command,
+            stdout=stdout,
+            stderr=stderr,
+            env=env,
+            preexec_fn=None,
         )
 
     def shell(
@@ -60,6 +84,7 @@ class DockerCommLayer(CommunicationLayer):
         timeout: int | None = None,
         output_is_log: bool = False,
         ignore_ret_codes: Iterable[int] = (),
+        ignore_any_error_code: bool = False,
     ) -> str:
         env_command = command_with_env(
             command=command,
@@ -142,6 +167,7 @@ class DockerCommLayer(CommunicationLayer):
 
         full_command = self._get_command_prefix() + [
             "bash",
+            "--login",
             "-c",
             remote_command,
         ]  # TODO maybe cleaner split in the future

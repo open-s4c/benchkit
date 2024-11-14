@@ -1,3 +1,5 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 
 from benchkit.helpers.linux.predictable.predlinux import PredLinux
 from benchkit.platforms import get_current_platform
@@ -20,5 +22,5 @@ def main():
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

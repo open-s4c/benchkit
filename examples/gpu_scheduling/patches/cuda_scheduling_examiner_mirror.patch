@@ -1,0 +1,350 @@
+diff --git a/Makefile b/Makefile
+index 03be938..0e83198 100644
+--- a/Makefile
++++ b/Makefile
+@@ -31,7 +31,7 @@ benchmarks: bin/mandelbrot.so bin/timer_spin.so bin/multikernel.so \
+ 	bin/cpu_inorder_walk.so bin/cpu_random_walk.so bin/inorder_walk.so \
+ 	bin/random_walk.so bin/sharedmem_timer_spin.so bin/counter_spin.so \
+ 	bin/timer_spin_default_stream.so bin/stream_action.so bin/task_host.so \
+-	bin/matrix_multiply.so
++	bin/matrix_multiply.so bin/vector_add.so
+ 
+ directories:
+ 	mkdir -p bin/
+@@ -45,6 +45,10 @@ bin/timer_spin.so: src/timer_spin.cu $(BENCHMARK_DEPENDENCIES)
+ 	$(NVCC) --shared $(NVCCFLAGS) -o bin/timer_spin.so src/timer_spin.cu \
+ 		obj/benchmark_gpu_utilities.o
+ 
++bin/vector_add.so: src/vector_add.cu $(BENCHMARK_DEPENDENCIES)
++	$(NVCC) --shared $(NVCCFLAGS) -o bin/vector_add.so src/vector_add.cu \
++		obj/benchmark_gpu_utilities.o
++
+ bin/timer_spin_callback.so: src/timer_spin_callback.cu $(BENCHMARK_DEPENDENCIES)
+ 	$(NVCC) --shared $(NVCCFLAGS) -o bin/timer_spin_callback.so \
+ 		src/timer_spin_callback.cu obj/benchmark_gpu_utilities.o
+diff --git a/scripts/view_blocksbysm.py b/scripts/view_blocksbysm.py
+index c931f2a..3300722 100755
+--- a/scripts/view_blocksbysm.py
++++ b/scripts/view_blocksbysm.py
+@@ -13,6 +13,7 @@ import json
+ import math
+ import re
+ import sys
++import os
+ 
+ from graphics import *
+ 
+@@ -1162,7 +1163,7 @@ def get_block_intervals(name, benchmarks):
+     return Benchmark(name, benchmarks)
+ 
+ def plot_scenario(benchmarks, name, window_name, window_width, window_height,
+-                  save, start_time, end_time):
++                  save, start_time, end_time, path):
+     """Takes a list of parsed benchmark results and a scenario name and
+     generates a plot showing the timeline of benchmark behaviors for the
+     specific scenario."""
+@@ -1170,10 +1171,10 @@ def plot_scenario(benchmarks, name, window_name, window_width, window_height,
+     graph = BlockSMDisplay(win, get_block_intervals(name, benchmarks),
+                            window_width, window_height, start_time, end_time)
+     if save:
+-        canvasvg.saveall(name+".svg", graph.canvas.canvas)
+-    win.mainloop()
++        canvasvg.saveall(path + "/" + name + ".svg", graph.canvas.canvas)
++    # win.mainloop()
+ 
+-def show_plots(filenames, window_name, window_width, window_height, save, start_time, end_time):
++def show_plots(filenames, window_name, window_width, window_height, save, start_time, end_time, path):
+     """Takes a list of filenames, and generates one plot per scenario found in
+     the files."""
+     # Parse the files
+@@ -1193,7 +1194,7 @@ def show_plots(filenames, window_name, window_width, window_height, save, start_
+     # Plot the scenarios
+     for scenario in scenarios:
+         plot_scenario(scenarios[scenario], scenario, window_name, window_width,
+-                      window_height, save, start_time, end_time)
++                      window_height, save, start_time, end_time, path)
+ 
+ if __name__ == "__main__":
+     args = {}
+@@ -1223,6 +1224,6 @@ if __name__ == "__main__":
+         args = parser.parse_args()
+     filenames = glob.glob(args.directory + "*.json")
+     if SAVE_AVIL:
+-        show_plots(filenames, args.title, args.width, args.height, args.output, args.start, args.end)
++        show_plots(filenames, args.title, args.width, args.height, args.output, args.start, args.end, os.path.dirname(args.directory))
+     else:
+-        show_plots(filenames, args.title, args.width, args.height, False, args.start, args.end)
++        show_plots(filenames, args.title, args.width, args.height, False, args.start, args.end, "")
+diff --git a/src/matrix_multiply.cu b/src/matrix_multiply.cu
+index a329d76..800a3d2 100644
+--- a/src/matrix_multiply.cu
++++ b/src/matrix_multiply.cu
+@@ -67,7 +67,7 @@ static void Cleanup(void *data) {
+   if (state->device_block_times) cudaFree(state->device_block_times);
+   if (state->device_block_smids) cudaFree(state->device_block_smids);
+ 
+-  memset(state, 0, sizeof(*state));
++  memset((void *)state, 0, sizeof(*state));
+   free(state);
+ }
+ 
+@@ -379,4 +379,3 @@ int RegisterFunctions(BenchmarkLibraryFunctions *functions) {
+   functions->copy_out = CopyOut;
+   return 1;
+ }
+-
+diff --git a/src/vector_add.cu b/src/vector_add.cu
+new file mode 100644
+index 0000000..338e6cc
+--- /dev/null
++++ b/src/vector_add.cu
+@@ -0,0 +1,249 @@
++// This file defines a bare-bones CUDA benchmark which spins waiting for a
++// user-specified amount of time to complete. While the benchmark itself is
++// simpler than the mandelbrot-set benchmark, the boilerplate is relatively
++// similar.
++//
++// While this benchmark will spin for an arbitrary default number of
++// nanoseconds, the specific amount of time to spin may be given as a number
++// of nanoseconds provided in the "additional_info" configuration field.
++#include <cuda_runtime.h>
++#include <stdint.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include "benchmark_gpu_utilities.h"
++#include "library_interface.h"
++
++// Holds the local state for one instance of this benchmark.
++typedef struct {
++  // The CUDA stream with which all operations will be associated.
++  cudaStream_t stream;
++  // This will be set to 0 if the CUDA stream hasn't been created yet. This is
++  // useful because it allows us to unconditionally call Cleanup on error
++  // without needing to worry about calling cudaStreamDestroy twice.
++  int stream_created;
++  // Holds the device copy of the start and end times of each block.
++  uint64_t *device_block_times;
++  // Holds the device copy of the SMID each block was assigned to.
++  uint32_t *device_block_smids;
++  // Device side vecs
++  float *d_x, *d_y;
++  // Host side vecs
++  float *h_x, *h_y;
++  // Length of the vector
++  int data_size;
++  // Holds the grid dimension to use, set during initialization.
++  int block_count;
++  int thread_count;
++  // Holds host-side times that are shared with the calling process.
++  KernelTimes spin_kernel_times;
++} TaskState;
++
++// Implements the cleanup function required by the library interface, but is
++// also called internally (only during Initialize()) to clean up after errors.
++static void Cleanup(void *data) {
++  TaskState *state = (TaskState *) data;
++  if (!state) return;
++  cudaFree(state->d_x);
++  cudaFree(state->d_y);
++  cudaFreeHost(state->h_y);
++  cudaFreeHost(state->h_x);
++  KernelTimes *host_times = &state->spin_kernel_times;
++  // Free device memory.
++  if (state->device_block_times) cudaFree(state->device_block_times);
++  if (state->device_block_smids) cudaFree(state->device_block_smids);
++  // Free host memory.
++  if (host_times->block_times) cudaFreeHost(host_times->block_times);
++  if (host_times->block_smids) cudaFreeHost(host_times->block_smids);
++  if (state->stream_created) {
++    // Call CheckCUDAError here to print a message, even though we won't check
++    // the return value.
++    CheckCUDAError(cudaStreamDestroy(state->stream));
++  }
++  memset(state, 0, sizeof(*state));
++  free(state);
++}
++
++// Allocates GPU and CPU memory. Returns 0 on error, 1 otherwise.
++static int AllocateMemory(TaskState *state) {
++  uint64_t block_times_size = state->block_count * sizeof(uint64_t) * 2;
++  uint64_t block_smids_size = state->block_count * sizeof(uint32_t);
++  KernelTimes *host_times = &state->spin_kernel_times;
++  // Allocate device memory
++  if (!CheckCUDAError(cudaMalloc(&(state->device_block_times),
++    block_times_size))) {
++    return 0;
++  }
++  if (!CheckCUDAError(cudaMalloc(&(state->device_block_smids),
++    block_smids_size))) {
++    return 0;
++  }
++  // Allocate host memory.
++  if (!CheckCUDAError(cudaMallocHost(&host_times->block_times,
++    block_times_size))) {
++    return 0;
++  }
++  if (!CheckCUDAError(cudaMallocHost(&host_times->block_smids,
++    block_smids_size))) {
++    return 0;
++  }
++
++  // Allocate the vectors.
++  size_t size = state->data_size * sizeof(float);
++  if (!CheckCUDAError(cudaMalloc(&state->d_x, size))) return 0;
++  if (!CheckCUDAError(cudaMalloc(&state->d_y, size))) return 0;
++  if (!CheckCUDAError(cudaMallocHost(&state->h_x, size))) return 0;
++  if (!CheckCUDAError(cudaMallocHost(&state->h_y, size))) return 0;
++
++  for (int i = 0; i < state->data_size; i++) {
++      state->h_x[i] = 1.0f;
++      state->h_y[i] = 2.0f;
++  }
++
++  // Initialize the input vectors on the host.
++  if (!CheckCUDAError(cudaMemcpyAsync(state->d_x, state->h_x, size,
++    cudaMemcpyHostToDevice, state->stream))) {
++    return 0;
++  }
++  if (!CheckCUDAError(cudaMemcpyAsync(state->d_y, state->h_y, size,
++    cudaMemcpyHostToDevice, state->stream))) {
++    return 0;
++  }
++  if (!CheckCUDAError(cudaStreamSynchronize(state->stream))) return 0;
++  return 1;
++}
++
++static void* Initialize(InitializationParameters *params) {
++  TaskState *state = NULL;
++  // First allocate space for local data.
++  state = (TaskState *) calloc(1, sizeof(*state));
++  if (!state) return NULL;
++  if (!CheckCUDAError(cudaSetDevice(params->cuda_device))) return NULL;
++  if (!GetSingleBlockAndGridDimensions(params, &state->thread_count,
++    &state->block_count)) {
++    Cleanup(state);
++    return NULL;
++  }
++
++  state->data_size = params->data_size;
++
++  if (!AllocateMemory(state)) {
++    Cleanup(state);
++    return NULL;
++  }
++
++  if (!CheckCUDAError(CreateCUDAStreamWithPriorityAndMask(
++    params->stream_priority, params->sm_mask, &(state->stream)))) {
++    Cleanup(state);
++    return NULL;
++  }
++  state->stream_created = 1;
++  return state;
++}
++
++static int CopyIn(void *data) {
++  TaskState *state = (TaskState *) data;
++
++  // Reset block times
++  size_t size = state->block_count * 2 * sizeof(uint64_t);
++  if (!CheckCUDAError(cudaMemsetAsync(state->device_block_times, 0xff,
++    size, state->stream))) {
++    return 0;
++  }
++
++  // Copy input vectors.
++  size = state->data_size * sizeof(float);
++  if (!CheckCUDAError(cudaMemcpyAsync(state->d_x, state->h_x, size,
++    cudaMemcpyHostToDevice, state->stream))) {
++    return 0;
++  }
++  if (!CheckCUDAError(cudaMemcpyAsync(state->d_y, state->h_y, size,
++    cudaMemcpyHostToDevice, state->stream))) {
++    return 0;
++  }
++
++  if (!CheckCUDAError(cudaStreamSynchronize(state->stream))) return 0;
++  return 1;
++}
++
++static __global__ void add(int vecsize, float *x, float *y, uint64_t *block_times,
++    uint32_t *block_smids) {
++  uint64_t start_time = GlobalTimer64();
++  // First, record the kernel and block start times
++  if (threadIdx.x == 0) {
++    block_times[blockIdx.x * 2] = start_time;
++    block_smids[blockIdx.x] = GetSMID();
++  }
++  __syncthreads();
++  int index = blockIdx.x * blockDim.x + threadIdx.x;
++  int stride = blockDim.x * gridDim.x;
++  for (int i = index; i < vecsize; i += stride)
++    y[i] = x[i] + y[i];
++
++  // Record the kernel and block end times.
++  if (threadIdx.x == 0) {
++    block_times[blockIdx.x * 2 + 1] = GlobalTimer64();
++  }
++}
++
++static int Execute(void *data) {
++  TaskState *state = (TaskState *) data;
++  state->spin_kernel_times.cuda_launch_times[0] = CurrentSeconds();
++  add<<<state->block_count, state->thread_count, 0, state->stream>>>(
++    state->data_size, state->d_x, state->d_y, state->device_block_times,
++    state->device_block_smids);
++  state->spin_kernel_times.cuda_launch_times[1] = CurrentSeconds();
++  if (!CheckCUDAError(cudaStreamSynchronize(state->stream))) return 0;
++  state->spin_kernel_times.cuda_launch_times[2] = CurrentSeconds();
++  return 1;
++}
++
++static int CopyOut(void *data, TimingInformation *times) {
++  TaskState *state = (TaskState *) data;
++  KernelTimes *host_times = &state->spin_kernel_times;
++  uint64_t block_times_count = state->block_count * 2;
++  uint64_t block_smids_count = state->block_count;
++  memset(times, 0, sizeof(*times));
++  if (!CheckCUDAError(cudaMemcpyAsync(host_times->block_times,
++    state->device_block_times, block_times_count * sizeof(uint64_t),
++    cudaMemcpyDeviceToHost, state->stream))) {
++    return 0;
++  }
++  if (!CheckCUDAError(cudaMemcpyAsync(host_times->block_smids,
++    state->device_block_smids, block_smids_count * sizeof(uint32_t),
++    cudaMemcpyDeviceToHost, state->stream))) {
++    return 0;
++  }
++  if (!CheckCUDAError(cudaStreamSynchronize(state->stream))) return 0;
++  host_times->kernel_name = NULL;
++  host_times->block_count = state->block_count;
++  host_times->thread_count = state->thread_count;
++  times->kernel_count = 1;
++  times->kernel_info = host_times;
++
++  // Copy the result matrix.
++  size_t size = state->data_size * sizeof(float);
++  if (!CheckCUDAError(cudaMemcpyAsync(state->h_y, state->d_y, size,
++    cudaMemcpyDeviceToHost, state->stream))) {
++    return 0;
++  }
++  times->resulting_data_size = size;
++  times->resulting_data = state->h_y;
++  if (!CheckCUDAError(cudaStreamSynchronize(state->stream))) return 0;
++  return 1;
++}
++
++static const char* GetName(void) {
++  return "Vector Add";
++}
++
++// This should be the only function we export from the library, to provide
++// pointers to all of the other functions.
++int RegisterFunctions(BenchmarkLibraryFunctions *functions) {
++  functions->initialize = Initialize;
++  functions->copy_in = CopyIn;
++  functions->execute = Execute;
++  functions->copy_out = CopyOut;
++  functions->cleanup = Cleanup;
++  functions->get_name = GetName;
++  return 1;
++}

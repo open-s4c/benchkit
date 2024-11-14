@@ -102,23 +102,34 @@ def _generate_chart_from_df(
         title = args["title"]
         del args["title"]
 
-    fig = plt.figure(dpi=150)
-    chart = fig.add_subplot()
+    if "catplot" != plot_name:
+        fig = plt.figure(dpi=150)
+        chart = fig.add_subplot()
 
-    for plot_function in plot_functions:
-        sns_plot_fun = getattr(sns, plot_function)
-        chart = sns_plot_fun(
+        for plot_function in plot_functions:
+            sns_plot_fun = getattr(sns, plot_function)
+            chart = sns_plot_fun(
+                data=df,
+                ax=chart,
+                **args,
+            )
+
+        if hasattr(chart, "set_title"):
+            chart.set_title(title)
+
+        if xlabel is not None:
+            chart.set_xlabel(xlabel)
+        if ylabel is not None:
+            chart.set_ylabel(ylabel)
+        fig.tight_layout()
+    else:
+        chart = sns.catplot(
             data=df,
-            ax=chart,
             **args,
         )
-
-    chart.set_title(title)
-    if xlabel is not None:
-        chart.set_xlabel(xlabel)
-    if ylabel is not None:
-        chart.set_ylabel(ylabel)
-    fig.tight_layout()
+        chart.fig.suptitle(title)
+        chart.fig.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
+        fig = chart.fig
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -127,7 +138,8 @@ def _generate_chart_from_df(
     output_path = pathlib.Path(output_dir)
     while (fig_path_png := output_path / f"benchkit-{prefix}{timestamp}-{fig_id:02}.png").exists():
         fig_id += 1
-    with open(fig_path_png, 'x'):  # avoid overwriting if the figures aren't created yet (race issue)
+    # avoid overwriting if the figures aren't created yet (race issue):
+    with open(fig_path_png, "x"):
         pass
 
     fig.savefig(f"{fig_path_png}", transparent=False)

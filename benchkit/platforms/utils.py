@@ -61,13 +61,16 @@ def get_nb_cpus_total(comm_layer: CommunicationLayer) -> int:
             )
         except FileNotFoundError:
             # Windows
-            result1 =  int(
+            result1 = int(
                 comm_layer.shell(
                     command="wmic cpu get numberofcores",
                     print_input=False,
                     print_output=False,
-                ).strip().split()[1])
-    
+                )
+                .strip()
+                .split()[1]
+            )
+
     if comm_layer.is_local:
         result2 = os.cpu_count()
         if result1 != result2:
@@ -90,7 +93,7 @@ def get_nb_cpus_isolated(comm_layer: CommunicationLayer) -> int:
         isolated_str = comm_layer.read_file("/sys/devices/system/cpu/isolated").strip()
     except FileNotFoundError:
         return 0
-        
+
     isolated_cpus = _parse_list_ranges(list_ranges=isolated_str)
 
     return len(isolated_cpus)

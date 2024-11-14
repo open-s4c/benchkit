@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 """
 Adds the paths specified in dependency-paths.txt to the benchkit-dep.pth files
 in the site-packages directory.

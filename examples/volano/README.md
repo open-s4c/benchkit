@@ -7,7 +7,7 @@ For more information, please visit [Volano website](https://www.volano.com/bench
 
 ```bash
 sudo apt update && sudo apt install -y openjdk-21-jre-headless
-cd examples/volano/kit/
+cd examples/volano/
 mkdir deps
 cd deps
 curl -O https://www.volano.com/files/volano_benchmark_2_9_0.class
@@ -16,26 +16,26 @@ java volano_benchmark_2_9_0 -o .
 
 ## Change config
 ```bash
-nano sartup.sh
+nano startup.sh
 change Host = localhost
 change Java to java localtion
 chmod +x *.sh
-cd ../../../../..
+cd ../../..
 ```
 
 
 ## Generate venv & configure it
 
 ```bash
-cd examples/volano/kit
+cd examples/volano/
 ./configure.sh
-cd ../../..
+cd ../..
 ```
 
 ## Run campaign for VOLANO benchmarks
 
 ```bash
-cd examples/volano/kit
+cd examples/volano/
 . ./venv/bin/activate
-python3 benchmark_volano.py
+./benchmark_volano.py
 ```

@@ -270,10 +270,12 @@ class PerfStatWrap(CommandWrapper):
         use_json: bool = True,
         separator: Optional[str] = None,
         remove_absent_event: bool = False,
-        platform: Platform | None = None
+        platform: Platform | None = None,
     ):
         if use_json and separator is not None:
-            raise ValueError("PerfStatWrap: Cannot use json format and provide a CSV separator at the same time.")
+            raise ValueError(
+                "PerfStatWrap: Cannot use json format and provide a CSV separator at the same time."
+            )
 
         super().__init__()
         self.platform = get_current_platform() if platform is None else platform
@@ -457,7 +459,10 @@ class PerfStatWrap(CommandWrapper):
         return output_dict
 
     def _align_field_names(
-        self, perf_stat_pathname: PathType, events: List[str], field_names: List[str],
+        self,
+        perf_stat_pathname: PathType,
+        events: List[str],
+        field_names: List[str],
     ) -> List[str]:
         # For reasons beyond my understanding, perf stat returns a CSV file format that contains
         # optional fields without giving you the header of the file. To combat this, we try to
@@ -832,8 +837,6 @@ class PerfReportWrap(CommandWrapper):
         header: str,
         command_fun: Callable[[PathType], SplitCommand],
     ):
-        user = self.platform.current_user()
-
         paths = [
             f
             for f in _find(find_dir=search_dir, include_subdirs=False)

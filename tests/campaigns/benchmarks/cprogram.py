@@ -1,11 +1,18 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from benchkit.benchmark import Benchmark, CommandWrapper, CommandAttachment, SharedLib, PreRunHook, PostRunHook
-from benchkit.platforms import Platform
 import pathlib
-from typing import Any, Dict, List, Iterable
+from typing import Any, Dict, Iterable, List
 
+from benchkit.benchmark import (
+    Benchmark,
+    CommandAttachment,
+    CommandWrapper,
+    PostRunHook,
+    PreRunHook,
+    SharedLib,
+)
+from benchkit.platforms import Platform
 
 c_program = """
 #include <stdio.h>

@@ -1,5 +1,9 @@
 # benchkit: Performance Evaluation Framework
 
+[![PyPI - Version](https://img.shields.io/pypi/v/pybenchkit)](https://pypi.org/project/pybenchkit)
+[![GitHub License](https://img.shields.io/github/license/open-s4c/benchkit)](LICENSE)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/pybenchkit)](https://pypi.org/project/pybenchkit)
+
 `benchkit` provides a push-button end-to-end performance evaluation
 pipeline, which includes platform stabilization, benchmark configuration
 & build, and an execution engine capable of exploring the specified

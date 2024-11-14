@@ -2,12 +2,14 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+import pathlib
+
 from benchmarks.cprogram import CProgramBench
+
 from benchkit.campaign import CampaignIterateVariables
+from benchkit.platforms import get_current_platform
 from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
-from benchkit.platforms import get_current_platform
-import pathlib
 
 
 def main() -> None:
@@ -33,9 +35,7 @@ def main() -> None:
     CampaignIterateVariables(
         name="attach",
         benchmark=CProgramBench(
-            command_attachments=[
-                perf_attach
-            ],
+            command_attachments=[perf_attach],
         ),
         nb_runs=1,
         variables=[{}],

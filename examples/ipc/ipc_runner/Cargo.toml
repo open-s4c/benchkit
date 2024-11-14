@@ -1,0 +1,12 @@
+[package]
+name = "ipc_runner"
+version = "0.1.0"
+edition = "2021"
+
+[build]
+target_dir = "./target"
+
+[dependencies]
+ipc_channel_adapter = "*"
+anyhow = "*"
+clap = { version = "4.5.17", features = ["derive"] }

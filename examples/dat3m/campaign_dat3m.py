@@ -3,29 +3,9 @@
 # SPDX-License-Identifier: MIT
 
 from bench import Dat3mBench
-from dat3m import standalone_dat3m_builder
-from pythainer.runners import ConcreteDockerRunner
+from dat3m import get_dat3m_docker_platform
 
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
-from benchkit.communication.docker import DockerCommLayer
-from benchkit.platforms import Platform
-
-
-def get_local_docker_platform(docker_runner: ConcreteDockerRunner) -> Platform:
-    docker_comm = DockerCommLayer(docker_runner=docker_runner)
-    platform = Platform(comm_layer=docker_comm)
-    return platform
-
-
-def get_dat3m_docker_platform() -> Platform:
-    dat3m_builder = standalone_dat3m_builder()
-    # TODO building images does not support yet remote, the plan would be to give an optional
-    #  shell_out callback to that build() function and provide with the platform.shell from the
-    #  selected host.
-    dat3m_builder.build()
-    dar3m_runner = dat3m_builder.get_runner()
-    platform = get_local_docker_platform(docker_runner=dar3m_runner)
-    return platform
 
 
 def main():

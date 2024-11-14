@@ -1,17 +1,17 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 import pathlib
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
-from benchkit.campaign import CampaignCartesianProduct, Constants, CampaignSuite
+from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 from benchkit.commandwrappers import CommandWrapper
-from benchkit.commandwrappers.strace import StraceWrap
-from benchkit.commandwrappers.env import EnvWrap
-from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap, enable_non_sudo_perf
+from benchkit.commandwrappers.perf import PerfStatWrap, enable_non_sudo_perf
 from benchkit.dependencies.packages import PackageDependency
-from benchkit.platforms import Platform
+from benchkit.platforms import Platform, get_current_platform, get_remote_platform
 from benchkit.sharedlibs import SharedLib
-from benchkit.utils.types import CpuOrder, PathType, Environment
-from benchkit.platforms import get_remote_platform, get_current_platform
+from benchkit.utils.types import PathType
 
 RUN_REMOTELY = False
 REMOTE_ADDR = "ssh://root@example.com:2222"
@@ -25,7 +25,7 @@ BUILD_VARIABLES = [
     "work_square_size",
     "aabb_hit_implementation",
     "bvh_first_hit_caching",
-    "bvh_sah"
+    "bvh_sah",
 ]
 RUN_VARIABLES = ["nb_threads", "preset"]
 
@@ -42,11 +42,11 @@ class RayTracerBenchmark(Benchmark):
         src_dir: PathType,
         bench_src_dir: PathType | None = None,
         copy_src_to_build: bool = False,
-        command_wrappers: Iterable[CommandWrapper] = [],
-        command_attachments: Iterable[CommandAttachment] = [],
-        shared_libs: Iterable[SharedLib] = [],
-        pre_run_hooks: Iterable[PreRunHook] = [],
-        post_run_hooks: Iterable[PostRunHook] = [],
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
+        shared_libs: Iterable[SharedLib] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
         platform: Platform = None,
     ) -> None:
         super().__init__(
@@ -106,13 +106,6 @@ class RayTracerBenchmark(Benchmark):
     def get_tilt_var_names() -> List[str]:
         return []
 
-    @staticmethod
-    def _parse_results(
-        output: str,
-        nb_threads: int,
-    ) -> Dict[str, str]:
-        return {}
-
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
             PackageDependency("build-essential"),
@@ -156,7 +149,6 @@ class RayTracerBenchmark(Benchmark):
             preset,
             "--outfile",
             str(record_data_dir / "benchmark.bmp"),
-
         ]
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
@@ -186,7 +178,7 @@ class RayTracerBenchmark(Benchmark):
         nb_threads = int(run_variables["nb_threads"])
         try:
             duration = command_output.splitlines()[-1].split(": ")[1].split()[0]
-        except Exception:
+        except ValueError:
             print(command_output)
             duration = "N/A"
 
@@ -201,7 +193,11 @@ def create_campaign(
     bench_src_dir: str,
     platform: Platform | None = None,
 ):
-    perfstat_wrapper = PerfStatWrap(freq=1000, separator=";", events=["cache-misses", "branch-misses"])
+    perfstat_wrapper = PerfStatWrap(
+        freq=1000,
+        separator=";",
+        events=["cache-misses", "branch-misses"],
+    )
 
     benchmark = RayTracerBenchmark(
         src_dir=source_dir,
@@ -265,9 +261,7 @@ def main():
     # of
     for v in variables.keys():
         if v not in BUILD_VARIABLES + RUN_VARIABLES:
-            raise ForgetFullException(
-                "You forgot to use the variables set here in the benchmark"
-            )
+            raise ForgetFullException("You forgot to use the variables set here in the benchmark")
 
     campaign = create_campaign(
         variables=variables,

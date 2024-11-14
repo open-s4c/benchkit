@@ -1,17 +1,15 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 import pathlib
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
-from benchkit.campaign import CampaignCartesianProduct, Constants, CampaignSuite
+from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 from benchkit.commandwrappers import CommandWrapper
-from benchkit.commandwrappers.strace import StraceWrap
-from benchkit.commandwrappers.env import EnvWrap
-from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap
 from benchkit.dependencies.packages import PackageDependency
-from benchkit.platforms import Platform
-from benchkit.sharedlibs import SharedLib
-from benchkit.utils.types import CpuOrder, PathType, Environment
-from benchkit.platforms import get_remote_platform
+from benchkit.platforms import Platform, get_remote_platform
+from benchkit.utils.types import PathType
 
 # Use "blender" if you have blender in your path, otherwise use the
 # exact path of the executable.
@@ -36,16 +34,16 @@ class BlenderBenchmark(Benchmark):
         bench_dir: PathType,
         outfile: str,
         copy_scenes_to_benchmark_dir: bool = False,
-        command_wrappers: Iterable[CommandWrapper] = [],
-        command_attachments: Iterable[CommandAttachment] = [],
-        pre_run_hooks: Iterable[PreRunHook] = [],
-        post_run_hooks: Iterable[PostRunHook] = [],
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
         platform: Platform = None,
     ) -> None:
         super().__init__(
             command_wrappers=command_wrappers,
             command_attachments=command_attachments,
-            shared_libs=[],
+            shared_libs=(),
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,
         )
@@ -92,9 +90,7 @@ class BlenderBenchmark(Benchmark):
         return {}
 
     def dependencies(self) -> List[PackageDependency]:
-        return super().dependencies() + [
-            PackageDependency("blender")
-        ]
+        return super().dependencies() + [PackageDependency("blender")]
 
     def prebuild_bench(self, **kwargs):
         pass
@@ -120,7 +116,7 @@ class BlenderBenchmark(Benchmark):
             "-b",
             str(self._bench_dir / scene),
             "--python-expr",
-            f"import bpy ; bpy.data.scenes[\"Scene\"].cycles.samples = {samples}",
+            f'import bpy ; bpy.data.scenes["Scene"].cycles.samples = {samples}',
             "-o",
             str(record_data_dir / self._outfile),
             "-F",
@@ -172,11 +168,12 @@ class BlenderBenchmark(Benchmark):
             duration = int(hours) * 3600 + int(minutes) * 60 + float(seconds)
             duration = str(duration)
 
-        except Exception:
+        except ValueError:
             print(command_output)
             duration = "N/A"
 
         return {"duration": duration}
+
 
 def create_campaign(
     variables: Dict[str, List[str]],
@@ -230,12 +227,12 @@ def main():
         # Valid options are: 'CPU' 'CUDA' 'OPTIX' 'HIP' 'ONEAPI' 'METAL'.
         # Select one that your machine can provide, nvidia CUDA or OPTIX
         # if you have a newer card, macOS uses METAL, AMD uses HIP.
-        # Otherwise if you want to stress test a CPU, use CPU. It will
+        # Otherwise, if you want to stress test a CPU, use CPU. It will
         # automatically select the maximum number of cores.
         # To use both the CPU and the GPU at the same time, add +CPU at
         # the end of the GPU device.
         "device": ["CUDA"],
-        # Number of samples per pixel that have to be performed. This 
+        # Number of samples per pixel that have to be performed. This
         # will have a MAJOR effect on runtime.
         "samples": [4096],
     }
@@ -252,9 +249,7 @@ def main():
     # of this.
     for v in variables.keys():
         if v not in RUN_VARIABLES:
-            raise ForgetFullException(
-                "You forgot to use the variables set here in the benchmark"
-            )
+            raise ForgetFullException("You forgot to use the variables set here in the benchmark")
 
     campaign = create_campaign(
         variables=variables,

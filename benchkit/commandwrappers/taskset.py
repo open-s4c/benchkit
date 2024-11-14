@@ -17,10 +17,10 @@ class TasksetWrap(CommandWrapper):
     """Command wrapper for the `taskset` utility."""
 
     def __init__(
-            self,
-            platform: Platform | None = None,
-            set_all_cpus: bool = False,
-        ):
+        self,
+        platform: Platform | None = None,
+        set_all_cpus: bool = False,
+    ):
         super().__init__()
         self.platform = platform if platform is not None else get_current_platform()
         self.set_all_cpus = set_all_cpus
@@ -52,7 +52,7 @@ class TasksetWrap(CommandWrapper):
             cpu_order_list = self.platform.cpu_order(provided_order=cpu_order)
 
             cpu_order_list = [str(x) for x in cpu_order_list[0:nb_threads]]
-            cpu_order_str = ','.join(cpu_order_list)
+            cpu_order_str = ",".join(cpu_order_list)
 
             cmd_prefix = ["taskset", "--cpu-list", cpu_order_str] + cmd_prefix
         else:
