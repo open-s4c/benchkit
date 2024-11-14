@@ -50,7 +50,10 @@ def main() -> None:
         plot_name="barplot",
         x="size",
         y="throughput",
+        xlabel="Grid size (N x N)",
+        ylabel="Throughput (cells updated/sec)",
         hue="bench_version",
+        title="Throughput vs. grid size"
     )
 
 

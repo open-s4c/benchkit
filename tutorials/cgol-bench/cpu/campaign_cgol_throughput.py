@@ -50,7 +50,10 @@ def main() -> None:
         plot_name="barplot",
         x="nb_threads",
         y="throughput",
+        xlabel="Number of threads",
+        ylabel="Throughput (cells updated/sec)",
         hue="bench_version",
+        title="Throughput vs. number of threads"
     )
 
 

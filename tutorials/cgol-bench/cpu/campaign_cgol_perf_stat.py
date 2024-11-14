@@ -58,21 +58,30 @@ def main() -> None:
         plot_name="barplot",
         x="bench_version",
         y="perf-stat/instructions",
+        xlabel="Implementation",
+        ylabel="Instructions",
         hue="bench_version",
+        title="Instructions executed per implementation"
     )
 
     suite.generate_graph(
         plot_name="barplot",
         x="bench_version",
         y="perf-stat/cache-misses",
+        xlabel="Implementation",
+        ylabel="Cache misses",
         hue="bench_version",
+        title="Cache misses per implementation"
     )
 
     suite.generate_graph(
         plot_name="barplot",
         x="bench_version",
         y="perf-stat/cache-references",
+        xlabel="Implementation",
+        ylabel="Cache references",
         hue="bench_version",
+        title="Cache references per implementation"
     )
 
 
