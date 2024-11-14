@@ -47,7 +47,7 @@ def main() -> None:
         xlabel="Threads per block",
         ylabel="Throughput (cells updated/sec)",
         hue="bench_version",
-        title="Throughput vs. threads per block"
+        title="Throughput vs. threads per block",
     )
 
 

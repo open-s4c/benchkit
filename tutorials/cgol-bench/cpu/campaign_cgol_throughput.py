@@ -53,7 +53,7 @@ def main() -> None:
         xlabel="Number of threads",
         ylabel="Throughput (cells updated/sec)",
         hue="bench_version",
-        title="Throughput vs. number of threads"
+        title="Throughput vs. number of threads",
     )
 
 

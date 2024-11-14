@@ -61,7 +61,7 @@ def main() -> None:
         xlabel="Implementation",
         ylabel="Instructions",
         hue="bench_version",
-        title="Instructions executed per implementation"
+        title="Instructions executed per implementation",
     )
 
     suite.generate_graph(
@@ -71,7 +71,7 @@ def main() -> None:
         xlabel="Implementation",
         ylabel="Cache misses",
         hue="bench_version",
-        title="Cache misses per implementation"
+        title="Cache misses per implementation",
     )
 
     suite.generate_graph(
@@ -81,7 +81,7 @@ def main() -> None:
         xlabel="Implementation",
         ylabel="Cache references",
         hue="bench_version",
-        title="Cache references per implementation"
+        title="Cache references per implementation",
     )
 
 

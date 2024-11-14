@@ -47,7 +47,7 @@ def main() -> None:
         xlabel="Grid size (N x N)",
         ylabel="Throughput (cells updated/sec)",
         hue="bench_version",
-        title="Throughput vs. grid size"
+        title="Throughput vs. grid size",
     )
 
 
