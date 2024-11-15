@@ -9,7 +9,7 @@ from pythainer.runners import ConcreteDockerRunner
 from benchkit.communication.docker import DockerCommLayer
 from benchkit.platforms import Platform
 
-_DEFAULT_DAT3M_VERSION = "4.1.0"
+_DEFAULT_DAT3M_VERSION = "4.2.0"
 
 
 def standalone_dat3m_builder(
