@@ -45,7 +45,7 @@ class TcpDump:
 
         command = ["sudo", "tcpdump"]
 
-        if self.interface != None:
+        if self.interface is not None:
             command.extend(["-i", self.interface])
 
         if self.filter_expression:
