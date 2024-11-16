@@ -14,7 +14,7 @@ class TcpDump:
 
     def __init__(
         self,
-        interface: str = "",
+        interface: str = None,
         filter_expression: str = None,
         read_from_file: str = "",
         show_timestamp: bool = False,
@@ -25,7 +25,7 @@ class TcpDump:
         display_packet_data: bool = False,
         platform: Platform = None,
     ) -> None:
-        self.interface = (interface,)
+        self.interface = interface
         self.filter_expression = filter_expression
         self.read_from_file = read_from_file
         self.show_timestamp = show_timestamp
@@ -48,7 +48,7 @@ class TcpDump:
 
         command = ["sudo", "tcpdump"]
 
-        if self.interface is not None:
+        if self.interface:
             command.extend(["-i", self.interface])
 
         if self.filter_expression:
@@ -73,8 +73,6 @@ class TcpDump:
 
         if self.display_packet_data:
             command.append("-X")
-
-        print("Command:", command, type(command))
 
         # Initialize AsyncProcess for tcpdump
         self.process = AsyncProcess(
