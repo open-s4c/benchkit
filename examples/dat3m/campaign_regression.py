@@ -9,7 +9,7 @@ from benchkit.campaign import CampaignIterateVariables, CampaignSuite
 
 considered_dat3m_versions = {
     "v4.1.0": "4.1.0",
-    "8237954ad": "8237954ad41afa8c18ce68c9cf0303dc68b000d8",
+    "v4.2.0": "4.2.0",
 }
 nb_runs = 3
 selected_bound = 1
