@@ -702,6 +702,10 @@ class SSHCommLayer(CommunicationLayer):
     def is_local(self) -> bool:
         return False
 
+    @property
+    def get_ipaddress(self) -> str:
+        return self._ssh_host_info["hostname"]
+
     def background_subprocess(
         self,
         command: Command,
@@ -946,3 +950,4 @@ class SSHCommLayer(CommunicationLayer):
         )
         list_hosts = [line.strip() for line in output.splitlines()]
         return list_hosts
+
