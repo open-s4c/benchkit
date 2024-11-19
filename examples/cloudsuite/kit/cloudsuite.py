@@ -175,7 +175,8 @@ class CloudsuiteBench(Benchmark):
             )
 
             self.server_platform.comm.shell(
-                command="docker run -dt --net=host --name=tmp_db_server cloudsuite/web-serving:db_server"
+                command="docker run -dt --net=host --name=tmp_db_server"
+                "cloudsuite/web-serving:db_server"
             )
 
             command = "docker logs tmp_db_server | tac | awk '/exit/ {exit} 1' | tac"
@@ -200,7 +201,8 @@ class CloudsuiteBench(Benchmark):
             self.server_platform.comm.shell(command="docker stop tmp_db_server")
 
             self.server_platform.comm.shell(
-                command='docker commit --change "ENTRYPOINT service mariadb start && bash" tmp_db_server db_built'
+                command='docker commit --change "ENTRYPOINT service mariadb start && bash"'
+                'tmp_db_server db_built'
             )
         else:
             print("[WARNING!!!] db_built docker is already built, skipping build_bench")
@@ -238,10 +240,13 @@ class CloudsuiteBench(Benchmark):
         ip_server = self.server_platform.comm.get_ipaddress
 
         self.web_server_platform.comm.shell(
-            command="docker run -dt --net=host --name=memcache_server cloudsuite/web-serving:memcached_server"
+            command="docker run -dt --net=host --name=memcache_server"
+            "cloudsuite/web-serving:memcached_server"
         )
         self.web_server_platform.comm.shell(
-            command=f"docker run -dt --net=host --name=web_server cloudsuite/web-serving:web_server /etc/bootstrap.sh http {ip_web_server} {ip_server} {ip_web_server} {nb_threads} {nb_threads}"
+            command=f"docker run -dt --net=host --name=web_server"
+            f"cloudsuite/web-serving:web_server /etc/bootstrap.sh http {ip_web_server} {ip_server}"
+            f"{ip_web_server} {nb_threads} {nb_threads}"
         )
 
         self.server_platform.comm.shell(
