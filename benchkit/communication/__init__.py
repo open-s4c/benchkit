@@ -53,6 +53,7 @@ class CommunicationLayer:
         command: Command,
         current_dir: Optional[PathType] = None,
         shell: bool = False,
+        print_command: bool = True,
         ignore_ret_codes: Iterable[int] = (),
     ):
         raise NotImplementedError()
