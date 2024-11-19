@@ -61,7 +61,6 @@ class CloudsuiteBench(Benchmark):
     @staticmethod
     def get_run_var_names() -> List[str]:
         return [
-            #TODO: Add benchmark as a variable
             "nb_threads",
         ]
 
@@ -93,10 +92,6 @@ class CloudsuiteBench(Benchmark):
         ip_web_server = self.web_server_platform.comm.get_ipaddress
         ip_server = self.server_platform.comm.get_ipaddress
 
-        self.web_server_platform.comm.shell(command="sudo systemctl restart cntlm")
-        self.server_platform.comm.shell(command="sudo systemctl restart cntlm")
-        self.platform.comm.shell(command="sudo systemctl restart cntlm")
-
         self.web_server_platform.comm.shell(
             command="docker run -dt --net=host --name=memcache_server cloudsuite/web-serving:memcached_server"
         )
@@ -115,25 +110,11 @@ class CloudsuiteBench(Benchmark):
 
             ret = self.server_platform.comm.pipe_shell(
                 command=command,
+                print_command = False,
             )
 
             if "Starting MariaDB database server mariadbd" in ret:
                 mariadb_initialized = True
-
-        self.web_server_platform.comm.shell(command="sudo systemctl stop cntlm")
-        self.server_platform.comm.shell(command="sudo systemctl stop cntlm")
-        self.platform.comm.shell(command="sudo systemctl stop cntlm")
-
-        #mariadb_threads = self.server_platform.comm.pipe_shell(command="ps ax -T | grep mariad | grep sock")
-        #for line in mariadb_threads.strip().split('\n'):
-        #    if line.strip() == []:
-        #        continue
-        #   tid = line.strip().split()[1]
-
-        #   self.server_platform.comm.shell(
-        #       command=f"sudo taskset -cp 0-95 {tid}",
-        #       ignore_ret_codes=[1]
-        #   )
 
     def build_bench(  # pylint: disable=arguments-differ
         self,
@@ -213,7 +194,6 @@ class CloudsuiteBench(Benchmark):
                 "/home/drc/rchehab/faban_output/:/web20_benchmark/output",
                 "--env-file",
                 "_tmp_benchkit_seeds.txt",
-                #"try_faban",
                 "try_faban_debug",
                 f"{ip_web_server}",
                 f"{nb_threads}",
