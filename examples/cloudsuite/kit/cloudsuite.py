@@ -25,6 +25,7 @@ class CloudsuiteBench(Benchmark):
 
     def __init__(
         self,
+        src_dir: PathType,
         command_wrappers: Iterable[CommandWrapper],
         command_attachments: Iterable[CommandAttachment],
         shared_libs: Iterable[SharedLib],
@@ -47,9 +48,19 @@ class CloudsuiteBench(Benchmark):
         self.server_platform = server_platform
         self.web_server_platform = web_server_platform
 
+        bench_src_path = pathlib.Path(src_dir)
+        if not self.platform.comm.isdir(bench_src_path) and self.platform.comm.isfile(
+            bench_src_path / "benchmarks/web-serving/db_server/Dockerfile"
+        ):
+            raise ValueError(
+                f"Invalid Cloudsuite source path: {bench_src_path}\n"
+                "src_dir argument can be defined manually."
+            )
+        self._bench_src_path = bench_src_path
+
     @property
     def bench_src_path(self) -> pathlib.Path:
-        return None
+        return self._bench_src_path
 
     @staticmethod
     def get_build_var_names() -> List[str]:
@@ -83,39 +94,6 @@ class CloudsuiteBench(Benchmark):
     ) -> None:
         pass
 
-    def _build_bench(
-        self,
-        nb_threads: int,
-    ) -> None:
-        mariadb_initialized = False
-
-        ip_web_server = self.web_server_platform.comm.get_ipaddress
-        ip_server = self.server_platform.comm.get_ipaddress
-
-        self.web_server_platform.comm.shell(
-            command="docker run -dt --net=host --name=memcache_server cloudsuite/web-serving:memcached_server"
-        )
-        self.web_server_platform.comm.shell(
-            command=f"docker run -dt --net=host --name=web_server cloudsuite/web-serving:web_server /etc/bootstrap.sh http {ip_web_server} {ip_server} {ip_web_server} {nb_threads} {nb_threads}"
-        )
-
-        self.server_platform.comm.shell(
-            command="docker run -dt --net=host --name=database_server db_server_filled"
-        )
-
-        command = "docker logs database_server | tac | awk '/exit/ {exit} 1' | tac"
-
-        while not mariadb_initialized:
-            time.sleep(1)
-
-            ret = self.server_platform.comm.pipe_shell(
-                command=command,
-                print_command = False,
-            )
-
-            if "Starting MariaDB database server mariadbd" in ret:
-                mariadb_initialized = True
-
     def build_bench(  # pylint: disable=arguments-differ
         self,
         nb_threads: int = 2,
@@ -136,7 +114,51 @@ class CloudsuiteBench(Benchmark):
             current_dir="~/",
         )
 
-    def _clean_bench(self) -> None:
+        # 1) Move fabandriver.jar and Web20Driver.java.in into the right places
+        # 2) docker build if not existing
+
+        src_faban = self.bench_src_path / "benchmarks/web-serving/faban_client/"
+
+        self.platform.copy_to_host(
+            source="files/Web20Driver.java.in",
+            destination= src_faban / "files/web20_benchmark/src/workload/driver/Web20Driver.java.in",
+        )
+
+        self.platform.copy_to_host(
+            source="files/fabandriver.jar",
+            destination= src_faban / "files/fabandriver.jar",
+        )
+
+        self.platform.copy_to_host(
+            source="files/fabandriver.jar",
+            destination= src_faban / "files/web20_benchmark/build/fabandriver.jar",
+        )
+
+        self.platform.copy_to_host(
+            source="files/fabandriver.jar",
+            destination= src_faban / "files/web20_benchmark/lib/fabandriver.jar",
+        )
+
+        which_containers = self.platform.shell(
+            command=f"docker ps -a",
+        )
+
+        print(which_containers)
+        xxxxxxxx
+
+        self.platform.shell(
+            command=f"docker build --network=host --tag faban_built .",
+            current_dir = src_faban,
+        )
+
+        # 1) docker build
+        # 2) docker stop
+        # 3) docker commit "PARAMETERS"
+
+    def clean_bench(self) -> None:
+        pass
+
+    def _clean_run(self) -> None:
         systemactions.drop_caches(comm_layer=self.platform.comm)
         systemactions.drop_caches(comm_layer=self.server_platform.comm)
         systemactions.drop_caches(comm_layer=self.web_server_platform.comm)
@@ -150,8 +172,38 @@ class CloudsuiteBench(Benchmark):
         self.platform.comm.shell(command="docker stop faban_client", ignore_ret_codes=[1])
         self.platform.comm.shell(command="docker container rm faban_client", ignore_ret_codes=[1])
 
-    def clean_bench(self) -> None:
-        pass
+    def _build_run(
+        self,
+        nb_threads: int,
+    ) -> None:
+        mariadb_initialized = False
+
+        ip_web_server = self.web_server_platform.comm.get_ipaddress
+        ip_server = self.server_platform.comm.get_ipaddress
+
+        self.web_server_platform.comm.shell(
+            command="docker run -dt --net=host --name=memcache_server cloudsuite/web-serving:memcached_server"
+        )
+        self.web_server_platform.comm.shell(
+            command=f"docker run -dt --net=host --name=web_server cloudsuite/web-serving:web_server /etc/bootstrap.sh http {ip_web_server} {ip_server} {ip_web_server} {nb_threads} {nb_threads}"
+        )
+
+        self.server_platform.comm.shell(
+            command="docker run -dt --net=host --name=database_server db_built"
+        )
+
+        command = "docker logs database_server | tac | awk '/exit/ {exit} 1' | tac"
+
+        while not mariadb_initialized:
+            time.sleep(1)
+
+            ret = self.server_platform.comm.pipe_shell(
+                command=command,
+                print_command = False,
+            )
+
+            if "Starting MariaDB database server mariadbd" in ret:
+                mariadb_initialized = True
 
     def single_run(  # pylint: disable=arguments-differ
         self,
@@ -194,7 +246,7 @@ class CloudsuiteBench(Benchmark):
                 "/home/drc/rchehab/faban_output/:/web20_benchmark/output",
                 "--env-file",
                 "_tmp_benchkit_seeds.txt",
-                "try_faban_debug",
+                "faban_built",
                 f"{ip_web_server}",
                 f"{nb_threads}",
                 f"--ramp-up={benchmark_duration_seconds + 20}",
@@ -305,6 +357,7 @@ class CloudsuiteBench(Benchmark):
 def cloudsuite_campaign(
     name: str = "cloussuite_campaign",
     benchmark: Optional[CloudsuiteBench] = None,
+    src_dir: Optional[PathType] = None,
     results_dir: Optional[PathType] = None,
     command_wrappers: Iterable[CommandWrapper] = (),
     command_attachments: Iterable[CommandAttachment] = (),
@@ -332,8 +385,14 @@ def cloudsuite_campaign(
         "generator_seed": generator_seeds,
     }
 
+    if src_dir is None:
+        raise ValueError(
+            f"A src_dir argument must be defined manually."
+        )
+
     if benchmark is None:
         benchmark = CloudsuiteBench(
+            src_dir=src_dir,
             command_wrappers=command_wrappers,
             command_attachments=command_attachments,
             shared_libs=shared_libs,
