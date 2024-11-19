@@ -193,7 +193,9 @@ class CloudsuiteBench(Benchmark):
                     mariadb_initialized = True
 
             if "fail" in ret:
-                raise ValueError("MariaDB failed to start. Check if another container is already running.")
+                raise ValueError(
+                    "MariaDB failed to start. Check if another container is already running."
+                )
 
             self.server_platform.comm.shell(command="docker stop tmp_db_server")
 

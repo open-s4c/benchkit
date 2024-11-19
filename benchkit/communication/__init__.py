@@ -951,4 +951,3 @@ class SSHCommLayer(CommunicationLayer):
         )
         list_hosts = [line.strip() for line in output.splitlines()]
         return list_hosts
-
