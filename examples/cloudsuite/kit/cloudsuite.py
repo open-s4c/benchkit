@@ -202,7 +202,7 @@ class CloudsuiteBench(Benchmark):
 
             self.server_platform.comm.shell(
                 command='docker commit --change "ENTRYPOINT service mariadb start && bash"'
-                'tmp_db_server db_built'
+                "tmp_db_server db_built"
             )
         else:
             print("[WARNING!!!] db_built docker is already built, skipping build_bench")
