@@ -15,6 +15,7 @@ from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils import systemactions
+from benchkit.utils.dir import get_curdir
 from benchkit.utils.types import CpuOrder, PathType
 
 
@@ -119,41 +120,85 @@ class CloudsuiteBench(Benchmark):
 
         src_faban = self.bench_src_path / "benchmarks/web-serving/faban_client/"
 
-        self.platform.copy_to_host(
-            source="files/Web20Driver.java.in",
+        jar_file = pathlib.Path(get_curdir(__file__) / "files/fabandriver.jar") 
+        java_file = pathlib.Path(get_curdir(__file__) / "files/fabandriver.jar") 
+
+        self.platform.comm.copy_from_host(
+            source=java_file,
             destination= src_faban / "files/web20_benchmark/src/workload/driver/Web20Driver.java.in",
         )
 
-        self.platform.copy_to_host(
-            source="files/fabandriver.jar",
+        self.platform.comm.copy_from_host(
+            source=jar_file,
             destination= src_faban / "files/fabandriver.jar",
         )
 
-        self.platform.copy_to_host(
-            source="files/fabandriver.jar",
+        self.platform.comm.copy_from_host(
+            source=jar_file,
             destination= src_faban / "files/web20_benchmark/build/fabandriver.jar",
         )
 
-        self.platform.copy_to_host(
-            source="files/fabandriver.jar",
+        self.platform.comm.copy_from_host(
+            source=jar_file,
             destination= src_faban / "files/web20_benchmark/lib/fabandriver.jar",
         )
 
-        which_containers = self.platform.shell(
-            command=f"docker ps -a",
+        which_images = self.platform.comm.shell(
+            command=f"docker images",
+            print_input = False,
+            print_output = False,
         )
 
-        print(which_containers)
-        xxxxxxxx
-
-        self.platform.shell(
-            command=f"docker build --network=host --tag faban_built .",
-            current_dir = src_faban,
-        )
+        if not "faban_built" in which_images:
+            self.platform.comm.shell(
+                command=f"docker build --network=host --tag faban_built .",
+                current_dir = src_faban,
+            )
+        else:
+            print("[WARNING!!!] faban_built docker is already built, skipping build_bench")
 
         # 1) docker build
         # 2) docker stop
         # 3) docker commit "PARAMETERS"
+
+        which_images = self.server_platform.comm.shell(
+            command=f"docker images",
+            print_input = False,
+            print_output = False,
+        )
+
+        if not "db_built" in which_images:
+            self.server_platform.comm.shell(command="docker stop tmp_db_server", ignore_ret_codes=[1])
+            self.server_platform.comm.shell(command="docker container rm tmp_db_server", ignore_ret_codes=[1])
+
+            self.server_platform.comm.shell(
+                command="docker run -dt --net=host --name=tmp_db_server cloudsuite/web-serving:db_server"
+            )
+
+            command = "docker logs tmp_db_server | tac | awk '/exit/ {exit} 1' | tac"
+
+            mariadb_initialized = False
+            while not mariadb_initialized:
+                time.sleep(1)
+
+                ret = self.server_platform.comm.pipe_shell(
+                    command=command,
+                    print_command = False,
+                )
+
+                if "Starting MariaDB database server mariadbd" in ret:
+                    mariadb_initialized = True
+
+            if "fail" in ret:
+                xxxxxxxxx
+        
+            self.server_platform.comm.shell(command="docker stop tmp_db_server")
+
+            self.server_platform.comm.shell(
+                command='docker commit --change "ENTRYPOINT service mariadb start && bash" tmp_db_server db_built'
+            )
+        else:
+            print("[WARNING!!!] db_built docker is already built, skipping build_bench")
 
     def clean_bench(self) -> None:
         pass
@@ -214,8 +259,8 @@ class CloudsuiteBench(Benchmark):
 
         ip_web_server = self.web_server_platform.comm.get_ipaddress
 
-        self._clean_bench()
-        self._build_bench(nb_threads)
+        self._clean_run()
+        self._build_run(nb_threads)
 
         ping_values = self.platform.comm.shell(
             command=f"ping -c 5 {ip_web_server}",
