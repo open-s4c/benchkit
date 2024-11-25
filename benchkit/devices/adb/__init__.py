@@ -252,6 +252,19 @@ class AndroidDebugBridge:
         filtered = [dev for dev in devices if filter_callback(dev)]
         return filtered
 
+    def query_devices(
+        self,
+        filter_callback: Callable[[ADBDevice], bool] = lambda _: True,
+    ) -> Iterable[ADBDevice]:
+        """Get filtered list of devices recognized by hdc.
+
+        Returns:
+            Iterable[HDCDevice]: filtered list of devices recognized by hdc.
+        """
+        devices = self._devices()
+        filtered = [dev for dev in devices if filter_callback(dev)]
+        return filtered
+
     @staticmethod
     def _host_shell_out(
         command: Command,
