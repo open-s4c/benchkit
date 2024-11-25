@@ -10,9 +10,11 @@ import sys
 import time
 from typing import Iterable, Optional, Callable
 
+from benchkit.communication import CommunicationLayer
+from benchkit.communication.utils import command_with_env
 from benchkit.devices.adb.usb import usb_down_up
 from benchkit.shell.shell import get_args, shell_out
-from benchkit.utils.types import Command, PathType
+from benchkit.utils.types import Command, Environment, PathType
 
 
 # def _identifier_from(ip_addr: str, port: int) -> str:
@@ -470,3 +472,99 @@ class AndroidDebugBridge:
         output = self._target_shell_out(command)
         is_installed = f"package:{activity_name}" == output.strip()
         return is_installed
+
+
+class AndroidCommLayer(CommunicationLayer):
+    def __init__(
+        self,
+        bridge: AndroidDebugBridge,
+        environment: Optional[Environment] = None,
+    ) -> None:
+        super().__init__()
+        self._bridge = bridge
+        self._additional_environment = environment if environment is not None else {}
+        self._command_prefix = None
+
+    @property
+    def remote_host(self) -> Optional[str]:
+        return self._bridge.identifier
+
+    @property
+    def is_local(self) -> bool:
+        return False
+
+    def copy_from_host(self, source: PathType, destination: PathType) -> None:
+        self._bridge.push(source, destination)
+
+    def copy_to_host(self, source: PathType, destination: PathType) -> None:
+        self._bridge.pull(source, destination)
+    
+    def shell(
+        self,
+        command: Command,
+        std_input: str | None = None,
+        current_dir: PathType | None = None,
+        environment: Environment = None,
+        shell: bool = False,
+        print_input: bool = True,
+        print_output: bool = True,
+        print_curdir: bool = True,
+        timeout: int | None = None,
+        output_is_log: bool = False,
+        ignore_ret_codes: Iterable[int] = (), 
+        ignore_any_error_code: bool = False
+    ) -> str:
+        env_command = command_with_env(
+            command=command,
+            environment=environment,
+            additional_environment=self._additional_environment,
+        )
+        output = self._bridge.shell_out(
+            command=env_command,
+            current_dir=current_dir,
+            output_is_log=output_is_log,
+        )
+        return output
+
+    def pipe_shell(
+        self,
+        command: Command,
+        current_dir: Optional[PathType] = None,
+        shell: bool = False,
+        ignore_ret_codes: Iterable[int] = ()
+    ):
+        raise NotImplementedError("TODO")
+
+    
+    def background_subprocess(
+        self,
+        command: Command,
+        stdout: PathType,
+        stderr: PathType,
+        cwd: PathType | None,
+        env: dict | None,
+        establish_new_connection: bool = False
+    ) -> subprocess.Popen:
+        dir_args = ["cd", f"{cwd}", "&&"] if cwd is not None else []
+        command_args = dir_args + get_args(command)
+
+        adb_command = [
+            "adb",
+            "-s",
+            f"{self._bridge.identifier}",
+            "shell",
+        ] + command_args
+        
+        return subprocess.Popen(
+            adb_command,
+            stdout=stdout,
+            stderr=stderr,
+            env=env,
+            preexec_fn=os.setsid,
+        )
+
+    def get_process_status(self, process_handle: subprocess.Popen) -> str:
+        raise NotImplementedError("TODO")
+
+    def get_process_nb_threads(self, process_handle: subprocess.Popen) -> int:
+        raise NotImplementedError("TODO")
