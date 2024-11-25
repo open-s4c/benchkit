@@ -297,15 +297,15 @@ class OpenHarmonyCommLayer(CommunicationLayer):
         dir_args = ["cd", f"{cwd}", "&&"] if cwd is not None else []
         command_args = dir_args + get_args(command)
 
-        adb_command = [
-            "adb",
-            "-s",
+        hdc_command = [
+            "hdc",
+            "-t",
             f"{self._conn.identifier}",
             "shell",
         ] + command_args
         
         return subprocess.Popen(
-            adb_command,
+            hdc_command,
             stdout=stdout,
             stderr=stderr,
             env=env,
