@@ -8,15 +8,15 @@ import socket
 import subprocess
 import sys
 import time
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Callable
 
 from benchkit.devices.adb.usb import usb_down_up
 from benchkit.shell.shell import get_args, shell_out
 from benchkit.utils.types import Command, PathType
 
 
-def _identifier_from(ip_addr: str, port: int) -> str:
-    return f"{ip_addr}:{port}"
+# def _identifier_from(ip_addr: str, port: int) -> str:
+#     return f"{ip_addr}:{port}"
 
 
 class ADBError(Exception):
@@ -43,23 +43,40 @@ class ADBDevice:
         return "device" == self.status
 
 
-class AndroidDebugBridge:  # TODO add commlayer for "host"
+# TODO: investigate the identifier and daemon. temporarily it's mirrored like HDC does it.
+class AndroidDebugBridge: 
     """Operations with the phone for high-level adb operations."""
 
     def __init__(
         self,
-        ip_addr: str,
-        port: int = 5555,
+        # ip_addr: str,
+        # port: int = 5555,
+        identifier: str,
         keep_connected: bool = False,
         wait_connected: bool = False,
         expected_os: Optional[str] = None,
     ) -> None:
-        self._ip = ip_addr
-        self._port = port
+        # self._ip = ip_addr
+        # self._port = port
+        self.identifier = identifier
         self._keep_connected = keep_connected
         self._wait_connected = wait_connected
         self._expected_os = expected_os
 
+    @staticmethod
+    def from_device(
+        device: ADBDevice,
+        keep_connected: bool = False,
+        wait_connected: bool = False,
+        expected_os: Optional[str] = None,
+    ) -> "AndroidDebugBridge":
+        return AndroidDebugBridge(
+            identifier=device.identifier,
+            keep_connected=keep_connected,
+            wait_connected=wait_connected,
+            expected_os=expected_os,
+        )
+    
     def __enter__(self) -> "AndroidDebugBridge":
         if not self.is_connected():
             self._connect_daemon()
@@ -74,14 +91,14 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
         if not self._keep_connected and self.is_connected():
             self._disconnect()
 
-    @property
-    def identifier(self) -> str:
-        """Get adb identifier of current device.
+    # @property
+    # def identifier(self) -> str:
+    #     """Get adb identifier of current device.
 
-        Returns:
-            str: adb identifier of current device.
-        """
-        return _identifier_from(ip_addr=self._ip, port=self._port)
+    #     Returns:
+    #         str: adb identifier of current device.
+    #     """
+    #     return _identifier_from(ip_addr=self._ip, port=self._port)
 
     def is_connected(self) -> bool:
         """Returns whether the device is connected to adb.
@@ -219,6 +236,19 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
         devices = [ADBDevice(*line.split("\t")) for line in device_lines]
 
         return devices
+    
+    def query_devices(
+        self,
+        filter_callback: Callable[[ADBDevice], bool] = lambda _: True,
+    ) -> Iterable[ADBDevice]:
+        """Get filtered list of devices recognized by adb.
+
+        Returns:
+            Iterable[ADBDevice]: filtered list of devices recognized by adb
+        """
+        devices = self._devices()
+        filtered = [dev for dev in devices if filter_callback(dev)]
+        return filtered
 
     @staticmethod
     def _host_shell_out(
