@@ -705,9 +705,10 @@ class SSHCommLayer(CommunicationLayer):
 
     @property
     def get_ipaddress(self) -> str:
-        ip_ret = self.shell("echo \\\$SSH_CONNECTION",
-            print_input = False,
-            print_output = False,
+        ip_ret = self.shell(
+            "echo \\\$SSH_CONNECTION",
+            print_input=False,
+            print_output=False,
         )
         return ip_ret.split()[2]
 
