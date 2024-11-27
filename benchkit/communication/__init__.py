@@ -705,7 +705,11 @@ class SSHCommLayer(CommunicationLayer):
 
     @property
     def get_ipaddress(self) -> str:
-        return self._ssh_host_info["hostname"]
+        ip_ret = self.shell("echo \\\$SSH_CONNECTION",
+            print_input = False,
+            print_output = False,
+        )
+        return ip_ret.split()[2]
 
     def background_subprocess(
         self,
