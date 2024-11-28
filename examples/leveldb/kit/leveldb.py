@@ -23,11 +23,11 @@ class LevelDBBench(Benchmark):
     def __init__(
         self,
         src_dir: PathType,
-        command_wrappers: Iterable[CommandWrapper],
-        command_attachments: Iterable[CommandAttachment],
-        shared_libs: Iterable[SharedLib],
-        pre_run_hooks: Iterable[PreRunHook],
-        post_run_hooks: Iterable[PostRunHook],
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
+        shared_libs: Iterable[SharedLib] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
         platform: Platform | None = None,
         build_dir: PathType | None = None,
     ) -> None:
