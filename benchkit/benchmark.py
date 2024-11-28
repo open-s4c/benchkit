@@ -61,6 +61,7 @@ class PreRunHook(Protocol):
         self,
         build_variables: RecordResult,
         run_variables: RecordResult,
+        other_variables: RecordResult,
         record_data_dir: PathType,
     ) -> None: ...
 
@@ -1034,6 +1035,7 @@ class Benchmark:
                 pre_run_hook(
                     build_variables=build_variables,
                     run_variables=run_variables,
+                    other_variables=other_variables,
                     record_data_dir=temp_record_data_dir,
                 )
 
