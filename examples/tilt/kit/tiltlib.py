@@ -5,7 +5,14 @@ import pathlib
 import sys
 from typing import Any, Dict, Iterable, List, Tuple
 
-from benchkit.benchmark import Benchmark, SharedLib
+from benchkit.benchmark import (
+    Benchmark,
+    CommandAttachment,
+    CommandWrapper,
+    PostRunHook,
+    PreRunHook,
+    SharedLib,
+)
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import FromSourceSharedLib
 from benchkit.utils.dir import caller_dir
@@ -83,15 +90,19 @@ class SimpleMutexTestBench(Benchmark):
     def __init__(
         self,
         src_dir: PathType = "",
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
         shared_libs: Iterable[SharedLib] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
         platform: Platform = None,
     ) -> None:
         super().__init__(
-            command_wrappers=(),
-            command_attachments=(),
+            command_wrappers=command_wrappers,
+            command_attachments=command_attachments,
             shared_libs=shared_libs,
-            pre_run_hooks=(),
-            post_run_hooks=(),
+            pre_run_hooks=pre_run_hooks,
+            post_run_hooks=post_run_hooks,
         )
         if platform is not None:
             self.platform = platform
