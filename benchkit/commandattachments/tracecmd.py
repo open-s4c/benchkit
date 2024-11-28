@@ -10,6 +10,9 @@ from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
 
 
+_tracecmd_prefix = ""
+
+
 class TraceCmd:
 
     def __init__(
@@ -34,7 +37,7 @@ class TraceCmd:
         rdd = pathlib.Path(record_data_dir)
         out_file = rdd / "trace.dat"
 
-        command = ["sudo", "trace-cmd", "record", "-o", f"{out_file}"]
+        command = ["sudo", f"{_tracecmd_prefix}trace-cmd", "record", "-o", f"{out_file}"]
 
         # Add "-e" and each event to the command list
         for event in self._events:
@@ -59,7 +62,8 @@ class TraceCmd:
         This attachment method should be used when starting trace-cmd with the
         pre_run_hook to get the pid of the running process.
         """
-        self.pid = process.pid
+        pid = process.pid
+        self.pid = pid
 
     def attachment(
         self,
@@ -71,7 +75,7 @@ class TraceCmd:
         out_file = rdd / "trace.dat"
 
         self.pid = process.pid
-        command = ["sudo", "trace-cmd", "record"]
+        command = ["sudo", f"{_tracecmd_prefix}trace-cmd", "record"]
 
         # Add "-e" and each event to the command list
         for event in self._events:
@@ -104,7 +108,7 @@ class TraceCmd:
         else:
             self._process.wait()
 
-        command = ["trace-cmd", "report", "trace.dat"]
+        command = [f"{_tracecmd_prefix}trace-cmd", "report", "trace.dat"]
 
         output = self._platform.comm.shell(command=command, current_dir=rdd, print_output=False)
         write_record_file_fun(output, "generate-graph.out")
