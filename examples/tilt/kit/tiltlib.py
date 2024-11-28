@@ -8,6 +8,7 @@ from typing import Any, Dict, Iterable, List, Tuple
 from benchkit.benchmark import Benchmark, SharedLib
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import FromSourceSharedLib
+from benchkit.utils.dir import caller_dir
 from benchkit.utils.types import EnvironmentVariables, LdPreloadLibraries, PathType
 
 
@@ -81,7 +82,7 @@ class TiltLib(FromSourceSharedLib):
 class SimpleMutexTestBench(Benchmark):
     def __init__(
         self,
-        src_dir: PathType,
+        src_dir: PathType = "",
         shared_libs: Iterable[SharedLib] = (),
         platform: Platform = None,
     ) -> None:
@@ -94,7 +95,10 @@ class SimpleMutexTestBench(Benchmark):
         )
         if platform is not None:
             self.platform = platform
-        self._src_dir = src_dir.resolve()
+        if src_dir:
+            self._src_dir = pathlib.Path(src_dir).resolve()
+        else:
+            self._src_dir = (caller_dir() / "../bench").resolve()
         self._build_dir = self._src_dir / f"build-{self.platform.hostname}"
 
     @property
