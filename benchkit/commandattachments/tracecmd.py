@@ -23,7 +23,7 @@ class TraceCmd:
         self._process = None
         self._files_pid = []
         self._pre_run_hook = False
-        
+
     def pre_run_hook(
         self,
         build_variables,
@@ -34,33 +34,33 @@ class TraceCmd:
         rdd = pathlib.Path(record_data_dir)
         out_file = rdd / "trace.dat"
 
+        command = ["sudo", "trace-cmd", "record", "-o", f"{out_file}"]
 
-        
-        command = ["sudo", "trace-cmd", "record", "-o", f"{out_file}"]   
-        
-         # Add "-e" and each event to the command list
+        # Add "-e" and each event to the command list
         for event in self._events:
             command.extend(["-e", event])
-        
+
         self._pre_run_hook = True
-        
+
         self._process = AsyncProcess(
             platform=self._platform,
             arguments=command,
             stdout_path=rdd / "trace-cmd.out",
             stderr_path=rdd / "trace-cmd.err",
             current_dir=rdd,
-        ) 
-        
-        
-    """This attachment method should be used when starting trace-cmd with the pre_run_hook to get the pid of the running process"""    
-    def attachment_with_pre_run_hook( 
+        )
+
+    def attachment_with_pre_run_hook(
         self,
         process: AsyncProcess,
         record_data_dir: PathType,
     ) -> None:
-        self.pid = process.pid   
-            
+        """
+        This attachment method should be used when starting trace-cmd with the
+        pre_run_hook to get the pid of the running process.
+        """
+        self.pid = process.pid
+
     def attachment(
         self,
         process: AsyncProcess,
@@ -101,7 +101,7 @@ class TraceCmd:
 
         if self._pre_run_hook:
             self._process.stop()
-        else:    
+        else:
             self._process.wait()
 
         command = ["trace-cmd", "report", "trace.dat"]
