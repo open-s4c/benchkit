@@ -5,7 +5,14 @@ import pathlib
 import sys
 from typing import Any, Dict, Iterable, List, Tuple
 
-from benchkit.benchmark import Benchmark, SharedLib, CommandWrapper, CommandAttachment, PreRunHook, PostRunHook
+from benchkit.benchmark import (
+    Benchmark,
+    CommandAttachment,
+    CommandWrapper,
+    PostRunHook,
+    PreRunHook,
+    SharedLib,
+)
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import FromSourceSharedLib
 from benchkit.utils.dir import caller_dir
@@ -85,7 +92,7 @@ class SimpleMutexTestBench(Benchmark):
         src_dir: PathType = "",
         command_wrappers: Iterable[CommandWrapper] = (),
         command_attachments: Iterable[CommandAttachment] = (),
-        shared_libs: Iterable[SharedLib] =(),
+        shared_libs: Iterable[SharedLib] = (),
         pre_run_hooks: Iterable[PreRunHook] = (),
         post_run_hooks: Iterable[PostRunHook] = (),
         platform: Platform = None,
