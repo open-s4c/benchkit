@@ -6,9 +6,10 @@ Minimal campaign to run trace-cmd wrapper.
 """
 
 
+from benchmarks.threadmig import ThreadMigrationBench
+
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 from benchkit.commandwrappers.tracecmd import TraceCmdWrap
-from benchmarks.threadmig import ThreadMigrationBench
 
 
 def main() -> None:

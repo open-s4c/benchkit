@@ -16,7 +16,6 @@ from benchkit.platforms import Platform
 from benchkit.utils.dir import caller_dir
 
 
-
 class ThreadMigrationBench(Benchmark):
     def __init__(
         self,
