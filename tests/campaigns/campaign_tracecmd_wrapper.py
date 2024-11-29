@@ -20,7 +20,7 @@ def main() -> None:
 
     campaigns = [
         CampaignCartesianProduct(
-            name="tilt",
+            name="tracecmd",
             benchmark=ThreadMigrationBench(
                 command_wrappers=[tracecmd_wrap],
             ),
