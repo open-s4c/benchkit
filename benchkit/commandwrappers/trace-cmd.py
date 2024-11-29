@@ -21,9 +21,7 @@ class TraceCmdWrap(CommandWrapper):
         events: List[str] = (),
     ):
         super().__init__()
-        self._events = events,
-
-        
+        self._events = (events,)
 
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
@@ -45,7 +43,7 @@ class TraceCmdWrap(CommandWrapper):
         traceCmd_output_pathname = os.path.join(record_data_dir, "trace.dat")
 
         options = []
-        
+
         for event in self._events:
             options.extend(["-e", event])
 
@@ -57,7 +55,7 @@ class TraceCmdWrap(CommandWrapper):
                 "-o",
                 f"{traceCmd_output_pathname}",
             ]
-            + cmd_prefix
+            + cmd_prefix,
         )
 
         return cmd_prefix
