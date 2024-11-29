@@ -5,7 +5,7 @@ Command wrapper for the `trace-cmd` utility that allows to trace kernel events u
 command and output them into a .dat file.
 """
 
-import os
+import pathlib
 from typing import List, Optional
 
 from benchkit.commandwrappers import CommandWrapper
@@ -18,10 +18,12 @@ class TraceCmdWrap(CommandWrapper):
 
     def __init__(
         self,
+        tracecmd_prefix: str = "",
         events: List[str] = (),
     ):
         super().__init__()
-        self._events = (events,)
+        self._tracecmd = f"{tracecmd_prefix}trace-cmd"
+        self._events = events
 
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
@@ -40,7 +42,7 @@ class TraceCmdWrap(CommandWrapper):
                 "Record data directory cannot be None, it is required to save trace-cmd output."
             )
 
-        traceCmd_output_pathname = os.path.join(record_data_dir, "trace.dat")
+        tracecmd_output_pathname = pathlib.Path(record_data_dir) / "trace.dat"
 
         options = []
 
@@ -48,14 +50,13 @@ class TraceCmdWrap(CommandWrapper):
             options.extend(["-e", event])
 
         cmd_prefix = (
-            ["trace-cmd"],
-            ["record"]
+            ["sudo", self._tracecmd, "record"]
             + options
             + [
                 "-o",
-                f"{traceCmd_output_pathname}",
+                f"{tracecmd_output_pathname}",
             ]
-            + cmd_prefix,
+            + cmd_prefix
         )
 
         return cmd_prefix
