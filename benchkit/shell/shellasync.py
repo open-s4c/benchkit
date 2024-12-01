@@ -178,7 +178,10 @@ class AsyncProcess:
         except subprocess.TimeoutExpired:
             pass
 
-        # Kill assynchronous process and all processes on the same group id
+        self.kill()
+
+    def kill(self):
+        # Kill asynchronous process and all processes on the same group id
         # As we create a new group id for each background process, this will kill its children
 
         # If using a remote call, kill the remote process
