@@ -232,7 +232,7 @@ class RocksDBBench(Benchmark):
                         rf"(?P<opspsec>{number_pattern})\s+ops/sec\s+"
                         rf"(?P<seconds>{number_pattern})\s+seconds\s+"
                         rf"(?P<ops>{number_pattern})\s+operations\s*;\s+"
-                        rf"(?P<mbps>{number_pattern})\s+MB/s\s+"
+                        rf"((?P<mbps>{number_pattern})\s+MB/s)?\s*"
                         rf"[(](?P<ofleft>[0-9]+) "
                         rf"of (?P<ofright>[0-9]+) found[)]"
                     ),
@@ -247,10 +247,11 @@ class RocksDBBench(Benchmark):
                     "global_count": nb_operations,
                     "microseconds/operation": float(gd["microspop"]),
                     "operations/second": float(gd["opspsec"]),
-                    "MB/s": float(gd["mbps"]),
                     "ofleft": int(gd["ofleft"]),
                     "ofright": int(gd["ofright"]),
                 }
+                if "mbps" in gd and (val_mbps := gd["mbps"]) is not None:
+                    result_dict["MB/s"] = val_mbps
 
                 return result_dict
 
