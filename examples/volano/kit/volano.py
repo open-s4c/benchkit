@@ -1,29 +1,25 @@
 #!/usr/bin/env python3
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
-
 """
 Benchkit support for Volano
 """
 
-import os
 import pathlib
 import re
-import subprocess
-import time
 from typing import Any, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignCartesianProduct, Constants
-from benchkit.commandattachments.tcpdump import TcpDump
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
+from benchkit.utils.dir import caller_dir
 from benchkit.utils.types import PathType
 
 
-class CounterBenchmark(Benchmark):
+class VolanoBench(Benchmark):
     """Benchmark object for VOLANO benchmark."""
 
     def __init__(
@@ -149,7 +145,7 @@ class CounterBenchmark(Benchmark):
         run_command = [
             "java",
             "-cp",
-            "deps/lib/volano-chat-server.jar",
+            "lib/volano-chat-server.jar",
             "COM.volano.Mark",
             "-run",
             "-start",
@@ -194,9 +190,9 @@ class CounterBenchmark(Benchmark):
 
 def volano_campaign(
     name: str = "volano_campaign",
-    benchmark: Optional[CounterBenchmark] = None,
-    src_dir: Optional[PathType] = "./",
-    build_dir: Optional[str] = "./",
+    benchmark: Optional[VolanoBench] = None,
+    src_dir: Optional[PathType] = None,
+    build_dir: Optional[str] = None,
     results_dir: Optional[PathType] = None,
     command_wrappers: Iterable[CommandWrapper] = (),
     command_attachments: Iterable[CommandAttachment] = (),
@@ -230,10 +226,12 @@ def volano_campaign(
     }
 
     if src_dir is None:
-        pass  # TODO try some search heuristics
+        src_dir = (caller_dir() / "../deps").resolve()
+    if build_dir is None:
+        build_dir = (caller_dir() / "../deps").resolve()
 
     if benchmark is None:
-        benchmark = CounterBenchmark(
+        benchmark = VolanoBench(
             src_dir=src_dir,
             command_wrappers=command_wrappers,
             command_attachments=command_attachments,
@@ -258,48 +256,3 @@ def volano_campaign(
         results_dir=results_dir,
         pretty=pretty,
     )
-
-
-def main():
-    # Define the command to be executed
-    command = "./startup.sh server loop openjdk"
-
-    # Define the directory where the command should be executed
-    working_directory = os.path.join(os.getcwd(), "deps")
-
-    # Ensure the directory exists
-    if not os.path.isdir(working_directory):
-        raise FileNotFoundError(f"The directory {working_directory} does not exist")
-
-    process = subprocess.Popen(
-        command,
-        shell=True,
-        cwd=working_directory,
-    )
-
-    tcpdump = TcpDump()
-
-    print(f"Started volano server process with PID: {process.pid}")
-
-    # Example: Wait for 10 seconds before terminating the process
-    time.sleep(5)
-    print("start bench")
-    campaign = volano_campaign(
-        post_run_hooks=[tcpdump.post_run_hook],
-        command_attachments=[tcpdump.attachment],
-        src_dir="./",
-        build_dir="./",
-    )
-    campaign.run()
-
-    process.terminate()
-
-    campaign.generate_graph(
-        plot_name="barplot",
-        x="rooms",
-        y="average_throughput",
-    )
-
-
-if __name__ == "__main__":
-    main()
