@@ -91,6 +91,19 @@ class AsyncProcess:
         else:
             self._platform.comm.signal(pid=pid, signal_code=signal_code)
 
+    def premature_exitcode(self) -> int | None:
+        """
+        Returns the return code of the process if the process exited prematurely
+        or None if it is still running.
+        """
+        rc = None
+        try:
+            rc = self._process.wait(timeout=0.5)
+        except subprocess.TimeoutExpired:
+            pass
+
+        return rc
+
     def wait(self, timeout: Optional[int] = None) -> None:
         """
         Wait for the process to complete (synchronously then), possibly with timeout.
