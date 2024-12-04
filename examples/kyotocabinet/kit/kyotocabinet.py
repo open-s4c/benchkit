@@ -178,7 +178,7 @@ class KyotoCabinetBench(Benchmark):
 
     def build_bench(  # pylint: disable=arguments-differ
         self,
-        benchmark_duration_seconds: int,
+        **kwargs,
     ) -> None:
         pass
 
