@@ -19,7 +19,7 @@ from benchkit.utils.dir import caller_dir
 from benchkit.utils.types import PathType
 
 
-class CounterBenchmark(Benchmark):
+class VolanoBench(Benchmark):
     """Benchmark object for VOLANO benchmark."""
 
     def __init__(
@@ -190,7 +190,7 @@ class CounterBenchmark(Benchmark):
 
 def volano_campaign(
     name: str = "volano_campaign",
-    benchmark: Optional[CounterBenchmark] = None,
+    benchmark: Optional[VolanoBench] = None,
     src_dir: Optional[PathType] = None,
     build_dir: Optional[str] = None,
     results_dir: Optional[PathType] = None,
@@ -231,7 +231,7 @@ def volano_campaign(
         build_dir = (caller_dir() / "../deps").resolve()
 
     if benchmark is None:
-        benchmark = CounterBenchmark(
+        benchmark = VolanoBench(
             src_dir=src_dir,
             command_wrappers=command_wrappers,
             command_attachments=command_attachments,
