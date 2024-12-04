@@ -66,15 +66,15 @@ class RocksDBBench(Benchmark):
             self._tmpdb_dir = self._build_dir / "tmp" / "benchkit_rocksdb_db"
 
     @property
-    def bench_src_path(self):
+    def bench_src_path(self) -> pathlib.Path:
         return self._bench_src_path
 
     @staticmethod
-    def get_build_var_names():
+    def get_build_var_names() -> List[str]:
         return []
 
     @staticmethod
-    def get_run_var_names():
+    def get_run_var_names() -> List[str]:
         return [
             "bench_name",
             "nb_iterations",
@@ -87,7 +87,7 @@ class RocksDBBench(Benchmark):
         ]
 
     @staticmethod
-    def get_tilt_var_names():
+    def get_tilt_var_names() -> List[str]:
         return [
             "lock",
             "atomics",
@@ -109,7 +109,10 @@ class RocksDBBench(Benchmark):
         # TODO deprecate this
         self.tilt.build_single_lock(**kwargs)
 
-    def prebuild_bench(self, **_kwargs) -> None:
+    def prebuild_bench(
+        self,
+        **_kwargs,
+    ) -> None:
         src_dir = self._bench_src_path
         build_dir = self._build_dir
         db_bench_path = src_dir / "db_bench"
@@ -141,7 +144,10 @@ class RocksDBBench(Benchmark):
                 output_is_log=True,
             )
 
-    def build_bench(self, **kwargs) -> None:
+    def build_bench(
+        self,
+        **kwargs,
+    ) -> None:
         pass
 
     def clean_bench(self) -> None:
