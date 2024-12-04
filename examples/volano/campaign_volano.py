@@ -9,8 +9,10 @@ Benchkit support for Volano
 import os
 import subprocess
 import time
-from benchkit.commandattachments.tcpdump import TcpDump
+
 from volano import volano_campaign
+
+from benchkit.commandattachments.tcpdump import TcpDump
 
 
 def main():

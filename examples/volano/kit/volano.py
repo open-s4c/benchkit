@@ -15,8 +15,8 @@ from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
-from benchkit.utils.types import PathType
 from benchkit.utils.dir import caller_dir
+from benchkit.utils.types import PathType
 
 
 class CounterBenchmark(Benchmark):
