@@ -39,7 +39,7 @@ def npb_campaign(
         gdb=False,
         enable_data_dir=True,
         continuing=False,
-        benchmark_duration_seconds=benchmark_duration_seconds,
+        benchmark_duration_seconds=None,
     )
 
     return campaign
