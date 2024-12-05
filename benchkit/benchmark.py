@@ -1141,8 +1141,12 @@ class Benchmark:
                         self._first_line_is_printed = True
                         self._first_line_list = header_list
 
-                    line_keys_left = [k for k in experiment_results_line.keys() if not k.startswith("thread_")]
-                    line_keys_right = [k for k in experiment_results_line.keys() if k.startswith("thread_")]
+                    line_keys_left = [
+                        k for k in experiment_results_line.keys() if not k.startswith("thread_")
+                    ]
+                    line_keys_right = [
+                        k for k in experiment_results_line.keys() if k.startswith("thread_")
+                    ]
                     line_keys = line_keys_left + line_keys_right
                     current_line = sep.join(str(experiment_results_line[key]) for key in line_keys)
                     teeprint(content=current_line, file=csv_output_file)
