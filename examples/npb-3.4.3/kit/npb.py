@@ -122,7 +122,7 @@ class NPBBench(Benchmark):
             output_filename=config_file,
         )
 
-        self.platform.comm.makedirs(path=src_dir/"bin", exist_ok=True)
+        self.platform.comm.makedirs(path=src_dir / "bin", exist_ok=True)
 
         self.platform.comm.shell(
             command=f"make {test_name} CLASS={t_class}",
@@ -137,7 +137,6 @@ class NPBBench(Benchmark):
 
     def single_run(  # pylint: disable=arguments-differ
         self,
-        benchmark_duration_seconds: int,
         build_variables: Dict[str, Any],
         cpu_order: CpuOrder = None,
         nb_threads: int = 2,
@@ -184,7 +183,6 @@ class NPBBench(Benchmark):
     def parse_output_to_results(  # pylint: disable=arguments-differ
         self,
         command_output: str,
-        benchmark_duration_seconds: int,
         **kwargs,
     ) -> Dict[str, Any]:
 
@@ -224,7 +222,6 @@ def npb_campaign(
     post_run_hooks: Iterable[PostRunHook] = (),
     platform: Platform | None = None,
     nb_runs: int = 1,
-    benchmark_duration_seconds: int = 5,
     test_name: Iterable[str] = ("mg",),
     t_class: Iterable[str] = ("C",),
     cpu_order: Iterable[CpuOrder] = (),
@@ -270,7 +267,7 @@ def npb_campaign(
         gdb=gdb,
         enable_data_dir=enable_data_dir,
         continuing=continuing,
-        benchmark_duration_seconds=benchmark_duration_seconds,
+        benchmark_duration_seconds=None,
         results_dir=results_dir,
         pretty=pretty,
     )
