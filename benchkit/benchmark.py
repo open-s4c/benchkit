@@ -1132,11 +1132,23 @@ class Benchmark:
                                 f"thread_{t}"
                                 for t in range(current_max_thread + 1, self._max_nb_threads())
                             ]
-                        header = sep.join(header_list + thread_list)
+                        header_unsorted = header_list + thread_list
+                        header_left = [e for e in header_unsorted if not e.startswith("thread_")]
+                        header_right = [e for e in header_unsorted if e.startswith("thread_")]
+                        header = sep.join(header_left + header_right)
 
                         teeprint(content=header, file=csv_output_file)
                         self._first_line_is_printed = True
-                    current_line = sep.join(map(str, experiment_results_line.values()))
+                        self._first_line_list = header_list
+
+                    line_keys_left = [
+                        k for k in experiment_results_line.keys() if not k.startswith("thread_")
+                    ]
+                    line_keys_right = [
+                        k for k in experiment_results_line.keys() if k.startswith("thread_")
+                    ]
+                    line_keys = line_keys_left + line_keys_right
+                    current_line = sep.join(str(experiment_results_line[key]) for key in line_keys)
                     teeprint(content=current_line, file=csv_output_file)
 
     def _record_data_dir(
