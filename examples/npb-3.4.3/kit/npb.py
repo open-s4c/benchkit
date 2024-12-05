@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
+import re
 from typing import Any, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
@@ -21,11 +22,11 @@ class NPBBench(Benchmark):
     def __init__(
         self,
         src_dir: PathType,
-        command_wrappers: Iterable[CommandWrapper],
-        command_attachments: Iterable[CommandAttachment],
-        shared_libs: Iterable[SharedLib],
-        pre_run_hooks: Iterable[PreRunHook],
-        post_run_hooks: Iterable[PostRunHook],
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
+        shared_libs: Iterable[SharedLib] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
         platform: Platform | None = None,
     ) -> None:
         super().__init__(
@@ -39,17 +40,29 @@ class NPBBench(Benchmark):
         if platform is not None:
             self.platform = platform  # TODO Warning! overriding upper class platform
 
-        # TODO duplication with LevelDB & perhaps many more in the future.
         bench_src_path = pathlib.Path(src_dir)
-        readme_file = bench_src_path / "NPB3.4-HPF.README"
-        if not self.platform.comm.isdir(bench_src_path) or not self.platform.comm.isfile(
-            readme_file
+        readme_file = bench_src_path / "README"
+        if not all(
+            [
+                self.platform.comm.isdir(bench_src_path),
+                self.platform.comm.isfile(readme_file),
+            ]
         ):
             raise ValueError(
                 f"Invalid NAS parallel benchmark source path: {bench_src_path}\n"
                 "src_dir argument can be defined manually."
             )
+
+        if not (omp_dirs := list(bench_src_path.glob("NPB*-OMP"))):
+            raise ValueError("Cannot find NPB-OMP parallel benchmark source")
+
+        omp_dir = omp_dirs[0]
+        npb_version = re.match(pattern=r"NPB(\d+\.\d+)-", string=omp_dir.name).group(1)
+
         self._bench_src_path = bench_src_path
+        self._bench_mpi_path = bench_src_path / f"NPB{npb_version}-MPI"
+        self._bench_omp_path = bench_src_path / f"NPB{npb_version}-OMP"
+        self._npb_version = npb_version
 
     @property
     def bench_src_path(self) -> str:
@@ -58,6 +71,7 @@ class NPBBench(Benchmark):
     @staticmethod
     def get_build_var_names() -> List[str]:
         return [
+            "category",  # either "MPI" or "OMP"
             "test_name",
             "t_class",
         ]
@@ -78,6 +92,7 @@ class NPBBench(Benchmark):
         return super().dependencies() + [
             PackageDependency("build-essential"),
             PackageDependency("libhwloc-dev"),
+            PackageDependency("gfortran"),
         ]
 
     def build_tilt(self, **kwargs) -> None:
@@ -87,30 +102,36 @@ class NPBBench(Benchmark):
         self,
         **_kwargs,
     ) -> None:
-        self.platform.comm.shell(command="make clean", current_dir=self.bench_src_path)
+        pass
 
     def build_bench(  # pylint: disable=arguments-differ
         self,
-        test_name: str,
-        t_class: str,
+        category: str = "OMP",
+        test_name: str = "lu",
+        t_class: str = "A",
         **_kwargs,
     ) -> None:
-        self.platform.comm.shell(
-            command="make clean",
-            current_dir=self.bench_src_path,
-            print_input=True,
-            print_output=True,
+        src_dir = self._get_actual_src_dir(category=category)
+
+        config_dir = src_dir / "config"
+        config_tpl_file = config_dir / "make.def.template"
+        config_file = config_dir / "make.def"
+        config_content = self.platform.comm.read_file(path=config_tpl_file)
+        self.platform.comm.write_content_to_file(
+            content=config_content,
+            output_filename=config_file,
         )
 
         self.platform.comm.shell(
             command=f"make {test_name} CLASS={t_class}",
-            current_dir=self.bench_src_path,
+            current_dir=src_dir,
             print_input=True,
             print_output=True,
         )
 
     def clean_bench(self) -> None:
-        pass
+        for src_dir in [self._bench_mpi_path, self._bench_omp_path]:
+            self.platform.comm.shell(command="make clean", current_dir=src_dir)
 
     def single_run(  # pylint: disable=arguments-differ
         self,
@@ -121,9 +142,12 @@ class NPBBench(Benchmark):
         master_thread_core: Optional[int] = None,
         **kwargs,
     ) -> str:
-
+        # TODO manage the defaults at framework level:
+        category: str = build_variables["category"] if "category" in build_variables else "OMP"
         test_name: str = build_variables["test_name"]
         t_class: str = build_variables["t_class"]
+
+        src_dir = self._get_actual_src_dir(category=category)
 
         environment = self._preload_env(
             cpu_order=cpu_order,
@@ -134,10 +158,7 @@ class NPBBench(Benchmark):
             environment = {}
 
         environment["OMP_NUM_THREADS"] = str(nb_threads)
-
-        run_command = [
-            f"./bin/{test_name}.{t_class}.x",
-        ]
+        run_command = [f"./bin/{test_name}.{t_class}.x"]
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
@@ -150,7 +171,7 @@ class NPBBench(Benchmark):
         output = self.run_bench_command(
             run_command=run_command,
             wrapped_run_command=wrapped_run_command,
-            current_dir=self._bench_src_path,
+            current_dir=src_dir,
             environment=environment,
             wrapped_environment=wrapped_environment,
             print_output=False,
@@ -176,6 +197,17 @@ class NPBBench(Benchmark):
         }
 
         return result_dict
+
+    def _get_actual_src_dir(self, category: str) -> PathType:
+        match category:
+            case "MPI":
+                src_dir = self._bench_mpi_path
+            case "OMP":
+                src_dir = self._bench_omp_path
+            case _:
+                raise ValueError(f"Invalid npb benchmark category: {category}")
+
+        return src_dir
 
 
 def npb_campaign(
