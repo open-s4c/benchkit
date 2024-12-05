@@ -56,7 +56,7 @@ class TiltLib(FromSourceSharedLib):
             platform=self.platform,
             src_dir=self.src_path,
             build_dir=self.build_dir,
-            debug=False,
+            debug=self._debug_mode,
             make_suffix=" -j1",
         )
 
