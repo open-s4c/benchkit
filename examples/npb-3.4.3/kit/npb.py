@@ -41,8 +41,9 @@ class NPBBench(Benchmark):
 
         # TODO duplication with LevelDB & perhaps many more in the future.
         bench_src_path = pathlib.Path(src_dir)
-        if not self.platform.comm.isdir(bench_src_path) and self.platform.comm.isfile(
-            bench_src_path / "NPB3.4-HPF.README"
+        readme_file = bench_src_path / "NPB3.4-HPF.README"
+        if not self.platform.comm.isdir(bench_src_path) or not self.platform.comm.isfile(
+            readme_file
         ):
             raise ValueError(
                 f"Invalid NAS parallel benchmark source path: {bench_src_path}\n"
