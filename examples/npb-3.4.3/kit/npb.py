@@ -122,6 +122,8 @@ class NPBBench(Benchmark):
             output_filename=config_file,
         )
 
+        self.platform.comm.makedirs(path=src_dir/"bin", exist_ok=True)
+
         self.platform.comm.shell(
             command=f"make {test_name} CLASS={t_class}",
             current_dir=src_dir,

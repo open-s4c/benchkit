@@ -15,11 +15,10 @@ from benchkit.utils.dir import caller_dir
 
 
 def npb_campaign(
-    benchmark_duration_seconds: int = 3,
     nb_runs: int = 3,
     test_names: List[str] = ("lu", "bt", "cg"),
     t_classes: List[str] = ("A", "B", "C"),
-    nb_threads: Iterable[int] = (4, 4, 8),
+    nb_threads: Iterable[int] = (4, 8),
 ) -> CampaignCartesianProduct:
     _npb_src_dir = (caller_dir() / "deps/npb").resolve()
 
@@ -39,7 +38,6 @@ def npb_campaign(
         gdb=False,
         enable_data_dir=True,
         continuing=False,
-        benchmark_duration_seconds=None,
     )
 
     return campaign
