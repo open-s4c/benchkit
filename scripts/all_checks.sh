@@ -5,6 +5,8 @@ script_dir=$(readlink -e "$(dirname "$0")")
 benchkit_root_dir=$(readlink -e "${script_dir}/..")
 venv_dir=$(readlink -f "${benchkit_root_dir}/venv")
 
+no_pylint=${BENCHKIT_NO_PYLINT}
+
 (
   cd "${benchkit_root_dir}"
 
@@ -51,8 +53,11 @@ EOF
   echo "-- check copyright. --"
   ${py3} ./scripts/list_missing_copyright.py
 
-  echo "-- running pylint. --"
-  ${pylint} benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/ || true
+  if [ -z "${no_pylint}" ]
+  then
+    echo "-- running pylint. --"
+    ${pylint} benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/ || true
+  fi
 
   echo "-- running flake8. --"
   ${flake8} benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/ || true
