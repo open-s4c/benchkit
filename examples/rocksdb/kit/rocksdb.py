@@ -248,16 +248,20 @@ class RocksDBBench(Benchmark):
                 gd = m.groupdict()
                 nb_operations = int(gd["ops"])
 
+                if "mbps" in gd and gd["mbps"]:
+                    val_mbps = float(gd["mbps"])
+                else:
+                    val_mbps = "none"
+
                 result_dict = {
                     "duration": benchmark_duration_seconds,
                     "global_count": nb_operations,
                     "microseconds/operation": float(gd["microspop"]),
                     "operations/second": float(gd["opspsec"]),
+                    "MB/s": val_mbps,
                     "ofleft": int(gd["ofleft"]),
                     "ofright": int(gd["ofright"]),
                 }
-                if "mbps" in gd and (val_mbps := gd["mbps"]) is not None:
-                    result_dict["MB/s"] = val_mbps
 
                 return result_dict
 
