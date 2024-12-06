@@ -10,7 +10,6 @@ from typing import Any, Dict, Iterable, List
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import Campaign, CampaignIterateVariables, CampaignSuite
 from benchkit.commandwrappers import CommandWrapper
-from benchkit.devices.hdc import OpenHarmonyDeviceConnector
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.dir import caller_dir
@@ -23,15 +22,19 @@ TILT_VARIABELS = []
 
 class Target(Enum):
     LOCAL = 1
-    MOBILE = 2
-    CONTAINER = 3
+    HARMONY = 2
+    ANDROID = 3
+    CONTAINER = 4
+
+    def is_mobile(self):
+        return self == Target.HARMONY or self == Target.ANDROID
 
 
 class IPCBenchmark(Benchmark):
     def __init__(
         self,
         bench_dir: PathType,
-        mobile: bool = False,
+        target: Target = Target.LOCAL,
         skip_rebuild: bool = False,
         command_wrappers: Iterable[CommandWrapper] = [],
         command_attachments: Iterable[CommandAttachment] = [],
@@ -39,7 +42,6 @@ class IPCBenchmark(Benchmark):
         pre_run_hooks: Iterable[PreRunHook] = [],
         post_run_hooks: Iterable[PostRunHook] = [],
         platform: Platform | None = None,
-        hdc: OpenHarmonyDeviceConnector | None = None,
     ) -> None:
         super().__init__(
             command_wrappers=command_wrappers,
@@ -48,15 +50,12 @@ class IPCBenchmark(Benchmark):
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,
         )
+        self.target = target
         self.bench_dir = bench_dir
-        self.mobile = mobile
         self.skip_rebuild = skip_rebuild
 
         if platform is not None:
             self.platform = platform
-
-        if hdc is not None:
-            self.hdc = hdc
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -94,9 +93,10 @@ class IPCBenchmark(Benchmark):
         return parsed
 
     def build_bench(self, **kwargs) -> None:
-        if self.mobile:
+        if self.target.is_mobile():
+            # TODO: use copy_from_host here, and compile to correct target
             return
-
+        
         self.platform.comm.shell(
             command="cargo build",
             current_dir=self.bench_dir,
@@ -104,7 +104,8 @@ class IPCBenchmark(Benchmark):
         )
 
     def clean_bench(self) -> None:
-        if self.mobile:
+        if self.target.is_mobile():
+            # TODO: remove copied file
             return
 
         if not self.skip_rebuild:
@@ -118,28 +119,25 @@ class IPCBenchmark(Benchmark):
         run_command: List[str]
         output: str
 
-        if self.mobile:
+        if self.target.is_mobile():
             run_command = ["./ipc_runner", "-m", f"{m}"]
-            # TODO: maybe wrap as well or don't and make comm layer
-            output = self.hdc.shell_out(run_command, self.bench_dir)
-            print(output)
-        else:
+        else: 
             run_command = ["cargo", "run", "--", "-m", f"{m}"]
 
-            wrapped_run_command, wrapped_environment = self._wrap_command(
-                run_command=run_command,
-                environment={},
-                **kwargs,
-            )
+        wrapped_run_command, wrapped_environment = self._wrap_command(
+            run_command=run_command,
+            environment={},
+            **kwargs,
+        )
 
-            output = self.run_bench_command(
-                environment={},
-                run_command=run_command,
-                wrapped_run_command=wrapped_run_command,
-                current_dir=self.bench_dir,
-                wrapped_environment=wrapped_environment,
-                print_output=True,
-            )
+        output = self.run_bench_command(
+            environment={},
+            run_command=run_command,
+            wrapped_run_command=wrapped_run_command,
+            current_dir=self.bench_dir,
+            wrapped_environment=wrapped_environment,
+            print_output=True,
+        )
 
         return output
 
@@ -147,21 +145,31 @@ class IPCBenchmark(Benchmark):
 def main() -> None:
     nb_runs = 2
     variables = [{"m": 10**i} for i in range(1, 4)]
-    skip_rebuild = False
+    skip_rebuild = True
     target = Target.LOCAL
 
     bench_dir: pathlib.Path | str = caller_dir() / "ipc_runner"
     platform: Platform | None = None
-    hdc: OpenHarmonyDeviceConnector | None = None
 
     this_dir = caller_dir()
 
     match target:
         case Target.LOCAL:
             platform = get_current_platform()
-        case Target.MOBILE:
+        case Target.HARMONY:
+            from benchkit.devices.hdc import OpenHarmonyCommLayer, OpenHarmonyDeviceConnector
+            
             bench_dir = "/data/testing/ipc/"
-            hdc = OpenHarmonyDeviceConnector.query_devices(lambda _: True)[0]
+            hdc = OpenHarmonyDeviceConnector.query_devices()[0]
+            comm = OpenHarmonyCommLayer(hdc)
+            platform = Platform(comm)
+        case Target.ANDROID:
+            from benchkit.devices.adb import AndroidCommLayer, AndroidDebugBridge
+            
+            bench_dir = "/data/testing/ipc/"
+            adb = AndroidDebugBridge.query_devices()[0]
+            comm = AndroidCommLayer(adb)
+            platform = Platform(comm)
         case Target.CONTAINER:
             from rustcontainer import get_rust_docker_platform
 
@@ -171,8 +179,7 @@ def main() -> None:
     benchmark = IPCBenchmark(
         bench_dir=bench_dir,
         platform=platform,
-        hdc=hdc,
-        mobile=(Target.MOBILE == target),
+        target=target,
         skip_rebuild=skip_rebuild,
     )
 
