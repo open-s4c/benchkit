@@ -139,6 +139,24 @@ future.
   - position of the RAM chips (static)
   Notice that some of these information could be optional.
 
+- Benchkit Server Interface:
+  implement a server-based interface to monitor and interact with running
+  benchmarks. This interface should provide the following features:
+  - Ability to pause, resume, or stop benchmarks.
+  - Live visualization of benchmark results, with iterative graph construction
+    to monitor progress without waiting for the benchmark to finish.
+  - A dashboard accessible via a web interface to display real-time benchmark
+    state and metrics; and also to send control actions to the server.
+
+- Interactive Benchmark Management:
+  add functionality to manage benchmarks interactively during execution.
+  This includes:
+  - Pause and resume capabilities to temporarily halt benchmarking,
+    useful for shared systems or user convenience.
+  - Commands for querying the state of a running benchmark, such as progress,
+    current iteration, or system resource usage.
+
+
 ## Non-functional changes
 
 - Release as a pip package!
