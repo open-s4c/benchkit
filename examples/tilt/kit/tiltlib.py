@@ -82,6 +82,9 @@ class TiltLib(FromSourceSharedLib):
                     ),
                     file=sys.stderr,
                 )
+                raise ValueError(
+                    f"Tilt lib lock with name {lib_lockname} not found in '{lib_path}'"
+                )
 
         return ld_preloads, env_vars
 
