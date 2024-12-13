@@ -167,6 +167,8 @@ future.
 
 - Add end-to-end tests that are automated.
 
+- Check if we can use output of perf with https://profiler.firefox.com/
+
 ## Defects / Bugs / Change Requests
 
 - Error handling is required for when the platform is not registered
