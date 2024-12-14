@@ -1,13 +1,20 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <string.h>
+
+#define IMPLICIT_INIT
 
 int main() {
     pthread_mutex_t lock;
 
+    #if defined(IMPLICIT_INIT)
+    memset(&lock, 0, sizeof(pthread_mutex_t));
+    #else
     if (pthread_mutex_init(&lock, NULL) != 0) {
         printf("Mutex initialization failed\n");
         return 1;
     }
+    #endif /* EXPLICIT_INIT */
 
     printf("Locking mutex...\n");
     pthread_mutex_lock(&lock);
