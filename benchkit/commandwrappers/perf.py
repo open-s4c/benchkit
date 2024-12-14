@@ -758,11 +758,16 @@ class PerfReportWrap(CommandWrapper):
             )
 
         perf_data_pathname = self.latest_perf_path
+        perf_data_dirname = pathlib.Path(self.latest_perf_path).parent.resolve()
+        perf_folded_pathname = perf_data_dirname / "perf.folded"
+
         self._chown(pathname=perf_data_pathname)
 
         out_perf = shell_out(
-            f"{self._perf_bin} script --input {perf_data_pathname}", print_output=False
+            f"{self._perf_bin} script --input {perf_data_pathname}",
+            print_output=False,
         )
+
         flamegraph_path = os.path.realpath(self._flamegraph_path)
         stackcollperf_script = os.path.join(flamegraph_path, "stackcollapse-perf.pl")
         flamegraph_script = os.path.join(flamegraph_path, "flamegraph.pl")
@@ -772,6 +777,7 @@ class PerfReportWrap(CommandWrapper):
             current_dir=flamegraph_path,
             print_output=False,
         )
+        perf_folded_pathname.write_text(out_folded.strip())
         svg_flamechart = shell_out(
             flamegraph_script,
             std_input=out_folded,
@@ -780,6 +786,37 @@ class PerfReportWrap(CommandWrapper):
         )
 
         write_record_file_fun(file_content=svg_flamechart, filename=FILENAME_FLAMEGRAPH)
+
+    def differential_flamegraph(
+        self,
+        src_folded_path: PathType,
+        dst_folded_path: PathType,
+        out_svg_path: PathType,
+    ) -> None:
+        flamegraph_path = pathlib.Path(self._flamegraph_path)
+        src_folded_path = pathlib.Path(src_folded_path).resolve()
+        dst_folded_path = pathlib.Path(dst_folded_path).resolve()
+        out_svg_path = pathlib.Path(out_svg_path).resolve()
+        if not all(f.exists() for f in [flamegraph_path, src_folded_path, dst_folded_path]):
+            raise ValueError("Cannot find all folded files.")
+
+        difffolded_out = self.platform.comm.shell(
+            command=[
+                "./difffolded.pl",
+                f"{src_folded_path}",
+                f"{dst_folded_path}",
+            ],
+            current_dir=flamegraph_path,
+        )
+        svg_diffflamechart = self.platform.comm.shell(
+            command=[
+                "./flamegraph.pl",
+            ],
+            std_input=difffolded_out,
+            current_dir=flamegraph_path,
+            print_output=False,
+        )
+        out_svg_path.write_text(svg_diffflamechart)
 
     def fzf_report(self, search_dir: PathType) -> None:
         """Generate all report browsable with fzf dynamic CLI.
