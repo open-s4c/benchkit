@@ -5,11 +5,9 @@
 #define IMPLICIT_INIT
 
 int main() {
-    pthread_mutex_t lock;
+    pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
-    #if defined(IMPLICIT_INIT)
-    memset(&lock, 0, sizeof(pthread_mutex_t));
-    #else
+    #if !defined(IMPLICIT_INIT)
     if (pthread_mutex_init(&lock, NULL) != 0) {
         printf("Mutex initialization failed\n");
         return 1;
