@@ -8,7 +8,9 @@ allocation policy).
 
 from typing import Iterable, List
 
-from . import CommandWrapper, PackageDependency
+from benchkit.commandwrappers import CommandWrapper
+from benchkit.dependencies.packages import PackageDependency
+from benchkit.platforms import get_current_platform
 
 
 class NumactlWrap(CommandWrapper):
@@ -16,11 +18,13 @@ class NumactlWrap(CommandWrapper):
 
     def __init__(
         self,
+        membind: bool,
         local_alloc: bool,
         interleave_nodes: Iterable[int] | None,
     ) -> None:
         super().__init__()
 
+        self._membind = membind
         self._local_alloc = local_alloc
         self._interleave_nodes = list(interleave_nodes) if interleave_nodes is not None else None
 
@@ -36,6 +40,19 @@ class NumactlWrap(CommandWrapper):
         cmd_prefix = super().command_prefix(**kwargs)
 
         options = []
+        if self._membind:
+            nodes = []
+
+            mtc = kwargs["master_thread_core"] if "master_thread_core" in kwargs else None
+            platform = kwargs["platform"] if "platform" in kwargs else get_current_platform()
+            if mtc is not None:
+                # node id of the mtc:
+                node_mtc = mtc // (platform.nb_cpus() // platform.nb_numa_nodes())
+                nodes = [node_mtc]
+
+            if nodes:
+                nodes_str = ",".join(map(str, nodes))
+                options.append(f"--membind={nodes_str}")
         if self._local_alloc:
             options.append("--localalloc")
         if self._interleave_nodes is not None:
