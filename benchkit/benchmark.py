@@ -1050,6 +1050,7 @@ class Benchmark:
                 constants=self._constants,
                 build_variables=build_variables,
                 record_data_dir=temp_record_data_dir,
+                other_variables=other_variables,
                 **run_variables,
             )
 
