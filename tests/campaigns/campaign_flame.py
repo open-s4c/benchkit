@@ -30,13 +30,26 @@ def main() -> None:
         flamegraph_path=flamegraph_path,
     )
 
+    def flame_post_hook(
+        experiment_results_lines,
+        record_data_dir,
+        write_record_file_fun,
+    ):
+        return perf_wrapper.post_run_hook_flamegraph(
+            experiment_results_lines=experiment_results_lines,
+            record_data_dir=record_data_dir,
+            write_record_file_fun=write_record_file_fun,
+            flamegraph_width=400,
+            flamegraph_fontsize=14,
+        )
+
     campaign = CampaignIterateVariables(
         name="flame",
         benchmark=SleepBench(
             command_wrappers=[perf_wrapper],
             post_run_hooks=[
                 perf_wrapper.post_run_hook_report,
-                perf_wrapper.post_run_hook_flamegraph,
+                flame_post_hook,
             ],
         ),
         nb_runs=1,
