@@ -825,8 +825,14 @@ class Benchmark:
     ) -> Environment:
         ld_preloads = []
         other_environment = {}
+
+        kwargs_build = kwargs["build_variables"] if "build_variables" in kwargs else {}
+        kwargs_run = kwargs
+        kwargs_other = kwargs["other_variables"] if "other_variables" in kwargs else {}
+        kwargs_full = kwargs_build | kwargs_run | kwargs_other
+
         for shared_lib in self._shared_libs:
-            preloads, other_env = shared_lib.preload(**kwargs)
+            preloads, other_env = shared_lib.preload(**kwargs_full)
             ld_preloads.extend(preloads)
             other_environment.update(other_env)
 
