@@ -131,6 +131,12 @@ class RayTracerBenchmark(Benchmark):
         nb_threads: int = 2,
         **kwargs,
     ) -> str:
+        environment = self._preload_env(
+            record_data_dir=record_data_dir,
+            preset=preset,
+            nb_threads=nb_threads,
+            **kwargs,
+        )
 
         run_command = [
             "./raytracer",
@@ -144,16 +150,18 @@ class RayTracerBenchmark(Benchmark):
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
-            environment={},
+            environment=environment,
             record_data_dir=record_data_dir,
+            preset=preset,
+            nb_threads=nb_threads,
             **kwargs,
         )
 
         output = self.run_bench_command(
-            environment={},
             run_command=run_command,
             wrapped_run_command=wrapped_run_command,
             current_dir=self._bench_src_path,
+            environment=environment,
             wrapped_environment=wrapped_environment,
             print_output=False,
             record_data_dir=record_data_dir,
