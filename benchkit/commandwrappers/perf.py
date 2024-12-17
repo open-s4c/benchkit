@@ -745,6 +745,7 @@ class PerfReportWrap(CommandWrapper):
         flamegraph_width: int | None = None,
         flamegraph_height: int | None = None,
         flamegraph_fontsize: int | None = None,
+        flamegraph_minwidth: float | None = None,
     ) -> None:
         """Post run hook to generate flamegraph into data directory of the record.
 
@@ -775,7 +776,6 @@ class PerfReportWrap(CommandWrapper):
 
         flamegraph_path = os.path.realpath(self._flamegraph_path)
         stackcollperf_script = os.path.join(flamegraph_path, "stackcollapse-perf.pl")
-        flamegraph_script = os.path.join(flamegraph_path, "flamegraph.pl")
         out_folded = shell_out(
             stackcollperf_script,
             std_input=out_perf,
@@ -784,17 +784,14 @@ class PerfReportWrap(CommandWrapper):
         )
         perf_folded_pathname.write_text(out_folded.strip())
 
-        flamegraph_command = [flamegraph_script]
-        if flamegraph_title:
-            flamegraph_command.append(f"--title={flamegraph_title}")
-        if flamegraph_subtitle:
-            flamegraph_command.append(f"--subtitle={flamegraph_subtitle}")
-        if flamegraph_width is not None:
-            flamegraph_command.append(f"--width={flamegraph_width}")
-        if flamegraph_height is not None:
-            flamegraph_command.append(f"--height={flamegraph_height}")
-        if flamegraph_fontsize is not None:
-            flamegraph_command.append(f"--fontsize={flamegraph_fontsize}")
+        flamegraph_command = self._flamegraph_command(
+            title=flamegraph_title,
+            subtitle=flamegraph_subtitle,
+            width=flamegraph_width,
+            height=flamegraph_height,
+            fontsize=flamegraph_fontsize,
+            minwidth=flamegraph_minwidth,
+        )
 
         svg_flamechart = shell_out(
             command=flamegraph_command,
@@ -810,6 +807,12 @@ class PerfReportWrap(CommandWrapper):
         src_folded_path: PathType,
         dst_folded_path: PathType,
         out_svg_path: PathType,
+        flamegraph_title: str = "",
+        flamegraph_subtitle: str = "",
+        flamegraph_width: int | None = None,
+        flamegraph_height: int | None = None,
+        flamegraph_fontsize: int | None = None,
+        flamegraph_minwidth: float | None = None,
     ) -> None:
         flamegraph_path = pathlib.Path(self._flamegraph_path)
         src_folded_path = pathlib.Path(src_folded_path).resolve()
@@ -826,10 +829,18 @@ class PerfReportWrap(CommandWrapper):
             ],
             current_dir=flamegraph_path,
         )
+
+        flamegraph_command = self._flamegraph_command(
+            title=flamegraph_title,
+            subtitle=flamegraph_subtitle,
+            width=flamegraph_width,
+            height=flamegraph_height,
+            fontsize=flamegraph_fontsize,
+            minwidth=flamegraph_minwidth,
+        )
+
         svg_diffflamechart = self.platform.comm.shell(
-            command=[
-                "./flamegraph.pl",
-            ],
+            command=flamegraph_command,
             std_input=difffolded_out,
             current_dir=flamegraph_path,
             print_output=False,
@@ -867,6 +878,34 @@ class PerfReportWrap(CommandWrapper):
             header="flamegraph?",
             command_fun=open_browser,
         )
+
+    def _flamegraph_command(
+        self,
+        title: str = "",
+        subtitle: str = "",
+        width: int | None = None,
+        height: int | None = None,
+        fontsize: int | None = None,
+        minwidth: float | None = None,
+    ) -> List[str]:
+        flamegraph_path = pathlib.Path(self._flamegraph_path).resolve()
+        script = flamegraph_path / "flamegraph.pl"
+
+        command = [f"{script}"]
+        if title:
+            command.append(f"--title={title}")
+        if subtitle:
+            command.append(f"--subtitle={subtitle}")
+        if width is not None:
+            command.append(f"--width={width}")
+        if height is not None:
+            command.append(f"--height={height}")
+        if fontsize is not None:
+            command.append(f"--fontsize={fontsize}")
+        if minwidth is not None:
+            command.append(f"--minwidth={minwidth}")
+
+        return command
 
     def _chown(self, pathname: PathType) -> None:
         path = pathlib.Path(pathname)
