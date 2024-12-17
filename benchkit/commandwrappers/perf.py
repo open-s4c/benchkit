@@ -775,7 +775,6 @@ class PerfReportWrap(CommandWrapper):
 
         flamegraph_path = os.path.realpath(self._flamegraph_path)
         stackcollperf_script = os.path.join(flamegraph_path, "stackcollapse-perf.pl")
-        flamegraph_script = os.path.join(flamegraph_path, "flamegraph.pl")
         out_folded = shell_out(
             stackcollperf_script,
             std_input=out_perf,
@@ -887,7 +886,7 @@ class PerfReportWrap(CommandWrapper):
         flamegraph_path = pathlib.Path(self._flamegraph_path).resolve()
         flamegraph_script = flamegraph_path / "flamegraph.pl"
 
-        flamegraph_command = [flamegraph_script]
+        flamegraph_command = [f"{flamegraph_script}"]
         if flamegraph_title:
             flamegraph_command.append(f"--title={flamegraph_title}")
         if flamegraph_subtitle:
