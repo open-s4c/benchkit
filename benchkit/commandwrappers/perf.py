@@ -740,7 +740,10 @@ class PerfReportWrap(CommandWrapper):
         experiment_results_lines: List[RecordResult],
         record_data_dir: PathType,
         write_record_file_fun: WriteRecordFileFunction,
+        flamegraph_title: str = "",
+        flamegraph_subtitle: str = "",
         flamegraph_width: int | None = None,
+        flamegraph_height: int | None = None,
         flamegraph_fontsize: int | None = None,
     ) -> None:
         """Post run hook to generate flamegraph into data directory of the record.
@@ -782,8 +785,14 @@ class PerfReportWrap(CommandWrapper):
         perf_folded_pathname.write_text(out_folded.strip())
 
         flamegraph_command = [flamegraph_script]
+        if flamegraph_title:
+            flamegraph_command.append(f"--title={flamegraph_title}")
+        if flamegraph_subtitle:
+            flamegraph_command.append(f"--subtitle={flamegraph_subtitle}")
         if flamegraph_width is not None:
             flamegraph_command.append(f"--width={flamegraph_width}")
+        if flamegraph_height is not None:
+            flamegraph_command.append(f"--height={flamegraph_height}")
         if flamegraph_fontsize is not None:
             flamegraph_command.append(f"--fontsize={flamegraph_fontsize}")
 
