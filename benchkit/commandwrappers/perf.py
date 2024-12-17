@@ -784,17 +784,13 @@ class PerfReportWrap(CommandWrapper):
         )
         perf_folded_pathname.write_text(out_folded.strip())
 
-        flamegraph_command = [flamegraph_script]
-        if flamegraph_title:
-            flamegraph_command.append(f"--title={flamegraph_title}")
-        if flamegraph_subtitle:
-            flamegraph_command.append(f"--subtitle={flamegraph_subtitle}")
-        if flamegraph_width is not None:
-            flamegraph_command.append(f"--width={flamegraph_width}")
-        if flamegraph_height is not None:
-            flamegraph_command.append(f"--height={flamegraph_height}")
-        if flamegraph_fontsize is not None:
-            flamegraph_command.append(f"--fontsize={flamegraph_fontsize}")
+        flamegraph_command = self._flamegraph_command(
+            flamegraph_title=flamegraph_title,
+            flamegraph_subtitle=flamegraph_subtitle,
+            flamegraph_width=flamegraph_width,
+            flamegraph_height=flamegraph_height,
+            flamegraph_fontsize=flamegraph_fontsize,
+        )
 
         svg_flamechart = shell_out(
             command=flamegraph_command,
@@ -810,6 +806,11 @@ class PerfReportWrap(CommandWrapper):
         src_folded_path: PathType,
         dst_folded_path: PathType,
         out_svg_path: PathType,
+        flamegraph_title: str = "",
+        flamegraph_subtitle: str = "",
+        flamegraph_width: int | None = None,
+        flamegraph_height: int | None = None,
+        flamegraph_fontsize: int | None = None,
     ) -> None:
         flamegraph_path = pathlib.Path(self._flamegraph_path)
         src_folded_path = pathlib.Path(src_folded_path).resolve()
@@ -826,10 +827,17 @@ class PerfReportWrap(CommandWrapper):
             ],
             current_dir=flamegraph_path,
         )
+
+        flamegraph_command = self._flamegraph_command(
+            flamegraph_title=flamegraph_title,
+            flamegraph_subtitle=flamegraph_subtitle,
+            flamegraph_width=flamegraph_width,
+            flamegraph_height=flamegraph_height,
+            flamegraph_fontsize=flamegraph_fontsize,
+        )
+
         svg_diffflamechart = self.platform.comm.shell(
-            command=[
-                "./flamegraph.pl",
-            ],
+            command=flamegraph_command,
             std_input=difffolded_out,
             current_dir=flamegraph_path,
             print_output=False,
@@ -867,6 +875,31 @@ class PerfReportWrap(CommandWrapper):
             header="flamegraph?",
             command_fun=open_browser,
         )
+
+    def _flamegraph_command(
+        self,
+        flamegraph_title: str = "",
+        flamegraph_subtitle: str = "",
+        flamegraph_width: int | None = None,
+        flamegraph_height: int | None = None,
+        flamegraph_fontsize: int | None = None,
+    ) -> List[str]:
+        flamegraph_path = pathlib.Path(self._flamegraph_path).resolve()
+        flamegraph_script = flamegraph_path / "flamegraph.pl"
+
+        flamegraph_command = [flamegraph_script]
+        if flamegraph_title:
+            flamegraph_command.append(f"--title={flamegraph_title}")
+        if flamegraph_subtitle:
+            flamegraph_command.append(f"--subtitle={flamegraph_subtitle}")
+        if flamegraph_width is not None:
+            flamegraph_command.append(f"--width={flamegraph_width}")
+        if flamegraph_height is not None:
+            flamegraph_command.append(f"--height={flamegraph_height}")
+        if flamegraph_fontsize is not None:
+            flamegraph_command.append(f"--fontsize={flamegraph_fontsize}")
+
+        return flamegraph_command
 
     def _chown(self, pathname: PathType) -> None:
         path = pathlib.Path(pathname)
