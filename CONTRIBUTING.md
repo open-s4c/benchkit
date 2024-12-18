@@ -3,43 +3,69 @@
 Contributions are welcome.
 Contact the [maintainer](MAINTAINERS) for more information.
 
-### Source organization
+## Source organization
 
-Source organization is already documented for users in the [README](README.md).
-As of August 2023, the code base is slowly reaching 10k of lines of python code.
+Source organization is already documented in the [README](README.md).
+As of December 2024, the codebase is over 21k lines of Python code.
 
-### Modifying the core
+## Modifying the core
 
-The core is the `benchkit/` directory.   It defines everything required to run
-campaigns and benchmarks, with lots of utility functions and classes.
+The core of the project is in the `benchkit/` directory.
+It defines everything required to run campaigns and benchmarks, including
+utility functions and classes.
 
-### Add support for a benchmark
+## Adding support for a benchmark
 
 Supported benchmarks are placed in the `examples/` directory.
 
-### Conventions
+## Conventions
 
-When defining a class, the following order of functions should be respected:
+When defining a class, follow this order for methods:
 
- 1. `__new__` (static) method
- 2. `__init__` method
- 3. `__post_init__` method
- 4. Properties (`@property`)
- 5. Static methods (`@staticmethod`) 
- 6. Class methods (`@classmethod`) 
- 7. Normal methods 
- 8. Protected or private methods (with the name starting with `_`)
+1. `__new__` (static) method
+2. `__init__` method
+3. `__post_init__` method
+4. Properties (`@property`)
+5. Static methods (`@staticmethod`)
+6. Class methods (`@classmethod`)
+7. Regular methods
+8. Protected or private methods (prefix `_`)
 
+## Checklist for modifying a Python file
 
-### Check list to modify a python file
+- **Shebang**: Executable files must start with `#!/usr/bin/env python3`.
+- **Type Hinting**: Ensure type annotations are correct and reasonably complete.
+- **Imports**: Sort using `isort --profile black .`.
+- **Formatting**: Apply `black -l 100 .`.
+- **Linting**: Run `pylint` and `flake8` to catch errors and maintain style
+  consistency.
 
-- if the file is executable, the shebang must be the first line: `#!/usr/bin/env python3`
-- type hinting is correct & complete (to a _reasonable_ extent)
-- sorting imports: `isort --profile black .`
-- formatting: `black -l 100 .`
-- checking: `pylint`
-- checking: `flake8`
+A helper script is provided to apply these, you can invoke it as follows:
 
-### Reviews
+```bash
+BENCHKIT_NO_PYLINT=yes ./scripts/all_checks.sh
+```
 
-All contributions require to be reviewed by the [maintainer](MAINTAINERS).
+## Copyright attribution policy
+
+### General Guidelines
+
+1. **New Files**: Copyright should be attributed to the contributor's current
+   organization or individual name, as applicable.
+2. **Minor Modifications**: Leave the existing copyright unchanged.
+3. **Significant Modifications**: Add a new copyright line to the modified file.
+4. **LICENSE File Updates**: If significant modifications span multiple files,
+   update the LICENSE file to reflect the added copyright.
+
+### Contributors
+
+- If contributing as an individual, use:
+  `Copyright (C) [year] [Your Name].`
+- If contributing on behalf of an organization, follow its attribution
+  guidelines.
+
+For questions, consult the [maintainer](MAINTAINERS).
+
+## Reviews
+
+All contributions must be reviewed and approved by the [maintainer](MAINTAINERS).
