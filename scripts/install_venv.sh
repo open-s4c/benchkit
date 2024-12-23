@@ -35,15 +35,15 @@ ${pip_exec} install --upgrade setuptools
 ${pip_exec} install --upgrade wheel
 
 ${pip_exec} install --upgrade \
-    "pycodestyle<=2.11.1" \
-    "isort<=5.13.2" \
-    "pylint<=3.2.3" \
-    "black<=24.4.2" \
-    "black[d]<=24.4.2" \
-    "black[jupyter]<=24.4.2" \
-    "flake8<=7.0.0" \
+    "black<=24.10.0" \
+    "black[d]<=24.10.0" \
+    "black[jupyter]<=24.10.0" \
     "docopt<=0.6.2" \
-    "libtmux<=0.37.0"
+    "flake8<=7.1.1" \
+    "isort<=5.13.2" \
+    "libtmux<=0.40.0" \
+    "pycodestyle<=2.12.1" \
+    "pylint<=3.3.2"
 
 requirement_file="requirements.txt"
 if [ -e "${requirement_file}" ]
