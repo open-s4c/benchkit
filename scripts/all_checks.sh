@@ -14,14 +14,14 @@ no_pylint=${BENCHKIT_NO_PYLINT}
   then
     echo "-- venv in root dir of benchkit not present. Creating one. --"
     cat > ./requirements.txt << EOF
-altair<=5.1.1
-dash<=2.13.0
-GitPython<=3.1.36
-matplotlib<=3.8.0
+altair<=5.5.0
+dash<=2.18.2
+GitPython<=3.1.43
+matplotlib<=3.10.0
 netifaces<=0.11.0
-pandas<=2.1.0
-pythainer
-seaborn<=0.12.2
+pandas<=2.2.3
+pythainer<=0.0.4
+seaborn<=0.13.2
 wget<=3.2
 EOF
     cat > ./dependency-paths.txt << EOF
@@ -39,7 +39,6 @@ examples/willitscale/kit
 tutorials/libvsync-locks/kit
 EOF
     ./scripts/install_venv.sh
-    pip=$(readlink -f "${venv_dir}/bin/pip3")
     rm ./requirements.txt ./dependency-paths.txt
     echo "-- venv created. --"
   fi
