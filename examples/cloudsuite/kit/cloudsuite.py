@@ -58,7 +58,7 @@ class CloudsuiteBench(Benchmark):
             )
         self._bench_src_path = bench_src_path
 
-        data_dir = "tmp/benchkit_cloudsuite"
+        data_dir = "/tmp/benchkit_cloudsuite"
         self._data_dir = pathlib.Path(data_dir)
 
         self.platform.comm.makedirs(self._data_dir, exist_ok=False)
