@@ -58,6 +58,11 @@ class CloudsuiteBench(Benchmark):
             )
         self._bench_src_path = bench_src_path
 
+        data_dir = "tmp/benchkit_cloudsuite"
+        self._data_dir = pathlib.Path(data_dir)
+
+        self.platform.comm.makedirs(self._data_dir, exist_ok=False)
+
     @property
     def bench_src_path(self) -> pathlib.Path:
         return self._bench_src_path
@@ -111,17 +116,18 @@ class CloudsuiteBench(Benchmark):
 
         self.platform.comm.shell(
             command=f"printf {seeds_str} > _tmp_benchkit_seeds.txt",
-            current_dir="~/",
+            current_dir=self._data_dir,
         )
 
-        # 1) Move fabandriver.jar and Web20Driver.java.in into the right places
-        # 2) docker build if not existing
+        # Step 1 -- Build cloudsuite's faban-client docker with fabandriver.jar 
 
         src_faban = self.bench_src_path / "benchmarks/web-serving/faban_client/"
 
         jar_file = pathlib.Path(get_curdir(__file__) / "files/fabandriver.jar")
         java_file = pathlib.Path(get_curdir(__file__) / "files/fabandriver.jar")
 
+
+        # Step 1a) Move fabandriver.jar and Web20Driver.java.in into the 4 places
         self.platform.comm.copy_from_host(
             source=java_file,
             destination=src_faban / "files/web20_benchmark/src/workload/driver/Web20Driver.java.in",
@@ -142,6 +148,7 @@ class CloudsuiteBench(Benchmark):
             destination=src_faban / "files/web20_benchmark/lib/fabandriver.jar",
         )
 
+        # Step 1b) Check if docker has already been built
         which_images = self.platform.comm.shell(
             command="docker images",
             print_input=False,
@@ -149,6 +156,7 @@ class CloudsuiteBench(Benchmark):
         )
 
         if "faban_built" not in which_images:
+            # Step 1c) If not already built, build docker container
             self.platform.comm.shell(
                 command="docker build --network=host --tag faban_built .",
                 current_dir=src_faban,
@@ -156,10 +164,9 @@ class CloudsuiteBench(Benchmark):
         else:
             print("[WARNING!!!] faban_built docker is already built, skipping build_bench")
 
-        # 1) docker build
-        # 2) docker stop
-        # 3) docker commit "PARAMETERS"
+        # Step 2 -- Create docker container for database with pre-filled 2GB of data
 
+        # Step 2a) Check if container is already built
         which_images = self.server_platform.comm.shell(
             command="docker images",
             print_input=False,
@@ -167,6 +174,7 @@ class CloudsuiteBench(Benchmark):
         )
 
         if "db_built" not in which_images:
+            # Step 2b) Make sure that no temporary container exists by running `stop` and `rm`
             self.server_platform.comm.shell(
                 command="docker stop tmp_db_server", ignore_ret_codes=[1]
             )
@@ -174,6 +182,7 @@ class CloudsuiteBench(Benchmark):
                 command="docker container rm tmp_db_server", ignore_ret_codes=[1]
             )
 
+            # Step 2c) Create and pre-fill database server
             self.server_platform.comm.shell(
                 command="docker run -dt --net=host --name=tmp_db_server"
                 "cloudsuite/web-serving:db_server"
@@ -181,6 +190,7 @@ class CloudsuiteBench(Benchmark):
 
             command = "docker logs tmp_db_server | tac | awk '/exit/ {exit} 1' | tac"
 
+            # Step 2d) Wait until initialization/pre-filling of database container is finished
             mariadb_initialized = False
             while not mariadb_initialized:
                 time.sleep(1)
@@ -198,8 +208,10 @@ class CloudsuiteBench(Benchmark):
                     "MariaDB failed to start. Check if another container is already running."
                 )
 
+            # Step 2e) Stop container
             self.server_platform.comm.shell(command="docker stop tmp_db_server")
 
+            # Step 2f) Commit container (in order to keep pre-filled data)
             self.server_platform.comm.shell(
                 command='docker commit --change "ENTRYPOINT service mariadb start && bash"'
                 "tmp_db_server db_built"
@@ -245,8 +257,8 @@ class CloudsuiteBench(Benchmark):
         )
         self.web_server_platform.comm.shell(
             command=f"docker run -dt --net=host --name=web_server "
-            f"cloudsuite/web-serving:web_server /etc/bootstrap.sh http {ip_web_server} {ip_server}"
-            f" {ip_web_server} {nb_threads} {nb_threads}"
+            f"cloudsuite/web-serving:web_server /etc/bootstrap.sh http {ip_web_server} {ip_server} "
+            f"{ip_web_server} {nb_threads} {nb_threads}"
         )
 
         self.server_platform.comm.shell(
@@ -300,15 +312,18 @@ class CloudsuiteBench(Benchmark):
                 "faban_client",
             ]
         else:
+            faban_output_dir = self._data_dir / "faban_output"
+            seeds_file = self._data_dir / "_tmp_benchkit_seeds.txt"
+
             run_command = [
                 "docker",
                 "run",
                 "--net=host",
                 "--name=faban_client",
                 "-v",
-                "/home/drc/rchehab/faban_output/:/web20_benchmark/output",
+                f"{faban_output_dir}:/web20_benchmark/output",
                 "--env-file",
-                "_tmp_benchkit_seeds.txt",
+                f"{seeds_file}",
                 "faban_built",
                 f"{ip_web_server}",
                 f"{nb_threads}",
@@ -326,7 +341,7 @@ class CloudsuiteBench(Benchmark):
         output = self.run_bench_command(
             run_command=run_command,
             wrapped_run_command=wrapped_run_command,
-            current_dir="~/",
+            current_dir=self._bench_src_path,
             environment=environment,
             wrapped_environment=wrapped_environment,
             print_output=False,
@@ -338,8 +353,10 @@ class CloudsuiteBench(Benchmark):
         self,
         record_data_dir: PathType,
     ) -> None:
-        filename = "/home/drc/rchehab/faban_output/TH_*-TM_1000-TY_THINKTIME-DS_fixed/*/detail.xan"
-        filename_dir = "/home/drc/rchehab/faban_output/TH_*-TM_1000-TY_THINKTIME-DS_fixed"
+        faban_output_dir = self._data_dir / "faban_output"
+
+        filename = faban_output_dir / "TH_*-TM_1000-TY_THINKTIME-DS_fixed/*/detail.xan"
+        filename_dir = faban_output_dir / "TH_*-TM_1000-TY_THINKTIME-DS_fixed"
 
         file_content = self.platform.comm.shell(
             f"cat {filename}",
@@ -444,7 +461,7 @@ def cloudsuite_campaign(
     }
 
     if src_dir is None:
-        raise ValueError("A src_dir argument must be defined manually.")
+        raise ValueError("A src_dir argument for the Cloudsuite benchmark must be defined manually.")
 
     if benchmark is None:
         benchmark = CloudsuiteBench(
