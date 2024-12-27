@@ -154,8 +154,17 @@ class CPUPower:
             return to_hz(value=value, unit=unit)
 
         freqinfo = self._parse_frequency_info(cpus=cpus)
-        avail_str = freqinfo[0]["available frequency steps"]
+
+        # Selecting CPU 0 as main reference
+        freqinfo0 = freqinfo[0]
+        freq_step_key = "available frequency steps"
+
+        if freq_step_key not in freqinfo0:
+            raise ValueError("No frequency value found")
+
+        avail_str = freqinfo0[freq_step_key]
         avail_freq = sorted([strToFreq(freq_str=freq) for freq in avail_str.split(", ")])
+
         return avail_freq
 
     def _parse_frequency_info(
@@ -163,7 +172,6 @@ class CPUPower:
         cpus: Iterable[int] = (),
     ) -> List[Dict[str, Any]]:
         output = self._frequencyinfo_output(cpus=cpus)
-        print(output)
 
         cpus = []
         current_cpu = None

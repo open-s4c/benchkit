@@ -2,7 +2,7 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-
+import sys
 from typing import List
 
 from leveldb import LevelDBBench
@@ -43,9 +43,37 @@ class CpuFrequency:
         self._platform = platform
         self._nb_cpus = self._platform.nb_cpus()
         self._cpu_power = CPUPower(comm_layer=platform.comm)
+        self._saved_governors = None
+        self._saved_frequencies_mhz = None
+
+    def setup(self) -> None:
+        self._saved_governors = [
+            self._cpu_power.get_governor(cpu=cpu) for cpu in range(self._nb_cpus)
+        ]
+        self._saved_frequencies_mhz = [
+            self._cpu_power.get_frequency_mhz(cpu=cpu) for cpu in range(self._nb_cpus)
+        ]
+
+    def teardown(self) -> None:
+        for cpu in range(self._nb_cpus):
+            self._cpu_power.set_frequency(
+                frequency_mhz=self._saved_frequencies_mhz[cpu],
+                cpus=[cpu],
+            )
+        for cpu in range(self._nb_cpus):
+            self._cpu_power.set_governor(governor=self._saved_governors[cpu], cpus=[cpu])
 
     def get_frequency_values(self) -> List[int]:
-        return self._cpu_power.get_frequency_values()
+        value = 1500 * (10**6)
+        try:
+            values = self._cpu_power.get_frequency_values()
+        except ValueError:
+            print(
+                f"[WARNING] Not frequency value found with cpupower, setting to {value} Hz",
+                file=sys.stderr,
+            )
+            values = [value]
+        return values
 
     def pre_run_hook(
         self,
@@ -58,6 +86,7 @@ class CpuFrequency:
 
         frequency: int = other_variables["frequency"] if "frequency" in other_variables else 0
         if not frequency:
+            print("[WARNING] Not setting frequency in the PreRunHook", file=sys.stderr)
             return
 
         frequency_mhz = frequency // (10**6)
@@ -90,6 +119,7 @@ def main() -> None:
     nb_cpus = platform.nb_cpus()
     frequencies = cpufreq.get_frequency_values()
 
+    cpufreq.setup()
     repo_prep()
 
     campaign = CampaignCartesianProduct(
@@ -143,6 +173,8 @@ def main() -> None:
         markers=True,
         dashes=False,
     )
+
+    cpufreq.teardown()
 
 
 if __name__ == "__main__":
