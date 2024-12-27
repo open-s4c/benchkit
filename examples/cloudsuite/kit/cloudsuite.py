@@ -240,13 +240,13 @@ class CloudsuiteBench(Benchmark):
         ip_server = self.server_platform.comm.get_ipaddress
 
         self.web_server_platform.comm.shell(
-            command="docker run -dt --net=host --name=memcache_server"
+            command="docker run -dt --net=host --name=memcache_server "
             "cloudsuite/web-serving:memcached_server"
         )
         self.web_server_platform.comm.shell(
-            command=f"docker run -dt --net=host --name=web_server"
+            command=f"docker run -dt --net=host --name=web_server "
             f"cloudsuite/web-serving:web_server /etc/bootstrap.sh http {ip_web_server} {ip_server}"
-            f"{ip_web_server} {nb_threads} {nb_threads}"
+            f" {ip_web_server} {nb_threads} {nb_threads}"
         )
 
         self.server_platform.comm.shell(
@@ -312,7 +312,7 @@ class CloudsuiteBench(Benchmark):
                 "faban_built",
                 f"{ip_web_server}",
                 f"{nb_threads}",
-                f"--ramp-up={benchmark_duration_seconds + 20}",
+                f"--ramp-up={nb_threads + 20}",
                 f"--steady={benchmark_duration_seconds}",
                 "--oper=run",
             ]
