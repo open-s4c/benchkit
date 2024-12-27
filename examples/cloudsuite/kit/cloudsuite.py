@@ -119,13 +119,12 @@ class CloudsuiteBench(Benchmark):
             current_dir=self._data_dir,
         )
 
-        # Step 1 -- Build cloudsuite's faban-client docker with fabandriver.jar 
+        # Step 1 -- Build cloudsuite's faban-client docker with fabandriver.jar
 
         src_faban = self.bench_src_path / "benchmarks/web-serving/faban_client/"
 
         jar_file = pathlib.Path(get_curdir(__file__) / "files/fabandriver.jar")
         java_file = pathlib.Path(get_curdir(__file__) / "files/fabandriver.jar")
-
 
         # Step 1a) Move fabandriver.jar and Web20Driver.java.in into the 4 places
         self.platform.comm.copy_from_host(
@@ -461,7 +460,9 @@ def cloudsuite_campaign(
     }
 
     if src_dir is None:
-        raise ValueError("A src_dir argument for the Cloudsuite benchmark must be defined manually.")
+        raise ValueError(
+            "A src_dir argument for the Cloudsuite benchmark must be defined manually."
+        )
 
     if benchmark is None:
         benchmark = CloudsuiteBench(
