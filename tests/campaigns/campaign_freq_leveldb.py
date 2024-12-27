@@ -69,7 +69,7 @@ class CpuFrequency:
             values = self._cpu_power.get_frequency_values()
         except ValueError:
             print(
-                f"[WARNING] Not frequency value found with cpupower, setting to {value} Hz",
+                f"[WARNING] No frequency value found with cpupower, setting to {value} Hz",
                 file=sys.stderr,
             )
             values = [value]
