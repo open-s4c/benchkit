@@ -61,7 +61,7 @@ class CloudsuiteBench(Benchmark):
         data_dir = "/tmp/benchkit_cloudsuite"
         self._data_dir = pathlib.Path(data_dir)
 
-        self.platform.comm.makedirs(self._data_dir, exist_ok=False)
+        self.platform.comm.makedirs(self._data_dir, exist_ok=True)
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -351,11 +351,12 @@ class CloudsuiteBench(Benchmark):
     def get_details(  # pylint: disable=arguments-differ
         self,
         record_data_dir: PathType,
+        nb_threads: int,
     ) -> None:
         faban_output_dir = self._data_dir / "faban_output"
 
-        filename = faban_output_dir / "TH_*-TM_1000-TY_THINKTIME-DS_fixed/*/detail.xan"
-        filename_dir = faban_output_dir / "TH_*-TM_1000-TY_THINKTIME-DS_fixed"
+        output_dir = faban_output_dir / f"TH_{nb_threads}-TM_1000-TY_THINKTIME-DS_fixed"
+        filename = output_dir / "1/detail.xan"
 
         file_content = self.platform.comm.shell(
             f"cat {filename}",
@@ -366,7 +367,7 @@ class CloudsuiteBench(Benchmark):
         self._write_to_record_data_dir(file_content, "detail.xan", record_data_dir)
 
         self.platform.comm.shell(
-            f"sudo rm -rf {filename_dir}",
+            f"sudo rm -rf {output_dir}",
             print_input=False,
             print_output=False,
         )
@@ -421,7 +422,7 @@ class CloudsuiteBench(Benchmark):
             add_to_csv[f"{oper}_max"] = o_max
             add_to_csv[f"{oper}_sd"] = o_sd
 
-        self.get_details(record_data_dir)
+        self.get_details(record_data_dir, kwargs["run_variables"]["nb_threads"])
 
         self._write_to_record_data_dir(command_output, "full_output.txt", record_data_dir)
 
@@ -461,7 +462,7 @@ def cloudsuite_campaign(
 
     if src_dir is None:
         raise ValueError(
-            "A src_dir argument for the Cloudsuite benchmark must be defined manually."
+            "A src_dir argument for the Cloudsuite benchmark (https://github.com/parsa-epfl/cloudsuite) must be defined manually."
         )
 
     if benchmark is None:
