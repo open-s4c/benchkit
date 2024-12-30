@@ -462,7 +462,8 @@ def cloudsuite_campaign(
 
     if src_dir is None:
         raise ValueError(
-            "A src_dir argument for the Cloudsuite benchmark (https://github.com/parsa-epfl/cloudsuite) must be defined manually."
+            "A src_dir argument for the Cloudsuite benchmark"
+            "(https://github.com/parsa-epfl/cloudsuite) must be defined manually."
         )
 
     if benchmark is None:
