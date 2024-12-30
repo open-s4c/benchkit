@@ -367,7 +367,7 @@ class CloudsuiteBench(Benchmark):
         self._write_to_record_data_dir(file_content, "detail.xan", record_data_dir)
 
         self.platform.comm.shell(
-            f"sudo rm -rf {output_dir}",
+            f"sudo mv {output_dir} /tmp/benchkit/.trash",
             print_input=False,
             print_output=False,
         )
