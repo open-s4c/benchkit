@@ -1,17 +1,27 @@
 #!/bin/sh
 set -e
 
-script_dir=$(readlink -e "$(dirname "$0")")
-benchkit_root_dir=$(readlink -e "${script_dir}/..")
-venv_dir=$(readlink -f "${benchkit_root_dir}/venv")
+# Cross-platform way to resolve symlinks and get the directory
+resolve_symlink() {
+    target=$1
+    while [ -L "$target" ]; do
+        dir=$(dirname "$target")
+        target=$(readlink "$target")
+        target=$(cd "$dir" && cd "$(dirname "$target")" && pwd)/$(basename "$target")
+    done
+    echo "$target"
+}
+
+script_dir=$(cd "$(dirname "$0")" && pwd)
+benchkit_root_dir=$(cd "${script_dir}/.." && pwd)
+venv_dir=$(cd "${benchkit_root_dir}" && echo "$(resolve_symlink venv)")
 
 no_pylint=${BENCHKIT_NO_PYLINT}
 
 (
   cd "${benchkit_root_dir}"
 
-  if [ ! -d "${venv_dir}" ]
-  then
+  if [ ! -d "${venv_dir}" ]; then
     echo "-- venv in root dir of benchkit not present. Creating one. --"
     cat > ./requirements.txt << EOF
 altair<=5.5.0
@@ -43,17 +53,16 @@ EOF
     echo "-- venv created. --"
   fi
 
-  py3=$(readlink -f "${venv_dir}/bin/python3")
-  pylint=$(readlink -f "${venv_dir}/bin/pylint")
-  flake8=$(readlink -f "${venv_dir}/bin/flake8")
-  isort=$(readlink -f "${venv_dir}/bin/isort")
-  black=$(readlink -f "${venv_dir}/bin/black")
+  py3="${venv_dir}/bin/python3"
+  pylint="${venv_dir}/bin/pylint"
+  flake8="${venv_dir}/bin/flake8"
+  isort="${venv_dir}/bin/isort"
+  black="${venv_dir}/bin/black"
 
   echo "-- check copyright. --"
   ${py3} ./scripts/list_missing_copyright.py
 
-  if [ -z "${no_pylint}" ]
-  then
+  if [ -z "${no_pylint}" ]; then
     echo "-- running pylint. --"
     ${pylint} benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/ || true
   fi
