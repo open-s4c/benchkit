@@ -4,7 +4,8 @@ set -e
 # Cross-platform way to resolve symlinks and get the directory
 resolve_symlink() {
     target=$1
-    while [ -L "$target" ]; do
+    while [ -L "$target" ]
+    do
         dir=$(dirname "$target")
         target=$(readlink "$target")
         target=$(cd "$dir" && cd "$(dirname "$target")" && pwd)/$(basename "$target")
@@ -21,7 +22,8 @@ no_pylint=${BENCHKIT_NO_PYLINT}
 (
   cd "${benchkit_root_dir}"
 
-  if [ ! -d "${venv_dir}" ]; then
+  if [ ! -d "${venv_dir}" ]
+  then
     echo "-- venv in root dir of benchkit not present. Creating one. --"
     cat > ./requirements.txt << EOF
 altair<=5.5.0
@@ -62,7 +64,8 @@ EOF
   echo "-- check copyright. --"
   ${py3} ./scripts/list_missing_copyright.py
 
-  if [ -z "${no_pylint}" ]; then
+  if [ -z "${no_pylint}" ] 
+  then
     echo "-- running pylint. --"
     ${pylint} benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/ || true
   fi
