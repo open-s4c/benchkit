@@ -59,7 +59,6 @@ class OpenHarmonyDeviceConnector:
         self._keep_connected = keep_connected
         self._wait_connected = wait_connected
         self._expected_os = expected_os
-        self._bin = "hdc.exe" if "Windows" == os_system() else "hdc"
 
     @staticmethod
     def from_device(
@@ -76,8 +75,13 @@ class OpenHarmonyDeviceConnector:
             expected_os=expected_os,
         )
 
-    def dependencies(self) -> List[Dependency]:
-        return [ExecutableDependency(self._bin)]
+    @staticmethod
+    def binary() -> str:
+        return "hdc.exe" if "Windows" == os_system() else "hdc"
+
+    @staticmethod
+    def dependencies() -> List[Dependency]:
+        return [ExecutableDependency(OpenHarmonyDeviceConnector.binary())]
 
     def _find_device(self) -> Optional[HDCDevice]:
         devices = [dev for dev in self._devices() if dev.identifier == self.identifier]
@@ -89,13 +93,15 @@ class OpenHarmonyDeviceConnector:
             case _:
                 raise ValueError("Wrong device list.")
 
-    def _devices(self) -> List[HDCDevice]:
+    @staticmethod
+    def _devices() -> List[HDCDevice]:
         """Get list of devices recognized by hdc.
 
         Returns:
             Iterable[HDCDevice]: list of devices recognized by hdc.
         """
-        output = OpenHarmonyDeviceConnector._host_shell_out(command=f"{self._bin} list targets")
+        binary = OpenHarmonyDeviceConnector.binary()
+        output = OpenHarmonyDeviceConnector._host_shell_out(command=f"{binary} list targets")
         device_ids = output.strip().splitlines()
         devices = []
         for dev in device_ids:
@@ -115,7 +121,7 @@ class OpenHarmonyDeviceConnector:
         Returns:
             Iterable[HDCDevice]: filtered list of devices recognized by hdc.
         """
-        devices = self._devices()
+        devices = OpenHarmonyDeviceConnector._devices()
         filtered = [dev for dev in devices if filter_callback(dev)]
         return filtered
 
@@ -143,7 +149,7 @@ class OpenHarmonyDeviceConnector:
         dir_args = ["cd", f"{current_dir}", "&&"] if current_dir is not None else []
         command_args = dir_args + get_args(command)
 
-        hdc_command = [f"{self._bin}", "-t", f"{self.identifier}", "shell"] + command_args
+        hdc_command = [f"{self.binary()}", "-t", f"{self.identifier}", "shell"] + command_args
 
         output = shell_out(
             command=hdc_command,
@@ -213,7 +219,7 @@ class OpenHarmonyDeviceConnector:
             local_path (PathType): path where to pull the file on the host.
         """
         command = [
-            f"{self._bin}",
+            f"{self.binary()}",
             "-t",
             f"{self.identifier}",
             "file",

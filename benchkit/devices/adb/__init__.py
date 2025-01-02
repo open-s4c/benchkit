@@ -12,6 +12,8 @@ from typing import Iterable, Optional, Callable
 
 from benchkit.communication import CommunicationLayer
 from benchkit.communication.utils import command_with_env
+from benchkit.dependencies.dependency import Dependency
+from benchkit.dependencies.executables import ExecutableDependency
 from benchkit.devices.adb.usb import usb_down_up
 from benchkit.shell.shell import get_args, shell_out
 from benchkit.utils.types import Command, Environment, PathType
@@ -79,6 +81,14 @@ class AndroidDebugBridge:
             expected_os=expected_os,
         )
     
+    @staticmethod
+    def binary() -> str:
+        return "adb"
+
+    @staticmethod
+    def dependencies() -> Iterable[Dependency]:
+        return [ExecutableDependency(AndroidDebugBridge.binary())]
+
     def __enter__(self) -> "AndroidDebugBridge":
         if not self.is_connected():
             self._connect_daemon()
@@ -160,7 +170,8 @@ class AndroidDebugBridge:
             with socket.socket(socket.AF_INET) as conn_sock:
                 conn_sock.settimeout(wait_time)
                 try:
-                    conn_sock.connect((self._ip, self._port))
+                    # TODO: investigate daemon
+                    # conn_sock.connect((self._ip, self._port))
                     connected = True
                 except TimeoutError:
                     wait_time *= 2
@@ -186,7 +197,9 @@ class AndroidDebugBridge:
             raise ADBError("Problem with adb connection")
 
     def _connect(self, timeout: int) -> None:
-        ip_port = f"{self._ip}:{self._port}"
+        # TODO: investigate daemon
+        # ip_port = f"{self._ip}:{self._port}"
+        ip_port = ""
         succeed = False
         wait_time = 1
         while not succeed:
@@ -239,8 +252,8 @@ class AndroidDebugBridge:
 
         return devices
     
+    @staticmethod
     def query_devices(
-        self,
         filter_callback: Callable[[ADBDevice], bool] = lambda _: True,
     ) -> Iterable[ADBDevice]:
         """Get filtered list of devices recognized by adb.
@@ -248,20 +261,7 @@ class AndroidDebugBridge:
         Returns:
             Iterable[ADBDevice]: filtered list of devices recognized by adb
         """
-        devices = self._devices()
-        filtered = [dev for dev in devices if filter_callback(dev)]
-        return filtered
-
-    def query_devices(
-        self,
-        filter_callback: Callable[[ADBDevice], bool] = lambda _: True,
-    ) -> Iterable[ADBDevice]:
-        """Get filtered list of devices recognized by hdc.
-
-        Returns:
-            Iterable[HDCDevice]: filtered list of devices recognized by hdc.
-        """
-        devices = self._devices()
+        devices = AndroidDebugBridge._devices()
         filtered = [dev for dev in devices if filter_callback(dev)]
         return filtered
 
