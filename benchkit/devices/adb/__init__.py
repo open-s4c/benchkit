@@ -11,12 +11,12 @@ import time
 from typing import Iterable, Optional, Callable
 
 from benchkit.communication import CommunicationLayer
-from benchkit.communication.utils import command_with_env
+from benchkit.communication.utils import command_with_env, remote_shell_command
 from benchkit.dependencies.dependency import Dependency
 from benchkit.dependencies.executables import ExecutableDependency
 from benchkit.devices.adb.usb import usb_down_up
 from benchkit.shell.shell import get_args, shell_out
-from benchkit.utils.types import Command, Environment, PathType
+from benchkit.utils.types import Command, Environment, PathType, SplitCommand
 
 
 # def _identifier_from(ip_addr: str, port: int) -> str:
@@ -512,6 +512,23 @@ class AndroidCommLayer(CommunicationLayer):
     def copy_to_host(self, source: PathType, destination: PathType) -> None:
         self._bridge.pull(source, destination)
     
+
+    def _remote_shell_command(
+        self,
+        remote_command: Command,
+        remote_current_dir: PathType | None = None,
+    ) -> SplitCommand:
+        dir_args = ["cd", f"{remote_current_dir}", "&&"] if remote_current_dir is not None else []
+        command_args = dir_args + get_args(remote_command)
+
+        remote_command = [
+            "adb",
+            "-s",
+            f"{self._bridge.identifier}",
+            "shell",
+        ] + command_args
+        return remote_command
+
     def shell(
         self,
         command: Command,
@@ -532,10 +549,21 @@ class AndroidCommLayer(CommunicationLayer):
             environment=environment,
             additional_environment=self._additional_environment,
         )
-        output = self._bridge.shell_out(
-            command=env_command,
-            current_dir=current_dir,
+
+        full_command = self._remote_shell_command(
+            remote_command=env_command,
+            remote_current_dir=current_dir,
+        )
+
+        output = shell_out(
+            command=full_command,
+            std_input=std_input,
+            current_dir=None,
+            print_input=print_input,
+            print_output=print_output,
+            timeout=timeout,
             output_is_log=output_is_log,
+            ignore_ret_codes=ignore_ret_codes,
         )
         return output
 
@@ -575,6 +603,19 @@ class AndroidCommLayer(CommunicationLayer):
             env=env,
             preexec_fn=os.setsid,
         )
+
+    def path_exists(
+        self,
+        path: PathType
+    ) -> bool:
+        try:
+            result = self.shell(
+                command=f"test -e {path} && echo 1 || echo 0",
+                output_is_log=False
+            )
+            return bool(int(result.strip()))
+        except:
+            return False
 
     def get_process_status(self, process_handle: subprocess.Popen) -> str:
         raise NotImplementedError("TODO")
