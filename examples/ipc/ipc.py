@@ -49,6 +49,7 @@ class IPCBenchmark(Benchmark):
             shared_libs=shared_libs,
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,
+            
         )
         self.target = target
         self.bench_dir = bench_dir
@@ -59,7 +60,7 @@ class IPCBenchmark(Benchmark):
 
     @property
     def bench_src_path(self) -> pathlib.Path:
-        return self.bench_dir
+        return pathlib.Path(self.bench_dir)
 
     @staticmethod
     def get_build_var_names() -> List[str]:
@@ -94,7 +95,6 @@ class IPCBenchmark(Benchmark):
 
     def build_bench(self, **kwargs) -> None:
         if self.target.is_mobile():
-            # TODO: use copy_from_host here, and compile to correct target
             return
         
         self.platform.comm.shell(
@@ -146,7 +146,7 @@ def main() -> None:
     nb_runs = 2
     variables = [{"m": 10**i} for i in range(1, 4)]
     skip_rebuild = True
-    target = Target.LOCAL
+    target = Target.ANDROID
 
     bench_dir: pathlib.Path | str = caller_dir() / "ipc_runner"
     platform: Platform | None = None
@@ -159,15 +159,17 @@ def main() -> None:
         case Target.HARMONY:
             from benchkit.devices.hdc import OpenHarmonyCommLayer, OpenHarmonyDeviceConnector
             
-            bench_dir = "/data/testing/ipc/"
-            hdc = OpenHarmonyDeviceConnector.query_devices()[0]
+            bench_dir = "/data/testing/ipc/ipc_runner"
+            device = list(OpenHarmonyDeviceConnector.query_devices())[0]
+            hdc = OpenHarmonyDeviceConnector.from_device(device)
             comm = OpenHarmonyCommLayer(hdc)
             platform = Platform(comm)
         case Target.ANDROID:
             from benchkit.devices.adb import AndroidCommLayer, AndroidDebugBridge
             
-            bench_dir = "/data/testing/ipc/"
-            adb = AndroidDebugBridge.query_devices()[0]
+            bench_dir = "/data/local/tmp"
+            device = list(AndroidDebugBridge.query_devices())[0]
+            adb = AndroidDebugBridge.from_device(device) 
             comm = AndroidCommLayer(adb)
             platform = Platform(comm)
         case Target.CONTAINER:
@@ -183,6 +185,8 @@ def main() -> None:
         skip_rebuild=skip_rebuild,
     )
 
+    benchmark._base_data_dir = None
+
     campaign = CampaignIterateVariables(
         name="IPC Benching",
         benchmark=benchmark,
@@ -191,7 +195,7 @@ def main() -> None:
         gdb=False,
         debug=False,
         constants=None,
-        enable_data_dir=True,
+        enable_data_dir=False,
     )
 
     campaigns: List[Campaign] = [campaign]
