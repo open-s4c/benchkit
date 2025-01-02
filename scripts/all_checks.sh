@@ -64,7 +64,7 @@ EOF
   echo "-- check copyright. --"
   ${py3} ./scripts/list_missing_copyright.py
 
-  if [ -z "${no_pylint}" ] 
+  if [ -z "${no_pylint}" ]
   then
     echo "-- running pylint. --"
     ${pylint} benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/ || true
