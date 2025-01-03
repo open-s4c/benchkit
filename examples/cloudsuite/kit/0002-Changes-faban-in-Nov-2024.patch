@@ -1,0 +1,96 @@
+From 1f59daca46946a66adee1ea221735a77e40b133e Mon Sep 17 00:00:00 2001
+From: Rafael Chehab <rafael.chehab@huawei.com>
+Date: Wed, 27 Nov 2024 09:10:53 +0100
+Subject: [PATCH 2/2] Changes faban in Nov 2024
+
+Signed-off-by: Rafael Chehab <rafael.chehab@huawei.com>
+---
+ driver/src/com/sun/faban/driver/engine/AgentThread.java | 6 ------
+ driver/src/com/sun/faban/driver/engine/CycleThread.java | 4 ++++
+ driver/src/com/sun/faban/driver/engine/MatrixMix.java   | 1 -
+ driver/src/com/sun/faban/driver/engine/TimeThread.java  | 4 ++++
+ 4 files changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/driver/src/com/sun/faban/driver/engine/AgentThread.java b/driver/src/com/sun/faban/driver/engine/AgentThread.java
+index ad422a2..60cf382 100644
+--- a/driver/src/com/sun/faban/driver/engine/AgentThread.java
++++ b/driver/src/com/sun/faban/driver/engine/AgentThread.java
+@@ -97,9 +97,6 @@ public abstract class AgentThread extends Thread {
+ 
+     DriverContext driverContext;
+     Metrics metrics;
+-    //Random random = new Random(19840);
+-    //Random random = new Random(23790);
+-    //Random random = new Random(21227);
+     Random random = new Random(Long.parseLong(System.getenv("SEED" + id)));
+     Timer timer;
+     AgentImpl agent;
+@@ -179,9 +176,6 @@ public abstract class AgentThread extends Thread {
+         this.runInfo = RunInfo.getInstance();
+         this.agent = agent;
+         //random = new Random(System.nanoTime() + hashCode());
+-        //random = new Random(19840);
+-        //random = new Random(23790);
+-        //random = new Random(21227);
+         random = new Random(Long.parseLong(System.getenv("SEED" + id)));
+         className = getClass().getName();
+         driverConfig = runInfo.driverConfig;
+diff --git a/driver/src/com/sun/faban/driver/engine/CycleThread.java b/driver/src/com/sun/faban/driver/engine/CycleThread.java
+index 7d6edd9..b6b9f43 100644
+--- a/driver/src/com/sun/faban/driver/engine/CycleThread.java
++++ b/driver/src/com/sun/faban/driver/engine/CycleThread.java
+@@ -115,6 +115,8 @@ public class CycleThread extends AgentThread {
+             BenchmarkDefinition.Operation op =
+                     driverConfig.operations[currentOperation];
+ 
++            logger.severe("PRINT: (thread " + driverContext.getThreadId() + ") - next operation is: " + currentOperation + " " + op.name);
++
+             driverContext.setInvokeTime(getInvokeTime(previousOp, mixId));
+ 
+             // Invoke the operation
+@@ -133,6 +135,8 @@ public class CycleThread extends AgentThread {
+                 metrics.recordError();
+                 logError(cause, op);
+ 
++                logger.severe("PRINT: (thread " + driverContext.getThreadId() + ") - FAIL AT OPERATION: " + currentOperation + " " + op.name);
++
+                 // We have to fix up the invoke/respond times to have valid
+                 // values and not -1.
+ 
+diff --git a/driver/src/com/sun/faban/driver/engine/MatrixMix.java b/driver/src/com/sun/faban/driver/engine/MatrixMix.java
+index ae1d403..2c95dfb 100644
+--- a/driver/src/com/sun/faban/driver/engine/MatrixMix.java
++++ b/driver/src/com/sun/faban/driver/engine/MatrixMix.java
+@@ -447,7 +447,6 @@ public class MatrixMix extends Mix {
+      */
+ 	public Selector selector(Random random) {
+         getLogger().finest("Get selector: " + toString());
+-        getLogger().finest("HELLO WORLD, THE RE-COMPILATION IS WORKING");
+         Selector s = new Selector(random, mix);
+         getLogger().finest(s.toString());
+         return s;
+diff --git a/driver/src/com/sun/faban/driver/engine/TimeThread.java b/driver/src/com/sun/faban/driver/engine/TimeThread.java
+index d24c792..312537f 100644
+--- a/driver/src/com/sun/faban/driver/engine/TimeThread.java
++++ b/driver/src/com/sun/faban/driver/engine/TimeThread.java
+@@ -144,6 +144,8 @@ public class TimeThread extends AgentThread {
+             BenchmarkDefinition.Operation op =
+                     driverConfig.operations[currentOperation];
+ 
++            logger.severe("PRINT: (thread " + driverContext.getThreadId() + ") - next operation is: " + currentOperation + " " + op.name);
++
+             // The invoke time is based on the delay after the previous op.
+             // so we need to use previous op for calculating and recording.
+             long invokeTime = getInvokeTime(previousOp, mixId);
+@@ -188,6 +190,8 @@ public class TimeThread extends AgentThread {
+                 Throwable cause = e.getCause();
+                 checkFatal(cause, op);
+ 
++                logger.severe("PRINT: (thread " + driverContext.getThreadId() + ") - FAIL AT OPERATION: " + currentOperation + " " + op.name);
++
+                 // We have to fix up the invoke/respond times to have valid
+                 // values and not TIME_NOT_SET.
+ 
+-- 
+2.34.1
+
