@@ -8,8 +8,8 @@ Example of campaign script for cloud suite benchmark.
 from cloudsuite import cloudsuite_campaign
 
 from benchkit.campaign import CampaignSuite
-from benchkit.utils.dir import caller_dir
 from benchkit.platforms import get_current_platform
+from benchkit.utils.dir import caller_dir
 
 
 def main() -> None:

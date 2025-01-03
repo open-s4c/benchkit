@@ -14,7 +14,7 @@ from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils import systemactions
-from benchkit.utils.dir import get_curdir, caller_dir
+from benchkit.utils.dir import caller_dir
 from benchkit.utils.types import PathType
 
 
@@ -50,7 +50,11 @@ class CloudsuiteBench(Benchmark):
 
         bench_src_path = pathlib.Path(src_dir)
         dockerfile_path = bench_src_path / "benchmarks/web-serving/db_server/Dockerfile"
-        if not self.platform.comm.isdir(bench_src_path) and self.platform.comm.isfile(dockerfile_path):
+
+        dir_is_present = self.platform.comm.isdir(bench_src_path)
+        dockerfile_is_present = self.platform.comm.isfile(dockerfile_path)
+
+        if not (dir_is_present and dockerfile_is_present):
             raise ValueError(
                 f"Invalid Cloudsuite source path: {bench_src_path}\n"
                 "src_dir argument can be defined manually."
@@ -142,8 +146,8 @@ class CloudsuiteBench(Benchmark):
 
         # Step 1b) Docker build
         self.platform.comm.shell(
-                command="docker build --network=host --tag faban_built .",
-                current_dir=src_faban,
+            command="docker build --network=host --tag faban_built .",
+            current_dir=src_faban,
         )
 
         # Step 2 -- Create docker container for database with pre-filled 2GB of data
@@ -166,7 +170,14 @@ class CloudsuiteBench(Benchmark):
 
             # Step 2c) Create and pre-fill database server
             self.server_platform.comm.shell(
-                command="docker run -dt --net=host --name=tmp_db_server cloudsuite/web-serving:db_server"
+                command=[
+                    "docker",
+                    "run",
+                    "-dt",
+                    "--net=host",
+                    "--name=tmp_db_server",
+                    "cloudsuite/web-serving:db_server",
+                ]
             )
 
             # Step 2d) Wait until initialization/pre-filling of database container is finished
@@ -193,7 +204,14 @@ class CloudsuiteBench(Benchmark):
 
             # Step 2f) Commit container (in order to keep pre-filled data)
             self.server_platform.comm.shell(
-                command=["docker", "commit", "--change", "ENTRYPOINT service mariadb start && bash", "tmp_db_server", "db_built",]
+                command=[
+                    "docker",
+                    "commit",
+                    "--change",
+                    "ENTRYPOINT service mariadb start && bash",
+                    "tmp_db_server",
+                    "db_built",
+                ]
             )
         else:
             print("[WARNING!!!] db_built docker is already built, skipping build_bench")
@@ -231,7 +249,14 @@ class CloudsuiteBench(Benchmark):
         ip_server = self.server_platform.comm.ip_address
 
         self.web_server_platform.comm.shell(
-            command="docker run -dt --net=host --name=memcache_server cloudsuite/web-serving:memcached_server"
+            command=[
+                "docker",
+                "run",
+                "-dt",
+                "--net=host",
+                "--name=memcache_server",
+                "cloudsuite/web-serving:memcached_server",
+            ]
         )
         self.web_server_platform.comm.shell(
             command=[
@@ -240,7 +265,7 @@ class CloudsuiteBench(Benchmark):
                 "-dt",
                 "--net=host",
                 "--name=web_server",
-                f"cloudsuite/web-serving:web_server",
+                "cloudsuite/web-serving:web_server",
                 "/etc/bootstrap.sh",
                 "http",
                 f"{ip_web_server}",
