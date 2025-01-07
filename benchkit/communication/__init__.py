@@ -53,6 +53,7 @@ class CommunicationLayer:
         command: Command,
         current_dir: Optional[PathType] = None,
         shell: bool = False,
+        print_command: bool = True,
         ignore_ret_codes: Iterable[int] = (),
     ):
         raise NotImplementedError()
@@ -701,6 +702,15 @@ class SSHCommLayer(CommunicationLayer):
     @property
     def is_local(self) -> bool:
         return False
+
+    @property
+    def get_ipaddress(self) -> str:
+        ip_ret = self.shell(
+            r"echo \\$SSH_CONNECTION",
+            print_input=False,
+            print_output=False,
+        )
+        return ip_ret.split()[2]
 
     def background_subprocess(
         self,

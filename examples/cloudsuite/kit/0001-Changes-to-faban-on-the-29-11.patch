@@ -1,0 +1,65 @@
+From bb215eecf7e47a05a2733ee0319384ca2f3264d4 Mon Sep 17 00:00:00 2001
+From: Rafael Chehab <rafael.chehab@huawei.com>
+Date: Wed, 30 Oct 2024 09:56:23 +0100
+Subject: [PATCH 1/2] Changes to faban on the 29/11
+
+Signed-off-by: Rafael Chehab <rafael.chehab@huawei.com>
+---
+ .../com/sun/faban/driver/engine/AgentThread.java   | 14 ++++++++++++--
+ .../src/com/sun/faban/driver/engine/MatrixMix.java |  1 +
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/driver/src/com/sun/faban/driver/engine/AgentThread.java b/driver/src/com/sun/faban/driver/engine/AgentThread.java
+index 9e11892..ad422a2 100644
+--- a/driver/src/com/sun/faban/driver/engine/AgentThread.java
++++ b/driver/src/com/sun/faban/driver/engine/AgentThread.java
+@@ -97,7 +97,10 @@ public abstract class AgentThread extends Thread {
+ 
+     DriverContext driverContext;
+     Metrics metrics;
+-    Random random = new Random();
++    //Random random = new Random(19840);
++    //Random random = new Random(23790);
++    //Random random = new Random(21227);
++    Random random = new Random(Long.parseLong(System.getenv("SEED" + id)));
+     Timer timer;
+     AgentImpl agent;
+     RunInfo.DriverConfig driverConfig;
+@@ -175,7 +178,11 @@ public abstract class AgentThread extends Thread {
+         this.timer = timer;
+         this.runInfo = RunInfo.getInstance();
+         this.agent = agent;
+-        random = new Random(System.nanoTime() + hashCode());
++        //random = new Random(System.nanoTime() + hashCode());
++        //random = new Random(19840);
++        //random = new Random(23790);
++        //random = new Random(21227);
++        random = new Random(Long.parseLong(System.getenv("SEED" + id)));
+         className = getClass().getName();
+         driverConfig = runInfo.driverConfig;
+         name = type + '[' + agentId + "]." + id;
+@@ -183,6 +190,9 @@ public abstract class AgentThread extends Thread {
+         logger = Logger.getLogger(className + '.' + id);
+         metrics = new Metrics(this);
+         initTimes();
++
++        logger.log(Level.SEVERE, "Name of thread set to" + name);
++        logger.log(Level.SEVERE, "Set seed to " + System.getenv("SEED" + id));
+     }
+ 
+     /**
+diff --git a/driver/src/com/sun/faban/driver/engine/MatrixMix.java b/driver/src/com/sun/faban/driver/engine/MatrixMix.java
+index 2c95dfb..ae1d403 100644
+--- a/driver/src/com/sun/faban/driver/engine/MatrixMix.java
++++ b/driver/src/com/sun/faban/driver/engine/MatrixMix.java
+@@ -447,6 +447,7 @@ public class MatrixMix extends Mix {
+      */
+ 	public Selector selector(Random random) {
+         getLogger().finest("Get selector: " + toString());
++        getLogger().finest("HELLO WORLD, THE RE-COMPILATION IS WORKING");
+         Selector s = new Selector(random, mix);
+         getLogger().finest(s.toString());
+         return s;
+-- 
+2.34.1
+
