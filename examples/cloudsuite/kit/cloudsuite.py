@@ -14,7 +14,7 @@ from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils import systemactions
-from benchkit.utils.dir import get_curdir
+from benchkit.utils.dir import caller_dir
 from benchkit.utils.types import PathType
 
 
@@ -49,17 +49,19 @@ class CloudsuiteBench(Benchmark):
         self.web_server_platform = web_server_platform
 
         bench_src_path = pathlib.Path(src_dir)
-        if not self.platform.comm.isdir(bench_src_path) and self.platform.comm.isfile(
-            bench_src_path / "benchmarks/web-serving/db_server/Dockerfile"
-        ):
+        dockerfile_path = bench_src_path / "benchmarks/web-serving/db_server/Dockerfile"
+
+        dir_is_present = self.platform.comm.isdir(bench_src_path)
+        dockerfile_is_present = self.platform.comm.isfile(dockerfile_path)
+
+        if not (dir_is_present and dockerfile_is_present):
             raise ValueError(
                 f"Invalid Cloudsuite source path: {bench_src_path}\n"
                 "src_dir argument can be defined manually."
             )
         self._bench_src_path = bench_src_path
 
-        data_dir = "/tmp/benchkit_cloudsuite"
-        self._data_dir = pathlib.Path(data_dir)
+        self._data_dir = pathlib.Path("/tmp/benchkit_cloudsuite")
 
         self.platform.comm.makedirs(self._data_dir, exist_ok=True)
 
@@ -105,30 +107,24 @@ class CloudsuiteBench(Benchmark):
         generator_seed: int = 0,
         **_kwargs,
     ) -> None:
-
         random.seed(generator_seed)
-        seeds = [random.randrange(2**20 - 1) for j in range(0, nb_threads)]
+        seeds = [random.randrange(2**20 - 1) for _ in range(0, nb_threads)]
 
-        seeds_str = ""
-
-        for i, s in enumerate(seeds):
-            seeds_str = seeds_str + f"SEED{i}={s}\\\\n"
-
-        self.platform.comm.shell(
-            command=f"printf {seeds_str} > _tmp_benchkit_seeds.txt",
-            current_dir=self._data_dir,
-        )
+        seed_lines = [f"SEED{i}={s}" for i, s in enumerate(seeds)]
+        seed_str = "\n".join(seed_lines) + "\n"
+        seed_filename = self._data_dir / "_tmp_benchkit_seeds.txt"
+        self.platform.comm.write_content_to_file(content=seed_str, output_filename=seed_filename)
 
         # Step 1 -- Build cloudsuite's faban-client docker with fabandriver.jar
 
         src_faban = self.bench_src_path / "benchmarks/web-serving/faban_client/"
 
-        jar_file = pathlib.Path(get_curdir(__file__) / "files/fabandriver.jar")
-        java_file = pathlib.Path(get_curdir(__file__) / "files/fabandriver.jar")
+        fabandriver_jar_file = caller_dir() / "files/fabandriver.jar"
+        jar_file = fabandriver_jar_file
 
         # Step 1a) Move fabandriver.jar and Web20Driver.java.in into the 4 places
         self.platform.comm.copy_from_host(
-            source=java_file,
+            source=jar_file,
             destination=src_faban / "files/web20_benchmark/src/workload/driver/Web20Driver.java.in",
         )
 
@@ -147,21 +143,11 @@ class CloudsuiteBench(Benchmark):
             destination=src_faban / "files/web20_benchmark/lib/fabandriver.jar",
         )
 
-        # Step 1b) Check if docker has already been built
-        which_images = self.platform.comm.shell(
-            command="docker images",
-            print_input=False,
-            print_output=False,
+        # Step 1b) Docker build
+        self.platform.comm.shell(
+            command="docker build --network=host --tag faban_built .",
+            current_dir=src_faban,
         )
-
-        if "faban_built" not in which_images:
-            # Step 1c) If not already built, build docker container
-            self.platform.comm.shell(
-                command="docker build --network=host --tag faban_built .",
-                current_dir=src_faban,
-            )
-        else:
-            print("[WARNING!!!] faban_built docker is already built, skipping build_bench")
 
         # Step 2 -- Create docker container for database with pre-filled 2GB of data
 
@@ -172,51 +158,65 @@ class CloudsuiteBench(Benchmark):
             print_output=False,
         )
 
-        if "db_built" not in which_images:
-            # Step 2b) Make sure that no temporary container exists by running `stop` and `rm`
-            self.server_platform.comm.shell(
-                command="docker stop tmp_db_server", ignore_ret_codes=[1]
-            )
-            self.server_platform.comm.shell(
-                command="docker container rm tmp_db_server", ignore_ret_codes=[1]
-            )
-
-            # Step 2c) Create and pre-fill database server
-            self.server_platform.comm.shell(
-                command="docker run -dt --net=host --name=tmp_db_server"
-                "cloudsuite/web-serving:db_server"
-            )
-
-            command = "docker logs tmp_db_server | tac | awk '/exit/ {exit} 1' | tac"
-
-            # Step 2d) Wait until initialization/pre-filling of database container is finished
-            mariadb_initialized = False
-            while not mariadb_initialized:
-                time.sleep(1)
-
-                ret = self.server_platform.comm.pipe_shell(
-                    command=command,
-                    print_command=False,
-                )
-
-                if "Starting MariaDB database server mariadbd" in ret:
-                    mariadb_initialized = True
-
-            if "fail" in ret:
-                raise ValueError(
-                    "MariaDB failed to start. Check if another container is already running."
-                )
-
-            # Step 2e) Stop container
-            self.server_platform.comm.shell(command="docker stop tmp_db_server")
-
-            # Step 2f) Commit container (in order to keep pre-filled data)
-            self.server_platform.comm.shell(
-                command='docker commit --change "ENTRYPOINT service mariadb start && bash"'
-                "tmp_db_server db_built"
-            )
-        else:
+        if "db_built" in which_images:
             print("[WARNING!!!] db_built docker is already built, skipping build_bench")
+            return
+
+        # Step 2b) Make sure that no temporary container exists by running `stop` and `rm`
+        self.server_platform.comm.shell(
+            command="docker stop tmp_db_server",
+            ignore_ret_codes=[1],
+        )
+        self.server_platform.comm.shell(
+            command="docker container rm tmp_db_server",
+            ignore_ret_codes=[1],
+        )
+
+        # Step 2c) Create and pre-fill database server
+        self.server_platform.comm.shell(
+            command=[
+                "docker",
+                "run",
+                "-dt",
+                "--net=host",
+                "--name=tmp_db_server",
+                "cloudsuite/web-serving:db_server",
+            ]
+        )
+
+        # Step 2d) Wait until initialization/pre-filling of database container is finished
+        while True:
+            time.sleep(1)
+
+            docker_logs = self.server_platform.comm.pipe_shell(
+                command="docker logs tmp_db_server | tac | awk '/exit/ {exit} 1' | tac",
+                print_command=False,
+            )
+
+            mariadb_init_str = "Starting MariaDB database server mariadbd"
+            if mariadb_init_str in docker_logs:
+                docker_logs_tail = docker_logs.split(mariadb_init_str)[-1]
+                break
+
+        if "fail" in docker_logs_tail:
+            raise ValueError(
+                "MariaDB failed to start. Check if another container is already running."
+            )
+
+        # Step 2e) Stop container
+        self.server_platform.comm.shell(command="docker stop tmp_db_server")
+
+        # Step 2f) Commit container (in order to keep pre-filled data)
+        self.server_platform.comm.shell(
+            command=[
+                "docker",
+                "commit",
+                "--change",
+                "ENTRYPOINT service mariadb start && bash",
+                "tmp_db_server",
+                "db_built",
+            ]
+        )
 
     def clean_bench(self) -> None:
         pass
@@ -227,55 +227,80 @@ class CloudsuiteBench(Benchmark):
         systemactions.drop_caches(comm_layer=self.web_server_platform.comm)
 
         self.web_server_platform.comm.shell(
-            command="docker stop web_server memcache_server", ignore_ret_codes=[1]
+            command="docker stop web_server memcache_server",
+            ignore_ret_codes=[1],
         )
         self.web_server_platform.comm.shell(
-            command="docker container rm memcache_server web_server", ignore_ret_codes=[1]
+            command="docker container rm memcache_server web_server",
+            ignore_ret_codes=[1],
         )
 
-        self.server_platform.comm.shell(command="docker stop database_server", ignore_ret_codes=[1])
         self.server_platform.comm.shell(
-            command="docker container rm database_server", ignore_ret_codes=[1]
+            command="docker stop database_server",
+            ignore_ret_codes=[1],
+        )
+        self.server_platform.comm.shell(
+            command="docker container rm database_server",
+            ignore_ret_codes=[1],
         )
 
-        self.platform.comm.shell(command="docker stop faban_client", ignore_ret_codes=[1])
-        self.platform.comm.shell(command="docker container rm faban_client", ignore_ret_codes=[1])
+        self.platform.comm.shell(
+            command="docker stop faban_client",
+            ignore_ret_codes=[1],
+        )
+        self.platform.comm.shell(
+            command="docker container rm faban_client",
+            ignore_ret_codes=[1],
+        )
 
     def _build_run(
         self,
         nb_threads: int,
     ) -> None:
-        mariadb_initialized = False
-
-        ip_web_server = self.web_server_platform.comm.get_ipaddress
-        ip_server = self.server_platform.comm.get_ipaddress
+        ip_web_server = self.web_server_platform.comm.ip_address
 
         self.web_server_platform.comm.shell(
-            command="docker run -dt --net=host --name=memcache_server "
-            "cloudsuite/web-serving:memcached_server"
+            command=[
+                "docker",
+                "run",
+                "-dt",
+                "--net=host",
+                "--name=memcache_server",
+                "cloudsuite/web-serving:memcached_server",
+            ]
         )
         self.web_server_platform.comm.shell(
-            command=f"docker run -dt --net=host --name=web_server "
-            f"cloudsuite/web-serving:web_server /etc/bootstrap.sh http {ip_web_server} {ip_server} "
-            f"{ip_web_server} {nb_threads} {nb_threads}"
+            command=[
+                "docker",
+                "run",
+                "-dt",
+                "--net=host",
+                "--name=web_server",
+                "cloudsuite/web-serving:web_server",
+                "/etc/bootstrap.sh",
+                "http",
+                f"{ip_web_server}",
+                "172.17.0.1",  # docker address to workaround loopback bug
+                f"{ip_web_server}",
+                f"{nb_threads}",
+                f"{nb_threads}",
+            ],
         )
 
         self.server_platform.comm.shell(
             command="docker run -dt --net=host --name=database_server db_built"
         )
 
-        command = "docker logs database_server | tac | awk '/exit/ {exit} 1' | tac"
-
-        while not mariadb_initialized:
+        while True:
             time.sleep(1)
 
-            ret = self.server_platform.comm.pipe_shell(
-                command=command,
+            docker_logs = self.server_platform.comm.pipe_shell(
+                command="docker logs database_server | tac | awk '/exit/ {exit} 1' | tac",
                 print_command=False,
             )
 
-            if "Starting MariaDB database server mariadbd" in ret:
-                mariadb_initialized = True
+            if "Starting MariaDB database server mariadbd" in docker_logs:
+                break
 
     def single_run(  # pylint: disable=arguments-differ
         self,
@@ -283,8 +308,7 @@ class CloudsuiteBench(Benchmark):
         nb_threads: int = 2,
         **kwargs,
     ) -> str:
-
-        ip_web_server = self.web_server_platform.comm.get_ipaddress
+        ip_web_server = self.web_server_platform.comm.ip_address
 
         self._clean_run()
         self._build_run(nb_threads)
@@ -358,16 +382,14 @@ class CloudsuiteBench(Benchmark):
         output_dir = faban_output_dir / f"TH_{nb_threads}-TM_1000-TY_THINKTIME-DS_fixed"
         filename = output_dir / "1/detail.xan"
 
-        file_content = self.platform.comm.shell(
-            f"cat {filename}",
-            print_input=False,
-            print_output=False,
-        )
+        file_content = self.platform.comm.read_file(path=filename)
 
         self._write_to_record_data_dir(file_content, "detail.xan", record_data_dir)
 
+        trash_dir = "/tmp/benchkit/.trash"
+        self.platform.comm.makedirs(path=trash_dir, exist_ok=True)
         self.platform.comm.shell(
-            f"sudo mv {output_dir} /tmp/benchkit/.trash",
+            f"sudo mv {output_dir} {trash_dir}",
             print_input=False,
             print_output=False,
         )
@@ -379,7 +401,6 @@ class CloudsuiteBench(Benchmark):
         record_data_dir: PathType,
         **kwargs,
     ) -> Dict[str, Any]:
-
         thr = re.search(
             r".*<driverSummary.*?"
             r"<metric unit=(.*?)>(?P<throughput>.*?)<"
@@ -398,7 +419,7 @@ class CloudsuiteBench(Benchmark):
             flags=re.DOTALL,
         )
 
-        add_to_csv = {
+        record_results = {
             "run": thr.group("time"),
             "throughput": thr.group("throughput"),
             "operations": thr.group("operations"),
@@ -418,15 +439,15 @@ class CloudsuiteBench(Benchmark):
                 o_max = ""
                 o_sd = ""
 
-            add_to_csv[f"{oper}_average"] = o_avg
-            add_to_csv[f"{oper}_max"] = o_max
-            add_to_csv[f"{oper}_sd"] = o_sd
+            record_results[f"{oper}_average"] = o_avg
+            record_results[f"{oper}_max"] = o_max
+            record_results[f"{oper}_sd"] = o_sd
 
         self.get_details(record_data_dir, kwargs["run_variables"]["nb_threads"])
 
         self._write_to_record_data_dir(command_output, "full_output.txt", record_data_dir)
 
-        return add_to_csv
+        return record_results
 
 
 def cloudsuite_campaign(
@@ -491,5 +512,5 @@ def cloudsuite_campaign(
         continuing=continuing,
         benchmark_duration_seconds=benchmark_duration_seconds,
         results_dir=results_dir,
-        pretty=None,
+        pretty=pretty,
     )

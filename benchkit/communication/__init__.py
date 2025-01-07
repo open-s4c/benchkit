@@ -48,6 +48,15 @@ class CommunicationLayer:
         """
         raise NotImplementedError()
 
+    @property
+    def ip_address(self) -> str:
+        """Returns the IP address of the host.
+
+        Returns:
+            str: IP address of the host.
+        """
+        raise NotImplementedError()
+
     def pipe_shell(
         self,
         command: Command,
@@ -200,6 +209,8 @@ class CommunicationLayer:
                 working directory of the background command to run.
             env (dict | None):
                 environment variables to pass to the command to run.
+            establish_new_connection (bool, optional):
+                whether to establish a new connection to the background process.
 
         Returns:
             subprocess.Popen: the process handle from the subprocess module.
@@ -500,6 +511,10 @@ class LocalCommLayer(CommunicationLayer):
     def is_local(self) -> bool:
         return True
 
+    @property
+    def ip_address(self) -> str:
+        return "127.0.0.1"
+
     def pipe_shell(
         self,
         command: Command,
@@ -704,7 +719,7 @@ class SSHCommLayer(CommunicationLayer):
         return False
 
     @property
-    def get_ipaddress(self) -> str:
+    def ip_address(self) -> str:
         ip_ret = self.shell(
             r"echo \\$SSH_CONNECTION",
             print_input=False,
