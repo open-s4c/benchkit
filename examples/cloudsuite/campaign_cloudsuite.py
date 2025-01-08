@@ -27,7 +27,7 @@ def main() -> None:
         platform=platform,
         nb_runs=1,
         benchmark_duration_seconds=30,
-        nb_threads=[1],
+        nb_threads=[1, 3],
         generator_seeds=[0],
         enable_data_dir=True,
         continuing=False,

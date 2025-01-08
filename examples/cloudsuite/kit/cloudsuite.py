@@ -386,10 +386,11 @@ class CloudsuiteBench(Benchmark):
 
         self._write_to_record_data_dir(file_content, "detail.xan", record_data_dir)
 
-        trash_dir = "/tmp/benchkit/.trash"
+        trash_dir = pathlib.Path("/tmp/benchkit/.trash")
+        trashed_file = trash_dir / output_dir.name
         self.platform.comm.makedirs(path=trash_dir, exist_ok=True)
         self.platform.comm.shell(
-            f"sudo mv {output_dir} {trash_dir}",
+            f"sudo mv {output_dir} {trashed_file}",
             print_input=False,
             print_output=False,
         )
