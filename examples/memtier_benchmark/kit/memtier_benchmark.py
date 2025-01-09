@@ -49,7 +49,7 @@ class MemtierBench(Benchmark):
         server_bench_src_path = pathlib.Path(server_src_dir)
         if not self.server_platform.comm.isdir(
             server_bench_src_path
-        ) and self.server_platform.comm.isfile(bench_src_path / "Makefile"):
+        ) and self.server_platform.comm.isfile(server_bench_src_path / "Makefile"):
             raise ValueError(
                 f"Invalid Redis source path: {server_bench_src_path}\n"
                 "src_dir argument can be defined manually."
@@ -63,7 +63,7 @@ class MemtierBench(Benchmark):
         client_bench_src_path = pathlib.Path(client_src_dir)
         if not self.client_platform.comm.isdir(
             client_bench_src_path
-        ) and self.client_platform.comm.isfile(bench_src_path / "memtier_benchmark.h"):
+        ) and self.client_platform.comm.isfile(client_bench_src_path / "memtier_benchmark.h"):
             raise ValueError(
                 f"Invalid memtier_benchmark source path: {client_bench_src_path}\n"
                 "src_dir argument can be defined manually."
