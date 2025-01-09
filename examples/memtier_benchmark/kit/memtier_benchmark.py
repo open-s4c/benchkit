@@ -47,9 +47,9 @@ class MemtierBench(Benchmark):
             self.server_platform = server_platform
 
         server_bench_src_path = pathlib.Path(server_src_dir)
-        if not self.server_platform.comm.isdir(server_bench_src_path) and self.server_platform.comm.isfile(
-            bench_src_path / "Makefile"
-        ):
+        if not self.server_platform.comm.isdir(
+            server_bench_src_path
+        ) and self.server_platform.comm.isfile(bench_src_path / "Makefile"):
             raise ValueError(
                 f"Invalid Redis source path: {server_bench_src_path}\n"
                 "src_dir argument can be defined manually."
@@ -61,9 +61,9 @@ class MemtierBench(Benchmark):
             self.client_platform = client_platform
 
         client_bench_src_path = pathlib.Path(client_src_dir)
-        if not self.client_platform.comm.isdir(client_bench_src_path) and self.client_platform.comm.isfile(
-            bench_src_path / "memtier_benchmark.h"
-        ):
+        if not self.client_platform.comm.isdir(
+            client_bench_src_path
+        ) and self.client_platform.comm.isfile(bench_src_path / "memtier_benchmark.h"):
             raise ValueError(
                 f"Invalid memtier_benchmark source path: {client_bench_src_path}\n"
                 "src_dir argument can be defined manually."
@@ -85,15 +85,12 @@ class MemtierBench(Benchmark):
             "benchmark_duration_seconds",
             "server_cpu_order",
             "benchmark_cpu_order",
-
             "server_ip",
             "server_port",
-
             "nb_threads",
             "nb_clients",
             "nb_connections",
             "pipeline",
-
             "ratio",
             "data_size",
             "key_pattern",
@@ -132,23 +129,23 @@ class MemtierBench(Benchmark):
         # Prepare memtier_benchmark client
 
         self.client_platform.comm.shell(
-                command='autoreconf -ivf',
-                current_dir=self._client_bench_src_path,
+            command="autoreconf -ivf",
+            current_dir=self._client_bench_src_path,
         )
 
         self.client_platform.comm.shell(
-                command='./configure',
-                current_dir=self._client_bench_src_path,
+            command="./configure",
+            current_dir=self._client_bench_src_path,
         )
 
         self.client_platform.comm.shell(
-                command='make clean',
-                current_dir=self._client_bench_src_path,
+            command="make clean",
+            current_dir=self._client_bench_src_path,
         )
 
         self.client_platform.comm.shell(
-                command='make -j50',
-                current_dir=self._client_bench_src_path,
+            command="make -j50",
+            current_dir=self._client_bench_src_path,
         )
 
     def build_bench(  # pylint: disable=arguments-differ
@@ -274,7 +271,7 @@ class MemtierBench(Benchmark):
             **kwargs,
         )
 
-        #TODO: Make this code look better
+        # TODO: Make this code look better
         self.platform = self.server_platform
 
         output = self.run_bench_command(
@@ -288,7 +285,7 @@ class MemtierBench(Benchmark):
 
         time.sleep(30)
 
-        #TODO: Make this code look better
+        # TODO: Make this code look better
         self.platform = self.client_platform
 
         output = self.run_bench_command(
@@ -318,14 +315,14 @@ class MemtierBench(Benchmark):
         output_lines = command_output.splitlines()
 
         for i, line in enumerate(output_lines):
-            if '---------' in line:
+            if "---------" in line:
                 start_table = i
                 break
 
         fields = output_lines[start_table - 1].split()[1:4]
         sets = output_lines[start_table + 1].split()[1:4]
         gets = output_lines[start_table + 2].split()[1:4]
-        #waits = output_lines[start_table + 3].split()[1:4]
+        # waits = output_lines[start_table + 3].split()[1:4]
         totals = output_lines[start_table + 4].split()[1:4]
 
         sets_dict = {"Sets " + fields[i]: sets[i] for i in range(0, len(fields))}
