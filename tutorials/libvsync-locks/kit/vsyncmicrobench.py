@@ -63,6 +63,7 @@ class LockMicroBench(Benchmark):
         lock: str,
         nb_threads: int,
         benchmark_duration_seconds: int,
+        **_kwargs,
     ) -> None:
         duration = benchmark_duration_seconds
         build_dir = self._build_dir
