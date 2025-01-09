@@ -324,6 +324,9 @@ class CampaignSuite:
             parallel (bool, optional):
                 whether to run campaigns in the suite in parallel. Defaults to False.
         """
+        for campaign in self._campaigns:
+            campaign._benchmark.check_dependencies()
+
         durations = self.durations()
 
         if None in durations:  # if benchmark_duration_seconds is not used in campaign
