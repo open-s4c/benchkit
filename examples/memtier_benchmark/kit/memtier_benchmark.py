@@ -144,7 +144,7 @@ class MemtierBench(Benchmark):
         )
 
         self.client_platform.comm.shell(
-            command="make -j50",
+            command="make -j$(nproc)",
             current_dir=self._client_bench_src_path,
         )
 
