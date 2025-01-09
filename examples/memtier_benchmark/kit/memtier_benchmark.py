@@ -108,7 +108,15 @@ class MemtierBench(Benchmark):
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
             PackageDependency("build-essential"),
-            PackageDependency("libhwloc-dev"),
+            PackageDependency("autoconf"),
+            PackageDependency("automake"),
+            PackageDependency("libpcre3-dev"),
+            PackageDependency("libevent-dev"),
+            PackageDependency("pkg-config"),
+            PackageDependency("zlib1g-dev"),
+            PackageDependency("libssl-dev"),
+            PackageDependency("automake"),
+            PackageDependency("automake"),
         ]
 
     def build_tilt(self, **kwargs) -> None:
@@ -118,6 +126,7 @@ class MemtierBench(Benchmark):
         self,
         **_kwargs,
     ) -> None:
+        nb_cpus = self.platform.nb_cpus()
 
         # Prepare redis server
 
@@ -127,7 +136,7 @@ class MemtierBench(Benchmark):
         )
 
         self.server_platform.comm.shell(
-            command='make -j50 REDIS_CFLAGS="-fcommon"',
+            command=f'make -j{nb_cpus} REDIS_CFLAGS="-fcommon"',
             current_dir=self._server_bench_src_path,
         )
 
@@ -149,7 +158,7 @@ class MemtierBench(Benchmark):
         )
 
         self.client_platform.comm.shell(
-            command="make -j$(nproc)",
+            command=f"make -j{nb_cpus}",
             current_dir=self._client_bench_src_path,
         )
 
