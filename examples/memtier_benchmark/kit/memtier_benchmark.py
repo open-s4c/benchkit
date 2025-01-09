@@ -108,7 +108,15 @@ class MemtierBench(Benchmark):
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
             PackageDependency("build-essential"),
-            PackageDependency("libhwloc-dev"),
+            PackageDependency("autoconf"),
+            PackageDependency("automake"),
+            PackageDependency("libpcre3-dev"),
+            PackageDependency("libevent-dev"),
+            PackageDependency("pkg-config"),
+            PackageDependency("zlib1g-dev"),
+            PackageDependency("libssl-dev"),
+            PackageDependency("automake"),
+            PackageDependency("automake"),
         ]
 
     def build_tilt(self, **kwargs) -> None:
