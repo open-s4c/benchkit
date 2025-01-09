@@ -6,6 +6,7 @@ See https://redis.io
 """
 
 import pathlib
+import time
 from typing import Any, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
@@ -131,7 +132,6 @@ class RedisBench(Benchmark):
             f"sed -e 's/io-threads 4/io-threads {nb_threads}/' "
             "> ../redis-benchkit.conf-tmp",
             current_dir=self._bench_bin_path,
-            shell=False,
         )
 
         self.platform.comm.pipe_shell(
@@ -139,13 +139,18 @@ class RedisBench(Benchmark):
             "sed -e 's/daemonize no/daemonize yes/' "
             "> ../redis-benchkit.conf",
             current_dir=self._bench_bin_path,
-            shell=False,
+        )
+
+        self.platform.comm.pipe_shell(
+            "cat ../redis-benchkit.conf | "
+            "sed -e 's/# io-threads-do-reads no/io-threads-do-reads yes/' "
+            "> ../redis-benchkit.conf-tmp",
+            current_dir=self._bench_bin_path,
         )
 
         self.platform.comm.shell(
-            "rm ../redis-benchkit.conf-tmp",
+            "mv ../redis-benchkit.conf-tmp ../redis-benchkit.conf",
             current_dir=self._bench_bin_path,
-            shell=False,
         )
 
         server_environment = self._preload_env(
@@ -201,6 +206,9 @@ class RedisBench(Benchmark):
             wrapped_environment=wrapped_server_environment,
             print_output=False,
         )
+
+        time.sleep(5)
+
         output = self.run_bench_command(
             run_command=run_command,
             wrapped_run_command=wrapped_run_command,
