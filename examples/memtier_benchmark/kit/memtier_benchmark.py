@@ -192,7 +192,6 @@ class MemtierBench(Benchmark):
             f"sed -e 's/io-threads 4/io-threads {nb_threads}/' "
             "> ../redis-benchkit.conf-tmp",
             current_dir=self._server_bench_bin_path,
-            shell=False,
         )
 
         self.server_platform.comm.pipe_shell(
@@ -200,7 +199,6 @@ class MemtierBench(Benchmark):
             "sed -e 's/daemonize no/daemonize yes/' "
             "> ../redis-benchkit.conf",
             current_dir=self._server_bench_bin_path,
-            shell=False,
         )
 
         self.server_platform.comm.pipe_shell(
@@ -208,7 +206,6 @@ class MemtierBench(Benchmark):
             f"sed -e 's/bind 127.0.0.1 -::1/bind {server_ip}/' "
             "> ../redis-benchkit.conf-tmp",
             current_dir=self._server_bench_bin_path,
-            shell=False,
         )
 
         self.server_platform.comm.pipe_shell(
@@ -216,7 +213,6 @@ class MemtierBench(Benchmark):
             "sed -e 's/protected-mode yes/protected-mode no/' "
             "> ../redis-benchkit.conf",
             current_dir=self._server_bench_bin_path,
-            shell=False,
         )
 
         self.server_platform.comm.pipe_shell(
@@ -224,13 +220,11 @@ class MemtierBench(Benchmark):
             "sed -e 's/# io-threads-do-reads no/io-threads-do-reads yes/' "
             "> ../redis-benchkit.conf-tmp",
             current_dir=self._server_bench_bin_path,
-            shell=False,
         )
 
         self.server_platform.comm.pipe_shell(
             "mv ../redis-benchkit.conf-tmp ../redis-benchkit.conf",
             current_dir=self._server_bench_bin_path,
-            shell=False,
         )
 
         server_environment = self._preload_env(
@@ -297,7 +291,7 @@ class MemtierBench(Benchmark):
             print_output=False,
         )
 
-        time.sleep(30)
+        time.sleep(10)
 
         # TODO: Make this code look better
         self.platform = self.client_platform
