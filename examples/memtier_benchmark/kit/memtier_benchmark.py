@@ -342,6 +342,8 @@ class MemtierBench(Benchmark):
         res_dict.update(gets_dict)
         res_dict.update(totals_dict)
 
+        res_dict["throughput"] = res_dict["Totals Ops/sec"]
+
         return res_dict
 
 
