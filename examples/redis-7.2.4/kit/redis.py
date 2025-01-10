@@ -129,7 +129,7 @@ class RedisBench(Benchmark):
 
         self.platform.comm.pipe_shell(
             "cat ../redis.conf | "
-            f"sed -e 's/io-threads 4/io-threads {nb_threads}/' "
+            f"sed -e 's/# io-threads 4/io-threads {nb_threads}/' "
             "> ../redis-benchkit.conf-tmp",
             current_dir=self._bench_bin_path,
         )
@@ -239,6 +239,8 @@ class RedisBench(Benchmark):
         values = [x[1:-1] for x in tmp]
 
         result_dict = {fields[i]: values[i] for i in range(1, len(fields))}
+
+        result_dict["throughput"] = result_dict["rps"]
 
         return result_dict
 
