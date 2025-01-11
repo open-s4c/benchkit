@@ -189,7 +189,7 @@ class MemtierBench(Benchmark):
 
         self.server_platform.comm.pipe_shell(
             "cat ../redis.conf | "
-            f"sed -e 's/io-threads 4/io-threads {nb_threads}/' "
+            f"sed -e 's/# io-threads 4/io-threads {nb_threads}/' "
             "> ../redis-benchkit.conf-tmp",
             current_dir=self._server_bench_bin_path,
         )
@@ -303,6 +303,11 @@ class MemtierBench(Benchmark):
             environment=benchmark_environment,
             wrapped_environment=wrapped_environment,
             print_output=False,
+        )
+
+        self.server_platform.comm.shell(
+            f"./redis-cli -h {server_ip} FLUSHALL",
+            current_dir=self._server_bench_bin_path,
         )
 
         self.server_platform.comm.shell(
