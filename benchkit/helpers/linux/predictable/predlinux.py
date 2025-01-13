@@ -60,6 +60,7 @@ class PredLinux:
         frequency_to_set: Optional[int] = 1500,
         expected_nb_isolated_cpus: Optional[int] = None,
         bypass_isolation_check: bool = False,
+        stop_numa_balance: bool = True,
     ) -> None:
         """Set effective configuration to be predictable. Isolating the CPU cannot be set as it is
         a boot-time parameter.
@@ -72,9 +73,12 @@ class PredLinux:
                 one. Defaults to None.
             bypass_isolation_check (bool, optional):
                 if true, do not check that CPUs are isolated. Defaults to False.
+            stop_numa_balance (bool, optional):
+                if true, stop the numabalancing daemon. Defaults to True.
         """
         self.stop_irqbalance()
-        self.stop_numabalance()
+        if stop_numa_balance:
+            self.stop_numabalance()
         self.check_isolcpus(
             expected_nb_isolated_cpus=expected_nb_isolated_cpus,
             bypass_isolation_check=bypass_isolation_check,
