@@ -5,13 +5,17 @@ Module to handle hdc (OpenHarmony Device Connector) interactions between host an
 See HDC documentation: https://docs.openharmony.cn/pages/v5.0/en/application-dev/dfx/hdc.md
 """
 from enum import Enum
+import os
+import subprocess
 from platform import system as os_system
 from typing import Callable, Iterable, List, Optional
 
+from benchkit.communication import CommunicationLayer
+from benchkit.communication.utils import command_with_env
 from benchkit.dependencies.executables import ExecutableDependency
 from benchkit.dependencies.packages import Dependency
 from benchkit.shell.shell import get_args, shell_out
-from benchkit.utils.types import Command, PathType
+from benchkit.utils.types import Command, Environment, PathType
 
 
 class HDCError(Exception):
@@ -55,7 +59,6 @@ class OpenHarmonyDeviceConnector:
         self._keep_connected = keep_connected
         self._wait_connected = wait_connected
         self._expected_os = expected_os
-        self._bin = "hdc.exe" if "Windows" == os_system() else "hdc"
 
     @staticmethod
     def from_device(
@@ -72,8 +75,13 @@ class OpenHarmonyDeviceConnector:
             expected_os=expected_os,
         )
 
-    def dependencies(self) -> List[Dependency]:
-        return [ExecutableDependency(self._bin)]
+    @staticmethod
+    def binary() -> str:
+        return "hdc.exe" if "Windows" == os_system() else "hdc"
+
+    @staticmethod
+    def dependencies() -> List[Dependency]:
+        return [ExecutableDependency(OpenHarmonyDeviceConnector.binary())]
 
     def _find_device(self) -> Optional[HDCDevice]:
         devices = [dev for dev in self._devices() if dev.identifier == self.identifier]
@@ -85,13 +93,15 @@ class OpenHarmonyDeviceConnector:
             case _:
                 raise ValueError("Wrong device list.")
 
-    def _devices(self) -> List[HDCDevice]:
+    @staticmethod
+    def _devices() -> List[HDCDevice]:
         """Get list of devices recognized by hdc.
 
         Returns:
             Iterable[HDCDevice]: list of devices recognized by hdc.
         """
-        output = OpenHarmonyDeviceConnector._host_shell_out(command=f"{self._bin} list targets")
+        binary = OpenHarmonyDeviceConnector.binary()
+        output = OpenHarmonyDeviceConnector._host_shell_out(command=f"{binary} list targets")
         device_ids = output.strip().splitlines()
         devices = []
         for dev in device_ids:
@@ -111,7 +121,7 @@ class OpenHarmonyDeviceConnector:
         Returns:
             Iterable[HDCDevice]: filtered list of devices recognized by hdc.
         """
-        devices = self._devices()
+        devices = OpenHarmonyDeviceConnector._devices()
         filtered = [dev for dev in devices if filter_callback(dev)]
         return filtered
 
@@ -139,7 +149,7 @@ class OpenHarmonyDeviceConnector:
         dir_args = ["cd", f"{current_dir}", "&&"] if current_dir is not None else []
         command_args = dir_args + get_args(command)
 
-        hdc_command = [f"{self._bin}", "-t", f"{self.identifier}", "shell"] + command_args
+        hdc_command = [f"{self.binary()}", "-t", f"{self.identifier}", "shell"] + command_args
 
         output = shell_out(
             command=hdc_command,
@@ -209,7 +219,7 @@ class OpenHarmonyDeviceConnector:
             local_path (PathType): path where to pull the file on the host.
         """
         command = [
-            f"{self._bin}",
+            f"{self.binary()}",
             "-t",
             f"{self.identifier}",
             "file",
@@ -218,3 +228,98 @@ class OpenHarmonyDeviceConnector:
             f"{local_path}",
         ]
         self._host_shell_out(command=command)
+
+
+class OpenHarmonyCommLayer(CommunicationLayer):
+    def __init__(
+        self,
+        conn: OpenHarmonyDeviceConnector,
+        environment: Optional[Environment] = None,
+    ) -> None:
+        super().__init__()
+        self._conn = conn
+        self._additional_environment = environment if environment is not None else {}
+        self._command_prefix = None
+
+    @property
+    def remote_host(self) -> Optional[str]:
+        return self._conn.identifier
+
+    @property
+    def is_local(self) -> bool:
+        return False
+
+    def copy_from_host(self, source: PathType, destination: PathType) -> None:
+        self._conn.push(source, destination)
+
+    def copy_to_host(self, source: PathType, destination: PathType) -> None:
+        self._conn.pull(source, destination)
+    
+    def shell(
+        self,
+        command: Command,
+        std_input: str | None = None,
+        current_dir: PathType | None = None,
+        environment: Environment = None,
+        shell: bool = False,
+        print_input: bool = True,
+        print_output: bool = True,
+        print_curdir: bool = True,
+        timeout: int | None = None,
+        output_is_log: bool = False,
+        ignore_ret_codes: Iterable[int] = (), 
+        ignore_any_error_code: bool = False
+    ) -> str:
+        env_command = command_with_env(
+            command=command,
+            environment=environment,
+            additional_environment=self._additional_environment,
+        )
+        output = self._conn.shell_out(
+            command=env_command,
+            current_dir=current_dir,
+            output_is_log=output_is_log,
+        )
+        return output
+
+    def pipe_shell(
+        self,
+        command: Command,
+        current_dir: Optional[PathType] = None,
+        shell: bool = False,
+        ignore_ret_codes: Iterable[int] = ()
+    ):
+        raise NotImplementedError("TODO")
+
+    def background_subprocess(
+        self,
+        command: Command,
+        stdout: PathType,
+        stderr: PathType,
+        cwd: PathType | None,
+        env: dict | None,
+        establish_new_connection: bool = False
+    ) -> subprocess.Popen:
+        dir_args = ["cd", f"{cwd}", "&&"] if cwd is not None else []
+        command_args = dir_args + get_args(command)
+
+        hdc_command = [
+            "hdc",
+            "-t",
+            f"{self._conn.identifier}",
+            "shell",
+        ] + command_args
+        
+        return subprocess.Popen(
+            hdc_command,
+            stdout=stdout,
+            stderr=stderr,
+            env=env,
+            preexec_fn=os.setsid,
+        )
+
+    def get_process_status(self, process_handle: subprocess.Popen) -> str:
+        raise NotImplementedError("TODO")
+
+    def get_process_nb_threads(self, process_handle: subprocess.Popen) -> int:
+        raise NotImplementedError("TODO")
