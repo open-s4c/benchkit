@@ -34,6 +34,7 @@ class IPCBenchmark(Benchmark):
     def __init__(
         self,
         bench_dir: PathType,
+        local_platform: Platform,
         target: Target = Target.LOCAL,
         skip_rebuild: bool = False,
         command_wrappers: Iterable[CommandWrapper] = [],
@@ -41,7 +42,7 @@ class IPCBenchmark(Benchmark):
         shared_libs: Iterable[SharedLib] = [],
         pre_run_hooks: Iterable[PreRunHook] = [],
         post_run_hooks: Iterable[PostRunHook] = [],
-        platform: Platform | None = None,
+        remote_platform: Platform | None = None,
     ) -> None:
         super().__init__(
             command_wrappers=command_wrappers,
@@ -54,10 +55,11 @@ class IPCBenchmark(Benchmark):
         self.target = target
         self.bench_dir = bench_dir
         self.skip_rebuild = skip_rebuild
+        self.local_platform = local_platform
 
-        if platform is not None:
-            self.platform = platform
-
+        if remote_platform is not None:
+            self.remote_platform = remote_platform
+        
     @property
     def bench_src_path(self) -> pathlib.Path:
         return pathlib.Path(self.bench_dir)
@@ -97,7 +99,7 @@ class IPCBenchmark(Benchmark):
         if self.target.is_mobile():
             return
         
-        self.platform.comm.shell(
+        self.local_platform.comm.shell(
             command="cargo build",
             current_dir=self.bench_dir,
             output_is_log=True,
@@ -109,7 +111,7 @@ class IPCBenchmark(Benchmark):
             return
 
         if not self.skip_rebuild:
-            self.platform.comm.shell(
+            self.local_platform.comm.shell(
                 command="cargo clean",
                 current_dir=self.bench_dir,
                 output_is_log=True,
@@ -119,10 +121,13 @@ class IPCBenchmark(Benchmark):
         run_command: List[str]
         output: str
 
-        if self.target.is_mobile():
+        if self.remote_platform:
             run_command = ["./ipc_runner", "-m", f"{m}"]
+            output = self.remote_platform.comm.shell(command=run_command, current_dir=self.bench_dir)
+            return output
         else: 
             run_command = ["cargo", "run", "--", "-m", f"{m}"]
+
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
@@ -134,7 +139,7 @@ class IPCBenchmark(Benchmark):
             environment={},
             run_command=run_command,
             wrapped_run_command=wrapped_run_command,
-            current_dir=self.bench_dir,
+            current_dir=running_directory,
             wrapped_environment=wrapped_environment,
             print_output=True,
         )
@@ -149,13 +154,12 @@ def main() -> None:
     target = Target.ANDROID
 
     bench_dir: pathlib.Path | str = caller_dir() / "ipc_runner"
-    platform: Platform | None = None
+    local_platform: Platform = get_current_platform()
+    remote_platform: Platform | None = None
 
     this_dir = caller_dir()
 
     match target:
-        case Target.LOCAL:
-            platform = get_current_platform()
         case Target.HARMONY:
             from benchkit.devices.hdc import OpenHarmonyCommLayer, OpenHarmonyDeviceConnector
             
@@ -163,7 +167,7 @@ def main() -> None:
             device = list(OpenHarmonyDeviceConnector.query_devices())[0]
             hdc = OpenHarmonyDeviceConnector.from_device(device)
             comm = OpenHarmonyCommLayer(hdc)
-            platform = Platform(comm)
+            remote_platform = Platform(comm)
         case Target.ANDROID:
             from benchkit.devices.adb import AndroidCommLayer, AndroidDebugBridge
             
@@ -171,16 +175,17 @@ def main() -> None:
             device = list(AndroidDebugBridge.query_devices())[0]
             adb = AndroidDebugBridge.from_device(device) 
             comm = AndroidCommLayer(adb)
-            platform = Platform(comm)
+            remote_platform = Platform(comm)
         case Target.CONTAINER:
             from rustcontainer import get_rust_docker_platform
 
-            platform = get_rust_docker_platform(host_dir=this_dir)
+            local_platform = get_rust_docker_platform(host_dir=this_dir)
             bench_dir = "/home/user/workspace/mnt/ipc_runner"
 
     benchmark = IPCBenchmark(
         bench_dir=bench_dir,
-        platform=platform,
+        local_platform=local_platform,
+        remote_platform=remote_platform,
         target=target,
         skip_rebuild=skip_rebuild,
     )

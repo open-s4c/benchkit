@@ -34,7 +34,7 @@ def main() -> None:
             device = list(AndroidDebugBridge.query_devices())[0]
             adb = AndroidDebugBridge.from_device(device)
             comm = AndroidCommLayer(adb)
-            print(device)
+            print(comm)
             platform = Platform(comm)
             
     output = platform.comm.shell(
