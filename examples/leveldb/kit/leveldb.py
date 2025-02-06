@@ -188,6 +188,11 @@ class LevelDBBench(Benchmark):
             **kwargs,
         )
 
+        """
+        Notice that, distinct from other LevelDb benchmarks using the `num` parameter,
+        `readreverse` and `readsequential` benchmarks have a very short duration.
+        As such, consider increasing the size of `num` for those.
+        """
         if bench_name in ["readrandom", "readmissing", "readhot", "seekrandom"]:
             duration_num = f"--duration={benchmark_duration_seconds}"
         else:
