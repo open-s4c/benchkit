@@ -15,6 +15,11 @@ def add_ms(dataframe: DataFrame) -> DataFrame:
     return dataframe
 
 
+def add_ylog_scale(chart):
+    chart.set_yscale("log")
+    return chart
+
+
 def main() -> None:
     platform = get_current_platform()
 
@@ -45,6 +50,15 @@ def main() -> None:
     campaign.generate_graph(
         plot_name="barplot",
         process_dataframe=add_ms,
+        x="duration_ms",
+        y="duration_ms",
+    )
+
+    campaign.generate_graph(
+        plot_name="barplot",
+        title="Bar plot with log scale for Y axis",
+        process_dataframe=add_ms,
+        process_chart=add_ylog_scale,
         x="duration_ms",
         y="duration_ms",
     )

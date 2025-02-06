@@ -25,6 +25,7 @@ if any(importlib.util.find_spec(lib) is None for lib in libs):
     _LIBRARIES_ENABLED = False
     DataFrame = None  # pylint: disable=invalid-name
 else:
+    import matplotlib.axes as axes
     import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
@@ -42,6 +43,17 @@ class DataframeProcessor(Protocol):
         self,
         dataframe: DataFrame,
     ) -> DataFrame: ...
+
+
+class ChartProcessor(Protocol):
+    """
+    Functions that apply a modification on a chart before it is plotted.
+    """
+
+    def __call__(
+        self,
+        chart: axes.Axes | sns.axisgrid.FacetGrid,
+    ) -> axes.Axes | sns.axisgrid.FacetGrid: ...
 
 
 def identical_dataframe(dataframe: DataFrame) -> DataFrame:
@@ -80,6 +92,7 @@ def _generate_chart_from_df(
     xlabel: str | None = None,
     ylabel: str | None = None,
     process_dataframe: DataframeProcessor = identical_dataframe,
+    process_chart: ChartProcessor | None = None,
     **kwargs,
 ) -> None:
     if not _LIBRARIES_ENABLED:
@@ -121,6 +134,10 @@ def _generate_chart_from_df(
             chart.set_xlabel(xlabel)
         if ylabel is not None:
             chart.set_ylabel(ylabel)
+
+        if process_chart is not None:
+            process_chart(chart=chart)
+
         fig.tight_layout()
     else:
         chart = sns.catplot(
@@ -128,6 +145,10 @@ def _generate_chart_from_df(
             **args,
         )
         chart.fig.suptitle(title)
+
+        if process_chart is not None:
+            process_chart(chart=chart)
+
         chart.fig.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
         fig = chart.fig
 
