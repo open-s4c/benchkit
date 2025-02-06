@@ -8,15 +8,19 @@ import socket
 import subprocess
 import sys
 import time
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Callable
 
+from benchkit.communication import CommunicationLayer
+from benchkit.communication.utils import command_with_env, remote_shell_command
+from benchkit.dependencies.dependency import Dependency
+from benchkit.dependencies.executables import ExecutableDependency
 from benchkit.devices.adb.usb import usb_down_up
 from benchkit.shell.shell import get_args, shell_out
-from benchkit.utils.types import Command, PathType
+from benchkit.utils.types import Command, Environment, PathType, SplitCommand
 
 
-def _identifier_from(ip_addr: str, port: int) -> str:
-    return f"{ip_addr}:{port}"
+# def _identifier_from(ip_addr: str, port: int) -> str:
+#     return f"{ip_addr}:{port}"
 
 
 class ADBError(Exception):
@@ -43,22 +47,47 @@ class ADBDevice:
         return "device" == self.status
 
 
-class AndroidDebugBridge:  # TODO add commlayer for "host"
+# TODO: investigate the identifier and daemon. temporarily it's mirrored like HDC does it.
+class AndroidDebugBridge: 
     """Operations with the phone for high-level adb operations."""
 
     def __init__(
         self,
-        ip_addr: str,
-        port: int = 5555,
+        # ip_addr: str,
+        # port: int = 5555,
+        identifier: str,
         keep_connected: bool = False,
         wait_connected: bool = False,
         expected_os: Optional[str] = None,
     ) -> None:
-        self._ip = ip_addr
-        self._port = port
+        # self._ip = ip_addr
+        # self._port = port
+        self.identifier = identifier
         self._keep_connected = keep_connected
         self._wait_connected = wait_connected
         self._expected_os = expected_os
+
+    @staticmethod
+    def from_device(
+        device: ADBDevice,
+        keep_connected: bool = False,
+        wait_connected: bool = False,
+        expected_os: Optional[str] = None,
+    ) -> "AndroidDebugBridge":
+        return AndroidDebugBridge(
+            identifier=device.identifier,
+            keep_connected=keep_connected,
+            wait_connected=wait_connected,
+            expected_os=expected_os,
+        )
+    
+    @staticmethod
+    def binary() -> str:
+        return "adb"
+
+    @staticmethod
+    def dependencies() -> Iterable[Dependency]:
+        return [ExecutableDependency(AndroidDebugBridge.binary())]
 
     def __enter__(self) -> "AndroidDebugBridge":
         if not self.is_connected():
@@ -74,14 +103,14 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
         if not self._keep_connected and self.is_connected():
             self._disconnect()
 
-    @property
-    def identifier(self) -> str:
-        """Get adb identifier of current device.
+    # @property
+    # def identifier(self) -> str:
+    #     """Get adb identifier of current device.
 
-        Returns:
-            str: adb identifier of current device.
-        """
-        return _identifier_from(ip_addr=self._ip, port=self._port)
+    #     Returns:
+    #         str: adb identifier of current device.
+    #     """
+    #     return _identifier_from(ip_addr=self._ip, port=self._port)
 
     def is_connected(self) -> bool:
         """Returns whether the device is connected to adb.
@@ -141,7 +170,8 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
             with socket.socket(socket.AF_INET) as conn_sock:
                 conn_sock.settimeout(wait_time)
                 try:
-                    conn_sock.connect((self._ip, self._port))
+                    # TODO: investigate daemon
+                    # conn_sock.connect((self._ip, self._port))
                     connected = True
                 except TimeoutError:
                     wait_time *= 2
@@ -167,7 +197,9 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
             raise ADBError("Problem with adb connection")
 
     def _connect(self, timeout: int) -> None:
-        ip_port = f"{self._ip}:{self._port}"
+        # TODO: investigate daemon
+        # ip_port = f"{self._ip}:{self._port}"
+        ip_port = ""
         succeed = False
         wait_time = 1
         while not succeed:
@@ -219,6 +251,19 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
         devices = [ADBDevice(*line.split("\t")) for line in device_lines]
 
         return devices
+    
+    @staticmethod
+    def query_devices(
+        filter_callback: Callable[[ADBDevice], bool] = lambda _: True,
+    ) -> Iterable[ADBDevice]:
+        """Get filtered list of devices recognized by adb.
+
+        Returns:
+            Iterable[ADBDevice]: filtered list of devices recognized by adb
+        """
+        devices = AndroidDebugBridge._devices()
+        filtered = [dev for dev in devices if filter_callback(dev)]
+        return filtered
 
     @staticmethod
     def _host_shell_out(
@@ -440,3 +485,140 @@ class AndroidDebugBridge:  # TODO add commlayer for "host"
         output = self._target_shell_out(command)
         is_installed = f"package:{activity_name}" == output.strip()
         return is_installed
+
+
+class AndroidCommLayer(CommunicationLayer):
+    def __init__(
+        self,
+        bridge: AndroidDebugBridge,
+        environment: Optional[Environment] = None,
+    ) -> None:
+        super().__init__()
+        self._bridge = bridge
+        self._additional_environment = environment if environment is not None else {}
+        self._command_prefix = None
+
+    @property
+    def remote_host(self) -> Optional[str]:
+        return self._bridge.identifier
+
+    @property
+    def is_local(self) -> bool:
+        return False
+
+    def copy_from_host(self, source: PathType, destination: PathType) -> None:
+        self._bridge.push(source, destination)
+
+    def copy_to_host(self, source: PathType, destination: PathType) -> None:
+        self._bridge.pull(source, destination)
+    
+
+    def _remote_shell_command(
+        self,
+        remote_command: Command,
+        remote_current_dir: PathType | None = None,
+    ) -> SplitCommand:
+        dir_args = ["cd", f"{remote_current_dir}", "&&"] if remote_current_dir is not None else []
+        command_args = dir_args + get_args(remote_command)
+
+        remote_command = [
+            "adb",
+            "-s",
+            f"{self._bridge.identifier}",
+            "shell",
+        ] + command_args
+        return remote_command
+
+    def shell(
+        self,
+        command: Command,
+        std_input: str | None = None,
+        current_dir: PathType | None = None,
+        environment: Environment = None,
+        shell: bool = False,
+        print_input: bool = True,
+        print_output: bool = True,
+        print_curdir: bool = True,
+        timeout: int | None = None,
+        output_is_log: bool = False,
+        ignore_ret_codes: Iterable[int] = (), 
+        ignore_any_error_code: bool = False
+    ) -> str:
+        env_command = command_with_env(
+            command=command,
+            environment=environment,
+            additional_environment=self._additional_environment,
+        )
+
+        full_command = self._remote_shell_command(
+            remote_command=env_command,
+            remote_current_dir=current_dir,
+        )
+
+        output = shell_out(
+            command=full_command,
+            std_input=std_input,
+            current_dir=None,
+            print_input=print_input,
+            print_output=print_output,
+            timeout=timeout,
+            output_is_log=output_is_log,
+            ignore_ret_codes=ignore_ret_codes,
+        )
+        return output
+
+    def pipe_shell(
+        self,
+        command: Command,
+        current_dir: Optional[PathType] = None,
+        shell: bool = False,
+        ignore_ret_codes: Iterable[int] = ()
+    ):
+        raise NotImplementedError("TODO")
+
+    
+    def background_subprocess(
+        self,
+        command: Command,
+        stdout: PathType,
+        stderr: PathType,
+        cwd: PathType | None,
+        env: dict | None,
+        establish_new_connection: bool = False
+    ) -> subprocess.Popen:
+        dir_args = ["cd", f"{cwd}", "&&"] if cwd is not None else []
+        command_args = dir_args + get_args(command)
+
+        adb_command = [
+            "adb",
+            "-s",
+            f"{self._bridge.identifier}",
+            "shell",
+        ] + command_args
+        
+        return subprocess.Popen(
+            adb_command,
+            stdout=stdout,
+            stderr=stderr,
+            env=env,
+            preexec_fn=os.setsid,
+        )
+
+    def path_exists(
+        self,
+        path: PathType
+    ) -> bool:
+        try:
+            result = self.shell(
+                command=f"test -e {path} && echo 1 || echo 0",
+                output_is_log=False
+            )
+            return bool(int(result.strip()))
+        except:
+            return False
+
+    def get_process_status(self, process_handle: subprocess.Popen) -> str:
+        raise NotImplementedError("TODO")
+
+    def get_process_nb_threads(self, process_handle: subprocess.Popen) -> int:
+        raise NotImplementedError("TODO")
