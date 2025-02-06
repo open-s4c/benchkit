@@ -15,7 +15,7 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         pip3 install "pylint<=3.3.2" "black<=24.10.0" "flake8<=7.1.1"
-    - name: Versions of tools
+    - name: Show versions of tools
       run: pip3 freeze
 #    - name: Analysing the code with pylint
 #      run: |
