@@ -4,9 +4,9 @@
 Module to handle hdc (OpenHarmony Device Connector) interactions between host and remote phone.
 See HDC documentation: https://docs.openharmony.cn/pages/v5.0/en/application-dev/dfx/hdc.md
 """
-from enum import Enum
 import os
 import subprocess
+from enum import Enum
 from platform import system as os_system
 from typing import Callable, Iterable, List, Optional
 
@@ -254,7 +254,7 @@ class OpenHarmonyCommLayer(CommunicationLayer):
 
     def copy_to_host(self, source: PathType, destination: PathType) -> None:
         self._conn.pull(source, destination)
-    
+
     def shell(
         self,
         command: Command,
@@ -267,8 +267,8 @@ class OpenHarmonyCommLayer(CommunicationLayer):
         print_curdir: bool = True,
         timeout: int | None = None,
         output_is_log: bool = False,
-        ignore_ret_codes: Iterable[int] = (), 
-        ignore_any_error_code: bool = False
+        ignore_ret_codes: Iterable[int] = (),
+        ignore_any_error_code: bool = False,
     ) -> str:
         env_command = command_with_env(
             command=command,
@@ -287,7 +287,7 @@ class OpenHarmonyCommLayer(CommunicationLayer):
         command: Command,
         current_dir: Optional[PathType] = None,
         shell: bool = False,
-        ignore_ret_codes: Iterable[int] = ()
+        ignore_ret_codes: Iterable[int] = (),
     ):
         raise NotImplementedError("TODO")
 
@@ -298,7 +298,7 @@ class OpenHarmonyCommLayer(CommunicationLayer):
         stderr: PathType,
         cwd: PathType | None,
         env: dict | None,
-        establish_new_connection: bool = False
+        establish_new_connection: bool = False,
     ) -> subprocess.Popen:
         dir_args = ["cd", f"{cwd}", "&&"] if cwd is not None else []
         command_args = dir_args + get_args(command)
@@ -309,7 +309,7 @@ class OpenHarmonyCommLayer(CommunicationLayer):
             f"{self._conn.identifier}",
             "shell",
         ] + command_args
-        
+
         return subprocess.Popen(
             hdc_command,
             stdout=stdout,
