@@ -4,20 +4,20 @@
 Module to handle adb (android debug bridge) interactions between host and remote phone.
 """
 
+import os
 import socket
 import subprocess
 import sys
 import time
-from typing import Iterable, Optional, Callable
+from typing import Callable, Iterable, Optional
 
 from benchkit.communication import CommunicationLayer
-from benchkit.communication.utils import command_with_env, remote_shell_command
+from benchkit.communication.utils import command_with_env
 from benchkit.dependencies.dependency import Dependency
 from benchkit.dependencies.executables import ExecutableDependency
 from benchkit.devices.adb.usb import usb_down_up
 from benchkit.shell.shell import get_args, shell_out
 from benchkit.utils.types import Command, Environment, PathType, SplitCommand
-
 
 # def _identifier_from(ip_addr: str, port: int) -> str:
 #     return f"{ip_addr}:{port}"
@@ -48,7 +48,7 @@ class ADBDevice:
 
 
 # TODO: investigate the identifier and daemon. temporarily it's mirrored like HDC does it.
-class AndroidDebugBridge: 
+class AndroidDebugBridge:
     """Operations with the phone for high-level adb operations."""
 
     def __init__(
@@ -80,7 +80,7 @@ class AndroidDebugBridge:
             wait_connected=wait_connected,
             expected_os=expected_os,
         )
-    
+
     @staticmethod
     def binary() -> str:
         return "adb"
@@ -251,7 +251,7 @@ class AndroidDebugBridge:
         devices = [ADBDevice(*line.split("\t")) for line in device_lines]
 
         return devices
-    
+
     @staticmethod
     def query_devices(
         filter_callback: Callable[[ADBDevice], bool] = lambda _: True,
@@ -511,7 +511,6 @@ class AndroidCommLayer(CommunicationLayer):
 
     def copy_to_host(self, source: PathType, destination: PathType) -> None:
         self._bridge.pull(source, destination)
-    
 
     def _remote_shell_command(
         self,
@@ -541,8 +540,8 @@ class AndroidCommLayer(CommunicationLayer):
         print_curdir: bool = True,
         timeout: int | None = None,
         output_is_log: bool = False,
-        ignore_ret_codes: Iterable[int] = (), 
-        ignore_any_error_code: bool = False
+        ignore_ret_codes: Iterable[int] = (),
+        ignore_any_error_code: bool = False,
     ) -> str:
         env_command = command_with_env(
             command=command,
@@ -572,11 +571,11 @@ class AndroidCommLayer(CommunicationLayer):
         command: Command,
         current_dir: Optional[PathType] = None,
         shell: bool = False,
-        ignore_ret_codes: Iterable[int] = ()
+        print_command: bool = True,
+        ignore_ret_codes: Iterable[int] = (),
     ):
         raise NotImplementedError("TODO")
 
-    
     def background_subprocess(
         self,
         command: Command,
@@ -584,7 +583,7 @@ class AndroidCommLayer(CommunicationLayer):
         stderr: PathType,
         cwd: PathType | None,
         env: dict | None,
-        establish_new_connection: bool = False
+        establish_new_connection: bool = False,
     ) -> subprocess.Popen:
         dir_args = ["cd", f"{cwd}", "&&"] if cwd is not None else []
         command_args = dir_args + get_args(command)
@@ -595,7 +594,7 @@ class AndroidCommLayer(CommunicationLayer):
             f"{self._bridge.identifier}",
             "shell",
         ] + command_args
-        
+
         return subprocess.Popen(
             adb_command,
             stdout=stdout,
@@ -606,16 +605,13 @@ class AndroidCommLayer(CommunicationLayer):
 
     def path_exists(
         self,
-        path: PathType
+        path: PathType,
     ) -> bool:
-        try:
-            result = self.shell(
-                command=f"test -e {path} && echo 1 || echo 0",
-                output_is_log=False
-            )
-            return bool(int(result.strip()))
-        except:
-            return False
+        result = self.shell(
+            command=f"test -e {path} && echo 1 || echo 0",
+            output_is_log=False,
+        )
+        return bool(int(result.strip()))
 
     def get_process_status(self, process_handle: subprocess.Popen) -> str:
         raise NotImplementedError("TODO")

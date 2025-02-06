@@ -50,7 +50,6 @@ class IPCBenchmark(Benchmark):
             shared_libs=shared_libs,
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,
-            
         )
         self.target = target
         self.bench_dir = bench_dir
@@ -59,7 +58,7 @@ class IPCBenchmark(Benchmark):
 
         if remote_platform is not None:
             self.remote_platform = remote_platform
-        
+
     @property
     def bench_src_path(self) -> pathlib.Path:
         return pathlib.Path(self.bench_dir)
@@ -98,7 +97,7 @@ class IPCBenchmark(Benchmark):
     def build_bench(self, **kwargs) -> None:
         if self.target.is_mobile():
             return
-        
+
         self.local_platform.comm.shell(
             command="cargo build",
             current_dir=self.bench_dir,
@@ -123,11 +122,13 @@ class IPCBenchmark(Benchmark):
 
         if self.remote_platform:
             run_command = ["./ipc_runner", "-m", f"{m}"]
-            output = self.remote_platform.comm.shell(command=run_command, current_dir=self.bench_dir)
+            output = self.remote_platform.comm.shell(
+                command=run_command,
+                current_dir=self.bench_dir,
+            )
             return output
-        else: 
+        else:
             run_command = ["cargo", "run", "--", "-m", f"{m}"]
-
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
@@ -139,7 +140,6 @@ class IPCBenchmark(Benchmark):
             environment={},
             run_command=run_command,
             wrapped_run_command=wrapped_run_command,
-            current_dir=running_directory,
             wrapped_environment=wrapped_environment,
             print_output=True,
         )
@@ -161,8 +161,11 @@ def main() -> None:
 
     match target:
         case Target.HARMONY:
-            from benchkit.devices.hdc import OpenHarmonyCommLayer, OpenHarmonyDeviceConnector
-            
+            from benchkit.devices.hdc import (
+                OpenHarmonyCommLayer,
+                OpenHarmonyDeviceConnector,
+            )
+
             bench_dir = "/data/testing/ipc/ipc_runner"
             device = list(OpenHarmonyDeviceConnector.query_devices())[0]
             hdc = OpenHarmonyDeviceConnector.from_device(device)
@@ -170,10 +173,10 @@ def main() -> None:
             remote_platform = Platform(comm)
         case Target.ANDROID:
             from benchkit.devices.adb import AndroidCommLayer, AndroidDebugBridge
-            
+
             bench_dir = "/data/local/tmp"
             device = list(AndroidDebugBridge.query_devices())[0]
-            adb = AndroidDebugBridge.from_device(device) 
+            adb = AndroidDebugBridge.from_device(device)
             comm = AndroidCommLayer(adb)
             remote_platform = Platform(comm)
         case Target.CONTAINER:
