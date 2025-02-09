@@ -16,7 +16,6 @@ class Target(Enum):
 
 def main() -> None:
     target = Target.ANDROID
-    platform: Platform
     current_dir = "./"
 
     match target:
@@ -42,6 +41,8 @@ def main() -> None:
             comm = AndroidCommLayer(adb)
             print(comm)
             platform = Platform(comm)
+        case _:
+            platform = get_current_platform()
 
     output = platform.comm.shell(
         command="ls",

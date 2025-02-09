@@ -37,11 +37,11 @@ class IPCBenchmark(Benchmark):
         local_platform: Platform,
         target: Target = Target.LOCAL,
         skip_rebuild: bool = False,
-        command_wrappers: Iterable[CommandWrapper] = [],
-        command_attachments: Iterable[CommandAttachment] = [],
-        shared_libs: Iterable[SharedLib] = [],
-        pre_run_hooks: Iterable[PreRunHook] = [],
-        post_run_hooks: Iterable[PostRunHook] = [],
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
+        shared_libs: Iterable[SharedLib] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
         remote_platform: Platform | None = None,
     ) -> None:
         super().__init__(
@@ -55,9 +55,7 @@ class IPCBenchmark(Benchmark):
         self.bench_dir = bench_dir
         self.skip_rebuild = skip_rebuild
         self.local_platform = local_platform
-
-        if remote_platform is not None:
-            self.remote_platform = remote_platform
+        self.remote_platform = remote_platform
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -127,8 +125,8 @@ class IPCBenchmark(Benchmark):
                 current_dir=self.bench_dir,
             )
             return output
-        else:
-            run_command = ["cargo", "run", "--", "-m", f"{m}"]
+
+        run_command = ["cargo", "run", "--", "-m", f"{m}"]
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
@@ -137,9 +135,10 @@ class IPCBenchmark(Benchmark):
         )
 
         output = self.run_bench_command(
-            environment={},
             run_command=run_command,
             wrapped_run_command=wrapped_run_command,
+            current_dir=self.bench_dir,
+            environment={},
             wrapped_environment=wrapped_environment,
             print_output=True,
         )
