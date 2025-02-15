@@ -165,7 +165,7 @@ def main() -> None:
                 OpenHarmonyDeviceConnector,
             )
 
-            bench_dir = "/data/testing/ipc/ipc_runner"
+            bench_dir = "/data/local/tmp"
             device = list(OpenHarmonyDeviceConnector.query_devices())[0]
             hdc = OpenHarmonyDeviceConnector.from_device(device)
             comm = OpenHarmonyCommLayer(hdc)

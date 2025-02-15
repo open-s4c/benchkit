@@ -77,7 +77,10 @@ class OpenHarmonyDeviceConnector:
 
     @staticmethod
     def binary() -> str:
-        return "hdc.exe" if "Windows" == os_system() else "hdc"
+        # Note: on wsl it's also hdc.exe, by default hdc seems to be mostly windows only?
+        # TODO: change this in the future if there is a linux hdc.
+        # return "hdc.exe" if "Windows" == os_system() else "hdc"
+        return "hdc.exe"
 
     @staticmethod
     def dependencies() -> List[Dependency]:
@@ -113,7 +116,6 @@ class OpenHarmonyDeviceConnector:
         return devices
 
     def query_devices(
-        self,
         filter_callback: Callable[[HDCDevice], bool] = lambda _: True,
     ) -> Iterable[HDCDevice]:
         """Get filtered list of devices recognized by hdc.
@@ -196,7 +198,7 @@ class OpenHarmonyDeviceConnector:
             remote_path (PathType): path where to push the file on the device.
         """
         command = [
-            "hdc.exe",
+            f"{self.binary()}",
             "-t",
             f"{self.identifier}",
             "file",
@@ -304,7 +306,7 @@ class OpenHarmonyCommLayer(CommunicationLayer):
         command_args = dir_args + get_args(command)
 
         hdc_command = [
-            "hdc",
+            f"{self.binary()}",
             "-t",
             f"{self._conn.identifier}",
             "shell",
@@ -323,3 +325,4 @@ class OpenHarmonyCommLayer(CommunicationLayer):
 
     def get_process_nb_threads(self, process_handle: subprocess.Popen) -> int:
         raise NotImplementedError("TODO")
+
