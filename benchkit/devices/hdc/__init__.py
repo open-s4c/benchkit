@@ -7,7 +7,6 @@ See HDC documentation: https://docs.openharmony.cn/pages/v5.0/en/application-dev
 import os
 import subprocess
 from enum import Enum
-from platform import system as os_system
 from typing import Callable, Iterable, List, Optional
 
 from benchkit.communication import CommunicationLayer
@@ -325,4 +324,3 @@ class OpenHarmonyCommLayer(CommunicationLayer):
 
     def get_process_nb_threads(self, process_handle: subprocess.Popen) -> int:
         raise NotImplementedError("TODO")
-
