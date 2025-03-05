@@ -24,7 +24,7 @@ def main() -> None:
 
     # Define the "perf-stat" command wrapper to be passed to the benchmark initialization
     # It is used to collect information from the PMCs.
-    perfstatwrap = PerfStatWrap(events=["cache-misses"], separator=";")
+    perfstatwrap = PerfStatWrap(events=["cache-misses"])
 
     # Define the campaign, associated with the LevelDB benchmark
     campaign = leveldb_campaign(
