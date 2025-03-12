@@ -14,7 +14,7 @@ from benchkit.utils.dir import get_curdir
 _bench_src_path = get_curdir(__file__)
 _build_dir = _bench_src_path / "build"
 
-class MyBenchark(Benchmark):
+class MyBenchmark(Benchmark):
     # Init method, setup all of the required variables
     def __init__(
         self,
@@ -58,7 +58,7 @@ class MyBenchark(Benchmark):
         # The variables defined in `get_build_var_names`, which values are given by the campaign
         # TODO: Add your build variables (defined in  `get_build_var_names`) here.
         importantBuildVariable,
-        importantVariable
+        importantVariable,
         # The constants given to the campaign
         constants,
         # Holds all of the variables that are given to this method, but not used
@@ -88,7 +88,7 @@ class MyBenchark(Benchmark):
         # The variables defined in `get_run_var_names`, which values are given by the campaign
         # TODO: Add your run variables (defined in  `get_run_var_names`) here.
         importantRunVariable,
-        importantVariable
+        importantVariable,
         # The constants given to the campaign
         constants,
         # Holds all of the variables that are given to this method, but not used
