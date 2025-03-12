@@ -8,6 +8,11 @@ Below is an example implementation of a custom benchmark, for more info see [bui
 ```python
 from benchkit.campaign import Benchmark
 from benchkit.utils.dir import get_curdir
+from benchkit.shell.shellasync import AsyncProcess
+
+import pathlib
+import shutil
+from typing import Any, Dict, List
 
 
 # The code that should be benchmarked is oftentimes relatively to the location of the current file, which can be gotten using the following method
