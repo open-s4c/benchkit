@@ -153,7 +153,7 @@ The `build_bench` function should compile your benchmarking code, and is called 
 * `benchmark_duration_seconds`
     * How long a single benchmark should take, or `None`
 * `constants`
-    * The constants for your benchmark, this is given by the [campaign](campaign.md).
+    * A dictionary containing the constants of your benchmark, this is given by the [campaign](campaign.md).
 * The variables returned by `get_build_var_names`
     * These are the variables that vary between experiments, and are given by the [campaign](campaign.md).
 If you don't need some of these variables, you can use the `**kwargs` which will contain all of the arguments that you do not specify inside of the function.
