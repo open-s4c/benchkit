@@ -41,7 +41,7 @@ campaign = CampaignCartesianProduct(
     variables={ },
     # This is a variable that remains constant throughout all of the experiments that are
     # ran in this campaign
-    # Wether or not debugging should be turned on, the actual implementation of the debugging is handled by the benchmark
+    constants={"importantConstant": 5},
     # Wether or not debugging should be turned on, the actual implementation of the debugging
     # is handled by the benchmark
     debug=False,
