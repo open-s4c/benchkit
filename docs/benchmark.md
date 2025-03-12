@@ -122,7 +122,8 @@ class MyBenchmark(Benchmark):
         run_variables: Dict[str, Any],
         **kwargs,
     ) -> Dict[str, Any]:
-        # This assumes that each experiments prints a single line of `csv` code, with all of the information used in that run
+        # This assumes that each experiments prints lines with the following format `<variable>=<value>`, delimited with `;`
+        # e.g. `var1=5;var2="value for var2"`
         key_seq_values = command_output.strip().split(";")
         result_dict = dict(map(lambda s: s.split("="), key_seq_values))
         return result_dict
