@@ -61,9 +61,9 @@ The above code snippet shows you how to initialize a campaign, the only thing th
 For `CampaignCartesianProduct` this argument requires a dictionary where each variable that should vary is assigned an array with all of its possible values.
 ```python
 variables = {
-    "var1" = [1, 2, 3],
-    "var2" = [4, 5, 6],
-    "var3" = ["very", "important", "values"]
+    "var1": [1, 2, 3],
+    "var2": [4, 5, 6],
+    "var3": ["very", "important", "values"]
 }
 ```
 Using this dictionary for the variables in `CampaignCartesianProduct` will run `27` experiments, combining the three variables in every possible way.
@@ -72,19 +72,19 @@ For `CampaignIterateVariables` this argument requires an array of dictionaries, 
 ```python
 variables = [
     {
-        "var1" = 1,
-        "var2" = 5,
-        "var3" = "very",
+        "var1": 1,
+        "var2": 5,
+        "var3": "very",
     },
     {
-        "var1" = 2,
-        "var2" = 5,
-        "var3" = "important",
+        "var1": 2,
+        "var2": 5,
+        "var3": "important",
     },
     {
-        "var1" = 2,
-        "var2" = 4,
-        "var3" = "values",
+        "var1": 2,
+        "var2": 4,
+        "var3": "values",
     }
 ]
 ```
