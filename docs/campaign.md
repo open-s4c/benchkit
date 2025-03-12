@@ -36,20 +36,25 @@ campaign = CampaignCartesianProduct(
     benchmark=Benchmark(),
     # The amount of times each experiment should be ran
     nb_runs=3,
-    # The variables that should be used for the experiments, this is the only thing that differs between `CampaignCartesianProduct` and `CampaignIterateVariables` 
+    # The variables that should be used for the experiments, this is the only thing that
+    # differs between `CampaignCartesianProduct` and `CampaignIterateVariables` 
     variables={ },
-    # This is a variable that remains constant throughout all of the experiments that are ran in this campaign
-    constants={"importantVariable": 5},
+    # This is a variable that remains constant throughout all of the experiments that are
+    # ran in this campaign
     # Wether or not debugging should be turned on, the actual implementation of the debugging is handled by the benchmark
+    # Wether or not debugging should be turned on, the actual implementation of the debugging
+    # is handled by the benchmark
     debug=False,
     # Wether or not gdb should be used, the way how gdb is used is handled by the benchmark
     gdb=False,
     # Wether to enable data directories for this campaign, see [results](#results) for more info
     enable_data_dir=False,
-    # How to pretty print variables, this will replace certain variable values with more meaningful, values. This is only used to print certain variables in different ways.
+    # How to pretty print variables, this will replace certain variable values with more meaningful,
+    # values. This is only used to print certain variables in different ways.
     pretty={"importantVaryingVariable": {5: "five", 6: "six"}},
     ## Optional variables
-    # Can be used to limit the length that an experiment is allowed to run, actually limiting the experiment length should be implemented by the benchmark.
+    # Can be used to limit the length that an experiment is allowed to run, actually limiting the
+    # experiment length should be implemented by the benchmark.
     benchmark_duration_seconds = None, # Set to e.g. 5.
     # 
     continuing = False
