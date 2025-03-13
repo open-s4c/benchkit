@@ -26,6 +26,7 @@ class MyBenchmark(Benchmark):
     ) -> None:
         # Init method, calls the `__init__` function of the `Benchmark` class
         super().__init__(
+            # See [Command wrappers](https://github.com/open-s4c/benchkit/blob/main/docs/wrappers.md)
             command_wrappers=(),
             command_attachments=(),
             shared_libs=(),
