@@ -6,3 +6,4 @@
 * [campaign](campaign.md)
 * [benchmark](benchmark.md)
 * [wrappers](wrappers.md)
+* [hooks](hooks.md)
