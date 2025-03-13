@@ -30,6 +30,7 @@ class MyBenchmark(Benchmark):
             command_wrappers=(),
             command_attachments=(),
             shared_libs=(),
+            # See [Benchmark hooks](https://github.com/open-s4c/benchkit/blob/main/docs/hooks.md)
             pre_run_hooks=(),
             post_run_hooks=(),
         )
