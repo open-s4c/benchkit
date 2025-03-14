@@ -141,7 +141,7 @@ Calling `generate_graph` on a campaign suite will generate a graph using the com
 > When making graphs, you are required to enable data directories, this can be done by setting `enable_data_dirs` to `True` when creating the campaign, for more info see [results](#Results).
 
 These functions only require a `plot_name` as an argument, which is the name of the [`seaborn`](https://seaborn.pydata.org/) plot that should be generated.
-Afterwards you can pass optional arguments accepted by [`matplotlib`](https://matplotlib.org/), if the value of these arguments is the name of one of your variables (as [given](#Creating a campaign)) then `benchkit` will automatically give the correct values for that variable to [`matplotlib`](https://matplotlib.org/).
+Afterwards you can pass optional arguments accepted by [`seaborn`](https://seaborn.pydata.org/), if the value of these arguments is the name of one of your variables (as [given](#Creating a campaign)) then `benchkit` will automatically give the correct values for that variable to [`seaborn`](https://seaborn.pydata.org/).
 This can be seen in the following example:
 ```python
 suite.generate_graphs(plot_name="lineplot", x="nb_threads", y="duration", hue="elements");
