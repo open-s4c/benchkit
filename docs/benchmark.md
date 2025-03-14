@@ -54,6 +54,11 @@ class MyBenchmark(Benchmark):
         # TODO: Add your run variables here
         return ["importantRunVariable", "importantVariable"]
 
+    # Deprecated, but since it is still called inside of the framework, it should still be overwritten, but only an empty array should be returned.
+    @staticmethod
+    def get_tilt_var_names() -> List[str]:
+        return []
+
     # Build the source code using the values required for the current experiment
     def build_bench(
         self,
