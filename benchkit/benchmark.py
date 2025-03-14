@@ -184,7 +184,7 @@ class Benchmark:
         Returns:
             List[str]: the names of the tilt variables.
         """
-        return []
+        raise NotImplementedError
 
     @staticmethod
     def _write_to_record_data_dir(
