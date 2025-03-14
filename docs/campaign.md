@@ -133,10 +133,12 @@ This can look like the following
 
 ### Graphs
 
-When making graphs, you are required to enable data directories, this can be done by setting `enable_data_dirs` to `True` when creating the campaign, for more info see [results](#Results).
-
 `benchkit` also allows you to make graphs from the data that is collected.
 To do this you can run `generate_graph` on a finished campaign, or `generate_graphs` on a campaign suite to create a graph for each campaign, both of these methods take the same arguments.
+Calling `generate_graph` on a campaign suite will generate a graph using the combined results of all the campaigns inside of the suite.
+
+> [!NOTE]
+> When making graphs, you are required to enable data directories, this can be done by setting `enable_data_dirs` to `True` when creating the campaign, for more info see [results](#Results).
 
 These functions only require a `plot_name` as an argument, which is the name of the [`seaborn`](https://seaborn.pydata.org/) plot that should be generated.
 Afterwards you can pass optional arguments accepted by [`matplotlib`](https://matplotlib.org/), if the value of these arguments is the name of one of your variables (as [given](#Creating a campaign)) then `benchkit` will automatically give the correct values for that variable to [`matplotlib`](https://matplotlib.org/).
