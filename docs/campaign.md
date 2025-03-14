@@ -147,3 +147,40 @@ This can be seen in the following example:
 suite.generate_graphs(plot_name="lineplot", x="nb_threads", y="duration", hue="elements");
 ```
 This example will generate a [line plot](https://seaborn.pydata.org/generated/seaborn.lineplot.html) for every campaign in the given suite where the `x`-axis contains the amount of threads used, the `y`-axis the time it took to finish the experiment, and a different line will be created, with a different color, for each value of the variable `elements`.
+
+If you want to generate a different plot after finishing your experiments, without rerunning them, you can use the `generate_chart_from_single_csv` function.
+This function takes the same arguments as `generate_graph` but with the following extra arguments:
+* `csv_pathname`
+    * Type: `PathType`
+    * The path to the `CSV` file from which it can read the data
+* `output_dir`
+    * Type: `PathType`
+    * Default: `"/tmp/figs"`
+    * The directory in which it should place the new graph
+* `prefix`
+    * Type: `str`
+    * Default: `""`
+    * A prefix for the name of the generated file, the eventual filename will be `f"benchkit-{prefix}{timestamp}-{figure_id}.png"`
+* `nan_replace`
+    * Type: `bool`
+    * Default: `True`
+    * If `True`, replace all the `None`s in the data with `NaN`
+* `process_dataframe`
+    * Type: `DataframeProcessor`
+    * Default: `identical_dataframe`
+    * A function that can modifies the dataframe before using it
+
+This means you can generate a new graph, based on a given benchmark file without
+having to rerun your experiment using the following code:
+```python
+from benchkit.lwchart import generate_chart_from_single_csv
+
+generate_chart_from_single_csv(
+    "results/<benchmark file>.csv",
+    plot_name="histplot",
+    prefix="important_experiment-"
+    output_dir="results/",
+)
+```
+Note that, this graph will not include the name of the campaign that was run,
+if you want to add this you have to set the `prefix` argument.
