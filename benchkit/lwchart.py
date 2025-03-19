@@ -16,7 +16,7 @@ import importlib.util
 import os
 import pathlib
 import sys
-from typing import List, Protocol, Any
+from typing import Any, List, Protocol
 
 from benchkit.utils.types import PathType
 
@@ -27,12 +27,12 @@ if any(importlib.util.find_spec(lib) is None for lib in libs):
     Axes = Any
     FacetGrid = Any
 else:
-    from matplotlib.axes import Axes
     import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
-    from seaborn.axisgrid import FacetGrid
+    from matplotlib.axes import Axes
     from pandas import DataFrame
+    from seaborn.axisgrid import FacetGrid
 
     _LIBRARIES_ENABLED = True
 
