@@ -1,4 +1,4 @@
-# Tutorial: LevelDB
+# Tutorial: Tilt
 
 ## Clone libvsync and tilt repositories
 
