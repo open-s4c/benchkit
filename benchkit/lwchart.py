@@ -16,19 +16,22 @@ import importlib.util
 import os
 import pathlib
 import sys
-from typing import List, Protocol
+from typing import List, Protocol, Any
 
 from benchkit.utils.types import PathType
 
 libs = ["pandas", "matplotlib", "seaborn"]
 if any(importlib.util.find_spec(lib) is None for lib in libs):
     _LIBRARIES_ENABLED = False
-    DataFrame = None  # pylint: disable=invalid-name
+    DataFrame = Any  # pylint: disable=invalid-name
+    Axes = Any
+    FacetGrid = Any
 else:
-    import matplotlib.axes as axes
+    from matplotlib.axes import Axes
     import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
+    from seaborn.axisgrid import FacetGrid
     from pandas import DataFrame
 
     _LIBRARIES_ENABLED = True
@@ -52,8 +55,8 @@ class ChartProcessor(Protocol):
 
     def __call__(
         self,
-        chart: axes.Axes | sns.axisgrid.FacetGrid,
-    ) -> axes.Axes | sns.axisgrid.FacetGrid: ...
+        chart: Axes | FacetGrid,
+    ) -> Axes | FacetGrid: ...
 
 
 def identical_dataframe(dataframe: DataFrame) -> DataFrame:
