@@ -22,8 +22,10 @@ def _get_windows_boot_args() -> str:
 def _get_netbsd_boot_args() -> str:
     return "<boot args fetching is unsupported on NetBSD>"
 
+
 def _get_darwin_boot_args() -> str:
     return "<boot args fetching is unsupported on Darwin>"
+
 
 def get_boot_args() -> str:
     """
