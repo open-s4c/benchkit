@@ -23,7 +23,7 @@ from benchkit.utils.types import PathType
 libs = ["pandas", "matplotlib", "seaborn"]
 if any(importlib.util.find_spec(lib) is None for lib in libs):
     _LIBRARIES_ENABLED = False
-    DataFrame = Any  # pylint: disable=invalid-name
+    DataFrame = Any
     Axes = Any
     FacetGrid = Any
 else:
