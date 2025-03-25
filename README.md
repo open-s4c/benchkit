@@ -114,7 +114,48 @@ iterate over the variables and their values using the cartesian product
 results in a format that is friendly with plotting tools.
 
 
-## Getting Started
+## Quick start with sugars
+
+If you want to rapidly evaluate command-line programs without writing full
+benchmark definitions, `benchkit` offers a minimal interface via the
+`benchkit.quick` module.
+
+For example, you can benchmark `dd` with 2 parameters:
+
+```python
+from benchkit.quick import quick_cmd_campaign
+
+def dd_cmd(optpt):
+    return f"dd if=/dev/zero of=/tmp/tempfile bs={optpt['bs']} count={optpt['count']}"
+
+optspace = {
+    "bs": ["4K", "16K", "64K"],
+    "count": [1000, 5000, 10000],
+}
+
+if __name__ == "__main__":
+    campaign = quick_cmd_campaign("dd_disk_io", optspace, dd_cmd, nb_runs=3)
+    campaign.run()
+```
+
+This uses a stripped-down benchmark wrapper that:
+- takes a function that generates a shell command given a dictionary of
+  parameter values,
+- builds a Cartesian product of all parameter combinations,
+- executes the command and records its runtime.
+
+From there, you can use all `benchkit` tooling (CSV export, visualizations,
+etc.) on the resulting `campaign`.
+
+This is especially useful for:
+- testing custom scripts, interpreters, shell pipelines,
+- wrapping existing Linux utilities (`dd`, `openssl`, `fio`, etc.),
+- doing smoke tests or minimal evaluations without boilerplate.
+
+See [`examples/cmdbench/dd.py`](examples/cmdbench/dd.py) for a full example.
+
+
+## Getting Started, with tutorials
 
 Without further ado, let us fix the idea by using tutorials.
 The repository provides different implementations called
