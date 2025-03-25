@@ -1,7 +1,7 @@
 # Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from benchkit.quick import quick_cmd_evaluate
+from benchkit.quick import quick_cmd_campaign
 
 optspace = {
     "bs": ["4K", "16K", "64K"],
@@ -19,8 +19,9 @@ def dd_cmdl_exp(optpt) -> str:
 
 # Run the experiment
 if __name__ == "__main__":
-    quick_cmd_evaluate(
+    campaign = quick_cmd_campaign(
         name="dd_disk_io",
         option_space=optspace,
         make_benchmark=dd_cmdl_exp,
     )
+    campaign.run()

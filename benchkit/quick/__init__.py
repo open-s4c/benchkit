@@ -110,12 +110,12 @@ class _Benchmark(Benchmark):
         return []
 
 
-def quick_cmd_evaluate(
+def quick_cmd_campaign(
     name: str,
     option_space: Dict[str, List[Any]],
     make_benchmark,
     nb_runs: int = 1,
-) -> None:
+) -> CampaignCartesianProduct:
     campaign = CampaignCartesianProduct(
         name=name,
         benchmark=_Benchmark(command_fun=make_benchmark),
@@ -129,7 +129,7 @@ def quick_cmd_evaluate(
         benchmark_duration_seconds=None,
     )
 
-    campaign.run()
+    return campaign
 
 
 def parse_cli_optspace(

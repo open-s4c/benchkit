@@ -3,7 +3,7 @@
 
 import sys
 
-from benchkit.quick import parse_cli_optspace, quick_cmd_evaluate
+from benchkit.quick import parse_cli_optspace, quick_cmd_campaign
 
 optspace = {
     "bs": ["4K", "16K", "64K"],
@@ -26,9 +26,10 @@ if __name__ == "__main__":
         cli_args=sys.argv[1:],
     )
 
-    quick_cmd_evaluate(
+    campaign = quick_cmd_campaign(
         name="dd_disk_io",
         option_space=optspace,
         make_benchmark=dd_cmdl_exp,
         nb_runs=nb_runs,
     )
+    campaign.run()
