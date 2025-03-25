@@ -1,9 +1,10 @@
 # Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+import argparse
 import shlex
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from benchkit.benchmark import Benchmark, RecordResult
 from benchkit.campaign import CampaignCartesianProduct
@@ -113,11 +114,12 @@ def quick_cmd_evaluate(
     name: str,
     option_space: Dict[str, List[Any]],
     make_benchmark,
+    nb_runs: int = 1,
 ) -> None:
     campaign = CampaignCartesianProduct(
         name=name,
         benchmark=_Benchmark(command_fun=make_benchmark),
-        nb_runs=1,
+        nb_runs=nb_runs,
         variables=option_space,
         constants=None,
         debug=False,
@@ -128,3 +130,30 @@ def quick_cmd_evaluate(
     )
 
     campaign.run()
+
+
+def parse_cli_optspace(
+    option_space: Dict[str, List[Any]],
+    cli_args,
+) -> Tuple[Dict[str, List[Any]], int]:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--nb-runs", type=int, default=1)
+
+    # Add CLI args dynamically based on keys in option_space
+    for key in option_space.keys():
+        parser.add_argument(f"--{key}", type=str)
+
+    args = parser.parse_args(cli_args)
+
+    # Build filtered option_space
+    filtered = {}
+    for k in option_space:
+        cli_val = getattr(args, k)
+        if cli_val is not None:
+            filtered[k] = [cli_val]
+        else:
+            filtered[k] = option_space[k]
+
+    nb_runs = args.nb_runs
+
+    return filtered, nb_runs
