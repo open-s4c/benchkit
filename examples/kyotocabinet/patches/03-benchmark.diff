@@ -36,17 +36,17 @@ index 0000000..299669a
 +/////////////////////////////////////////////////////////
 +// HELPER FUNCTIONS
 +/////////////////////////////////////////////////////////
-+static inline int MarsagliaXORV (int x) { 
-+  if (x == 0) x = 1 ; 
++static inline int MarsagliaXORV (int x) {
++  if (x == 0) x = 1 ;
 +  x ^= x << 6;
 +  x ^= ((unsigned)x) >> 21;
-+  x ^= x << 7 ; 
++  x ^= x << 7 ;
 +  return x ;        // use either x or x & 0x7FFFFFFF
 +}
 +
 +static inline int MarsagliaXOR (int * seed) {
 +  int x = MarsagliaXORV(*seed);
-+  *seed = x ; 
++  *seed = x ;
 +  return x & 0x7FFFFFFF;
 +}
 +
@@ -60,10 +60,10 @@ index 0000000..299669a
 +static inline int rand_range(int n, unsigned short *seed)
 +{
 +  /* Return a random number in range [0;n) */
-+  
++
 +  /*int v = (int)(erand48(seed) * n);
 +  assert (v >= 0 && v < n);*/
-+  
++
 +  int v = MarsagliaXOR((int *)seed) % n;
 +  return v;
 +}
@@ -163,7 +163,7 @@ index 0000000..299669a
 +			int range = rnum_ * 2;
 +			for (int i = 1; !err_ && i <= rnum_; i++) {
 +				char kbuf[64];
-+				size_t ksiz = sprintf(kbuf, "%08lld", 
++				size_t ksiz = sprintf(kbuf, "%08lld",
 +						(long long)rand_range(range + 1, seed));
 +				if (!db_->set(kbuf, ksiz, kbuf, ksiz)) {
 +					assert(0 && "Error in setting\n");
@@ -206,7 +206,7 @@ index 0000000..299669a
 +			while (!stop) {
 +				int op = rand_range(1000, seed);
 +				char kbuf[64];
-+				size_t ksiz = sprintf(kbuf, "%08lld", 
++				size_t ksiz = sprintf(kbuf, "%08lld",
 +						(long long)rand_range(range+1, seed));
 +				if (op < update_) {
 +					if (1 || (op & 0x01) == 0) {
@@ -264,7 +264,7 @@ index 0000000..299669a
 +	struct timespec timeout;
 +	timeout.tv_sec = duration / 1000;
 +	timeout.tv_nsec = (duration % 1000) * 1000000;
-+	
++
 +	printf("Setting Records\n");
 +
 +	ThreadSet threadsets[THREADMAX];
@@ -279,7 +279,7 @@ index 0000000..299669a
 +	threadsets[0].setparam(0, &db, rnum, thnum);
 +	threadsets[0].start();
 +	threadsets[0].join();
-+	
++
 +	printf("Done setting records\n");
 +
 +	stop = 0;
@@ -293,9 +293,9 @@ index 0000000..299669a
 +	long total_update = 0;
 +	long total_get = 0;
 +	long total_op = 0;
-+	
++
 +	if(duration > 0)
-+		nanosleep(&timeout, NULL); 
++		nanosleep(&timeout, NULL);
 +
 +	stop = 1;
 +
@@ -315,6 +315,6 @@ index 0000000..299669a
 +	dbmetaprint(&db, true);
 +	printf("Closing the database\n");
 +	if (!db.close())
-+		printf("Error in closing\n"); 
++		printf("Error in closing\n");
 +
 +}

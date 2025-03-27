@@ -23,7 +23,9 @@ def main() -> None:
     # Define the campaign, associated with the LevelDB benchmark
     campaign = kyotocabinet_campaign(
         src_dir=kyotocabinet_src_dir,
-        test_name=[],
+        test_name=[
+            "benchmark",
+            ],
         nb_runs=3,
         benchmark_duration_seconds=2,
         nb_threads=[8],

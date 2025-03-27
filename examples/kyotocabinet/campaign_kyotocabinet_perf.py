@@ -29,7 +29,9 @@ def main() -> None:
     # Define the campaign, associated with the Kyoto Cabinet benchmark
     campaign = kyotocabinet_campaign(
         src_dir=kyotocabinet_src_dir,
-        test_name=[],
+        test_name=[
+            "benchmark",
+            ],
         nb_runs=1,
         benchmark_duration_seconds=3,
         nb_threads=[2, 4],

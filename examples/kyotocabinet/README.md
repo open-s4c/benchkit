@@ -33,6 +33,14 @@ cd examples/kyotocabinet/
 ./campaign_kyotocabinet.py
 ```
 
+There is also a campaign that uses the platform **stabilization**
+features of `benchkit` (the `helpers/linux/predictable` folder).
+To run it, run the following:
+
+```bash
+./campaign_kyotocabinet_stable.py
+```
+
 Another possible use case is `perf` that can be used as a command wrapper to
 collect performance monitoring information into the CSV file or the data
 directory:
