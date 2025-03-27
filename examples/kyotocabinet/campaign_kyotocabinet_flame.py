@@ -4,10 +4,12 @@
 
 
 from kyotocabinet import kyotocabinet_campaign
+
 from benchkit.campaign import CampaignSuite
 from benchkit.commandwrappers.perf import PerfReportWrap, enable_non_sudo_perf
 from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import caller_dir, get_curdir
+
 
 def main() -> None:
     """Main function of the campaign script."""

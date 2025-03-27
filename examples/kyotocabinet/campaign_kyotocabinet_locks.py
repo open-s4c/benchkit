@@ -8,7 +8,6 @@ Example of campaign script for Kyoto Cabinet benchmarks using different locks.
 from pathlib import Path
 from typing import Iterable, Tuple
 
-
 from kyotocabinet import kyotocabinet_campaign
 from tiltlib import TiltLib
 
