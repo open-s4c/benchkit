@@ -1,3 +1,0 @@
-../..
-../../examples/kyotocabinet/kit
-../../examples/tilt/kit
