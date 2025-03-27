@@ -2,7 +2,8 @@
 # Copyright (C) 2023 Huawei Technologies Co., Ltd. All rights reserved.
 # SPDX-License-Identifier: MIT
 """
-Example of campaign script for Kyoto Cabinet benchmarks with the stabilization "predlinux" tools enabled.
+Example of campaign script for Kyoto Cabinet benchmarks
+with the stabilization "predlinux" tools enabled.
 """
 
 from kyotocabinet import kyotocabinet_campaign
@@ -25,7 +26,7 @@ def main() -> None:
         src_dir=kyotocabinet_src_dir,
         test_name=[
             "benchmark",
-            ],
+        ],
         nb_runs=3,
         benchmark_duration_seconds=2,
         nb_threads=[8],

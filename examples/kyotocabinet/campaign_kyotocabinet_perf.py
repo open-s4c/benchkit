@@ -31,7 +31,7 @@ def main() -> None:
         src_dir=kyotocabinet_src_dir,
         test_name=[
             "benchmark",
-            ],
+        ],
         nb_runs=1,
         benchmark_duration_seconds=3,
         nb_threads=[2, 4],
@@ -65,4 +65,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

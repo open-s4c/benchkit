@@ -31,32 +31,30 @@ vsync_dir = (tilt_locks_dir / "../deps/libvsync/").resolve()
 
 patch_path = (tilt_locks_dir / "prefetch.diff").resolve()
 
+
 def build_locks(platform: Platform) -> Tuple[Path, Path]:
     """
-    Build different versions of Vsync locks, including the normal version and the regression version.
-    
+    Build different versions of Vsync locks, including the normal and the regression version.
+
     :param platform: Current platform object
     :return: Returns two paths: normal version and regression version (not used in this test)
     """
-    
+
     # Create TiltLib instance to build the normal version of the tilt lock
     tilt_ok = TiltLib(tilt_locks_dir=tilt_locks_dir, build_prefix="build_ok")
-    
-    
+
     platform.comm.shell(
         command="git checkout -- include/vsync/atomic/internal/arm64.h",
         current_dir=vsync_dir,
     )
-    tilt_ok.build()  
-    build_ok = tilt_ok.build_dir  
+    tilt_ok.build()
+    build_ok = tilt_ok.build_dir
 
-    
     tilt_reg = TiltLib(tilt_locks_dir=tilt_locks_dir, build_prefix="build_reg")
-    
-    
+
     platform.comm.shell(command=f"git apply {patch_path}", current_dir=vsync_dir)
-    tilt_reg.build()  
-    build_regression = tilt_reg.build_dir  
+    tilt_reg.build()
+    build_regression = tilt_reg.build_dir
 
     # Return the two build directories
     return build_ok, build_regression
@@ -68,7 +66,7 @@ def get_campaign(
 ) -> CampaignCartesianProduct:
     """
     Create a benchmark campaign specifying shared libraries and the type of lock.
-    
+
     :param shared_libs: Shared libraries to use
     :param mutex_constant: Lock type constant
     :return: Returns a campaign instance
@@ -82,12 +80,13 @@ def get_campaign(
         test_name=[],  # Test name is empty, meaning a custom benchmark
         shared_libs=shared_libs,  # Set shared libraries
         constants={
-            "mutex": mutex_constant,  
+            "mutex": mutex_constant,
         },
-        nb_runs=3,  
-        benchmark_duration_seconds=10,  
-        nb_threads=[1, 2, 4, 8, 16, 32, 64],  
+        nb_runs=3,
+        benchmark_duration_seconds=10,
+        nb_threads=[1, 2, 4, 8, 16, 32, 64],
     )
+
 
 def get_baseline_campaign() -> CampaignCartesianProduct:
     return get_campaign(
@@ -143,14 +142,14 @@ def get_vcaslock_lse_prefetch_campaign(build_path: Path) -> CampaignCartesianPro
         shared_libs=[PrecompiledSharedLib(path=vcaslocklib_path, env_vars=None)],
     )
 
+
 def main() -> None:
     platform = get_current_platform()
-    hostname = platform.hostname  
-    
+    hostname = platform.hostname
+
     # Build normal and regression versions of the tilt lock
     build_ok, build_regression = build_locks(platform=platform)
-    
-    
+
     campaigns = [
         get_baseline_campaign(),
         get_taslock_campaign(build_path=build_ok),
@@ -160,38 +159,35 @@ def main() -> None:
         get_vcaslock_nolse_prefetch_campaign(build_path=build_regression),
         get_vcaslock_lse_prefetch_campaign(build_path=build_regression),
     ]
-    
-    
-    suite = CampaignSuite(campaigns=campaigns)
-    suite.print_durations()  
-    suite.run_suite()  
 
-    
+    suite = CampaignSuite(campaigns=campaigns)
+    suite.print_durations()
+    suite.run_suite()
+
     suite.generate_global_csv()
 
-    
     title = f"Kyoto Cabinet kccachetest w/wo tilt locks - Host: {hostname}"
 
     # Generate line plot comparing throughput of different lock types
     suite.generate_graph(
-        plot_name="lineplot",  
-        x="nb_threads",  
-        y="throughput", 
-        hue="mutex",  
-        style="mutex",  
-        markers=True,  
-        dashes=False,  
-        title=title,  
+        plot_name="lineplot",
+        x="nb_threads",
+        y="throughput",
+        hue="mutex",
+        style="mutex",
+        markers=True,
+        dashes=False,
+        title=title,
     )
 
     # Generate scatter plot comparing throughput of different lock types
     suite.generate_graph(
-        plot_name="scatterplot",  
-        x="nb_threads",  
-        y="throughput",  
-        hue="mutex",  
-        style="mutex",  
-        title=title,  
+        plot_name="scatterplot",
+        x="nb_threads",
+        y="throughput",
+        hue="mutex",
+        style="mutex",
+        title=title,
     )
 
 
