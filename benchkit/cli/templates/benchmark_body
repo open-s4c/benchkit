@@ -1,0 +1,100 @@
+from pathlib import Path
+from typing import List, Dict, Any
+
+class MyBenchmark(Benchmark):
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__(
+            command_wrappers=(),
+            command_attachments=(),
+            shared_libs=(),
+            pre_run_hooks=(),
+            post_run_hooks=(),
+        )
+
+        # Replace the following by the path where to build/run your benchmark.
+        self._bench_src_path = Path("{command_dir}").resolve()
+
+    @property
+    def bench_src_path(self) -> Path:
+        return self._bench_src_path
+
+    @staticmethod
+    def get_build_var_names() -> List[str]:
+        return [
+            # list here your build variable names as strings
+        ]
+
+    @staticmethod
+    def get_run_var_names() -> List[str]:
+        return [
+            # list here your run variable names as strings
+        ]
+
+    def clean_bench(self) -> None:
+        # Add here the steps to clean the benchmark (optional).
+        pass
+
+    def prebuild_bench(
+        self,
+        **kwargs,
+    ) -> int:
+        # Fill here general build steps that do not depend on the build
+        # variables. Return the time it took, in seconds.
+        return 0
+
+    def build_bench(
+        self,
+        # add here build variables for your benchmark
+        **kwargs,
+    ) -> None:
+        # Replace the following command by the steps to build your benchmark.
+        build_command = {build_command}
+
+        if not build_command:
+            return
+
+        self.platform.comm.shell(
+            command=build_command,
+            current_dir=self.bench_src_path,
+        )
+
+    def single_run(
+        self,
+        # Add here run variables for your benchmark.
+        **kwargs,
+    ) -> str:
+        current_dir = self.bench_src_path
+        environment = self._preload_env(**kwargs)
+
+        # Replace the following command by the steps to run your benchmark.
+        run_command = {run_command}
+
+        wrapped_run_command, wrapped_environment = self._wrap_command(
+            run_command=run_command,
+            environment=environment,
+            **kwargs,
+        )
+
+        output = self.run_bench_command(
+            run_command=run_command,
+            wrapped_run_command=wrapped_run_command,
+            current_dir=current_dir,
+            environment=environment,
+            wrapped_environment=wrapped_environment,
+            print_output=True,
+        )
+
+        return output
+
+    def parse_output_to_results(self, command_output: str, **_kwargs,) -> Dict[str, Any]:
+        # Assume last line contains a single number as output:
+        output = command_output.strip().splitlines()[-1].strip()
+
+        result_dict = {{
+            "result": output,
+            # Add here other output variables.
+        }}
+
+        return result_dict
