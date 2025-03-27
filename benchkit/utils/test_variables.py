@@ -5,16 +5,11 @@
 import unittest
 from typing import Any, Iterable, List
 
-from benchkit.utils.variables import (
-    cartesian_product,
-    list_groupby,
-)
+from benchkit.utils.variables import cartesian_product, list_groupby
 from benchkit.utils.variables import (
     list_groupby_from_multi_index_groupby as list_from_migb,
 )
-from benchkit.utils.variables import (
-    multi_index_groupby,
-)
+from benchkit.utils.variables import multi_index_groupby
 
 
 class TestVariables(unittest.TestCase):
