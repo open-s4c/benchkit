@@ -194,6 +194,8 @@ future.
   subsequent invocation, avoiding recomputation of successful results.
   This is especially important for long-running or overnight campaigns.
 
+- Add gperftools: https://github.com/gperftools/gperftools
+
 ## Non-functional changes
 
 - Release as a pip package!
