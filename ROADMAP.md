@@ -218,3 +218,6 @@ Better document the following:
 - deep numa hierarchy
 
 - remote benchmarking
+
+Consider Canonical documentation mindset:
+https://ubuntu.com/blog/diataxis-a-new-foundation-for-canonical-documentation

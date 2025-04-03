@@ -12,10 +12,16 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
+dependencies = [
+  "docopt<=0.6.2",
+]
 
 [project.urls]
 Homepage = "https://github.com/open-s4c/benchkit"
 Issues = "https://github.com/open-s4c/benchkit/issues"
+
+[project.scripts]
+benchkit = "benchkit.cli:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -1,0 +1,28 @@
+from benchkit.benchmark import Benchmark
+from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
+
+{benchmark_content}
+
+def main() -> None:
+    benchmark = MyBenchmark()
+
+    campaign = CampaignCartesianProduct(
+        name="benchmark",
+        benchmark=benchmark,
+        nb_runs={nb_runs},
+        variables={{}},
+        constants=None,
+        debug=False,
+        gdb=False,
+        enable_data_dir=True,
+        continuing=False,
+        benchmark_duration_seconds=None,
+    )
+
+    campaign_suite = CampaignSuite(campaigns=[campaign])
+    campaign_suite.print_durations()
+    campaign_suite.run_suite()
+
+
+if __name__ == "__main__":
+    main()
