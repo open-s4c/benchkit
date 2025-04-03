@@ -47,3 +47,13 @@ class CommandExecutor(CommandVisitor):
             output_is_log=False,  # TODO
         ).strip()
         return output
+
+
+class CommandShellscriptor(CommandVisitor):
+    def __init__(self):
+        pass
+
+    def generate_shell_script_str(self, command: Command,) -> str:
+        return command.accept(self)
+
+    def visit_single_command(self, command: SingleCommand,) -> str:

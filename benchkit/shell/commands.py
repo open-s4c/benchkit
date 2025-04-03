@@ -61,6 +61,13 @@ class WhichCommand(SingleCommand):
         super().__init__(program=ExecutableArg("which"), args=[StrArg(name)])
 
 
+@dataclass
+class SequenceCommand(Command):
+    commands: List[Command]
+
+    def accept(self, visitor):
+        return visitor.visit_sequence_command(self)
+
 def run_command(
     command: Command,
     comm_layer: CommunicationLayer,

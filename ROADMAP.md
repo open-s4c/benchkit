@@ -156,6 +156,7 @@ future.
   - Commands for querying the state of a running benchmark, such as progress,
     current iteration, or system resource usage.
 
+- Add gperftools: https://github.com/gperftools/gperftools
 
 ## Non-functional changes
 
