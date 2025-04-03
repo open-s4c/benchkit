@@ -1,9 +1,12 @@
 #!/bin/sh
 set -e
 
-venv_path=$1
-[ -z "${venv_path}" ] && venv_path=venv
+this_dir="$(readlink -f "$(dirname "$0")")"
+install_script="${this_dir}/install_venv.py"
 
+<<<<<<< HEAD
+# BEFORE DISCARDING MERGE CONFLICTS:
+# CHECK THAT THE NEW PYTHON VENV SCRIPT MATCHES THE LATEST CHANGES HERE.
 script_dir=$(dirname "$(readlink -f "$0")")
 
 # dependencies: ${pythonex} ${pythonex}-venv ${pythonex}-dev
@@ -56,3 +59,6 @@ else
 fi
 
 "${python_exec}" "${script_dir}/add_paths_venv.py" ${venv_path}
+=======
+python3 "${install_script}"
+>>>>>>> 0a66668 (wip: cli)

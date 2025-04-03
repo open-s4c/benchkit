@@ -13,7 +13,7 @@ COLOR_END = "\033[0m"
 
 
 def _detect_parent_shell() -> str:
-    # Get the command name of the parent process
+    """Get the command name of the parent process."""
     output = subprocess.check_output(
         ["ps", "-p", str(os.getppid()), "-o", "comm="],
         text=True,

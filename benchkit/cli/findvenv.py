@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 from typing import List
 
+from benchkit.cli.pathsvenv import add_paths_venv
+
 
 def create_venv(
     venv_dir: Path,
@@ -33,6 +35,11 @@ def install_pkgs_in_venv(
             print(f"Installing package in venv '{venv_dir}': {pkg}", file=sys.stderr)
         subprocess.check_call([f"{pip3}", "install", "--upgrade"] + packages)
 
+    def install_requirements(path: Path) -> None:
+        for pkg in packages:
+            print(f"Installing requirements from '{path}'", file=sys.stderr)
+        subprocess.check_call([f"{pip3}", "install", "--requirement", f"{path}"])
+
     if full:
         install_pip_pkg(packages=["pip"])
         install_pip_pkg(packages=["setuptools"])
@@ -45,19 +52,26 @@ def install_pkgs_in_venv(
 
     if full:
         packages = [
-            "black<=24.10.0",
-            "black[d]<=24.10.0",
-            "black[jupyter]<=24.10.0",
+            "black<=25.1.0",
+            "black[d]<=25.1.0",
+            "black[jupyter]<=25.1.0",
             "docopt<=0.6.2",
-            "flake8<=7.1.1",
-            "isort<=5.13.2",
-            "libtmux<=0.40.0",
-            "pycodestyle<=2.12.1",
-            "pylint<=3.3.2",
+            "flake8<=7.2.0",
+            "isort<=6.0.1",
+            "libtmux<=0.46.1",
+            "pycodestyle<=2.13.0",
+            "pylint<=3.3.6",
         ]
         if latest_deps:
             packages = [p.split("<=")[0].strip() for p in packages]
         install_pip_pkg(packages=packages)
+
+        requirements_filename = "requirements.txt"
+        requirements_path = Path(requirements_filename).resolve()
+        if requirements_path.is_file():
+            install_requirements(path=requirements_path)
+
+        add_paths_venv()
 
 
 def find_venv(
