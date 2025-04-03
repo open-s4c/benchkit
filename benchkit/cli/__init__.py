@@ -61,7 +61,6 @@ def init_module(args):
 def main() -> None:
     args = docopt(__doc__)
 
-    use_module: bool = args["module"]
     module: str = args["--module"]
     command: str = args["--command"]
     run_command: str = args["--run-command"]
@@ -90,6 +89,10 @@ def main() -> None:
         from benchkit.cli.binstall import benchkit_activate
 
         benchkit_activate()
+        return
+
+    if args["module"]:
+        raise NotImplementedError(f"Module '{module}' unsupported. Will come in the future.")
 
     if args["init"]:
         from benchkit.cli.init import benchkit_init
@@ -119,11 +122,7 @@ def main() -> None:
         from benchkit.cli.run import benchkit_run
 
         benchkit_run(campaign_file=campaign_file)
-
-    if args["module"]:
-        print(use_module)
-        print(module)
-        raise NotImplementedError("Will come in the future.")
+        return
 
 
 if __name__ == "__main__":
