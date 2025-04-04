@@ -229,6 +229,41 @@ class Pacman(PackageManager):
         )
 
 
+class Default(PackageManager):
+    """
+    Represent any package manager, if the used package manager cannot be found,
+    note that this will be able to tell whether or not a specific packages is installed.
+    """
+
+    def filename_to_packagename(
+        self,
+        filename: str,
+    ) -> str | None:
+        return None
+
+    def get_install_lines(
+        self,
+        packages: Iterable[str],
+    ) -> List[str]:
+        return []
+
+    def package_exists(
+        self,
+        package_name: str,
+        platform: Platform,
+    ) -> bool:
+        # This command uses a regex to get an exact match to see if
+        # the given package exists.
+        return True
+
+    def package_is_installed(
+        self,
+        package_name: str,
+        platform: Platform,
+    ) -> bool:
+        return True
+
+
 def get_package_manager(platform: Platform) -> PackageManager:
     """
     Return the package manager installed on the given platform.
@@ -254,4 +289,5 @@ def get_package_manager(platform: Platform) -> PackageManager:
     if pacman is not None:
         return Pacman()
 
-    raise ValueError("Supported package manager not found")
+    print("[WARNING] Supported package manager not found, installed packages will not be checked.")
+    return Default()
