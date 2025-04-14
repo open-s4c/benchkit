@@ -68,8 +68,13 @@ class NcuWrap(CommandWrapper):
 
         super().__init__()
 
+    # TODO only for Ubuntu - expand to check for other OS
+    # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#common-installation-instructions-for-ubuntu
     def dependencies(self):
-        return super().dependencies()
+        return super().dependencies() + [
+            PackageDependency("cuda-toolkit"),
+            PackageDependency("nvidia-gds")
+        ]
 
     def command_prefix(self, **kwargs) -> List[str]:
         cmd_prefix = super().command_prefix(**kwargs)
@@ -80,7 +85,7 @@ class NcuWrap(CommandWrapper):
                 "Report data file cannot be None, it is required to save strace output."
             )
 
-        if self._config_path != None:
+        if self._config_path is not None:
             options.append(["--config-file-path", f"{self._config_path}"]) 
         else:
             if self._force_overwrite:
@@ -90,27 +95,25 @@ class NcuWrap(CommandWrapper):
                 options.append("--nvtx")
 
             if self._app_only:
-                options.append(["--target-processes"],["application-only"])
+                options.extend(["--target-processes"],["application-only"])
 
-            if self._target_process_filter != None:
-                options.append(["--target_process_filter"],[f"regex:{self._target_process_filter}"])
+            # if self._target_process_filter is not None:
+            #     options.extend(["--target_process_filter"],[f"regex:{self._target_process_filter}"])
 
-            if self._exclude_process != None:
-                options.append(["--target_process_filter"],[f"exclude:{self._exclude_process}"])
+            # if self._exclude_process is not None:
+            #     options.extend(["--target_process_filter"],[f"exclude:{self._exclude_process}"])
 
-            if self._target_kernels != None:
-                options.append(["--kernel-name",f"regex:{self._target_kernels}"])
+            if self._target_kernels is not None:
+                options.extend(["--kernel-name",f"regex:{self._target_kernels}"])
 
-            options.append(["--set",f"{self._set}"])
+            options.extend(["--set",f"{self._set}"])
 
-            if self._metrics != None:
+            if self._metrics is not None:
                 metrics = get_metrics_from_list(self._metrics)
-                options.append(["--metrics"],[f"{metrics}"])
+                options.extend(["--metrics"],[f"{metrics}"])
 
-            if self._section != None:
-                options.append(["--section"],[f"regex:{self._section}"])
-
-            
+            if self._section is not None:
+                options.extend(["--section"],[f"regex:{self._section}"])
 
         cmd_prefix = (
             ["ncu"]
@@ -123,9 +126,14 @@ class NcuWrap(CommandWrapper):
         )      
 
         return cmd_prefix
-    
-    def updated_environment(self, environment):
-        return super().updated_environment(environment)
 
-    def wrap(self, command, environment, **kwargs):
-        return super().wrap(command, environment, **kwargs)
+    #https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#post-installation-actions
+    def updated_environment(self, environment: Environment) -> Environment:
+        add_env_vars = {
+            "PATH": "/usr/local/cuda-12.8/bin/bin${PATH:+:${PATH}}",
+            "LD_LIBRARY_PATH": "/usr/local/cuda-12.8/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+        }
+        return environment | add_env_vars
+
+    # def wrap(self, command, environment, **kwargs):
+    #     return super().wrap(command, environment, **kwargs)
