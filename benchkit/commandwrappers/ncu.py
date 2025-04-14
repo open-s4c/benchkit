@@ -26,9 +26,13 @@ from benchkit.utils.types import Environment, PathType
 def list_to_regex(names: List) -> str:
     pass
 
+def get_metrics_from_list(metrics: Optional[List]) -> str:
+    return ','.join(metrics)
+
 """
 target_process_filter - only accepts strings denoting regular expressions TODO expand to lists of names
 target_kernels - only accepts strings denoting regular expressions TODO expand to lists of names
+section - only accepts strings denoting regular expressions
 
 app_only - target_processes command-line option
 """
@@ -44,7 +48,10 @@ class NcuWrap(CommandWrapper):
         target_processes_filter: Optional[str] = None,
         exclude_process: Optional[str] = None,
         target_kernels: Optional[str] = None,
-        launch_count: int = 1):
+        launch_count: int = 1,
+        set: Optional[str] = "basic",
+        metrics: Optional[List] = None,
+        section: Optional[str] = None):
 
         self._config_path = config_path
         self._report_path = report_path
@@ -55,6 +62,9 @@ class NcuWrap(CommandWrapper):
         self._exclude_process = exclude_process
         self._target_kernels = target_kernels
         self._launch_count = launch_count
+        self._set = set
+        self._metrics = metrics
+        self._section = section
 
         super().__init__()
 
@@ -90,6 +100,15 @@ class NcuWrap(CommandWrapper):
 
             if self._target_kernels != None:
                 options.append(["--kernel-name",f"regex:{self._target_kernels}"])
+
+            options.append(["--set",f"{self._set}"])
+
+            if self._metrics != None:
+                metrics = get_metrics_from_list(self._metrics)
+                options.append(["--metrics"],[f"{metrics}"])
+
+            if self._section != None:
+                options.append(["--section"],[f"regex:{self._section}"])
 
             
 
