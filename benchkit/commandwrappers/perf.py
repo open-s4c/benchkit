@@ -541,10 +541,40 @@ class PerfStatWrap(CommandWrapper):
 
         return rows
 
+    # TODO: Look into different version of perf. This might not be needed.
+    # Furthermore, this is only tested on my machine
+    def _get_perf_field(
+            self,
+            perf_counter_row: dict,
+            field: str,
+            perf_version: str
+            ):
+        if perf_version == "6.8.12":
+            match field:
+                case "event_name":
+                    return perf_counter_row["event"]
+                case "counter_value":
+                    return perf_counter_row["counter-value"]
+                case "counter_unit":
+                    return perf_counter_row["unit"]
+                case "run_time":
+                    return perf_counter_row["event-runtime"]
+                case "percentage_counter_cover":
+                    return perf_counter_row["pcnt-running"]
+                case _:
+                    raise ValueError(f"No field named {field} known for this version of perf")
+        else: 
+            return perf_counter_row[field]
+
+
     def _results_per_thread(
         self,
         perf_stat_pathname: PathType,
     ) -> RecordResult:
+        perf_version_output = shell_out("perf --version", print_output=False)
+        perf_version = perf_version_output.split(' ')[2].strip()
+        print("perf version:", perf_version)
+
         counter_rows = self._parse_csv(  # TODO adapt for json
             perf_stat_pathname=perf_stat_pathname,
             field_names=["taskname-pid"] + self._perf_stat_csv_field_names,
@@ -557,17 +587,23 @@ class PerfStatWrap(CommandWrapper):
 
         output_dict = {}
         for counter_row in counter_rows:
+            print("row:", counter_row)
             taskname_pid = counter_row["taskname-pid"]
             _, pid = taskname_pid.rsplit("-", maxsplit=1)
             assert filename_tid == int(pid)
 
-            event_name = counter_row["event_name"]
+            # event_name = counter_row["event_name"]
+            event_name = self._get_perf_field(counter_row ,"event_name", perf_version)
             if event_name.endswith("/"):
                 event_name = event_name[:-1]
-            counter_value = counter_row["counter_value"]
-            unit = counter_row["counter_unit"]
-            run_time = counter_row["run_time"]
-            coverage = counter_row["percentage_counter_cover"]
+            # counter_value = counter_row["counter_value"]
+            counter_value = self._get_perf_field(counter_row ,"counter_value", perf_version)
+            # unit = counter_row["counter_unit"]
+            unit = self._get_perf_field(counter_row ,"counter_unit", perf_version)
+            # run_time = counter_row["run_time"]
+            run_time = self._get_perf_field(counter_row ,"run_time", perf_version)
+            # coverage = counter_row["percentage_counter_cover"]
+            coverage = self._get_perf_field(counter_row ,"percentage_counter_cover", perf_version)
 
             output_dict[f"perf-stat/pid{pid}/{event_name}"] = counter_value
             output_dict[f"perf-stat/pid{pid}/{event_name}.unit"] = unit
