@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterable, List, Optional
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignCartesianProduct, Constants
 from benchkit.commandwrappers import CommandWrapper
+from benchkit.platforms import get_current_platform
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
@@ -269,7 +270,15 @@ def lusearch_campaign(
         benchmark = LusearchBench(
             src_dir=src_dir,
             command_wrappers=command_wrappers,
-            command_attachments=command_attachments,
+            # command_attachments=command_attachments,
+            command_attachments=[
+                lambda process, record_data_dir: command_wrappers[0].attach_every_thread(
+                    platform=get_current_platform(),
+                    process=process,
+                    record_data_dir=record_data_dir,
+                    poll_ms=100,
+                    ),
+                ],
             shared_libs=shared_libs,
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,

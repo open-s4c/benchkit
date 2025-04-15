@@ -27,7 +27,19 @@ def main() -> None:
 
     # Define the "perf-stat" command wrapper to be passed to the benchmark initialization
     # It is used to collect information from the PMCs.
-    perfstatwrap = PerfStatWrap(events=["cache-misses"])
+    # perfstatwrap = PerfStatWrap(events=["cache-misses"])
+    perfstatwrap = PerfStatWrap(
+            perf_path=None,
+            events=[
+                # "cache-misses",
+                "context-switches"
+                # "sched:sched_switch"
+                ],
+            use_json = False,
+            separator=";",
+            quiet=False,
+            remove_absent_event=False,
+            )
 
     # Where is the benchmark code located
     lusearch_src_dir = (get_curdir(__file__) / "deps/dacapobench/benchmarks/").resolve()
@@ -65,7 +77,7 @@ def main() -> None:
     suite.generate_graph(
         plot_name="barplot",
         x="nb_threads",
-        y="perf-stat/cache-misses",
+        y="perf-stat/context-switches",
     )
 
     # campaigns = [
