@@ -21,7 +21,7 @@ def install_libsmctrl_from_src(
     builder.run_multiple(
         commands=[
             f"cd {workdir}/libsmctrl",
-            "make -j$(nproc) NVCC=$(which nvcc) libsmctrl.a"
+            "make -j$(nproc) NVCC=$(which nvcc) libsmctrl.a",
         ],
     )
     builder.space()

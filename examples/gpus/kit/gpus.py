@@ -5,10 +5,11 @@ from pythainer.builders import PartialDockerBuilder, UbuntuDockerBuilder
 from pythainer.examples.builders import get_user_gui_builder
 from pythainer.examples.runners import gpu_runner, gui_runner, personal_runner
 from pythainer.runners import ConcreteDockerRunner, DockerRunner
+from smctrl import install_libsmctrl_from_src
+
 from benchkit.communication.docker import DockerCommLayer
 from benchkit.platforms import Platform
 from benchkit.utils.types import PathType
-from smctrl import install_libsmctrl_from_src
 
 
 def remove_motd(builder: PartialDockerBuilder) -> None:
