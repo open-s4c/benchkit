@@ -36,6 +36,43 @@ def _get_metrics_from_list(metrics: Optional[List]) -> str:
     return ','.join(metrics)
 
 
+def _which(executable: str) -> Optional[PathType]:
+    result = None
+
+    try:
+        result = shell_out(
+            command=f"which {executable}", print_input=False, print_output=False
+        ).strip()
+    except subprocess.CalledProcessError:
+        pass
+
+    return result
+
+
+def _find_ncu_bin(search_path: Optional[PathType]) -> PathType:
+
+    result = None
+    kernel = shell_out(
+        "uname -r",
+        print_input=False,
+        print_output=False,
+    ).strip()
+
+    if search_path is not None:
+        ncu_path = os.path.realpath(os.path.join(search_path, "ncu"))
+        result = shell_out(f"which {ncu_path}").strip()
+
+    if result is None:
+        result = _which("ncu")
+
+    if result is None:
+        raise ValueError(
+            "Impossible to find ncu on the platform. Please install and/or specify search_path."
+        )
+
+    return result
+
+
 def _get_available_sets(
     ncu_bin: PathType
 ) -> List[NcuSet] :
@@ -147,6 +184,7 @@ class NcuWrap(CommandWrapper):
 
     def __init__(
         self,
+        ncu_path: Optional[PathType],
         config_path: Optional[PathType],
         report_path: PathType,
         force_overwrite: bool = False,
@@ -171,6 +209,8 @@ class NcuWrap(CommandWrapper):
         self._exclude_process = exclude_process
         self._target_kernels = target_kernels
         self._launch_count = launch_count
+
+        self._ncu_bin = _find_ncu_bin(ncu_path)
 
         if set is not None:
             self._set = _validate_set(
