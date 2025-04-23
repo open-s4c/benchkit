@@ -157,8 +157,10 @@ class NcuWrap(CommandWrapper):
         target_kernels: Optional[str] = None,
         launch_count: int = 1,
         set: Optional[NcuSet] = "basic",
-        section: Optional[Section] = None,
-        metrics: Optional[List[Metric]] = None):
+        sections: Optional[List[Section]] = None,
+        remove_absent_sections: bool = True,
+        metrics: Optional[List[Metric]] = None,
+        remove_absent_metrics: bool = True):
 
         self._config_path = config_path
         self._report_path = report_path
@@ -169,9 +171,23 @@ class NcuWrap(CommandWrapper):
         self._exclude_process = exclude_process
         self._target_kernels = target_kernels
         self._launch_count = launch_count
-        self._set = set
-        self._metrics = metrics
-        self._section = section
+
+        if set is not None:
+            self._set = _validate_set(
+                ncu_bin=self._ncu_bin,
+                set=set)
+
+        if metrics is not None:
+            self._metrics = _validate_metrics(
+                        ncu_bin=self._ncu_bin,
+                        metrics=metrics,
+                        remove_absent_metric=remove_absent_metrics)
+
+        if sections is not None:
+            self._sections = _validate_sections(
+                        ncu_bin=self._ncu_bin,
+                        sections=sections,
+                        remove_absent_section=remove_absent_sections)
 
         super().__init__()
 
@@ -215,12 +231,16 @@ class NcuWrap(CommandWrapper):
 
             options.extend(["--set",f"{self._set}"])
 
+            if self._sections is not None:
+                for section in self._sections:
+                    options.extend(["--section", f"{section}"])
+
             if self._metrics is not None:
-                metrics = get_metrics_from_list(self._metrics)
-                options.extend(["--metrics"],[f"{metrics}"])
+                metrics = _get_metrics_from_list(self._metrics)
+                options.extend(["--metrics", f"{metrics}"])
 
             if self._section is not None:
-                options.extend(["--section"],[f"regex:{self._section}"])
+                options.extend(["--section", f"regex:{self._section}"])
 
         cmd_prefix = (
             ["ncu"]
@@ -235,6 +255,7 @@ class NcuWrap(CommandWrapper):
         return cmd_prefix
 
     #https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#post-installation-actions
+    # assumes you have a 64 bit OS
     def updated_environment(self, environment: Environment) -> Environment:
         add_env_vars = {
             "PATH": "/usr/local/cuda-12.8/bin/bin${PATH:+:${PATH}}",
