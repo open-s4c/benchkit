@@ -23,11 +23,105 @@ from benchkit.shell.shell import shell_interactive, shell_out
 from benchkit.shell.shellasync import AsyncProcess, SplitCommand
 from benchkit.utils.types import Environment, PathType
 
-def list_to_regex(names: List) -> str:
+Metric = str
+NcuSet = str
+Section = str
+
+
+def _list_to_regex(names: List) -> str:
     pass
 
-def get_metrics_from_list(metrics: Optional[List]) -> str:
+
+def _get_metrics_from_list(metrics: Optional[List]) -> str:
     return ','.join(metrics)
+
+
+def _get_available_sets(
+    ncu_bin: PathType
+) -> List[NcuSet] :
+    return _get_available_options(ncu_bin, False, "--list-sets")
+
+def _get_available_sections(
+    ncu_bin: PathType
+) -> List[Section]:
+    return _get_available_options(ncu_bin, False, "--list-sections")
+
+def _get_available_metrics(
+    ncu_bin: PathType,
+) -> List[Metric]:
+    return _get_available_options(ncu_bin, True, "--query-metrics")
+
+
+def _get_available_options(
+        ncu_bin: PathType,
+        is_metrics: bool,
+        cmd_suffix: str,
+) -> List[str]:
+
+    raw_output = shell_out(
+        command=f"{ncu_bin} {cmd_suffix}",
+        print_input=False,
+        print_output=False,
+    )
+
+    ids = []
+
+    iterLines = iter(raw_output.splitlines())
+    # skips the first 4 rows which are just useless metadata
+    metricsIterLines = iterLines[3:]
+    for line in metricsIterLines:
+        sline = line.strip()
+        vals = sline.split()
+        ids.append(vals[0+is_metrics])
+
+    return ids
+
+
+def _validate_metrics(
+    ncu_bin: PathType,
+    metrics: List[Metric],
+    remove_absent_metric: bool
+) -> List[Metric]:
+
+    _validate_options(ncu_bin, metrics, True, remove_absent_metric)
+
+def _validate_sections(
+    ncu_bin: PathType,
+    sections: List[Section],
+    remove_absent_section: bool
+) -> List[Metric]:
+
+    _validate_options(ncu_bin, sections, False, remove_absent_section)
+
+
+def _validate_options(
+    ncu_bin: PathType,
+    options: List[str],
+    is_metric: bool,
+    remove_absent_options: bool
+) -> List[str]:
+    
+    all_options = []
+    if is_metric:
+        all_options = _get_available_metrics(ncu_bin)
+    else:
+        all_options = _get_available_sections(ncu_bin)
+        
+    set_all_options = set(all_options)
+    set_user_options = set(options)
+
+    not_available_options = set_user_options.difference(set_all_options)
+    available_options = set_user_options
+
+    if len(not_available_options) != 0:
+        if not remove_absent_options:
+            raise ValueError(
+                f"The following provided metrics are not available: {', '.join(not_available_options)}"
+            )
+        available_options = set_user_options.difference(not_available_options)
+
+    return List(available_options)
+
 
 """
 target_process_filter - only accepts strings denoting regular expressions TODO expand to lists of names
@@ -41,7 +135,7 @@ class NcuWrap(CommandWrapper):
     def __init__(
         self,
         config_path: Optional[PathType],
-        report_path: Optional[PathType],
+        report_path: PathType,
         force_overwrite: bool = False,
         enable_nvtx: bool = False,
         app_only: bool = False,
@@ -49,9 +143,9 @@ class NcuWrap(CommandWrapper):
         exclude_process: Optional[str] = None,
         target_kernels: Optional[str] = None,
         launch_count: int = 1,
-        set: Optional[str] = "basic",
-        metrics: Optional[List] = None,
-        section: Optional[str] = None):
+        set: Optional[NcuSet] = "basic",
+        section: Optional[Section] = None,
+        metrics: Optional[List[Metric]] = None):
 
         self._config_path = config_path
         self._report_path = report_path
