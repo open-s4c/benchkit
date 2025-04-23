@@ -93,6 +93,19 @@ def _validate_sections(
 
     _validate_options(ncu_bin, sections, False, remove_absent_section)
 
+def _validate_set(
+    ncu_bin: PathType,
+    set: NcuSet
+) -> NcuSet:
+    
+    all_sets = _get_available_sets(ncu_bin)
+    if set not in all_sets:
+        raise ValueError(
+            f"Specified set is not available: {set}"
+        )
+
+    return set
+
 
 def _validate_options(
     ncu_bin: PathType,
