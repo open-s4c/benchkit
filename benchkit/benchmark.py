@@ -1037,6 +1037,13 @@ class Benchmark:
                 temp_record_data_dir = self._temp_record_data_dir(record_data_dir)
                 self.platform.comm.makedirs(temp_record_data_dir, True)
 
+            def wrdr(file_content: str, filename: PathType) -> None:
+                self._write_to_record_data_dir(
+                    file_content=file_content,
+                    filename=filename,
+                    record_data_dir=record_data_dir,
+                )
+
             for pre_run_hook in self._pre_run_hooks:
                 pre_run_hook(
                     build_variables=build_variables,
@@ -1057,6 +1064,7 @@ class Benchmark:
                 build_variables=build_variables,
                 record_data_dir=temp_record_data_dir,
                 other_variables=other_variables,
+                write_record_file_fun=wrdr,
                 **run_variables,
             )
 
@@ -1098,13 +1106,6 @@ class Benchmark:
                 # single-line output record
                 record_params_results = dict_union(experiment_results_header, single_run_results)
                 experiment_results_lines = [record_params_results]
-
-            def wrdr(file_content: str, filename: PathType) -> None:
-                self._write_to_record_data_dir(
-                    file_content=file_content,
-                    filename=filename,
-                    record_data_dir=record_data_dir,
-                )
 
             for post_run_hook in self._post_run_hooks:
                 hook_dict = post_run_hook(
