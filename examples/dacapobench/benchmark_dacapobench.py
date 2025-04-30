@@ -10,6 +10,30 @@ from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import CpuOrder, PathType
 
+supported_bench_names = [
+    "avrora",
+    "batik",
+    "biojava",
+    "cassandra",
+    "eclipse",
+    "fop",
+    "graphchi",
+    "h2",
+    "jme",
+    "jython",
+    "kafka",
+    "luindex",
+    "lusearch",
+    "pmd",
+    "spring",
+    "sunflow",
+    "tomcat",
+    "tradebeans",
+    "tradesoap",
+    "xalan",
+    "zxing",
+]
+
 class DacapobenchBench(Benchmark):
     """Benchmark object for dacapobench benchmark."""
 
@@ -96,6 +120,11 @@ class DacapobenchBench(Benchmark):
         bench_name: str,
         **kwargs,
     ) -> None:
+        if bench_name not in supported_bench_names:
+            raise ValueError(
+                f"Invalid bench_names for dacapobench: {bench_name}\n"
+                f"The supported bench names are: {supported_bench_names}."
+            )
         self.platform.comm.shell(
                 command=f"ant {bench_name}",
                 current_dir=self._bench_src_path,
@@ -184,6 +213,12 @@ def dacapobench_campaign(
     }
     if pretty is not None:
         pretty = {"size": pretty}
+
+    if not all(bench_name in supported_bench_names for bench_name in bench_names):
+        raise ValueError(
+            f"Invalid bench_names for dacapobench: {[bench_name for bench_name in bench_names if bench_name not in supported_bench_names]}\n"
+            f"The supported bench names are: {supported_bench_names}."
+        )
 
     if src_dir is None:
         pass  # TODO try some search heuristics
