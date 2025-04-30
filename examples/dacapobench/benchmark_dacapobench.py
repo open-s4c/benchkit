@@ -1,14 +1,41 @@
+# Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 import pathlib
 from typing import Any, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignCartesianProduct, Constants
 from benchkit.commandwrappers import CommandWrapper
-from benchkit.platforms import get_current_platform
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
-from benchkit.utils.types import CpuOrder, PathType
+from benchkit.utils.types import PathType
+
+supported_bench_names = [
+    "avrora",
+    "batik",
+    "biojava",
+    "cassandra",
+    "eclipse",
+    "fop",
+    "graphchi",
+    "h2",
+    "jme",
+    "jython",
+    "kafka",
+    "luindex",
+    "lusearch",
+    "pmd",
+    "spring",
+    "sunflow",
+    "tomcat",
+    "tradebeans",
+    "tradesoap",
+    "xalan",
+    "zxing",
+]
+
 
 class DacapobenchBench(Benchmark):
     """Benchmark object for dacapobench benchmark."""
@@ -36,7 +63,7 @@ class DacapobenchBench(Benchmark):
 
         bench_src_path = pathlib.Path(src_dir)
         if not self.platform.comm.isdir(bench_src_path) and self.platform.comm.isfile(
-            bench_src_path / "/build.xml"
+            bench_src_path / "build.xml"
         ):
             raise ValueError(
                 f"Invalid dacapobench source path: {bench_src_path}\n"
@@ -52,7 +79,7 @@ class DacapobenchBench(Benchmark):
     def get_build_var_names() -> List[str]:
         return [
             "bench_name",
-                ]
+        ]
 
     @staticmethod
     def get_run_var_names() -> List[str]:
@@ -69,18 +96,21 @@ class DacapobenchBench(Benchmark):
         nb_threads: int,
     ) -> Dict[str, str]:
         duration = ""
-        for line in output.split('\n'):
-            # print("line:", line)
+        for line in output.split("\n"):
 
             output_exceptions = ["lusearch"]
             if bench_name in output_exceptions and line.startswith("===== DaCapo processed"):
-                splits = line.split(' ')
+                splits = line.split(" ")
                 duration = splits[6]
-            elif bench_name not in output_exceptions and line.startswith("===== DaCapo") and "PASSED" in line:
-                splits = line.split(' ')
+            elif (
+                bench_name not in output_exceptions
+                and line.startswith("===== DaCapo")
+                and "PASSED" in line
+            ):
+                splits = line.split(" ")
                 duration = splits[6]
 
-        return { "duration" : duration }
+        return {"duration": duration}
 
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
@@ -88,8 +118,7 @@ class DacapobenchBench(Benchmark):
             PackageDependency("cmake"),
         ]
 
-    def prebuild_bench(self,
-                       **_kwargs) -> None:
+    def prebuild_bench(self, **_kwargs) -> None:
         pass
 
     def build_bench(
@@ -97,11 +126,16 @@ class DacapobenchBench(Benchmark):
         bench_name: str,
         **kwargs,
     ) -> None:
+        if bench_name not in supported_bench_names:
+            raise ValueError(
+                f"Invalid bench_names for dacapobench: {bench_name}\n"
+                f"The supported bench names are: {supported_bench_names}."
+            )
         self.platform.comm.shell(
-                command=f"ant {bench_name}",
-                current_dir=self._bench_src_path,
-                output_is_log=True,
-                )
+            command=f"ant {bench_name}",
+            current_dir=self._bench_src_path,
+            output_is_log=True,
+        )
 
     def clean_bench(self) -> None:
         pass
@@ -127,9 +161,8 @@ class DacapobenchBench(Benchmark):
             bench_name,
             f"--thread-count={nb_threads}",
             f"--size={size}",
-            f"--iterations=1",
+            "--iterations=1",
         ]
-
 
         output = self.run_bench_command(
             run_command=run_command,
@@ -149,7 +182,9 @@ class DacapobenchBench(Benchmark):
     ) -> Dict[str, Any]:
         nb_threads = int(run_variables["nb_threads"])
         bench_name = run_variables["bench_name"]
-        result_dict = self._parse_results(output=command_output, bench_name=bench_name, nb_threads=nb_threads)
+        result_dict = self._parse_results(
+            output=command_output, bench_name=bench_name, nb_threads=nb_threads
+        )
         return result_dict
 
 
@@ -185,6 +220,15 @@ def dacapobench_campaign(
     }
     if pretty is not None:
         pretty = {"size": pretty}
+
+    if not all(bench_name in supported_bench_names for bench_name in bench_names):
+        unsupported_benchmarks = [
+            bench_name for bench_name in bench_names if bench_name not in supported_bench_names
+        ]
+        raise ValueError(
+            f"Invalid bench_names for dacapobench: {unsupported_benchmarks}\n"
+            f"The supported bench names are: {supported_bench_names}."
+        )
 
     if src_dir is None:
         pass  # TODO try some search heuristics

@@ -9,44 +9,43 @@ Minimal example to run benchmarks from dacapobench.
 from benchmark_dacapobench import dacapobench_campaign
 
 from benchkit.campaign import CampaignSuite
-from benchkit.utils.dir import get_curdir
+from benchkit.utils.dir import caller_dir
 
 
 def main() -> None:
 
     # Where is the benchmark code located
-    dacapobench_src_dir = (get_curdir(__file__) / "deps/dacapobench/benchmarks/").resolve()
+    dacapobench_src_dir = (caller_dir() / "deps/dacapobench/benchmarks/").resolve()
 
     # Define the campaign, associated with the LevelDB benchmark
     campaign = dacapobench_campaign(
         src_dir=dacapobench_src_dir,
         size=("small",),
         # size=("default",),
+        # size=("large",),
         bench_names=[
             # "avrora",
             # "batik",
-            "biojava",
+            # "biojava",
             # "cassandra",
             # "eclipse",
-            "fop",
+            # "fop",
             # "graphchi",
             # "h2",
             # "jme",
             # "jython",
             # "kafka",
             # "luindex",
-            "lusearch",
-            "pmd",
+            # "lusearch",
+            # "pmd",
             # "spring",
-            "sunflow",
+            # "sunflow",
             # "tomcat",
             # "tradebeans",
             # "tradesoap",
             "xalan",
             "zxing",
-
             # "h2o", # Not supported due missing data
-
         ],
         nb_runs=5,
         benchmark_duration_seconds=3,
@@ -59,14 +58,6 @@ def main() -> None:
     suite = CampaignSuite(campaigns=campaigns)
     suite.print_durations()
     suite.run_suite()
-
-    # Generate a graph to visualize the resulting throughputs
-    # suite.generate_graph(
-    #     plot_name="barplot",
-    #     x="nb_threads",
-    #     y="duration",
-    #     hue="bench_name",
-    # )
 
     suite.generate_graph(
         plot_name="catplot",
