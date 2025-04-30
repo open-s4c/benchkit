@@ -22,6 +22,7 @@ def main() -> None:
         src_dir=dacapobench_src_dir,
         size=("small",),
         # size=("default",),
+        # size=("large",),
         bench_names=[
             # "avrora",
             # "batik",
@@ -59,14 +60,6 @@ def main() -> None:
     suite = CampaignSuite(campaigns=campaigns)
     suite.print_durations()
     suite.run_suite()
-
-    # Generate a graph to visualize the resulting throughputs
-    # suite.generate_graph(
-    #     plot_name="barplot",
-    #     x="nb_threads",
-    #     y="duration",
-    #     hue="bench_name",
-    # )
 
     suite.generate_graph(
         plot_name="catplot",
