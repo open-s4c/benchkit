@@ -4,18 +4,24 @@
 
 ```bash
 cd examples/dacapobench/
-mkdir deps/
-cd deps/
-git clone git@github.com:dacapobench/dacapobench.git 
-cd dacapobench/benchmarks/
-cp default.properties local.properties
+./setup-deps.sh
 ```
 
 IMPORTANT: before trying to build the suite:
 
 1. Set your JAVA_HOME environment variable appropriately (it must be set and be consistent with the VM that will be used to build the suite).
+If you set your JAVA_HOME to Java 8 all the benchmarks will work
+```bash
+export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64/jre 
+```
 2. Create the local.properties file (using default.properties as a template)
+```bash
+sudo update-alternatives --config java # select java 11
+```
 3. Set jdk.11.home, in the local.properties, to point to a Java 11 installation.
+```bash
+sudo update-alternatives --config javac # select javac 11
+```
 
 ## Generate venv & configure it
 
