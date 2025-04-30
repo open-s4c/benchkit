@@ -45,9 +45,7 @@ def main() -> None:
             # "tradesoap",
             "xalan",
             "zxing",
-
             # "h2o", # Not supported due missing data
-
         ],
         nb_runs=5,
         benchmark_duration_seconds=3,
