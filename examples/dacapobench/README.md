@@ -31,13 +31,18 @@ This suite contains the following benchmarks:
 
 ```bash
 cd examples/dacapobench/
+```
+Modify the last line of the `local.properties` file so that it points to your java 11 installation.
+Once this is done you can continue.
+
+```bash
 ./setup-deps.sh
 ```
 
 IMPORTANT: before trying to build the suite:
 
 1. Set your JAVA_HOME environment variable appropriately (it must be set and be consistent with the VM that will be used to build the suite).
-If you set your JAVA_HOME to Java 8 all the benchmarks will work
+If you set your JAVA_HOME to Java 8 all the benchmarks will work. (Some use java 11 and will use the location provided in `local.properties`).
 ```bash
 export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64/jre 
 ```
