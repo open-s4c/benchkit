@@ -1,5 +1,32 @@
 # Example: The DaCapo Benchmark Suite
 
+This suite contains the following benchmarks:
+
+- avrora
+- batik
+- biojava
+- cassandra
+- eclipse
+- fop
+- graphchi
+- h2
+- jme
+- jython
+- kafka
+- luindex
+- lusearch
+- pmd
+- spring
+- sunflow
+- tomcat
+- tradebeans
+- tradesoap
+- xalan
+- zxing
+
+> [!NOTE]
+> `h2o` is not supported, due to missing resources
+
 ## Clone The DaCapo Benchmark Suite repository
 
 ```bash
