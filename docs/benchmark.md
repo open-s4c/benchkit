@@ -54,11 +54,6 @@ class MyBenchmark(Benchmark):
         # TODO: Add your run variables here
         return ["importantRunVariable", "importantVariable"]
 
-    # Deprecated, but since it is still called inside of the framework, it should still be overwritten, but only an empty array should be returned.
-    @staticmethod
-    def get_tilt_var_names() -> List[str]:
-        return []
-
     # Build the source code using the values required for the current experiment
     def build_bench(
         self,
@@ -139,6 +134,14 @@ This benchmark can then be used for a [campaign](campaign.md).
 > [!NOTE]
 > Because of the definition of `parse_output_results` this benchmarking class expects a single output line of `scv` code as extra information.
 > If this is not what is outputted by your results, either change the output, or change the definition of `parse_output_to_results`.
+
+> [!IMPORTANT]
+> Version 0.0.1 uses `get_tilt_var_names` that should be overwritten, this is no longer required starting from commit dcb183e 
+> ```python
+> @staticmethod
+> def get_tilt_var_names() -> List[str]:
+>    return []
+> ```
 
 ## Building the benchmark
 
