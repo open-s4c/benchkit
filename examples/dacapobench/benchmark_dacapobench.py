@@ -36,7 +36,7 @@ class DacapobenchBench(Benchmark):
 
         bench_src_path = pathlib.Path(src_dir)
         if not self.platform.comm.isdir(bench_src_path) and self.platform.comm.isfile(
-            bench_src_path / "/build.xml"
+            bench_src_path / "build.xml"
         ):
             raise ValueError(
                 f"Invalid dacapobench source path: {bench_src_path}\n"
