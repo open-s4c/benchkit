@@ -9,7 +9,7 @@ Minimal example to run benchmarks from dacapobench.
 from benchmark_dacapobench import dacapobench_campaign
 
 from benchkit.campaign import CampaignSuite
-from benchkit.utils.dir import get_curdir
+from benchkit.utils.dir import caller_dir
 
 
 def main() -> None:
