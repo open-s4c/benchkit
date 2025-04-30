@@ -15,7 +15,7 @@ from benchkit.utils.dir import get_curdir
 def main() -> None:
 
     # Where is the benchmark code located
-    dacapobench_src_dir = (get_curdir(__file__) / "deps/dacapobench/benchmarks/").resolve()
+    dacapobench_src_dir = (caller_dir() / "deps/dacapobench/benchmarks/").resolve()
 
     # Define the campaign, associated with the LevelDB benchmark
     campaign = dacapobench_campaign(
