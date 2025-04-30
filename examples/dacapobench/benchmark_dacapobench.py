@@ -70,7 +70,6 @@ class DacapobenchBench(Benchmark):
     ) -> Dict[str, str]:
         duration = ""
         for line in output.split('\n'):
-            # print("line:", line)
 
             output_exceptions = ["lusearch"]
             if bench_name in output_exceptions and line.startswith("===== DaCapo processed"):
