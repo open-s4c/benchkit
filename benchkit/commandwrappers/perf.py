@@ -111,86 +111,116 @@ def _validate_record_data_dir(record_data_dir: PathType) -> None:
 @cache
 def _get_available_events(
     perf_bin: PathType,
-) -> Tuple[List[PerfEvent], Dict[str, Dict[PerfEvent, str]]]:
+) -> Tuple[List[str], Dict[str, Dict[str, str]]]:
+    from subprocess import check_output
+
+    def shell_out(command, print_input=False, print_output=False):
+        return check_output(command, shell=True, text=True)
+
     raw_output = shell_out(
         command=f"{perf_bin} list --no-desc",
         print_input=False,
         print_output=False,
     )
-    events = []
-    events_dict = {}
+
+    events: List[str] = []
+    events_dict: Dict[str, Dict[str, str]] = {}
     current_group = "no_group"
     events_dict[current_group] = {}
 
     iterlines = iter(raw_output.splitlines())
     event_id = None
+
     for line in iterlines:
         sline = line.strip()
 
-        m = re.match(pattern=r"^([-_/:A-Za-z0-9\s]+):$", string=sline)
-        if m is not None:
+        # New group section (e.g., 'hwmon:')
+        m = re.match(r"^([-_/:A-Za-z0-9\s]+):$", sline)
+        if m:
             (group_name,) = m.groups()
             current_group = group_name
             events_dict[current_group] = {}
             continue
 
-        m = re.match(pattern=r"([-_/:.a-zA-Z0-9]+)\s+\[(.*)\]", string=sline)
-        if m is not None:
+        # event OR alias [description] (all on one line)
+        m = re.match(r"([-_/:.a-zA-Z0-9]+)\s+OR\s+([-_/:.a-zA-Z0-9]+)\s*\[(.*)\]", sline)
+        if m:
+            event_left, event_right, event_desc = m.groups()
+            events.extend([event_left, event_right])
+            events_dict[current_group][event_left] = event_desc
+            events_dict[current_group][event_right] = event_desc
+            continue
+
+        # event OR alias (description is on next line)
+        m = re.match(r"([-_/:.a-zA-Z0-9]+)\s+OR\s+([-_/:.a-zA-Z0-9]+)$", sline)
+        if m:
+            event_left, event_right = m.groups()
+            events.extend([event_left, event_right])
+            event_id = (event_left, event_right)
+            continue
+
+        # event [description] (canonical case)
+        m = re.match(r"([-_/:.a-zA-Z0-9]+)\s+\[(.*)\]", sline)
+        if m:
             event_id, event_desc = m.groups()
             events.append(event_id)
             events_dict[current_group][event_id] = event_desc
             continue
 
-        m = re.match(
-            pattern=r"([-_/:.a-zA-Z0-9]+)\s+OR\s+([-_/:.a-zA-Z0-9]+)\s*\[(.*)\]",
-            string=sline,
-        )
-        if m is not None:
-            event_left, event_right, event_desc = m.groups()
-            events.append(event_left)
-            events.append(event_right)
-            events_dict[current_group][event_left] = event_desc
-            events_dict[current_group][event_right] = event_desc
-            continue
-
-        m = re.match(pattern=r"(^[-_/:.a-zA-Z0-9]+)$", string=sline)
-        if m is not None:
+        # Single event name only (description may follow)
+        m = re.match(r"(^[-_/:.a-zA-Z0-9]+)$", sline)
+        if m:
             (event_id,) = m.groups()
             events.append(event_id)
             continue
 
-        m = re.match(pattern=r"^\[(.*)\]$", string=sline)
-        if m is not None:
+        # Description line in brackets (follows previous event_id)
+        m = re.match(r"^\[(.*)\]$", sline)
+        if m:
             (event_desc,) = m.groups()
-            if event_id is not None:
-                # use event_id set at the previous iteration
+            if isinstance(event_id, tuple):
+                for eid in event_id:
+                    events_dict[current_group][eid] = event_desc
+            elif event_id:
                 events_dict[current_group][event_id] = event_desc
             continue
 
-        m = re.match(pattern=r"^\[(.*)$", string=sline)
-        if m is not None:
+        # Opened bracket, starts multi-line desc
+        m = re.match(r"^\[(.*)$", sline)
+        if m:
             (event_desc,) = m.groups()
-            if event_id is not None:
-                # use event_id set at the previous iteration
+            if isinstance(event_id, tuple):
+                for eid in event_id:
+                    events_dict[current_group][eid] = event_desc
+            elif event_id:
                 events_dict[current_group][event_id] = event_desc
             continue
-        m = re.match(pattern=r"^\s+(.*)\]$", string=line)
-        if m is not None:
+
+        # Continuation of multi-line description (closing)
+        m = re.match(r"^\s+(.*)\]$", line)
+        if m:
             (event_desc,) = m.groups()
-            if event_id is not None:
-                # use event_id set at the previous iteration (description over 2 lines)
+            if isinstance(event_id, tuple):
+                for eid in event_id:
+                    events_dict[current_group][eid] += " " + event_desc
+            elif event_id:
                 events_dict[current_group][event_id] += " " + event_desc
             continue
-        m = re.match(pattern=r"^\s+(.*)$", string=line)
-        if m is not None:
+
+        # Continuation of multi-line description (middle)
+        m = re.match(r"^\s+(.*)$", line)
+        if m:
             (event_desc,) = m.groups()
-            if event_id is not None:
-                # use event_id set at the previous iteration (description over 3 lines)
-                if event_id not in events_dict:
+            if isinstance(event_id, tuple):
+                for eid in event_id:
+                    events_dict[current_group][eid] += " " + event_desc
+            elif event_id:
+                if event_id not in events_dict[current_group]:
                     events_dict[current_group][event_id] = ""
                 events_dict[current_group][event_id] += " " + event_desc
             continue
 
+        # Skip known unstructured lines
         if "[Raw hardware event descriptor]" in sline:
             continue
         if "[Hardware breakpoint]" in sline:
