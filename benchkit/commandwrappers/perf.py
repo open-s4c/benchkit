@@ -112,11 +112,7 @@ def _validate_record_data_dir(record_data_dir: PathType) -> None:
 def _get_available_events(
     perf_bin: PathType,
 ) -> Tuple[List[str], Dict[str, Dict[str, str]]]:
-    from subprocess import check_output
-
-    def shell_out(command, print_input=False, print_output=False):
-        return check_output(command, shell=True, text=True)
-
+    
     raw_output = shell_out(
         command=f"{perf_bin} list --no-desc",
         print_input=False,
@@ -134,7 +130,7 @@ def _get_available_events(
     for line in iterlines:
         sline = line.strip()
 
-        # New group section (e.g., 'hwmon:')
+        # New group section
         m = re.match(r"^([-_/:A-Za-z0-9\s]+):$", sline)
         if m:
             (group_name,) = m.groups()
