@@ -56,6 +56,7 @@ class IPCBenchmark(Benchmark):
         self.skip_rebuild = skip_rebuild
         self.local_platform = local_platform
         self.remote_platform = remote_platform
+        self.platform = self.local_platform if remote_platform is None else self.remote_platform
 
     @property
     def bench_src_path(self) -> pathlib.Path:
