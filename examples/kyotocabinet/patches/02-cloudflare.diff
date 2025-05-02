@@ -69,7 +69,7 @@ index 0000000..b196781
 +/* if on motoral, sun, ibm; uncomment this */
 +/* #define WORDS_BIGENDIAN 1 */
 +/* else for Intel, Amd; uncomment this */
-+#undef WORDS_BIGENDIAN 
++#undef WORDS_BIGENDIAN
 +
 +#include "modp_b64_data.h"
 +
