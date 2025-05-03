@@ -106,11 +106,11 @@ class Benchmark:
 
     def __init__(
         self,
-        command_wrappers: Iterable[CommandWrapper],
-        command_attachments: Iterable[CommandAttachment],
-        shared_libs: Iterable[SharedLib],
-        pre_run_hooks: Iterable[PreRunHook],
-        post_run_hooks: Iterable[PostRunHook],
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
+        shared_libs: Iterable[SharedLib] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
     ) -> None:
         # TODO tilt is still hardcoded for now, remove tilt from the base benchmark class
         tilts = [lib for lib in shared_libs if isinstance(lib, TiltLib)]
@@ -154,7 +154,7 @@ class Benchmark:
         Returns:
             pathlib.Path: the path to the source of the benchmark.
         """
-        raise NotImplementedError
+        return pathlib.Path("").resolve()
 
     @staticmethod
     def get_build_var_names() -> List[str]:
@@ -164,7 +164,7 @@ class Benchmark:
         Returns:
             List[str]: the names of the build variables.
         """
-        raise NotImplementedError
+        return []
 
     @staticmethod
     def get_run_var_names() -> List[str]:
@@ -640,7 +640,7 @@ class Benchmark:
         """
         Build the benchmark, feeding to the function the build variables.
         """
-        raise NotImplementedError
+        pass
 
     def single_run(
         self,
@@ -1039,9 +1039,9 @@ class Benchmark:
             # Replace record_data_dir with a temporary data directory for the
             # wrapper to write their files to. (Only if the host is remote)
             temp_record_data_dir = record_data_dir
-            if not self.platform.comm.is_local:
-                temp_record_data_dir = self._temp_record_data_dir(record_data_dir)
-                self.platform.comm.makedirs(temp_record_data_dir, True)
+            #if not self.platform.comm.is_local:
+            #    temp_record_data_dir = self._temp_record_data_dir(record_data_dir)
+            #    self.platform.comm.makedirs(temp_record_data_dir, True)
 
             def wrdr(file_content: str, filename: PathType) -> None:
                 self._write_to_record_data_dir(
@@ -1087,10 +1087,10 @@ class Benchmark:
 
             # If the host was remote, all the wrappers generated files on the remote machine and
             # these need to be copied back to the host machine.
-            if not self.platform.comm.is_local:
-                self.platform.comm.copy_to_host(f"{temp_record_data_dir}/", f"{record_data_dir}/")
-                # Clean up nicely after ourselves
-                self.platform.comm.remove(self._temp_record_prefix(), recursive=True)
+            #if not self.platform.comm.is_local:
+            #    self.platform.comm.copy_to_host(f"{temp_record_data_dir}/", f"{record_data_dir}/")
+            #    # Clean up nicely after ourselves
+            #    self.platform.comm.remove(self._temp_record_prefix(), recursive=True)
 
             single_run_results = self.parse_output_to_results(
                 command_output=single_run_output,

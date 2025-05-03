@@ -230,7 +230,8 @@ class AndroidDebugBridge:
                 raise ADBError(f'Unknown "adb connect" output: {connection_output}')
 
     def _disconnect(self) -> None:
-        self._host_shell_out(command=f"adb disconnect {self._ip}:{self._port}")
+        pass
+        #self._host_shell_out(command=f"adb disconnect {self._ip}:{self._port}")
 
     @staticmethod
     def _devices() -> Iterable[ADBDevice]:
