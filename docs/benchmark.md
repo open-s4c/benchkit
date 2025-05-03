@@ -135,14 +135,6 @@ This benchmark can then be used for a [campaign](campaign.md).
 > Because of the definition of `parse_output_results` this benchmarking class expects a single output line of `scv` code as extra information.
 > If this is not what is outputted by your results, either change the output, or change the definition of `parse_output_to_results`.
 
-> [!IMPORTANT]
-> Version 0.0.1 uses `get_tilt_var_names` that should be overwritten, this is no longer required starting from commit dcb183e 
-> ```python
-> @staticmethod
-> def get_tilt_var_names() -> List[str]:
->    return []
-> ```
-
 ## Building the benchmark
 
 To build your benchmark code you have to implement the `get_build_var_names` and `build_bench` functions in your `Benchmark` class.
