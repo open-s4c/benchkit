@@ -3,19 +3,18 @@
 # SPDX-License-Identifier: MIT
 
 import os
-import pathlib
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Dict, Iterable, Optional
 
-from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
-from benchkit.commandwrappers import CommandWrapper, taskset
-from benchkit.campaign import CampaignCartesianProduct, Constants
-from benchkit.platforms import Platform, get_current_platform
-from benchkit.sharedlibs import SharedLib
-from benchkit.utils.types import PathType
 from heater_sequential import HeaterSeqBench
 
-from benchkit.campaign import CampaignSuite
+from benchkit.benchmark import CommandAttachment, PostRunHook, PreRunHook
+from benchkit.campaign import CampaignCartesianProduct, CampaignSuite, Constants
+from benchkit.commandwrappers import CommandWrapper
+from benchkit.platforms import Platform, get_current_platform
+from benchkit.sharedlibs import SharedLib
 from benchkit.utils.dir import get_curdir
+from benchkit.utils.types import PathType
+
 
 def heater_seq_campaign(
     name: str = "leveldb_campaign",
@@ -43,7 +42,7 @@ def heater_seq_campaign(
     variables = {
         "cpu": cpu,
     }
-    
+
     if src_dir is None:
         pass  # TODO try some search heuristics
 
@@ -74,6 +73,7 @@ def heater_seq_campaign(
         pretty=pretty,
     )
 
+
 def main() -> None:
     """Main function of the campaign script."""
 
@@ -85,7 +85,7 @@ def main() -> None:
         src_dir=leveldb_src_dir,
         nb_runs=3,
         benchmark_duration_seconds=3,
-        cpu= range(0, os.cpu_count()),
+        cpu=range(0, os.cpu_count()),
     )
 
     # Define the campaign suite and run the benchmarks in the suite
