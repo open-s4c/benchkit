@@ -96,7 +96,7 @@ class HeaterSeqBench(Benchmark):
     def prebuild_bench(self, **_kwargs) -> None:
         build_dir = self._build_dir
         self.platform.comm.makedirs(path=build_dir, exist_ok=True)
-        
+
         self.platform.comm.shell(
             command=f"gcc -O3 -o heater {self._bench_src_path / 'heater.c'}",
             current_dir=build_dir,
@@ -123,11 +123,11 @@ class HeaterSeqBench(Benchmark):
             f"{benchmark_duration_seconds}",
             f"{cpu}",
         ]
-        
+
         environment = self._preload_env(
             **kwargs,
         )
-        
+
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
             environment=environment,
@@ -152,4 +152,3 @@ class HeaterSeqBench(Benchmark):
     ) -> Dict[str, Any]:
         result_dict = self._parse_results(output=command_output)
         return result_dict
-    
