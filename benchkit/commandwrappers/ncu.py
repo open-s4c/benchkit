@@ -198,7 +198,8 @@ class NcuWrap(CommandWrapper):
         sections: Optional[List[Section]] = None,
         remove_absent_sections: bool = True,
         metrics: Optional[List[Metric]] = None,
-        remove_absent_metrics: bool = True):
+        remove_absent_metrics: bool = True,
+        user_args: List[str] = None):
 
         self._config_path = config_path
         self._report_path = report_path
@@ -209,6 +210,7 @@ class NcuWrap(CommandWrapper):
         self._exclude_process = exclude_process
         self._target_kernels = target_kernels
         self._launch_count = launch_count
+        self._user_args = user_args
 
         self._ncu_bin = _find_ncu_bin(ncu_path)
 
@@ -281,6 +283,9 @@ class NcuWrap(CommandWrapper):
 
             if self._section is not None:
                 options.extend(["--section", f"regex:{self._section}"])
+
+            if self._user_args is not None:
+                options.extend(self._user_args)
 
         cmd_prefix = (
             ["ncu"]
