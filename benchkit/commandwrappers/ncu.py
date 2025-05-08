@@ -184,9 +184,9 @@ class NcuWrap(CommandWrapper):
 
     def __init__(
         self,
-        ncu_path: Optional[PathType],
-        config_path: Optional[PathType],
         report_path: PathType,
+        ncu_path: Optional[PathType] = None,
+        config_path: Optional[PathType] = None,
         force_overwrite: bool = False,
         enable_nvtx: bool = False,
         app_only: bool = False,
