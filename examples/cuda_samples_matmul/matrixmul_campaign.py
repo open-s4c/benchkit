@@ -4,6 +4,7 @@
 
 import pathlib
 import numpy as np
+import shutil
 from typing import Any, Dict, List, Iterable
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
@@ -13,23 +14,22 @@ from benchkit.platforms import Platform
 from benchkit.utils.types import PathType
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.dir import get_curdir, parentdir
+from benchkit.platforms import get_current_platform
 
-ncu_wrapper = NcuWrap("./",enable_nvtx=True,set="full")
+# ncu_wrapper = NcuWrap("./",enable_nvtx=True,set="full")
 
 MA_WIDTHS = [32,64,128,256,512]
 MA_HEIGHTS = [32,64,128,256,512]
-MB_WIDTHS = [32,64,128,256,512]
-MB_HEIGHTS = [32,64,128,256,512]
 
 class MatrixMulBench(Benchmark):
     def __init__(
         self,
-        command_wrappers: Iterable[CommandWrapper],
-        command_attachments: Iterable[CommandAttachment],
-        shared_libs: Iterable[SharedLib],
-        pre_run_hooks: Iterable[PreRunHook],
-        post_run_hooks: Iterable[PostRunHook],
-        platform: Platform,
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
+        shared_libs: Iterable[SharedLib] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
+        platform: Platform | None = None,
     ) -> None:
         super().__init__(
             command_wrappers=command_wrappers,
@@ -46,7 +46,8 @@ class MatrixMulBench(Benchmark):
         self._bench_src_path = bench_path
         self._build_dir = build_path
 
-        self.platform = platform
+        if platform is not None:
+            self.platform = platform
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -61,8 +62,6 @@ class MatrixMulBench(Benchmark):
         return [
             "ma_width",
             "ma_height",
-            "mb_width",
-            "mb_height"
         ]
 
     @staticmethod
@@ -74,20 +73,14 @@ class MatrixMulBench(Benchmark):
         **kwargs,
     ) -> None:
 
-        cmake_command = [
-            "cmake",
-            f"{self._bench_src_path}"
-        ]
+        if self._build_dir.is_dir() and len(str(self._build_dir)) > 4:
+            shutil.rmtree(str(self._build_dir))
 
-        self.platform.comm.shell(
-            command=cmake_command,
-            current_dir=self._build_dir,
-            output_is_log=True,
-        )
+        self.platform.comm.makedirs(path=self._build_dir, exist_ok=True)
 
         self.platform.comm.shell(
             command="make",
-            current_dir=self._build_dir,
+            current_dir=self._bench_src_path,
             output_is_log=True,
         )
 
@@ -95,8 +88,6 @@ class MatrixMulBench(Benchmark):
         self,
         ma_width: int,
         ma_height: int,
-        mb_width: int,
-        mb_height: int,
         **kwargs,
     ) -> str:
         current_dir = self._build_dir
@@ -106,8 +97,8 @@ class MatrixMulBench(Benchmark):
             "./matrixMul",
             f"-wA={ma_width}",
             f"-hA={ma_height}",
-            f"-wB={mb_width}",
-            f"-hB={mb_height}"
+            f"-wB={ma_height}",
+            f"-hB={ma_width}"
         ]
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
@@ -131,8 +122,6 @@ class MatrixMulBench(Benchmark):
     def _parse_results(
         ma_width: int,
         ma_height: int,
-        mb_width: int,
-        mb_height: int,
         output: str
     ) -> Dict[str, Any]:
         output_lines = output.splitlines()
@@ -148,7 +137,7 @@ class MatrixMulBench(Benchmark):
             "Ops",
             "Workgroup Size"
         ]
-        values = [ma_width,ma_height,mb_width,mb_height]
+        values = [ma_width,ma_height,ma_height,ma_width]
 
         try:
             gflops_idx = words.index('GFlop/s,') - 1
@@ -193,14 +182,10 @@ class MatrixMulBench(Benchmark):
 
         ma_width = int(run_variables["ma_width"])
         ma_height = int(run_variables["ma_height"])
-        mb_width = int(run_variables["mb_width"])
-        mb_height = int(run_variables["mb_height"])
 
         result_dict = self._parse_results(
             ma_width,
             ma_height,
-            mb_width,
-            mb_height,
             command_output)
 
         return result_dict
@@ -208,18 +193,17 @@ class MatrixMulBench(Benchmark):
 
 def main():
     nb_runs = 3
-    # platform = get_docker_platform()
+    platform = get_current_platform()
 
-    bench = MatrixMulBench(
-        src_dir=GUEST_SRC_DIR,
-    )
+    bench = MatrixMulBench(platform=platform)
 
     campaign = CampaignCartesianProduct(
-        name="gpuaddvec",
+        name="gpumatmul",
         benchmark=bench,
         nb_runs=nb_runs,
         variables={
-            "block_size": [1, 2, 16, 256, 2048, 4096, 8192, 16384, 32768],
+            "ma_width": MA_WIDTHS,
+            "ma_height": MA_HEIGHTS,
         },
         constants={},
         debug=False,
@@ -232,12 +216,12 @@ def main():
     campaign_suite = CampaignSuite(campaigns=[campaign])
     campaign_suite.run_suite()
 
-    campaign_suite.generate_graph(
-        plot_name="barplot",
-        title=f"Add vector on GPU ({nb_runs} runs)",
-        y="kernel_compute_seconds",
-        x="block_size",
-    )
+    # campaign_suite.generate_graph(
+    #     plot_name="barplot",
+    #     title=f"Add vector on GPU ({nb_runs} runs)",
+    #     y="kernel_compute_seconds",
+    #     x="block_size",
+    # )
 
 
 if __name__ == "__main__":
