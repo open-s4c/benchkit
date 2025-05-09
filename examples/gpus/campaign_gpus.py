@@ -5,13 +5,10 @@
 import pathlib
 from typing import Any, Dict, List
 
-from pythainer.examples.builders import get_user_gui_builder
-from pythainer.examples.runners import gpu_runner, gui_runner, personal_runner
-from pythainer.runners import ConcreteDockerRunner
+from gpus import get_gpu_docker_platform
 
 from benchkit.benchmark import Benchmark
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
-from benchkit.communication.docker import DockerCommLayer
 from benchkit.platforms import Platform
 from benchkit.utils.dir import caller_dir
 from benchkit.utils.types import PathType
@@ -101,49 +98,13 @@ class AddVecBench(Benchmark):
 
 
 def get_docker_platform() -> Platform:
-    image_name = "gpubenchkit"
-    builder = get_user_gui_builder(
-        image_name=image_name,
-        base_ubuntu_image="nvidia/cuda:12.2.0-devel-ubuntu22.04",
-    )
-    builder.space()
-
-    builder.root()
-    builder.desc("Remove annoying motd")
-    builder.run(
-        command=(
-            r"find /opt/nvidia/entrypoint.d/ "
-            r'\( -name "*.txt" -o -name "10-banner.sh" -o -name "12-banner.sh" \) '
-            r"-exec rm {} +"
-        )
-    )
-    builder.space()
-
-    builder.user()
-    builder.workdir("/home/user")
-    builder.build()
-
     host_src_dir = (caller_dir() / "src").resolve()
 
-    # TODO use builtin runner
-    # docker_runner = builder.get_runner()
-
-    docker_runner = ConcreteDockerRunner(
-        image=image_name,
-        environment_variables={},
-        volumes={f"{host_src_dir}": GUEST_SRC_DIR},
-        devices=[],
-        network="host",
-        workdir=GUEST_SRC_DIR,
+    platform = get_gpu_docker_platform(
+        host_src_dir=host_src_dir,
+        guest_src_dir=GUEST_SRC_DIR,
     )
 
-    # bench_runner = DockerRunner(volumes={f"{host_src_dir}": GUEST_SRC_DIR})
-
-    docker_runner |= gui_runner() | gpu_runner() | personal_runner()
-    # docker_runner |= bench_runner
-
-    comm = DockerCommLayer(docker_runner=docker_runner)
-    platform = Platform(comm_layer=comm)
     return platform
 
 
