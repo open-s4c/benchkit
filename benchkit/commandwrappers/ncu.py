@@ -109,13 +109,13 @@ def _get_available_options(
 
     ids = []
 
-    iterLines = iter(raw_output.splitlines())
+    lines = raw_output.splitlines()
     # skips the first 4 rows which are just useless metadata
-    metricsIterLines = iterLines[3:]
-    for line in metricsIterLines:
+    useful_lines = lines[3:]
+    for line in useful_lines:
         sline = line.strip()
         vals = sline.split()
-        ids.append(vals[0+is_metrics])
+        ids.append(vals[0+is_metrics].strip(',')) # metrics are stored in the 2nd column
 
     return ids
 
@@ -190,7 +190,7 @@ class NcuWrap(CommandWrapper):
 
     def __init__(
         self,
-        report_path: PathType,
+        report_file_name: PathType = "ncu_profile_report",
         ncu_path: Optional[PathType] = None,
         config_path: Optional[PathType] = None,
         force_overwrite: bool = False,
@@ -208,7 +208,7 @@ class NcuWrap(CommandWrapper):
         user_args: List[str] = None):
 
         self._config_path = config_path
-        self._report_path = report_path
+        self._report_file_name = report_file_name
         self._force_overwrite = force_overwrite
         self._enable_nvtx = enable_nvtx
         self._app_only = app_only
@@ -251,7 +251,7 @@ class NcuWrap(CommandWrapper):
         cmd_prefix = super().command_prefix(**kwargs)
         options = []
 
-        if self._report_path == None:
+        if self._report_file_name == None:
             raise ValueError(
                 "Report data file cannot be None, it is required to save strace output."
             )
@@ -298,7 +298,7 @@ class NcuWrap(CommandWrapper):
             + options
             + [
                 "-o",
-                f"{self._report_path}"
+                f"{self._report_file_name}"
             ] 
             + cmd_prefix
         )      
@@ -321,6 +321,7 @@ class NcuWrap(CommandWrapper):
                 output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"] = {}
                 for metric in (action):
                     output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"][f"{metric}"] = action[metric].value()
+                    output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"][f"{metric}.unit"] = action[metric].unit()
 
         return output_dict
 
@@ -338,7 +339,7 @@ class NcuWrap(CommandWrapper):
         # iterate over the ranges
         # for each action in a given range specify the metric and the metric value and add it to the dict
 
-        profile_context = ncu_report.load_report(self._report_path)
+        profile_context = ncu_report.load_report(self._report_file_name)
         output_dict = self._process_ncu_context(profile_context)
 
         return output_dict
