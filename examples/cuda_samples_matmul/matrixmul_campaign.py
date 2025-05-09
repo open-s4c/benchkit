@@ -16,7 +16,7 @@ from benchkit.sharedlibs import SharedLib
 from benchkit.utils.dir import get_curdir, parentdir
 from benchkit.platforms import get_current_platform
 
-# ncu_wrapper = NcuWrap("./",enable_nvtx=True,set="full")
+ncu_wrapper = NcuWrap(set="full")
 
 MA_WIDTHS = [32,64,128,256,512]
 MA_HEIGHTS = [32,64,128,256,512]
@@ -192,10 +192,14 @@ class MatrixMulBench(Benchmark):
 
 
 def main():
-    nb_runs = 3
+    nb_runs = 1
     platform = get_current_platform()
 
-    bench = MatrixMulBench(platform=platform)
+    bench = MatrixMulBench(
+        platform=platform,
+        command_wrappers=[ncu_wrapper],
+        post_run_hooks=[ncu_wrapper.post_run_hook_update_results]
+    )
 
     campaign = CampaignCartesianProduct(
         name="gpumatmul",
