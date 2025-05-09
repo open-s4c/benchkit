@@ -250,7 +250,12 @@ class NcuWrap(CommandWrapper):
             # PackageDependency("nvidia-gds")
         ]
 
-    def command_prefix(self, **kwargs) -> List[str]:
+    def command_prefix(
+        self,
+        record_data_dir: Optional[PathType],
+        **kwargs
+    ) -> List[str]:
+
         cmd_prefix = super().command_prefix(**kwargs)
         options = []
 
@@ -296,12 +301,14 @@ class NcuWrap(CommandWrapper):
             if self._user_args is not None:
                 options.extend(self._user_args)
 
+        ncu_report_file_path = os.path.join(record_data_dir, self._report_file_name)
+
         cmd_prefix = (
             ["ncu"]
             + options
             + [
                 "-o",
-                f"{self._report_file_name}"
+                f"{ncu_report_file_path}"
             ] 
             + cmd_prefix
         )      
@@ -316,7 +323,7 @@ class NcuWrap(CommandWrapper):
     ) -> RecordResult:
 
         output_dict = {}
-        for rnge_idx in len(profile_context):
+        for rnge_idx in range(len(profile_context)):
             rnge = profile_context[rnge_idx]
             output_dict[f"ncu/range_{rnge_idx}"] = {}
             for action_idx in range(len(rnge)):
@@ -342,7 +349,8 @@ class NcuWrap(CommandWrapper):
         # iterate over the ranges
         # for each action in a given range specify the metric and the metric value and add it to the dict
 
-        profile_context = ncu_report.load_report(f"{self._report_file_name}.ncu-rep")
+        ncu_report_file_path = os.path.join(record_data_dir, f"{self._report_file_name}.ncu-rep")
+        profile_context = ncu_report.load_report(ncu_report_file_path)
         output_dict = self._process_ncu_context(profile_context)
 
         return output_dict
