@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import time
+import ncu_report
 from functools import cache
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -22,6 +23,11 @@ from benchkit.platforms import Platform, get_current_platform
 from benchkit.shell.shell import shell_interactive, shell_out
 from benchkit.shell.shellasync import AsyncProcess, SplitCommand
 from benchkit.utils.types import Environment, PathType
+
+"""
+! ADD ncu_report TO PYTHONPATH ENV VARIABLE
+! MAKE SURE THAT YOU SETUP NCU SUDOLESS
+"""
 
 Metric = str
 NcuSet = str
@@ -298,6 +304,45 @@ class NcuWrap(CommandWrapper):
         )      
 
         return cmd_prefix
+
+    
+    # method for returing a dictionary from a loaded profile context
+    def _process_ncu_context(
+        self,
+        profile_context
+    ) -> RecordResult:
+
+        output_dict = {}
+        for rnge_idx in len(profile_context):
+            rnge = profile_context[rnge_idx]
+            output_dict[f"ncu/range_{rnge_idx}"] = {}
+            for action_idx in range(len(rnge)):
+                action = rnge[action_idx]
+                output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"] = {}
+                for metric in (action):
+                    output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"][f"{metric}"] = action[metric].value()
+
+        return output_dict
+
+
+    def post_run_hook_update_results(
+        self,
+        experiment_results_lines: List[RecordResult],
+        record_data_dir: PathType,
+        write_record_file_fun: WriteRecordFileFunction,
+    ):
+        assert experiment_results_lines
+        assert write_record_file_fun
+
+        # read the report file with the Python package
+        # iterate over the ranges
+        # for each action in a given range specify the metric and the metric value and add it to the dict
+
+        profile_context = ncu_report.load_report(self._report_path)
+        output_dict = self._process_ncu_context(profile_context)
+
+        return output_dict
+
 
     #https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#post-installation-actions
     # assumes you have a 64 bit OS
