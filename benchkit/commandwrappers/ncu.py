@@ -220,22 +220,25 @@ class NcuWrap(CommandWrapper):
 
         self._ncu_bin = _find_ncu_bin(ncu_path)
 
-        if set is not None:
-            self._set = _validate_set(
+        self._set = set
+        if self._set is not None:
+            _validate_set(
                 ncu_bin=self._ncu_bin,
-                set=set)
+                set=self._set)
 
-        if metrics is not None:
-            self._metrics = _validate_metrics(
-                        ncu_bin=self._ncu_bin,
-                        metrics=metrics,
-                        remove_absent_metric=remove_absent_metrics)
+        self._metrics = metrics
+        if self._metrics is not None:
+            _validate_metrics(
+                ncu_bin=self._ncu_bin,
+                metrics=metrics,
+                remove_absent_metric=remove_absent_metrics)
 
-        if sections is not None:
-            self._sections = _validate_sections(
-                        ncu_bin=self._ncu_bin,
-                        sections=sections,
-                        remove_absent_section=remove_absent_sections)
+        self._sections = sections
+        if self._sections is not None:
+            _validate_sections(
+                ncu_bin=self._ncu_bin,
+                sections=self._sections,
+                remove_absent_section=remove_absent_sections)
 
         super().__init__()
 
@@ -243,8 +246,8 @@ class NcuWrap(CommandWrapper):
     # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#common-installation-instructions-for-ubuntu
     def dependencies(self):
         return super().dependencies() + [
-            PackageDependency("cuda-toolkit"),
-            PackageDependency("nvidia-gds")
+            # PackageDependency("cuda-toolkit"),
+            # PackageDependency("nvidia-gds")
         ]
 
     def command_prefix(self, **kwargs) -> List[str]:
@@ -287,8 +290,8 @@ class NcuWrap(CommandWrapper):
                 metrics = _get_metrics_from_list(self._metrics)
                 options.extend(["--metrics", f"{metrics}"])
 
-            if self._section is not None:
-                options.extend(["--section", f"regex:{self._section}"])
+            if self._sections is not None:
+                options.extend(["--section", f"regex:{self._sections}"])
 
             if self._user_args is not None:
                 options.extend(self._user_args)
@@ -339,7 +342,7 @@ class NcuWrap(CommandWrapper):
         # iterate over the ranges
         # for each action in a given range specify the metric and the metric value and add it to the dict
 
-        profile_context = ncu_report.load_report(self._report_file_name)
+        profile_context = ncu_report.load_report(f"{self._report_file_name}.ncu-rep")
         output_dict = self._process_ncu_context(profile_context)
 
         return output_dict
@@ -347,12 +350,12 @@ class NcuWrap(CommandWrapper):
 
     #https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#post-installation-actions
     # assumes you have a 64 bit OS
-    def updated_environment(self, environment: Environment) -> Environment:
-        add_env_vars = {
-            "PATH": "/usr/local/cuda-12.8/bin/bin${PATH:+:${PATH}}",
-            "LD_LIBRARY_PATH": "/usr/local/cuda-12.8/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-        }
-        return environment | add_env_vars
+    #   def updated_environment(self, environment: Environment) -> Environment:
+    #       add_env_vars = {
+    #           "PATH": "/usr/local/cuda-12.8/bin/bin${PATH:+:${PATH}}",
+    #           "LD_LIBRARY_PATH": "/usr/local/cuda-12.8/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+    #       }
+    #       return environment | add_env_vars
 
     # def wrap(self, command, environment, **kwargs):
     #     return super().wrap(command, environment, **kwargs)
