@@ -1,0 +1,404 @@
+
+# Copyright (C) 2023 Huawei Technologies Co., Ltd. All rights reserved.
+# SPDX-License-Identifier: MIT
+"""
+Benchkit support for LevelDB benchmark.
+See: https://github.com/google/leveldb
+"""
+
+import pathlib
+from typing import Any, Dict, Iterable, List, Optional
+from benchkit.utils.dir import get_curdir, parentdir
+
+from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
+from benchkit.campaign import CampaignCartesianProduct, Constants
+from benchkit.commandwrappers import CommandWrapper
+from benchkit.dependencies.packages import PackageDependency
+from benchkit.platforms import Platform
+from benchkit.sharedlibs import SharedLib
+from benchkit.utils.types import CpuOrder, PathType
+
+
+class BreakdownBench(Benchmark):
+    """Benchmark object for LevelDB benchmark."""
+
+    def __init__(
+        self,
+        app_name: str,
+        input_file: Optional[PathType],
+        mnrl_file: Optional[PathType],
+        anml_file: Optional[PathType],
+        hs_file: Optional[PathType],
+        quick_validation: Optional[int],
+        exclude_apps: Optional[List],
+        short_name: Optional[str] = None,
+        src_path: Optional[PathType] = None,
+        build_path: Optional[PathType] = None,
+        command_wrappers: Iterable[CommandWrapper] = (),
+        command_attachments: Iterable[CommandAttachment] = (),
+        shared_libs: Iterable[SharedLib] = (),
+        pre_run_hooks: Iterable[PreRunHook] = (),
+        post_run_hooks: Iterable[PostRunHook] = (),
+        platform: Platform | None = None,
+    ) -> None:
+        super().__init__(
+            command_wrappers=command_wrappers,
+            command_attachments=command_attachments,
+            shared_libs=shared_libs,
+            pre_run_hooks=pre_run_hooks,
+            post_run_hooks=post_run_hooks,
+        )
+        if platform is not None:
+            self.platform = platform
+
+        if src_path is not None:
+            self._bench_src_path = src_path
+        else:
+            campaign_script_path = get_curdir(__file__)
+            bench_src_path = parentdir(path=campaign_script_path, levels=1) / "src"
+            if not self.platform.comm.isdir(bench_src_path):
+                raise ValueError(
+                    f"Invalid ngAP source path: {bench_src_path}\n"
+                )
+            self._bench_src_path = bench_src_path
+
+        if build_path is None:
+            self._build_dir = parentdir(path=self._bench_src_path, levels=1) / "build"
+        else:
+            self._build_dir = build_path
+
+        self.app_name = app_name
+        self.input_file = input_file
+        self.mnrl_file = mnrl_file
+        self.anml_file = anml_file
+        self.hs_file = hs_file
+        self.quick_validation = quick_validation
+        self.exclude_apps = exclude_apps
+        self.short_name = short_name
+
+        if self.app_name in self.exclude_apps:
+            raise ValueError(
+                f"Cannot create a benchmark object for this app - this app is excluded: {self.app_name}"
+            )
+
+        if self.input_file is not None and not self.platform.comm.isfile(self.input_file):
+            raise ValueError(
+                f"Invalid input stream file: {self.input_file}"
+            )
+
+        if self.mnrl_file is not None and not self.platform.comm.isfile(self.mnrl_file):
+            raise ValueError(
+                f"Invalid mnrl file: {self.mnrl_file}"
+            )
+
+        if self.anml_file is not None and not self.platform.comm.isfile(self.anml_file):
+            raise ValueError(
+                f"Invalid anml file: {self.anml_file}"
+            )
+
+        if self.hs_file is not None and not self.platform.comm.isfile(self.hs_file):
+            raise ValueError(
+                f"Invalid hs file: {self.hs_file}"
+            )
+
+    @property
+    def bench_src_path(self) -> pathlib.Path:
+        return self._bench_src_path
+
+    @staticmethod
+    def get_build_var_names() -> List[str]:
+        return []
+
+    @staticmethod
+    def get_run_var_names() -> List[str]:
+        return [
+            "excluded_apps",
+            "app",
+            "algorithm",
+            "output_name",
+            "input_start_pos",
+            "input_len",
+            "split_to_chunk_size",
+            "group_num",
+            "duplicate_input_stream",
+            "unique",
+            "unique_frequency",
+            "use_soa",
+            "result_capacity",
+            "use_uvm",
+            "data_buffer_fetch_size",
+            "add_aan_start",
+            "add_aas_interval",
+            "active_threshold",
+            "precompute_cutoff",
+            "precompute_depth",
+            "compress_prec_table",
+            "pc_use_uvm",
+            "report_off",
+            "remove_degree",
+            "quit_degree",
+            "max_nfa_size"
+        ]
+
+    @staticmethod
+    def get_tilt_var_names() -> List[str]:
+        return []
+
+    #TODO look at the output
+    # https://github.com/getianao/ngAP
+    @staticmethod
+    def _parse_results(
+        output: str,
+        run_variables: Dict[str, Any]
+    ) -> Dict[str, str]:
+
+        names = run_variables.keys()
+        values = run_variables.values()
+        result_dict = dict(zip(names, values))
+
+        lines = output.splitlines()
+        for line_idx in range(len(lines)):
+            line = lines[line_idx]
+            if "Result" in line:
+                result_line = lines[line_idx+1]
+                result_values = result_line.split()
+                result_values_stripped = [v.strip(',') for v in result_values]
+                for rvs_idx in range(len(result_values_stripped)):
+                    rvs = result_values_stripped[rvs_idx]
+                    result_dict[f"Result_{rvs_idx}"] = rvs
+
+            if "Reference result" in line:
+                ref_line = lines[line_idx+1]
+                ref_values = ref_line.split()
+                ref_values_stripped = [v.strip(',') for v in ref_values]
+                for rvs_idx in range(len(ref_values_stripped)):
+                    rvs = ref_values_stripped[rvs_idx]
+                    result_dict[f"Ref_Result_{rvs_idx}"] = rvs
+
+            if "ngap elapsed time" in line:
+                measurements = line.split(',')
+
+                time = measurements[0].split(':')[1]
+                time_val_and_unit = time.split()
+                time_val = time_val_and_unit[0]
+                time_unit = time_val_and_unit[1]
+                result_dict[f"time {time_unit}"] = time_val
+
+                throughput = measurements[1].split('=')[1]
+                throughput_val_and_unit = throughput.split()
+                throughput_val = throughput_val_and_unit[0]
+                throughput_unit = throughput_val_and_unit[1]
+                result_dict[f"throughput {throughput_unit}"] = throughput_val
+
+        return result_dict
+
+    def dependencies(self) -> List[PackageDependency]:
+        return super().dependencies() + []
+
+    def build_tilt(self, **kwargs) -> None:
+        self.tilt.build_single_lock(**kwargs)
+
+    def prebuild_bench(self, **_kwargs) -> None:
+        build_dir = self._build_dir
+        self.platform.comm.makedirs(path=build_dir, exist_ok=True)
+
+        must_debug = self.must_debug()
+        cmake_build_type = "Debug" if must_debug else "Release"
+
+        self.platform.comm.shell(
+            command=f"cmake -DCMAKE_BUILD_TYPE={cmake_build_type} {self._bench_src_path}",
+            current_dir=build_dir,
+            output_is_log=True,
+        )
+        self.platform.comm.shell(
+            command=f"make{self._parallel_make_str()} db_bench",
+            current_dir=build_dir,
+            output_is_log=True,
+        )
+        if not self.platform.comm.isdir(self._tmpdb_dir):
+            self.platform.comm.makedirs(path=self._tmpdb_dir, exist_ok=True)
+            db_init_command = [
+                "./db_bench",
+                "--threads=1",
+                "--benchmarks=fillseq",
+                f"--db={self._tmpdb_dir}",
+            ]
+            self.platform.comm.shell(command=db_init_command, current_dir=build_dir)
+
+    def build_bench(
+        self,
+        **kwargs,
+    ) -> None:
+        pass
+
+    def clean_bench(self) -> None:
+        pass
+
+    def single_run(  # pylint: disable=arguments-differ
+        self,
+        benchmark_duration_seconds: int,
+        lock: str = "",
+        nb_threads: int = 2,
+        cpu_order: CpuOrder = None,
+        use_lse: bool = False,
+        atomics: Optional[str] = None,
+        bench_name: str = "readrandom",
+        master_thread_core: Optional[int] = None,
+        num: int = 1000000,
+        freshdb_foreach_run: bool = False,
+        **kwargs,
+    ) -> str:
+        if freshdb_foreach_run:
+            db_init_command = [
+                "./db_bench",
+                "--threads=1",
+                "--benchmarks=fillseq",
+                f"--db={self._tmpdb_dir}",
+            ]
+            self.platform.comm.shell(
+                command=db_init_command,
+                current_dir=self._build_dir,
+                print_output=False,
+            )
+
+        environment = self._preload_env(
+            lock=lock,
+            use_lse=use_lse,
+            atomics=atomics,
+            cpu_order=cpu_order,
+            master_thread_core=master_thread_core,
+            **kwargs,
+        )
+
+        """
+        Notice that, distinct from other LevelDb benchmarks using the `num` parameter,
+        `readreverse` and `readsequential` benchmarks have a very short duration.
+        As such, consider increasing the size of `num` for those.
+        """
+        if bench_name in ["readrandom", "readmissing", "readhot", "seekrandom"]:
+            duration_num = f"--duration={benchmark_duration_seconds}"
+        else:
+            duration_num = f"--num={num // nb_threads}"
+
+        if bench_name in [
+            "fillseq",
+            "fillrandom",
+            "fillsync",
+            "fill100K",
+        ]:
+            use_existing_db = False
+        else:
+            use_existing_db = True
+
+        run_command = [
+            "./db_bench",
+            f"--threads={nb_threads}",
+            f"--benchmarks={bench_name}",
+            f'--use_existing_db={"1" if use_existing_db else "0"}',
+            f"--db={self._tmpdb_dir}",
+            duration_num,
+        ]
+        wrapped_run_command, wrapped_environment = self._wrap_command(
+            run_command=run_command,
+            environment=environment,
+            cpu_order=cpu_order,
+            master_thread_core=master_thread_core,
+            nb_threads=nb_threads,
+            **kwargs,
+        )
+
+        output = self.run_bench_command(
+            run_command=run_command,
+            wrapped_run_command=wrapped_run_command,
+            current_dir=self._build_dir,
+            environment=environment,
+            wrapped_environment=wrapped_environment,
+            print_output=False,
+        )
+        return output
+
+    def parse_output_to_results(  # pylint: disable=arguments-differ
+        self,
+        command_output: str,
+        run_variables: Dict[str, Any],
+        **_kwargs,
+    ) -> Dict[str, Any]:
+
+        result_dict = self._parse_results(command_output, run_variables)
+        return result_dict
+
+
+def leveldb_campaign(
+    name: str = "leveldb_campaign",
+    benchmark: Optional[LevelDBBench] = None,
+    bench_name: Iterable[str] = ("readrandom",),
+    src_dir: Optional[PathType] = None,
+    build_dir: Optional[str] = None,
+    results_dir: Optional[PathType] = None,
+    command_wrappers: Iterable[CommandWrapper] = (),
+    command_attachments: Iterable[CommandAttachment] = (),
+    shared_libs: Iterable[SharedLib] = (),
+    pre_run_hooks: Iterable[PreRunHook] = (),
+    post_run_hooks: Iterable[PostRunHook] = (),
+    platform: Platform | None = None,
+    nb_runs: int = 1,
+    benchmark_duration_seconds: int = 5,
+    locks: Iterable[str] = (),
+    cpu_order: Iterable[CpuOrder] = (),
+    master_thread_core: Iterable[int | None] = (),
+    use_lse: Iterable[bool] = (),
+    atomics: Iterable[str] = (),
+    nb_threads: Iterable[int] = (1,),
+    num: Iterable[int] = (1000000,),
+    freshdb_foreach_run: Iterable[bool] = (False,),
+    debug: bool = False,
+    gdb: bool = False,
+    enable_data_dir: bool = False,
+    continuing: bool = False,
+    constants: Constants = None,
+    pretty: Optional[Dict[str, str]] = None,
+) -> CampaignCartesianProduct:
+    """Return a cartesian product campaign configured for the LevelDB benchmark."""
+    variables = {
+        "lock": locks,
+        "cpu_order": cpu_order,
+        "master_thread_core": master_thread_core,
+        "use_lse": use_lse,
+        "atomics": atomics,
+        "nb_threads": nb_threads,
+        "bench_name": bench_name,
+        "freshdb_foreach_run": freshdb_foreach_run,
+        "num": num,
+    }
+    if pretty is not None:
+        pretty = {"lock": pretty}
+
+    if src_dir is None:
+        pass  # TODO try some search heuristics
+
+    if benchmark is None:
+        benchmark = LevelDBBench(
+            src_dir=src_dir,
+            command_wrappers=command_wrappers,
+            command_attachments=command_attachments,
+            shared_libs=shared_libs,
+            pre_run_hooks=pre_run_hooks,
+            post_run_hooks=post_run_hooks,
+            platform=platform,
+            build_dir=build_dir,
+        )
+
+    return CampaignCartesianProduct(
+        name=name,
+        benchmark=benchmark,
+        nb_runs=nb_runs,
+        variables=variables,
+        constants=constants,
+        debug=debug,
+        gdb=gdb,
+        enable_data_dir=enable_data_dir,
+        continuing=continuing,
+        benchmark_duration_seconds=benchmark_duration_seconds,
+        results_dir=results_dir,
+        pretty=pretty,
+    )
