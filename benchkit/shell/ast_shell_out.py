@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+
+from multiprocessing import Process,Queue
+import os
+import pathlib
+import shlex
+import subprocess
+import sys
+from typing import Dict, Iterable, List, Optional
+from benchkit.shell.commandAST import command as makecommand
+from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
+from benchkit.shell.commandAST.visitor import execute_on_remote, getString, inline
+
+def shell_out_new(
+    command: str|List[str]|CommandNode,
+    std_input: Optional[str] = None, 
+    redirect_stderr_to_stdout:bool = True, # New feature, since the old implementation did this by deafault but we now have controll over it
+    current_dir: Optional[pathlib.Path | os.PathLike | str] = None,
+    environment: None | Dict[str, str] = None,
+    # shell: bool = False, Support REMOVED
+    print_command: bool = True, # TEMPORARALY not suported
+    print_output: bool = False,
+    print_env: bool = True, # TEMPORARALY not suported
+    print_curdir: bool = True, # TEMPORARALY not suported
+    print_shell_cmd: bool = False, # TEMPORARALY not suported
+    print_file_shell_cmd: bool = True, # TEMPORARALY not suported
+    timeout: Optional[int] = None,
+    output_is_log: bool = False,
+    ignore_ret_codes: Iterable[int] = (),
+    # split_arguments: bool = True, Support REMOVED -> can be achieved in another manner
+) -> str:
+    """
+    Run a shell command on the host system.
+
+    Args:
+        command (Command):
+            the command to run.
+        std_input (Optional[str], optional):
+            input to feed to the command.
+            Defaults to None.
+        current_dir (Optional[PathType], optional):
+            directory where to run the command. If None, the current directory is used.
+            Defaults to None.
+        environment (Environment, optional):
+            environment variables to pass to the command.
+            Defaults to None.
+        shell (bool, optional):
+            whether to run the command in a shell environment (like "bash") or as a real command
+            given to "exec".
+            Defaults to False.
+        print_command (bool, optional):
+            whether to print the command.
+            Defaults to True.
+        print_output (bool, optional):
+            whether to print the output.
+            Defaults to True.
+        print_env (bool, optional):
+            whether to print the environment variables when they are defined.
+            Defaults to True.
+        print_curdir (bool, optional):
+            whether to print the current directory if provided.
+            Defaults to True.
+        print_shell_cmd (bool, optional):
+            whether to print the complete shell command, ready to be copy-pasted in a terminal.
+            Defaults to False.
+        print_file_shell_cmd (bool, optional):
+            whether to print the shell command in a log file (`/tmp/benchkit.sh`).
+            Defaults to True.
+        timeout (Optional[int], optional):
+            if not None, the command will be stopped after `timeout` seconds if it did not stop
+            earlier.
+            Defaults to None.
+        output_is_log (bool, optional):
+            whether the output of this command is logging and should be outputted as such, line by
+            line (e.g. cmake or make command).
+            Defaults to False.
+        ignore_ret_codes (Iterable[int], optional):
+            collection of error return codes to ignore if they are triggered.
+            This allows to avoid an exception to be raised for commands that do not end with 0 even
+            if they are successful.
+            Defaults to ().
+        split_arguments (bool, optional):
+            whether the command is split in parts.
+            This allows for the usage of commands using things like the pipe symbol, use with shell=True for this functionality.
+            Defaults to True.
+
+    Raises:
+        subprocess.CalledProcessError:
+            if the command exited with a non-zero exit code that is not ignored in
+            `ignore_ret_codes`.
+
+    Returns:
+        str: the output of the shell command that completed successfully.
+    """
+
+    #this will run the true command confirming the exit code instead of assuming it
+    completedProcess = subprocess.run(["true"], timeout=None)
+    sucsess_value = completedProcess.returncode
+    def sucsess(value):
+        return value == sucsess_value
+    
+
+    # Convert the existing structures over to the tree structure 
+    commandTree:CommandNode
+    if isinstance(command,str):
+        commandTree = makecommand.command(command)
+    elif isinstance(command,list):
+        commandTree = makecommand.command(shlex.join(command))
+    elif isinstance(command,CommandNode):
+        commandTree = command
+    else:
+        raise TypeError(f"Shell out was called with a command of type {type(command)}, this is unexpected and not suported")
+
+    # Use the visitor patterns to convert our tree to an executable string
+    stringCommand = getString(commandTree)
+
+    def flush_outlines(process):
+        """
+        prints and returns the current content of stdout for a given process
+        Args:
+            process (Popen):
+                process to log
+        Returns:
+            str: content of stdout.
+        """
+        outlines = []
+        outline = process.stdout.readline()
+        while outline:
+            print(outline, end="")
+            outlines.append(outline)
+            outline = process.stdout.readline()
+        return outlines
+
+    def flush_thread(process,output_queue):
+        """
+        while process is running will log and store all stdout in real time
+        Args:
+            process (Popen):
+                process to log
+            output_queue (Queue):
+                Queue to write the returned value to
+        Returns:
+            None
+        """
+        outlines = []
+        retcode = process.poll()
+        while retcode is None:
+            outlines += flush_outlines(process)
+            retcode = process.poll()
+        print(retcode)
+        print("not flushed")
+        outlines += flush_outlines(process)
+        sys.stdout.flush()
+        sys.stderr.flush()
+        output_queue.put( "".join(outlines))
+
+    
+    if redirect_stderr_to_stdout:
+        stderr_out = subprocess.STDOUT
+    else:
+        stderr_out = subprocess.PIPE
+
+    with subprocess.Popen(
+        stringCommand,
+        shell=True,
+        cwd=current_dir,
+        env=environment,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.PIPE,
+        text=True,
+    ) as shell_process:
+        if output_is_log:
+            try:
+                """
+                logging the process takes two threads since we need to wait for the timeout while logging stdout in real time
+                to accomplish this we use multiprocessing in combination with error catching to interupt the logging if needed
+                """
+                output_queue = Queue()
+                logger_process = Process(target=flush_thread, args=(shell_process,output_queue,))
+                logger_process.start()
+                outs, errs = shell_process.communicate(input=std_input, timeout=timeout)
+                retcode = shell_process.poll()
+                output = output_queue.get()
+
+            except subprocess.TimeoutExpired as err:
+                shell_process.kill()
+                logger_process.terminate()
+                raise err
+
+        else:
+            try:
+                outs, errs = shell_process.communicate(input=std_input, timeout=timeout)
+                retcode = shell_process.poll()
+                output = outs
+            except subprocess.TimeoutExpired as err:
+                shell_process.kill()
+                raise err
+
+        #not a sucsessfull execution and not an alowed exit code
+        #raise the appropriate error
+        if not sucsess(retcode) and retcode not in ignore_ret_codes:
+            raise subprocess.CalledProcessError(
+                retcode,
+                shell_process.args,
+                )
+        #not a sucsessfull execution but an alowed exit code
+        #append the error to the output
+        if not sucsess(retcode):
+            output += shell_process.stderr.read()
+
+
+    if print_output and not output_is_log:
+        if "" != output.strip():
+            print("[OUT]")
+            print(output.strip())
+
+    assert isinstance(output, str)
+    return output
+
+def test():
+    a = shell_out_new("ssh user@host -p 57429 'perf stat sleep 1'",print_output=True,output_is_log=True)
+    print("--------------------")
+    print(a)
+    shell_out_new(['ssh', 'user@host', '-p', '57429', '-t', 'perf stat sleep 1'])
+    main_command_ast = makecommand.command("sleep",["1"])
+    full_command = makecommand.command("perf stat",[inline(main_command_ast)])
+    remote_command = execute_on_remote(full_command,"user@host",port=57429)
+    shell_out_new(remote_command)
+
+if __name__ == "__main__":
+    test()
