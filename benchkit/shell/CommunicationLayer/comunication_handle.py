@@ -6,7 +6,8 @@ from abc import ABC, abstractmethod
 
 
 class Output(ABC):
-    """interface to communicate with command output on all platforms, functions are  due to compatibility"""
+    """interface to communicate with command output on all platforms,
+    functions are  due to compatibility"""
 
     @abstractmethod
     def readOut(self, amount_of_bytes: int) -> bytes:
@@ -73,13 +74,14 @@ the read function needs verry thourough testing to make sure that all of the edg
 -> how does it react when the stream has been closed
 => these need to become documented so that further implementations can follow it
 
-OutClosed has been removed due to there being no way to detect this withou blocking for the local intreface
+OutClosed has been removed due to there being no way to detect this without
+blocking for the local intreface
 -> detecting if there is stil data needs to be done manualy in the hooks
-  -> if you recieve a b'' no further data will be readable 
+  -> if you recieve a b'' no further data will be readable
 
-  
 
-CommandPassthrough can we fill the buffer and what happens if we do 
+
+CommandPassthrough can we fill the buffer and what happens if we do
 -> if hooks dont clear it fast enough what will happen
 -> test this
 

@@ -11,13 +11,13 @@ from typing import Dict, Iterable, List, Optional
 
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
-from benchkit.shell.commandAST.visitor import execute_on_remote, getString, inline
+from benchkit.shell.commandAST.visitor import getString
 
 
 def shell_out_new(
     command: str | List[str] | CommandNode,
     std_input: Optional[str] = None,
-    redirect_stderr_to_stdout: bool = True,  # New feature, since the old implementation did this by deafault but we now have controll over it
+    redirect_stderr_to_stdout: bool = True,  # New feature
     current_dir: Optional[pathlib.Path | os.PathLike | str] = None,
     environment: None | Dict[str, str] = None,
     # shell: bool = False, Support REMOVED
@@ -84,7 +84,8 @@ def shell_out_new(
             Defaults to ().
         split_arguments (bool, optional):
             whether the command is split in parts.
-            This allows for the usage of commands using things like the pipe symbol, use with shell=True for this functionality.
+            This allows for the usage of commands using things like the pipe symbol,
+            use with shell=True for this functionality.
             Defaults to True.
 
     Raises:
@@ -113,7 +114,8 @@ def shell_out_new(
         commandTree = command
     else:
         raise TypeError(
-            f"Shell out was called with a command of type {type(command)}, this is unexpected and not suported"
+            f"Shell out was called with a command of type {type(command)},"
+            "this is unexpected and not suported"
         )
 
     # Use the visitor patterns to convert our tree to an executable string
@@ -170,15 +172,16 @@ def shell_out_new(
         cwd=current_dir,
         env=environment,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stderr=stderr_out,
         stdin=subprocess.PIPE,
         text=True,
     ) as shell_process:
         if output_is_log:
             try:
                 """
-                logging the process takes two threads since we need to wait for the timeout while logging stdout in real time
-                to accomplish this we use multiprocessing in combination with error catching to interupt the logging if needed
+                logging the process takes two threads since we need to wait for the timeout
+                while logging stdout in real time, to accomplish this we use multiprocessing
+                in combination with error catching to interupt the logging if needed
                 """
                 output_queue = Queue()
                 logger_process = Process(

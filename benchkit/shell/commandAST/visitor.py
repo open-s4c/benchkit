@@ -2,14 +2,16 @@
 # SPDX-License-Identifier: MIT
 
 import shlex
-import subprocess
 from typing import Dict
 
-from benchkit.shell.commandAST.abstractTypes import *
 from benchkit.shell.commandAST.abstractTypes import Node
 from benchkit.shell.commandAST.command import command
-from benchkit.shell.commandAST.nodes.commandNodes import *
-from benchkit.shell.commandAST.nodes.variable_node import *
+from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
+from benchkit.shell.commandAST.nodes.variable_node import (
+    InlineCommandNode,
+    StringNode,
+    Visitor,
+)
 from benchkit.shell.commandAST.Visitors.print_visitor import printASTVisitor
 from benchkit.shell.commandAST.Visitors.variable_visitors import (
     VariableFinder,
@@ -68,7 +70,8 @@ def printAst(ast: Node):
 
 def resolveAllVariablesWithDict(ast: Node, d: Dict[str, str]):
     variable_resolver = resolveAllVariables(d)
-    # check if amountOfTimeToSleep is not used twice in the command by dfferent vars resulting in wrong assignment possibly
+    # check if amountOfTimeToSleep is not used twice in the command
+    # by dfferent vars resulting in wrong assignment possibly
     VariableDuplicateDetector(ast)
 
     # Resolve the vars given an assignment dictionairy
@@ -77,7 +80,8 @@ def resolveAllVariablesWithDict(ast: Node, d: Dict[str, str]):
 
 def getString(ast: Node):
 
-    # Make sure that the command has been sufficiently resolved by visitors, aka there are no leftovers from bad patterns
+    # Make sure that the command has been sufficiently resolved by visitors
+    # aka there are no leftovers from bad patterns
     CheckReadyForConversionToCommand(ast)
 
     # Convert the ast to a string and print it

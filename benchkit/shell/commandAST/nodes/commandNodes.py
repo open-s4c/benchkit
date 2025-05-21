@@ -3,7 +3,7 @@
 
 from typing import List
 
-from benchkit.shell.commandAST.abstractTypes import *
+from benchkit.shell.commandAST.abstractTypes import Node, Visitor
 
 
 class StringNode(Node):

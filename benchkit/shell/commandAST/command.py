@@ -3,9 +3,9 @@
 
 import shlex
 
-from benchkit.shell.commandAST.nodes.commandNodes import *
-from benchkit.shell.commandAST.nodes.futureNodes import *
-from benchkit.shell.commandAST.nodes.variable_node import *
+from benchkit.shell.commandAST.nodes.commandNodes import CommandNode, StringNode
+from benchkit.shell.commandAST.nodes.futureNodes import Generic, Location
+from benchkit.shell.commandAST.nodes.variable_node import Node
 
 
 def process_program(program: str | Generic | Location) -> StringNode:

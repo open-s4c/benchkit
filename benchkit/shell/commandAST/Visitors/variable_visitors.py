@@ -18,7 +18,8 @@ class resolveAllVariables(Visitor):
                 return StringNode(self.assignment[node.name])
             else:
                 raise ValueError(
-                    f"resolveAllVariables needs a value for all var nodes. Var node with name {node.name} has no assigned value"
+                    f"resolveAllVariables needs a value for all var nodes."
+                    f"Var node with name {node.name} has no assigned value"
                 )
         return node.visit(self)
 
