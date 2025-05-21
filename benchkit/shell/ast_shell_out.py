@@ -190,8 +190,8 @@ def shell_out_new(
                         output_queue,
                     ),
                 )
-                logger_process.start()
                 logger_process.daemon = True
+                logger_process.start()
                 retcode = shell_process.wait(timeout=timeout)
                 logger_process.join()
                 print(f"retcode seq {retcode}")
