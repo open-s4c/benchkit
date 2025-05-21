@@ -6,10 +6,8 @@ from typing import Dict
 
 from benchkit.shell.commandAST.abstractTypes import Node
 from benchkit.shell.commandAST.command import command
-from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
+from benchkit.shell.commandAST.nodes.commandNodes import CommandNode, InlineCommandNode, StringNode
 from benchkit.shell.commandAST.nodes.variable_node import (
-    InlineCommandNode,
-    StringNode,
     Visitor,
 )
 from benchkit.shell.commandAST.Visitors.print_visitor import printASTVisitor

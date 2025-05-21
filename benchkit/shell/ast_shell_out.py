@@ -16,7 +16,7 @@ from benchkit.shell.commandAST.visitor import getString
 
 def shell_out_new(
     command: str | List[str] | CommandNode,
-    std_input: Optional[str] = None,
+    std_input: str | None = None,
     redirect_stderr_to_stdout: bool = True,  # New feature
     current_dir: Optional[pathlib.Path | os.PathLike | str] = None,
     environment: None | Dict[str, str] = None,
@@ -121,7 +121,15 @@ def shell_out_new(
     # Use the visitor patterns to convert our tree to an executable string
     stringCommand = getString(commandTree)
 
-    def flush_outlines(process):
+
+    def try_conventing_bystring_to_readable_characters(bytestring):
+        try:
+            bytestring = bytestring.decode('utf-8')
+        except Exception:
+            pass
+        return bytestring
+
+    def flush_outlines(std_in):
         """
         prints and returns the current content of stdout for a given process
         Args:
@@ -131,35 +139,24 @@ def shell_out_new(
             str: content of stdout.
         """
         outlines = []
-        outline = process.stdout.readline()
+        outline = try_conventing_bystring_to_readable_characters(std_in.readline())
+
         while outline:
             print(outline, end="")
             outlines.append(outline)
-            outline = process.stdout.readline()
+            outline = try_conventing_bystring_to_readable_characters(std_in.readline())
         return outlines
 
-    def flush_thread(process, output_queue):
+    def flush_thread(std_in, std_err, output_queue):
         """
         while process is running will log and store all stdout in real time
         Args:
-            process (Popen):
-                process to log
             output_queue (Queue):
                 Queue to write the returned value to
         Returns:
             None
         """
-        outlines = []
-        retcode = process.poll()
-        while retcode is None:
-            outlines += flush_outlines(process)
-            retcode = process.poll()
-        print(retcode)
-        print("not flushed")
-        outlines += flush_outlines(process)
-        sys.stdout.flush()
-        sys.stderr.flush()
-        output_queue.put("".join(outlines))
+        output_queue.put("".join(flush_outlines(std_in)))
 
     if redirect_stderr_to_stdout:
         stderr_out = subprocess.STDOUT
@@ -174,26 +171,30 @@ def shell_out_new(
         stdout=subprocess.PIPE,
         stderr=stderr_out,
         stdin=subprocess.PIPE,
-        text=True,
     ) as shell_process:
+        if shell_process.stdin is not None and std_input is not None:
+            shell_process.stdin.write(std_input.encode('utf-8'))
+
         if output_is_log:
             try:
 
                 # logging the process takes two threads since we need to wait for the timeout
                 # while logging stdout in real time, to accomplish this we use multiprocessing
                 # in combination with error catching to interupt the logging if needed
-
                 output_queue:Queue = Queue()
                 logger_process = Process(
                     target=flush_thread,
                     args=(
-                        shell_process,
+                        shell_process.stdout,
+                        shell_process.stderr,
                         output_queue,
                     ),
                 )
                 logger_process.start()
-                outs, errs = shell_process.communicate(input=std_input, timeout=timeout)
-                retcode = shell_process.poll()
+                logger_process.daemon = True
+                retcode = shell_process.wait(timeout=timeout)
+                logger_process.join()
+                print(f"retcode seq {retcode}")
                 output = output_queue.get()
 
             except subprocess.TimeoutExpired as err:
@@ -203,9 +204,11 @@ def shell_out_new(
 
         else:
             try:
-                outs, errs = shell_process.communicate(input=std_input, timeout=timeout)
-                retcode = shell_process.poll()
-                output = outs
+                retcode = shell_process.wait(timeout=timeout)
+                if shell_process.stdout is None:
+                    output = ""
+                else:
+                    output = try_conventing_bystring_to_readable_characters(shell_process.stdout.read())
             except subprocess.TimeoutExpired as err:
                 shell_process.kill()
                 raise err
@@ -217,10 +220,6 @@ def shell_out_new(
                 retcode,
                 shell_process.args,
             )
-        # not a sucsessfull execution but an alowed exit code
-        # append the error to the output
-        if not sucsess(retcode):
-            output += shell_process.stderr.read()
 
     if print_output and not output_is_log:
         if "" != output.strip():
