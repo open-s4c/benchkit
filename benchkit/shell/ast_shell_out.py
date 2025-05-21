@@ -1,29 +1,32 @@
-#!/usr/bin/env python3
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 
-from multiprocessing import Process,Queue
 import os
 import pathlib
 import shlex
 import subprocess
 import sys
+from multiprocessing import Process, Queue
 from typing import Dict, Iterable, List, Optional
+
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
 from benchkit.shell.commandAST.visitor import execute_on_remote, getString, inline
 
+
 def shell_out_new(
-    command: str|List[str]|CommandNode,
-    std_input: Optional[str] = None, 
-    redirect_stderr_to_stdout:bool = True, # New feature, since the old implementation did this by deafault but we now have controll over it
+    command: str | List[str] | CommandNode,
+    std_input: Optional[str] = None,
+    redirect_stderr_to_stdout: bool = True,  # New feature, since the old implementation did this by deafault but we now have controll over it
     current_dir: Optional[pathlib.Path | os.PathLike | str] = None,
     environment: None | Dict[str, str] = None,
     # shell: bool = False, Support REMOVED
-    print_command: bool = True, # TEMPORARALY not suported
+    print_command: bool = True,  # TEMPORARALY not suported
     print_output: bool = False,
-    print_env: bool = True, # TEMPORARALY not suported
-    print_curdir: bool = True, # TEMPORARALY not suported
-    print_shell_cmd: bool = False, # TEMPORARALY not suported
-    print_file_shell_cmd: bool = True, # TEMPORARALY not suported
+    print_env: bool = True,  # TEMPORARALY not suported
+    print_curdir: bool = True,  # TEMPORARALY not suported
+    print_shell_cmd: bool = False,  # TEMPORARALY not suported
+    print_file_shell_cmd: bool = True,  # TEMPORARALY not suported
     timeout: Optional[int] = None,
     output_is_log: bool = False,
     ignore_ret_codes: Iterable[int] = (),
@@ -93,23 +96,25 @@ def shell_out_new(
         str: the output of the shell command that completed successfully.
     """
 
-    #this will run the true command confirming the exit code instead of assuming it
+    # this will run the true command confirming the exit code instead of assuming it
     completedProcess = subprocess.run(["true"], timeout=None)
     sucsess_value = completedProcess.returncode
+
     def sucsess(value):
         return value == sucsess_value
-    
 
-    # Convert the existing structures over to the tree structure 
-    commandTree:CommandNode
-    if isinstance(command,str):
+    # Convert the existing structures over to the tree structure
+    commandTree: CommandNode
+    if isinstance(command, str):
         commandTree = makecommand.command(command)
-    elif isinstance(command,list):
+    elif isinstance(command, list):
         commandTree = makecommand.command(shlex.join(command))
-    elif isinstance(command,CommandNode):
+    elif isinstance(command, CommandNode):
         commandTree = command
     else:
-        raise TypeError(f"Shell out was called with a command of type {type(command)}, this is unexpected and not suported")
+        raise TypeError(
+            f"Shell out was called with a command of type {type(command)}, this is unexpected and not suported"
+        )
 
     # Use the visitor patterns to convert our tree to an executable string
     stringCommand = getString(commandTree)
@@ -131,7 +136,7 @@ def shell_out_new(
             outline = process.stdout.readline()
         return outlines
 
-    def flush_thread(process,output_queue):
+    def flush_thread(process, output_queue):
         """
         while process is running will log and store all stdout in real time
         Args:
@@ -152,9 +157,8 @@ def shell_out_new(
         outlines += flush_outlines(process)
         sys.stdout.flush()
         sys.stderr.flush()
-        output_queue.put( "".join(outlines))
+        output_queue.put("".join(outlines))
 
-    
     if redirect_stderr_to_stdout:
         stderr_out = subprocess.STDOUT
     else:
@@ -177,7 +181,13 @@ def shell_out_new(
                 to accomplish this we use multiprocessing in combination with error catching to interupt the logging if needed
                 """
                 output_queue = Queue()
-                logger_process = Process(target=flush_thread, args=(shell_process,output_queue,))
+                logger_process = Process(
+                    target=flush_thread,
+                    args=(
+                        shell_process,
+                        output_queue,
+                    ),
+                )
                 logger_process.start()
                 outs, errs = shell_process.communicate(input=std_input, timeout=timeout)
                 retcode = shell_process.poll()
@@ -197,18 +207,17 @@ def shell_out_new(
                 shell_process.kill()
                 raise err
 
-        #not a sucsessfull execution and not an alowed exit code
-        #raise the appropriate error
+        # not a sucsessfull execution and not an alowed exit code
+        # raise the appropriate error
         if not sucsess(retcode) and retcode not in ignore_ret_codes:
             raise subprocess.CalledProcessError(
                 retcode,
                 shell_process.args,
-                )
-        #not a sucsessfull execution but an alowed exit code
-        #append the error to the output
+            )
+        # not a sucsessfull execution but an alowed exit code
+        # append the error to the output
         if not sucsess(retcode):
             output += shell_process.stderr.read()
-
 
     if print_output and not output_is_log:
         if "" != output.strip():
@@ -217,16 +226,3 @@ def shell_out_new(
 
     assert isinstance(output, str)
     return output
-
-def test():
-    a = shell_out_new("ssh user@host -p 57429 'perf stat sleep 1'",print_output=True,output_is_log=True)
-    print("--------------------")
-    print(a)
-    shell_out_new(['ssh', 'user@host', '-p', '57429', '-t', 'perf stat sleep 1'])
-    main_command_ast = makecommand.command("sleep",["1"])
-    full_command = makecommand.command("perf stat",[inline(main_command_ast)])
-    remote_command = execute_on_remote(full_command,"user@host",port=57429)
-    shell_out_new(remote_command)
-
-if __name__ == "__main__":
-    test()
