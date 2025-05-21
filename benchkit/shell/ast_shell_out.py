@@ -174,6 +174,7 @@ def shell_out_new(
     ) as shell_process:
         if shell_process.stdin is not None and std_input is not None:
             shell_process.stdin.write(std_input.encode('utf-8'))
+            shell_process.stdin.flush()
 
         if output_is_log:
             try:
