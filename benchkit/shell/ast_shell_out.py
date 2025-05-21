@@ -178,12 +178,12 @@ def shell_out_new(
     ) as shell_process:
         if output_is_log:
             try:
-                """
-                logging the process takes two threads since we need to wait for the timeout
-                while logging stdout in real time, to accomplish this we use multiprocessing
-                in combination with error catching to interupt the logging if needed
-                """
-                output_queue = Queue()
+
+                # logging the process takes two threads since we need to wait for the timeout
+                # while logging stdout in real time, to accomplish this we use multiprocessing
+                # in combination with error catching to interupt the logging if needed
+
+                output_queue:Queue = Queue()
                 logger_process = Process(
                     target=flush_thread,
                     args=(
