@@ -18,6 +18,7 @@ import pathlib
 import sys
 from typing import Any, List, Protocol
 
+from benchkit.utils.dir import get_benchkit_temp_folder_str
 from benchkit.utils.types import PathType
 
 libs = ["pandas", "matplotlib", "seaborn"]
@@ -194,7 +195,7 @@ def _read_csv(
 def generate_chart_from_single_csv(
     csv_pathname: PathType,
     plot_name: str | List[str],
-    output_dir: PathType = "/tmp/figs",
+    output_dir: PathType = f"{get_benchkit_temp_folder_str()}/figs",
     nan_replace: bool = True,
     process_dataframe: DataframeProcessor = identical_dataframe,
     **kwargs,
@@ -209,7 +210,7 @@ def generate_chart_from_single_csv(
             name of the (Seaborn) plot to generate.
         output_dir (PathType, optional):
             directory where to create the file of the chart.
-            Defaults to "/tmp/figs".
+            Defaults to "/tmp/benchkit/[USERNAME]/figs".
         nan_replace (bool, optional):
             whether to fill NaN values to replace None, empty strings, etc.
             when parsing the dataset.
@@ -242,7 +243,7 @@ def generate_chart_from_single_csv(
 def generate_chart_from_multiple_csvs(
     csv_pathnames: List[PathType],
     plot_name: str | List[str],
-    output_dir: PathType = "/tmp/figs",
+    output_dir: PathType = f"{get_benchkit_temp_folder_str()}/figs",
     xlabel: str | None = None,
     ylabel: str | None = None,
     nan_replace: bool = True,
@@ -259,7 +260,7 @@ def generate_chart_from_multiple_csvs(
             name of the (Seaborn) plot to generate.
         output_dir (PathType, optional):
             path to the directory where to output the chart.
-            Defaults to "/tmp/figs".
+            Defaults to "/tmp/benchkit/[USERNAME]/figs".
         xlabel (str | None, optional):
             label of the x-axis.
             Defaults to None.
@@ -308,7 +309,7 @@ def get_global_dataframe(
 
 def generate_global_csv_file(
     csv_pathnames: List[PathType],
-    output_dir: PathType = "/tmp/figs",
+    output_dir: PathType = f"{get_benchkit_temp_folder_str()}/figs",
     nan_replace: bool = True,
 ) -> None:
     if not _LIBRARIES_ENABLED:

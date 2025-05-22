@@ -120,7 +120,7 @@ def _print_file_shell_cmd(
         shell_file.writelines(lines)
 
     # TODO workaround before we implement more decent logging:
-    campaign_log_path = pathlib.Path("/tmp/benchkit-campaign.sh")
+    campaign_log_path = pathlib.Path(f"{get_benchkit_temp_folder_str()}/benchkit-campaign.sh")
     if campaign_log_path.is_file():
         with open(campaign_log_path, "a") as shell_file:
             shell_file.writelines(lines)
@@ -157,7 +157,7 @@ def print_header(
         print_shell_cmd (bool):
             whether to print the shell command in a ready-to-be-copy-pasted format.
         print_file_shell_cmd (bool):
-            whether to print the shell command in a log file (`/tmp/benchkit.sh`).
+            whether to print the shell command in a log file (`/tmp/benchkit/[USERNAME]/benchkit.sh`).
         asynced (bool):
             whether to command to print is asynchronous.
         remote_host (str | None):

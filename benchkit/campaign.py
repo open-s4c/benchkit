@@ -25,12 +25,12 @@ from benchkit.lwchart import (
     identical_dataframe,
 )
 from benchkit.platforms import Platform, get_current_platform
-from benchkit.utils.dir import parentdir
+from benchkit.utils.dir import get_benchkit_temp_folder_str, parentdir
 from benchkit.utils.misc import seconds2pretty
 from benchkit.utils.types import Constants, PathType, Pretty
 from benchkit.utils.variables import cartesian_product
 
-_BENCHKIT_CAMPAIGN_CMD_FILE = "/tmp/benchkit-campaign.sh"
+_BENCHKIT_CAMPAIGN_CMD_FILE = f"{get_benchkit_temp_folder_str()}/benchkit-campaign.sh"
 
 
 class Campaign:
