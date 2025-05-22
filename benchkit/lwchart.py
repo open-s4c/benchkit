@@ -210,7 +210,7 @@ def generate_chart_from_single_csv(
             name of the (Seaborn) plot to generate.
         output_dir (PathType, optional):
             directory where to create the file of the chart.
-            Defaults to "/tmp/benchkit/[USERNAME]/figs".
+            Defaults to "/tmp/benchkit-[USERNAME]/figs".
         nan_replace (bool, optional):
             whether to fill NaN values to replace None, empty strings, etc.
             when parsing the dataset.
@@ -260,7 +260,7 @@ def generate_chart_from_multiple_csvs(
             name of the (Seaborn) plot to generate.
         output_dir (PathType, optional):
             path to the directory where to output the chart.
-            Defaults to "/tmp/benchkit/[USERNAME]/figs".
+            Defaults to "/tmp/benchkit-[USERNAME]/figs".
         xlabel (str | None, optional):
             label of the x-axis.
             Defaults to None.
