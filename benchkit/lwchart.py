@@ -18,7 +18,7 @@ import pathlib
 import sys
 from typing import Any, List, Protocol
 
-from benchkit.utils.dir import get_benchkit_temp_folder_str
+from benchkit.utils.misc import get_benchkit_temp_folder_str
 from benchkit.utils.types import PathType
 
 libs = ["pandas", "matplotlib", "seaborn"]

@@ -4,7 +4,7 @@
 Utilities to manipulate directories.
 """
 
-import getpass
+
 import inspect
 import os
 import pathlib
@@ -251,9 +251,3 @@ def caller_dir() -> pathlib.Path:
     caller_filepath = caller_file_abs_path()
     caller_parent = caller_filepath.parent.resolve()
     return caller_parent
-
-def get_user_name() -> str:
-    return getpass.getuser()
-
-def get_benchkit_temp_folder_str() -> str:
-    return f'/tmp/benchkit/{getpass.getuser()}'
