@@ -12,7 +12,7 @@ from benchkit.cli.generate import (
     generate_campaign,
     get_gitignore_content,
 )
-from benchkit.utils.dir import get_benchkit_temp_folder_str
+from benchkit.utils.misc import get_benchkit_temp_folder_str
 
 _DOTGIT_DIR = Path(".git")
 _GITIGNORE_PATH = Path(".gitignore")

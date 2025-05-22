@@ -11,7 +11,7 @@ import sys
 import tempfile
 from typing import Optional
 
-from benchkit.utils.dir import get_benchkit_temp_folder_str
+from benchkit.utils.misc import get_benchkit_temp_folder_str
 from benchkit.utils.types import Command, Environment, PathType, SplitCommand
 
 
