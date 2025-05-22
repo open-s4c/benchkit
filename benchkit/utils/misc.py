@@ -80,7 +80,7 @@ def get_user_name() -> str:
     return getpass.getuser()
 
 def get_benchkit_temp_folder_str() -> str:
-    path:str=f'/tmp/benchkit/{getpass.getuser()}'
+    path:str=f'/tmp/benchkit-{getpass.getuser()}'
     os.makedirs(os.path.dirname(f"{path}/"), exist_ok=True)
     return path
 
