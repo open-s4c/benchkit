@@ -12,6 +12,7 @@ from benchkit.cli.generate import (
     generate_campaign,
     get_gitignore_content,
 )
+from benchkit.utils.dir import get_benchkit_temp_folder_str
 
 _DOTGIT_DIR = Path(".git")
 _GITIGNORE_PATH = Path(".gitignore")
@@ -128,7 +129,7 @@ if __name__ == "__main__":
         build_command="",
         run_command="echo throughput=10",
         nb_runs=4,
-        command_dir="/tmp/c",
+        command_dir=f"{get_benchkit_temp_folder_str()}/c",
         campaign_filename="testcamp.py",
         git=False,
         split_benchmark_campaign=True,
