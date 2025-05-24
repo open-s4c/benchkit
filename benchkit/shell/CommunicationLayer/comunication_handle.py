@@ -1,6 +1,7 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+from io import BufferedReader
 import os
 from abc import ABC, abstractmethod
 
@@ -9,23 +10,70 @@ class Output(ABC):
     """interface to communicate with command output on all platforms,
     functions are  due to compatibility"""
 
+    def __init__(self):
+        self.__bufferd_out:bytes = b''
+        self.__bufferd_err:bytes = b''
+        self.a = 2
+
+
     @abstractmethod
+    def _read_bytes_out(self, amount_of_bytes: int) -> bytes:
+        pass
+    
+    @abstractmethod
+    def _read_bytes_err(self, amount_of_bytes: int) -> bytes:
+        pass
+
     def readOut(self, amount_of_bytes: int) -> bytes:
         """reads at most amount_of_bytes from the available stdout"""
-        pass
+        if self.__bufferd_out:
+            ret = self.__bufferd_out
+            self.__bufferd_out = b''
+            self.a = 0
+            return ret
+        self.a += 1
+        # print(f'come from buffer non {self.a}')
+        return self._read_bytes_out(amount_of_bytes)
 
-    @abstractmethod
     def readErr(self, amount_of_bytes: int) -> bytes:
         """reads at most amount_of_bytes from the available stderr"""
-        pass
+        if self.__bufferd_err:
+            ret = self.__bufferd_err
+            self.__bufferd_err = b''
+            return ret
+        return self._read_bytes_err(amount_of_bytes)
 
-    @abstractmethod
-    def getReaderFdOut(self) -> int:
-        pass
+    def readOut_line(self) -> bytes:
+        byt = self.readOut(10)
+        while byt:
+            sp = byt.split(b'\n')
+            if len(sp) > 1:
+                self.__bufferd_out = sp[1]
+                return sp[0]
+            byt += self.readOut(10)
+        return byt
 
-    @abstractmethod
-    def getReaderFdErr(self) -> int:
-        pass
+    def readErr_line(self) -> bytes:
+        byt = self.readErr(10)
+        while byt:
+            sp = byt.split(b'\n')
+            if len(sp) > 1:
+                self.__bufferd_err = sp[1]
+                return sp[0]
+            byt += self.readErr(10)
+        return byt
+
+class SshOutput(Output):
+    def __init__(self,out:BufferedReader,err:BufferedReader):
+        self.__out = out
+        self.__err = err
+        super().__init__()
+
+    def _read_bytes_err(self, amount_of_bytes:int) -> bytes:
+        return self.__err.read(amount_of_bytes)
+
+    def _read_bytes_out(self, amount_of_bytes:int) -> bytes:
+        return self.__out.read(amount_of_bytes)
 
 
 class WritableOutput(Output):
@@ -34,36 +82,29 @@ class WritableOutput(Output):
     def __init__(self) -> None:
         self.readerOut, self.writerOut = os.pipe()
         self.readerErr, self.writerErr = os.pipe()
+        os.set_inheritable(self.readerOut,True)
+        os.set_inheritable(self.readerErr,True)
+        os.set_inheritable(self.writerOut,True)
+        os.set_inheritable(self.writerErr,True)
+        super().__init__()
 
     def writeOut(self, bytes_to_write: bytes) -> None:
         os.write(self.writerOut, bytes_to_write)
 
-    def endWritingOut(self) -> None:
-        os.close(self.writerOut)
-
-    def readOut(self, amount_of_bytes: int) -> bytes:
-        return os.read(self.readerOut, amount_of_bytes)
-
-    def getReaderFdOut(self) -> int:
-        return self.readerOut
-
-    def getWriterFdOut(self) -> int:
-        return self.writerOut
-
     def writeErr(self, bytes_to_write: bytes) -> None:
         os.write(self.writerErr, bytes_to_write)
+
+    def endWritingOut(self) -> None:
+        os.close(self.writerOut)
 
     def endWritingErr(self) -> None:
         os.close(self.writerErr)
 
-    def readErr(self, amount_of_bytes: int) -> bytes:
+    def _read_bytes_out(self, amount_of_bytes: int) -> bytes:
+        return os.read(self.readerOut, amount_of_bytes)
+
+    def _read_bytes_err(self, amount_of_bytes: int) -> bytes:
         return os.read(self.readerErr, amount_of_bytes)
-
-    def getReaderFdErr(self) -> int:
-        return self.readerErr
-
-    def getWriterFdErr(self) -> int:
-        return self.writerErr
 
 
 """File notes OUTDATED KEPT FOR REFERENCE FOR A BIT

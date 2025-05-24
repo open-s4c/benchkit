@@ -102,29 +102,35 @@ def test():
     # THE TWO EXAMPLES BELOW DONT HALT
     # They exist to show that functions work in an intuative manner.
 
+    a = shell_out_new(
+        "ls", print_output=True, output_is_log=True, redirect_stderr_to_stdout=False
+    )
+    print("--------------------")
+    print(a)
+
     # To show that output is log works
     # a = shell_out_new(
-    #     "ssh aaronb@soft24.vub.ac.be -p 22 'cat /dev/random'", print_output=True, output_is_log=True
+    #     "cat /dev/random", print_output=True, output_is_log=True
     # )
     # print("--------------------")
     # print(a)
     # To show that input works
     # shell_out_new(
-    #     "ssh aaronb@soft24.vub.ac.be -p 22 'cat'", output_is_log=True, std_input="wafel\n" \
+    #     "ssh user@host -p 22 'cat'", output_is_log=True, std_input="wafel\n" \
     #     "aeu aeu\n"
     # )
 
 
-    a = shell_out_new(
-        "ssh aaronb@soft24.vub.ac.be -p 22 'perf stat sleep 1'", print_output=True, output_is_log=True
-    )
-    print("--------------------")
-    print(a)
-    shell_out_new(["ssh", "user@host", "-p", "57429", "-t", "perf stat sleep 1"])
-    main_command_ast = makecommand.command("sleep", ["1"])
-    full_command = makecommand.command("perf stat", [inline(main_command_ast)])
-    remote_command = execute_on_remote(full_command, "user@host", port=57429)
-    shell_out_new(remote_command)
+    # a = shell_out_new(
+    #     "ssh user@host -p 22 'perf stat sleep 1'", print_output=True, output_is_log=True,redirect_stderr_to_stdout=False
+    # )
+    # print("--------------------")
+    # print(a)
+    # shell_out_new(["ssh", "user@host", "-p", "57429", "-t", "perf stat sleep 1"])
+    # main_command_ast = makecommand.command("sleep", ["1"])
+    # full_command = makecommand.command("perf stat", [inline(main_command_ast)])
+    # remote_command = execute_on_remote(full_command, "user@host", port=57429)
+    # shell_out_new(remote_command)
 
 
 if __name__ == "__main__":
