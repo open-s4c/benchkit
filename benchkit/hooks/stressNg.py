@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
+
 from typing import List, Optional
 from benchkit.benchmark import PostRunHook, PreRunHook, RecordResult, WriteRecordFileFunction
 from benchkit.dependencies.packages import PackageDependency
