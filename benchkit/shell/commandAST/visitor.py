@@ -56,7 +56,6 @@ def convertComandToString(ast: CommandNode) -> str:
 
     args = [x.argument for x in converted_ast.arguments]
     args.insert(0, converted_ast.command.argument)
-    print(args)
     return shlex.join(args)
 
 

@@ -103,8 +103,13 @@ def test():
     # They exist to show that functions work in an intuative manner.
 
     a = shell_out_new(
-        "ls", print_output=True, output_is_log=True, redirect_stderr_to_stdout=False
+        "/home/aaron/benchkitFork/benchkit/tests/ast-shell/waitThenPrint.sh", print_output=True, output_is_log=True, redirect_stderr_to_stdout=False,run_in_background=True
     )
+    print(f"test{a} -------------------------------------------------------------")
+    a = shell_out_new(
+        "ls", print_output=True, output_is_log=True, redirect_stderr_to_stdout=False,
+    )
+
     print("--------------------")
     print(a)
 

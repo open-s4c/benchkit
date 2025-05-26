@@ -39,6 +39,36 @@ class OutputBuffer:
         return output
 
 
+class VoidOutput:
+    def __init__(self,out:Output) -> None:
+        self.out=out
+        void_process_out = Process(
+                    target=self.void_out,
+                    args=(
+                        self.out,
+                    ),
+                )
+        void_process_err = Process(
+                    target=self.void_err,
+                    args=(
+                        self.out,
+                    ),
+                )
+        void_process_out.start()
+        void_process_err.start()
+
+    @staticmethod
+    def void_out(out:Output) -> None:
+        outline = out.readOut(10)
+        while outline:
+            outline = out.readOut(10)
+    
+    @staticmethod
+    def void_err(out:Output) -> None:
+        outline = out.readOut(10)
+        while outline:
+            outline = out.readOut(10)
+
 class Hook(ABC):
     @abstractmethod
     def startHookFunction(self,comandOutput:Output) -> None:

@@ -10,7 +10,7 @@ from time import sleep
 from typing import Dict, Iterable, List, Optional
 
 from benchkit.shell.CommunicationLayer.comunication_handle import Output, SshOutput, WritableOutput
-from benchkit.shell.CommunicationLayer.hook import OutputBuffer, ReaderHook
+from benchkit.shell.CommunicationLayer.hook import OutputBuffer, ReaderHook, VoidOutput
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
 from benchkit.shell.commandAST.visitor import getString
@@ -32,6 +32,7 @@ def shell_out_new(
     timeout: Optional[int] = None,
     output_is_log: bool = False,
     ignore_ret_codes: Iterable[int] = (),
+    run_in_background = False,
     # split_arguments: bool = True, Support REMOVED -> can be achieved in another manner
 ) -> str:
     """
@@ -140,20 +141,17 @@ def shell_out_new(
         while a:
             print(f"\33[34m[OUT | {stringCommand}] {try_conventing_bystring_to_readable_characters(a)}\033[0m")
             a = input.readOut_line()
-        print(f"{a!r}")
-        print("rhook stdout done")
 
     def logger_hook_err(input:Output):
         a = input.readErr_line()
         while a:
             print(f"\033[91m[ERR | {stringCommand}] {try_conventing_bystring_to_readable_characters(a)}\033[0m")
             a = input.readErr_line()
-        print("rhook stderr done")
 
     log_std_out_hook = ReaderHook(logger_hook_out)
     log_std_err_hook = ReaderHook(logger_hook_err)
 
-    with subprocess.Popen(
+    shell_process = subprocess.Popen(
         stringCommand,
         shell=True,
         cwd=current_dir,
@@ -161,38 +159,43 @@ def shell_out_new(
         stdout=subprocess.PIPE,
         stderr=stderr_out,
         stdin=subprocess.PIPE,
-    ) as shell_process:
-        if shell_process.stdin is not None and std_input is not None:
-            shell_process.stdin.write(std_input.encode('utf-8'))
-            shell_process.stdin.flush()
-        
-        command_output = SshOutput(shell_process.stdout,shell_process.stderr)
+    )
+    if shell_process.stdin is not None and std_input is not None:
+        shell_process.stdin.write(std_input.encode('utf-8'))
+        shell_process.stdin.flush()
+    
+    command_output = SshOutput(shell_process.stdout,shell_process.stderr)
 
-        if output_is_log:
-            log_std_out_hook.startHookFunction(command_output)
-            pas = log_std_out_hook.getPassthrough()
-            log_std_err_hook.startHookFunction(pas)
-            command_output = log_std_err_hook.getPassthrough()
-
-        try:
-
+    if output_is_log:
+        log_std_out_hook.startHookFunction(command_output)
+        pas = log_std_out_hook.getPassthrough()
+        log_std_err_hook.startHookFunction(pas)
+        command_output = log_std_err_hook.getPassthrough()
+    try:
+        if run_in_background:
+            VoidOutput(command_output)
+            # TODO: This makes it incompatible with timeout, this is fixable
+            # shell_process.wait(timeout=timeout)
+            print("should exit")
+            return ""
+        else:
             buffer = OutputBuffer(command_output)
             retcode = shell_process.wait(timeout=timeout)
             output = try_conventing_bystring_to_readable_characters(buffer.get_result())
 
-        except subprocess.TimeoutExpired as err:
-            #killing this will send eof to and end the hooks aswell
-            shell_process.kill()
-            raise err
+    except subprocess.TimeoutExpired as err:
+        #killing this will send eof to and end the hooks aswell
+        shell_process.kill()
+        raise err
 
 
-        # not a sucsessfull execution and not an alowed exit code
-        # raise the appropriate error
-        if not sucsess(retcode) and retcode not in ignore_ret_codes:
-            raise subprocess.CalledProcessError(
-                retcode,
-                shell_process.args,
-            )
+    # not a sucsessfull execution and not an alowed exit code
+    # raise the appropriate error
+    if not sucsess(retcode) and retcode not in ignore_ret_codes:
+        raise subprocess.CalledProcessError(
+            retcode,
+            shell_process.args,
+        )
 
     if print_output and not output_is_log:
         if "" != output.strip():
