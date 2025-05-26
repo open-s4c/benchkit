@@ -158,7 +158,8 @@ def print_header(
         print_shell_cmd (bool):
             whether to print the shell command in a ready-to-be-copy-pasted format.
         print_file_shell_cmd (bool):
-            whether to print the shell command in a log file (`/tmp/benchkit-[USERNAME]/benchkit.sh`).
+            whether to print the shell command in a log file
+            (`/tmp/benchkit-[USERNAME]/benchkit.sh`).
         asynced (bool):
             whether to command to print is asynchronous.
         remote_host (str | None):
