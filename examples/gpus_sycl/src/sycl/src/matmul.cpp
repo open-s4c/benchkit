@@ -13,7 +13,7 @@ void matmul(sycl::queue &q,
     const std::vector<data_type> &a,
     const std::vector<data_type> &b,
     const std::vector<data_type> &c) {
-    
+
     sycl::buffer<data_type, 2> buff_a(a.data(), sycl::range(n, n));
     sycl::buffer<data_type, 2> buff_b(b.data(), sycl::range(n, n));
     sycl::buffer<data_type, 2> buff_c(c.data(), sycl::range(n, n));
