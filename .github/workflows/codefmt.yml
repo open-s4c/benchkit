@@ -28,3 +28,5 @@ jobs:
       run: flake8 benchkit/ examples/ plotbench/src/ scripts/ tests/ tutorials/
     - name: Check copyright
       run: python3 ./scripts/list_missing_copyright.py
+    - name: Check final newlines
+      run: python3 ./scripts/check_final_newline.py
