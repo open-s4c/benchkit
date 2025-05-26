@@ -76,13 +76,16 @@ class TimeMeasure:
         self.end_time = datetime.datetime.now(tz=datetime.timezone.utc)
         self.duration_seconds = (self.end_time - self.start_time).total_seconds()
 
+
 def get_user_name() -> str:
     return getpass.getuser()
 
+
 def get_benchkit_temp_folder_str() -> str:
-    path:str=f'/tmp/benchkit-{get_user_name()}'
+    path: str = f"/tmp/benchkit-{get_user_name()}"
     os.makedirs(os.path.dirname(f"{path}/"), exist_ok=True)
     return path
+
 
 if __name__ == "__main__":
     # straightforward test for TimeMeasure context manager
