@@ -148,8 +148,8 @@ def shell_out_new(
             print(f"\033[91m[ERR | {stringCommand}] {try_conventing_bystring_to_readable_characters(a)}\033[0m")
             a = input.readErr_line()
 
-    log_std_out_hook = ReaderHook(logger_hook_out)
-    log_std_err_hook = ReaderHook(logger_hook_err)
+    log_std_out_hook = ReaderHook(logger_hook_out,voidStdErr=True)
+    log_std_err_hook = ReaderHook(logger_hook_err,voidStdOut=True)
 
     shell_process = subprocess.Popen(
         stringCommand,
@@ -163,6 +163,9 @@ def shell_out_new(
     if shell_process.stdin is not None and std_input is not None:
         shell_process.stdin.write(std_input.encode('utf-8'))
         shell_process.stdin.flush()
+
+    if shell_process.stdin is not None:
+        shell_process.stdin.close()
     
     command_output = SshOutput(shell_process.stdout,shell_process.stderr)
 
@@ -174,9 +177,8 @@ def shell_out_new(
     try:
         if run_in_background:
             VoidOutput(command_output)
-            # TODO: This makes it incompatible with timeout, this is fixable
+            # TODO: run_in_background makes it incompatible with timeout, this is fixable
             # shell_process.wait(timeout=timeout)
-            print("should exit")
             return ""
         else:
             buffer = OutputBuffer(command_output)
@@ -188,6 +190,10 @@ def shell_out_new(
         shell_process.kill()
         raise err
 
+    if shell_process.stdout is not None:
+        shell_process.stdout.close()
+    if shell_process.stderr is not None:
+        shell_process.stderr.close()
 
     # not a sucsessfull execution and not an alowed exit code
     # raise the appropriate error
