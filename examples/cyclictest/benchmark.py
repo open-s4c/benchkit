@@ -169,8 +169,10 @@ class CyclictestBenchhmark(Benchmark):
         bins = min(maxLatency, self._buckets)
         binWidth = math.ceil(maxLatency / bins)
         df["bin"] = pandas.cut(df["latency"], bins=range(0, maxLatency + binWidth, binWidth))
-        df["avgAmount"] = df.groupby("bin")["amount"].transform(lambda df: df.sum() / 10)
-        avgDf = df.groupby("bin")["avgAmount"].mean().reset_index()
+        df["avgAmount"] = df.groupby("bin", observed=False)["amount"].transform(
+            lambda df: df.sum() / 10
+        )
+        avgDf = df.groupby("bin", observed=False)["avgAmount"].mean().reset_index()
         avgDf = avgDf.fillna(0, axis=1)
 
         # Plot the latencies for this run
