@@ -152,7 +152,12 @@ def shell_out_new(
     log_std_err_hook = ReaderHook(logger_hook_err,voidStdOut=True)
 
     shell_process = subprocess.Popen(
-        stringCommand,
+        # why exec:
+        # we want to be able to use shell=True
+        # however this would make the shell the pid of the subprocess
+        # by using exec we can get make the command take over the pid of the shell
+        # this only works for POSIX
+        f"exec {stringCommand}",
         shell=True,
         cwd=current_dir,
         env=environment,
@@ -160,53 +165,69 @@ def shell_out_new(
         stderr=stderr_out,
         stdin=subprocess.PIPE,
     )
-    if shell_process.stdin is not None and std_input is not None:
-        shell_process.stdin.write(std_input.encode('utf-8'))
-        shell_process.stdin.flush()
-
-    if shell_process.stdin is not None:
-        shell_process.stdin.close()
-    
-    command_output = SshOutput(shell_process.stdout,shell_process.stderr)
-
-    if output_is_log:
-        log_std_out_hook.startHookFunction(command_output)
-        pas = log_std_out_hook.getPassthrough()
-        log_std_err_hook.startHookFunction(pas)
-        command_output = log_std_err_hook.getPassthrough()
+    print(shell_process.pid)
     try:
-        if run_in_background:
-            VoidOutput(command_output)
-            # TODO: run_in_background makes it incompatible with timeout, this is fixable
-            # shell_process.wait(timeout=timeout)
-            return ""
-        else:
-            buffer = OutputBuffer(command_output)
-            retcode = shell_process.wait(timeout=timeout)
-            output = try_conventing_bystring_to_readable_characters(buffer.get_result())
+        if shell_process.stdin is not None and std_input is not None:
+            shell_process.stdin.write(std_input.encode('utf-8'))
+            shell_process.stdin.flush()
 
-    except subprocess.TimeoutExpired as err:
-        #killing this will send eof to and end the hooks aswell
-        shell_process.kill()
-        raise err
+        if shell_process.stdin is not None:
+            shell_process.stdin.close()
 
-    if shell_process.stdout is not None:
-        shell_process.stdout.close()
-    if shell_process.stderr is not None:
-        shell_process.stderr.close()
+        command_output = SshOutput(shell_process.stdout,shell_process.stderr)
 
-    # not a sucsessfull execution and not an alowed exit code
-    # raise the appropriate error
-    if not sucsess(retcode) and retcode not in ignore_ret_codes:
-        raise subprocess.CalledProcessError(
-            retcode,
-            shell_process.args,
-        )
+        if output_is_log:
+            log_std_out_hook.startHookFunction(command_output)
+            pas = log_std_out_hook.getPassthrough()
+            log_std_err_hook.startHookFunction(pas)
+            command_output = log_std_err_hook.getPassthrough()
+        try:
+            if run_in_background:
+                VoidOutput(command_output)
+                # TODO: run_in_background makes it incompatible with timeout, this is fixable
+                # shell_process.wait(timeout=timeout)
+                return ""
+            else:
+                buffer = OutputBuffer(command_output)
+                retcode = shell_process.wait(timeout=timeout)
+                output = try_conventing_bystring_to_readable_characters(buffer.get_result())
 
-    if print_output and not output_is_log:
-        if "" != output.strip():
-            print("[OUT]")
-            print(output.strip())
+        except subprocess.TimeoutExpired as err:
+            #killing this will send eof to and end the hooks aswell
+            shell_process.kill()
+            raise err
 
-    # assert isinstance(output, str)
-    return output
+        if shell_process.stdout is not None:
+            shell_process.stdout.close()
+        if shell_process.stderr is not None:
+            shell_process.stderr.close()
+
+        # not a sucsessfull execution and not an alowed exit code
+        # raise the appropriate error
+        if not sucsess(retcode) and retcode not in ignore_ret_codes:
+            raise subprocess.CalledProcessError(
+                retcode,
+                shell_process.args,
+            )
+
+        if print_output and not output_is_log:
+            if "" != output.strip():
+                print("[OUT]")
+                print(output.strip())
+
+        # assert isinstance(output, str)
+        return output
+    except Exception as e:
+        # If something goes wrong we try to clean up after ourself
+        # This can happen for example if we recieve a signal while waiting on an output
+        try:
+            if shell_process.stderr is not None:
+                shell_process.stderr.close()
+            if shell_process.stdout is not None:
+                shell_process.stdout.close()
+        finally:
+            shell_process.terminate()
+            # Wait allows the Popen process to cleanly terminate
+            ret = shell_process.wait(1)
+            print(f"ret:{ret}")
+            raise e
