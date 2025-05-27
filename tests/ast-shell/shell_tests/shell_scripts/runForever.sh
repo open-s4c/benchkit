@@ -1,1 +1,1 @@
-while true ; do date -Ins; done
+while true ; do date -Ins;sleep 1; done

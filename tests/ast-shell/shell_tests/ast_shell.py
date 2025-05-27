@@ -1,75 +1,56 @@
+from itertools import product
+import pathlib
+import sys
 import unittest
 import unittest.mock
 import io
+
 from benchkit.shell.ast_shell_out import shell_out_new
-from shell_scripts import script_path_string
+from shell_scripts import script_path_string, timeout
+
+import re
+
+import unittest.mock
+
 import tracemalloc
 
 tracemalloc.start()
 
 
 
+# Due to print statements being inside of threads unittest does not allow us to check the output of stdout.
+# We will have to write tests in a different way to check what the user sees.
+# To this end these tests only test functionality
+
 class BasicShellTests(unittest.TestCase):
-    
-    @unittest.mock.patch('sys.stdout', new_callable=io.StringIO)
-    def test_echo(self,mock_stdout):
+    def test_echo(self):
+
+        options = ["redirect_stderr_to_stdout","current_dir","environment","print_output","timeout","output_is_log","ignore_ret_codes"]
+        redirect_stderr_to_stdout = [True,False]
+        current_dir = [None, pathlib.Path(__file__).parent.resolve()]
+        environment = [None,{"test":"test"}]
+        print_output = [False,True]
+        timeout = [None,20]
+        output_is_log = [False,True]
+        ignore_ret_codes = [(),(1,)]
+        res = list(product(redirect_stderr_to_stdout,current_dir,environment,print_output,timeout,output_is_log,ignore_ret_codes))
+        for perm in res:
+            args = dict(zip(options, perm))
+            # test echo with multiple parameters to make sure none mess up the result
             a = shell_out_new(
-                "echo benchkit_echo_test",output_is_log=True ,redirect_stderr_to_stdout=False,
+                f"echo benchkit_echo_test {str(perm)}",
+                print_command=True,
+                **args
             )
-            self.assertEqual(a,"benchkit_echo_test\n","shell does not provide the right output in the result")
-            f = open("demofile2.txt", "a")
-            print("yeet")
-            f.write(mock_stdout.getvalue())
-            f.write("b")
-            f.close()
+            expeced_result = re.sub(r'\'', '', f"benchkit_echo_test {str(perm)}")
+            self.assertEqual(a,f"{expeced_result}\n","shell does not provide the right output in the result")
+
+    def test_run_forever(self):
+        with self.assertRaises(Exception):
+            with timeout(5):
+                shell_out_new(f"{script_path_string("runForever")}",output_is_log=True,redirect_stderr_to_stdout=False)
 
 
 
-
-def test():
-
-    # THE TWO EXAMPLES BELOW DONT HALT
-    # They exist to show that functions work in an intuative manner.
-
-    a = shell_out_new(
-        script_path_string("waitThenPrint"), print_output=True, output_is_log=True, redirect_stderr_to_stdout=False,run_in_background=True
-    )
-    print(f"test{a} -------------------------------------------------------------")
-    a = shell_out_new(
-        "ls", print_output=True, output_is_log=True, redirect_stderr_to_stdout=False,
-    )
-
-    print("--------------------")
-    print(a)
-
-    # To show that output is log works
-    # a = shell_out_new(
-    #     "cat /dev/random", print_output=True, output_is_log=True
-    # )
-    # print("--------------------")
-    # print(a)
-    # To show that input works
-    # shell_out_new(
-    #     "ssh user@host -p 22 'cat'", output_is_log=True, std_input="wafel\n" \
-    #     "aeu aeu\n"
-    # )
-
-
-    # a = shell_out_new(
-    #     "ssh user@host -p 22 'perf stat sleep 1'", print_output=True, output_is_log=True,redirect_stderr_to_stdout=False
-    # )
-    # print("--------------------")
-    # print(a)
-    # shell_out_new(["ssh", "user@host", "-p", "57429", "-t", "perf stat sleep 1"])
-    # main_command_ast = makecommand.command("sleep", ["1"])
-    # full_command = makecommand.command("perf stat", [inline(main_command_ast)])
-    # remote_command = execute_on_remote(full_command, "user@host", port=57429)
-    # shell_out_new(remote_command)
-
-
-if __name__ == "__main__":
-    # commandtests()
-    # localtests()
-    # newtest()
-    # runtest()
-    test()
+if __name__ == '__main__':
+    unittest.main()
