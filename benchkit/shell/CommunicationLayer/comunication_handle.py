@@ -19,7 +19,7 @@ class Output(ABC):
     @abstractmethod
     def _read_bytes_out(self, amount_of_bytes: int) -> bytes:
         pass
-    
+
     @abstractmethod
     def _read_bytes_err(self, amount_of_bytes: int) -> bytes:
         pass
@@ -64,17 +64,20 @@ class Output(ABC):
         return byt
 
 class SshOutput(Output):
-    def __init__(self,out:BufferedReader,err:BufferedReader):
+    def __init__(self,out:BufferedReader|None,err:BufferedReader|None):
         self.__out = out
         self.__err = err
         super().__init__()
 
     def _read_bytes_err(self, amount_of_bytes:int) -> bytes:
-        return self.__err.read(amount_of_bytes)
+        if self.__err:
+            return self.__err.read(amount_of_bytes)
+        return b''
 
     def _read_bytes_out(self, amount_of_bytes:int) -> bytes:
-        return self.__out.read(amount_of_bytes)
-
+        if self.__out:
+            return self.__out.read(amount_of_bytes)
+        return b''
 
 class WritableOutput(Output):
     """A way to create a fileStream that can be used as a CommandOutput by other functions"""
@@ -125,6 +128,5 @@ blocking for the local intreface
 CommandPassthrough can we fill the buffer and what happens if we do
 -> if hooks dont clear it fast enough what will happen
 -> test this
-
 
 """
