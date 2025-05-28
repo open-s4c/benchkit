@@ -78,7 +78,7 @@ class CyclictestBenchhmark(Benchmark):
 
     @staticmethod
     def get_run_var_names() -> List[str]:
-        return ["interval"]
+        return []
 
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [PackageDependency("stress-ng")]
@@ -89,7 +89,7 @@ class CyclictestBenchhmark(Benchmark):
     def single_run(
         self,
         benchmark_duration_seconds,
-        interval,
+        constants,
         **kwargs,
     ) -> str | AsyncProcess:
         run_command = [
@@ -97,7 +97,7 @@ class CyclictestBenchhmark(Benchmark):
             "cyclictest",
             "--verbose",
             "--mlockall",
-            "--interval=" + str(interval),
+            "--interval=" + str(constants.get("interval")),
             "--priority=99",
             "--threads",
             f"--duration={benchmark_duration_seconds}s",
@@ -250,8 +250,8 @@ def main() -> None:
         name="benchmark_name",
         benchmark=CyclictestBenchhmark(duration),
         nb_runs=3,
-        variables={"interval": [100]},
-        constants={"duration": duration},
+        variables={},
+        constants={"interval": 100},
         debug=False,
         gdb=False,
         enable_data_dir=True,
