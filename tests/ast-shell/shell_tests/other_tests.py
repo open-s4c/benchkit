@@ -3,6 +3,7 @@
 
 import shlex
 import subprocess
+import sys
 
 from benchkit.shell.ast_shell_out import shell_out_new
 from benchkit.shell.commandAST import command as makecommand
@@ -14,6 +15,9 @@ from benchkit.shell.commandAST.visitor import (
     printAst,
     resolveAllVariablesWithDict,
 )
+
+from shell_scripts import TestTimeout, script_path_string, timeout
+from benchkit.shell.ast_shell_out import shell_out_new
 
 
 def commandtests():
@@ -95,3 +99,23 @@ def runtest():
     output = outs
     print(retcode)
     print(str(output.decode("utf-8")))
+
+def testhalt():
+    # shell_process = subprocess.Popen(
+    #     # why exec:
+    #     # we want to be able to use shell=True
+    #     # however this would make the shell the pid of the subprocess
+    #     # by using exec we can get make the command take over the pid of the shell
+    #     # this only works for POSIX
+    #     f"./shell_scripts/fillErrThenPrint.sh",
+    #     # shell=True,
+    #     stdout=sys.stdout,
+    #     stderr=sys.stderr,
+    #     stdin=subprocess.PIPE,
+    # )
+    # shell_process.wait()
+    out = shell_out_new(script_path_string('fillErrThenOut'),redirect_stderr_to_stdout=True,output_is_log=True)
+    print("yeet")
+
+if __name__ == "__main__":
+    testhalt()
