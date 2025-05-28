@@ -5,11 +5,9 @@ import os
 import pathlib
 import shlex
 import subprocess
-from multiprocessing import Process, Queue
-from time import sleep
 from typing import Dict, Iterable, List, Optional
 
-from benchkit.shell.CommunicationLayer.comunication_handle import Output, SshOutput, WritableOutput
+from benchkit.shell.CommunicationLayer.comunication_handle import Output, SshOutput
 from benchkit.shell.CommunicationLayer.hook import OutputBuffer, ReaderHook, VoidOutput
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.commandNodes import CommandNode

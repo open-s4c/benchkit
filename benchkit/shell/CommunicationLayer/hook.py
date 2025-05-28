@@ -6,24 +6,33 @@ from benchkit.shell.CommunicationLayer.comunication_handle import Output, Writab
 
 
 
-# change -> this should be a "result hook" 
+# change -> this should be a "result hook"
 #           -> Hook should be a pastrough hook
 #           -> Hook should have getPassthrough() removed
 # This would allow for composition where every hook needs to end in a result hook (deafault is voiding it -> would be async)
 
 class OutputBuffer:
     def __init__(self,out:Output) -> None:
-        self.queue:Queue[bytes]=Queue()
+        self.queue_out:Queue[bytes]=Queue()
         self.out=out
 
-        logger_process = Process(
+        logger_process_out = Process(
                     target=self.result_thread,
                     args=(
                         self.out,
-                        self.queue,
+                        self.queue_out,
                     ),
                 )
-        logger_process.start()
+
+        err_void = Process(
+                    target=self.void_err,
+                    args=(
+                        self.out,
+                    ),
+                )
+
+        logger_process_out.start()
+        err_void.start()
 
     @staticmethod
     def result_thread(out:Output,output_queue:Queue[bytes]) -> None:
@@ -33,11 +42,18 @@ class OutputBuffer:
             outlines += outline
             outline = out.readOut(10)
         output_queue.put(outlines)
+        print("res ends")
+
+    @staticmethod
+    def void_err(out:Output) -> None:
+        outline = out.readErr(10)
+        while outline:
+            outline = out.readErr(10)
+        print("err ends")
 
     def get_result(self) -> bytes:
-        output = self.queue.get()
+        output = self.queue_out.get()
         return output
-
 
 class VoidOutput:
     def __init__(self,out:Output) -> None:
@@ -62,12 +78,12 @@ class VoidOutput:
         outline = out.readOut(10)
         while outline:
             outline = out.readOut(10)
-    
+
     @staticmethod
     def void_err(out:Output) -> None:
-        outline = out.readOut(10)
+        outline = out.readErr(10)
         while outline:
-            outline = out.readOut(10)
+            outline = out.readErr(10)
 
 class Hook(ABC):
     @abstractmethod
