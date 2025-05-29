@@ -11,6 +11,7 @@ from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import PathType
+from benchkit.platforms import get_current_platform
 
 supported_bench_names = [
     "avrora",
@@ -70,6 +71,7 @@ class DacapobenchBench(Benchmark):
                 "src_dir argument can be defined manually."
             )
         self._bench_src_path = bench_src_path
+        self.ignore_perf_csv = True
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -131,11 +133,12 @@ class DacapobenchBench(Benchmark):
                 f"Invalid bench_names for dacapobench: {bench_name}\n"
                 f"The supported bench names are: {supported_bench_names}."
             )
-        self.platform.comm.shell(
-            command=f"ant {bench_name}",
-            current_dir=self._bench_src_path,
-            output_is_log=True,
-        )
+        if False: # NOTE: This is temporary
+            self.platform.comm.shell(
+                command=f"ant {bench_name}",
+                current_dir=self._bench_src_path,
+                output_is_log=True,
+            )
 
     def clean_bench(self) -> None:
         pass
@@ -237,7 +240,16 @@ def dacapobench_campaign(
         benchmark = DacapobenchBench(
             src_dir=src_dir,
             command_wrappers=command_wrappers,
-            command_attachments=command_attachments,
+            # command_attachments=command_attachments,
+            command_attachments=[
+                lambda process, record_data_dir: command_wrappers[0].attach_every_thread(
+                    platform=get_current_platform(),
+                    process=process,
+                    record_data_dir=record_data_dir,
+                    poll_ms=100,
+                    use_jvm=True,
+                    ),
+                ],
             shared_libs=shared_libs,
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,

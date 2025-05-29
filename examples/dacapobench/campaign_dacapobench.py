@@ -10,12 +10,32 @@ from benchmark_dacapobench import dacapobench_campaign
 
 from benchkit.campaign import CampaignSuite
 from benchkit.utils.dir import caller_dir
+from benchkit.commandwrappers.perf import PerfStatWrap, enable_non_sudo_perf
+from benchkit.platforms import get_current_platform
 
 
 def main() -> None:
+    platform = get_current_platform()
+    enable_non_sudo_perf(comm_layer=platform.comm)
 
     # Where is the benchmark code located
     dacapobench_src_dir = (caller_dir() / "deps/dacapobench/benchmarks/").resolve()
+
+    # Define the "perf-stat" command wrapper to be passed to the benchmark initialization
+    # It is used to collect information from the PMCs.
+    # perfstatwrap = PerfStatWrap(events=["cache-misses"])
+    perfstatwrap = PerfStatWrap(
+            perf_path=None,
+            events=[
+                # "cache-misses",
+                "context-switches"
+                # "sched:sched_switch"
+                ],
+            use_json = False,
+            separator=";",
+            quiet=False,
+            remove_absent_event=False,
+            )
 
     # Define the campaign, associated with the LevelDB benchmark
     campaign = dacapobench_campaign(
@@ -44,12 +64,16 @@ def main() -> None:
             # "tradebeans",
             # "tradesoap",
             "xalan",
-            "zxing",
+            # "zxing",
+
             # "h2o", # Not supported due missing data
         ],
-        nb_runs=5,
+        nb_runs=2,
         benchmark_duration_seconds=3,
+        # nb_threads=[4],
         nb_threads=[1, 2, 4],
+        command_wrappers=[perfstatwrap],
+        post_run_hooks=[perfstatwrap.post_run_hook_update_results],
         enable_data_dir=True,
     )
 
@@ -65,6 +89,11 @@ def main() -> None:
         y="duration",
         col="bench_name",
         kind="bar",
+    )
+
+    # Generate a graph to visualize the output of perf stat
+    suite.generate_graph(
+        plot_name="speedup-stack",
     )
 
 
