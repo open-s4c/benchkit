@@ -268,6 +268,7 @@ class PerfStatWrap(CommandWrapper):
         quiet: Optional[bool] = None,
         output_filename: Optional[PathType] = "perf-stat.txt",
         use_json: bool = True,
+        wrap_command: bool = True,
         separator: Optional[str] = None,
         remove_absent_event: bool = False,
         platform: Platform | None = None,
@@ -289,6 +290,7 @@ class PerfStatWrap(CommandWrapper):
                 remove_absent_event=remove_absent_event,
             )
 
+        self.wrap_command = wrap_command
         self._events = events
         self._freq = freq
         self._quiet = quiet
