@@ -16,7 +16,7 @@ from benchkit.shell.commandAST.visitor import (
     resolveAllVariablesWithDict,
 )
 
-from shell_scripts import TestTimeout, script_path_string, timeout
+from shell_scripts import script_path_string
 from benchkit.shell.ast_shell_out import shell_out_new
 
 
@@ -114,7 +114,8 @@ def testhalt():
     #     stdin=subprocess.PIPE,
     # )
     # shell_process.wait()
-    out = shell_out_new(script_path_string('fillErrThenOut'),redirect_stderr_to_stdout=True,output_is_log=True)
+    args = {'print_output': True, 'output_is_log': True, 'redirect_stderr_to_stdout': False, 'current_dir': None, 'environment': None, 'timeout': None, 'ignore_ret_codes': ()}
+    out = shell_out_new(script_path_string('fillErrThenOut'),**args)
     print("yeet")
 
 if __name__ == "__main__":

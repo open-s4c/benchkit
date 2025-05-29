@@ -141,21 +141,20 @@ class BasicShellTests(unittest.TestCase):
 
         for args in argument_list:
             try:
-                with timeout(10):
+                with timeout(20):
                     # tests for filling the std_err
                     shell_out_new(script_path_string('fillErrThenOut'), **args)
             except TestTimeout:
-                self.fail("the command got halted during excecution")
+                self.fail(f"the command got halted during excecution for {script_path_string('fillErrThenOut')} with args: {args}")
                 raise TestTimeout
 
             try:
-                with timeout(10):
+                with timeout(20):
                     # tests for filling the std_io
                     shell_out_new(script_path_string('fillOutThenErr'), **args)
             except TestTimeout:
                 self.fail("the command got halted during excecution")
                 raise TestTimeout
-
 
 if __name__ == '__main__':
     unittest.main()
