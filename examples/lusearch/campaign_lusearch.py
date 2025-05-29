@@ -54,7 +54,7 @@ def main() -> None:
         ],
         nb_runs=1,
         benchmark_duration_seconds=3,
-        nb_threads=[2, 4],
+        nb_threads=[4, 2],
         command_wrappers=[perfstatwrap],
         post_run_hooks=[perfstatwrap.post_run_hook_update_results],
         enable_data_dir=True,
