@@ -153,6 +153,7 @@ def _generate_chart_from_df(
             ax.bar(ind, factor_values, bottom=bottom, label=label, color=color)
             bottom += factor_values
 
+        ax.set_title(title)
         ax.set_xlabel('Number of Threads')
         ax.set_ylabel('Speedup')
         ax.set_xticks(ind)

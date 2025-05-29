@@ -32,6 +32,7 @@ def main() -> None:
                 # "sched:sched_switch"
                 ],
             use_json = False,
+            wrap_command = False,
             separator=";",
             quiet=False,
             remove_absent_event=False,
