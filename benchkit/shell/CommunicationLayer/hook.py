@@ -1,10 +1,10 @@
-from __future__ import annotations #Otherwise Queue comlains about typing
+from __future__ import annotations  # Otherwise Queue comlains about typing
+
 from abc import ABC, abstractmethod
 from multiprocessing import Process, Queue
 from typing import Callable
+
 from benchkit.shell.CommunicationLayer.comunication_handle import Output, WritableOutput
-
-
 
 # change -> this should be a "result hook"
 #           -> Hook should be a pastrough hook

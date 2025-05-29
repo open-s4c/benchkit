@@ -1,9 +1,9 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from io import BufferedReader
 import os
 from abc import ABC, abstractmethod
+from io import BufferedReader
 
 
 class Output(ABC):

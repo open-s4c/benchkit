@@ -5,6 +5,8 @@ import shlex
 import subprocess
 import sys
 
+from shell_scripts import script_path_string
+
 from benchkit.shell.ast_shell_out import shell_out_new
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.variable_node import RuntimeVariable
@@ -15,9 +17,6 @@ from benchkit.shell.commandAST.visitor import (
     printAst,
     resolveAllVariablesWithDict,
 )
-
-from shell_scripts import script_path_string
-from benchkit.shell.ast_shell_out import shell_out_new
 
 
 def commandtests():

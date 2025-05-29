@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
-
 import signal
+
 
 class TestTimeout(Exception):
     pass

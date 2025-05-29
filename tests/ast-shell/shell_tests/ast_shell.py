@@ -1,12 +1,13 @@
 import itertools
 import pathlib
-import subprocess
-from typing import Any
-import unittest
 import re
-from shell_scripts import TestTimeout, script_path_string, timeout
-from benchkit.shell.ast_shell_out import shell_out_new
+import subprocess
+import unittest
+from typing import Any
 
+from shell_scripts import TestTimeout, script_path_string, timeout
+
+from benchkit.shell.ast_shell_out import shell_out_new
 
 # Due to print statements being inside of threads unittest does
 # not allow us to check the output of stdout.

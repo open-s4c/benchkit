@@ -7,11 +7,11 @@ import shlex
 import subprocess
 from typing import Dict, Iterable, List, Optional
 
-from benchkit.shell.CommunicationLayer.comunication_handle import Output, SshOutput
-from benchkit.shell.CommunicationLayer.hook import OutputBuffer, ReaderHook, VoidOutput
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
 from benchkit.shell.commandAST.visitor import getString
+from benchkit.shell.CommunicationLayer.comunication_handle import Output, SshOutput
+from benchkit.shell.CommunicationLayer.hook import OutputBuffer, ReaderHook, VoidOutput
 
 
 def shell_out_new(
