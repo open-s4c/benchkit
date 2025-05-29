@@ -1,9 +1,9 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from io import BufferedReader
 import os
 from abc import ABC, abstractmethod
+from io import BufferedReader
 
 
 class Output(ABC):
@@ -11,10 +11,9 @@ class Output(ABC):
     functions are  due to compatibility"""
 
     def __init__(self):
-        self.__bufferd_out:bytes = b''
-        self.__bufferd_err:bytes = b''
+        self.__bufferd_out: bytes = b""
+        self.__bufferd_err: bytes = b""
         self.a = 2
-
 
     @abstractmethod
     def _read_bytes_out(self, amount_of_bytes: int) -> bytes:
@@ -28,7 +27,7 @@ class Output(ABC):
         """reads at most amount_of_bytes from the available stdout"""
         if self.__bufferd_out:
             ret = self.__bufferd_out
-            self.__bufferd_out = b''
+            self.__bufferd_out = b""
             self.a = 0
             return ret
         self.a += 1
@@ -39,14 +38,14 @@ class Output(ABC):
         """reads at most amount_of_bytes from the available stderr"""
         if self.__bufferd_err:
             ret = self.__bufferd_err
-            self.__bufferd_err = b''
+            self.__bufferd_err = b""
             return ret
         return self._read_bytes_err(amount_of_bytes)
 
     def readOut_line(self) -> bytes:
         byt = self.readOut(10)
         while byt:
-            sp = byt.split(b'\n')
+            sp = byt.split(b"\n")
             if len(sp) > 1:
                 self.__bufferd_out = sp[1]
                 return sp[0]
@@ -56,28 +55,30 @@ class Output(ABC):
     def readErr_line(self) -> bytes:
         byt = self.readErr(10)
         while byt:
-            sp = byt.split(b'\n')
+            sp = byt.split(b"\n")
             if len(sp) > 1:
                 self.__bufferd_err = sp[1]
                 return sp[0]
             byt += self.readErr(10)
         return byt
 
+
 class SshOutput(Output):
-    def __init__(self,out:BufferedReader|None,err:BufferedReader|None):
+    def __init__(self, out: BufferedReader | None, err: BufferedReader | None):
         self.__out = out
         self.__err = err
         super().__init__()
 
-    def _read_bytes_err(self, amount_of_bytes:int) -> bytes:
+    def _read_bytes_err(self, amount_of_bytes: int) -> bytes:
         if self.__err:
             return self.__err.read(amount_of_bytes)
-        return b''
+        return b""
 
-    def _read_bytes_out(self, amount_of_bytes:int) -> bytes:
+    def _read_bytes_out(self, amount_of_bytes: int) -> bytes:
         if self.__out:
             return self.__out.read(amount_of_bytes)
-        return b''
+        return b""
+
 
 class WritableOutput(Output):
     """A way to create a fileStream that can be used as a CommandOutput by other functions"""
@@ -85,10 +86,10 @@ class WritableOutput(Output):
     def __init__(self) -> None:
         self.readerOut, self.writerOut = os.pipe()
         self.readerErr, self.writerErr = os.pipe()
-        os.set_inheritable(self.readerOut,True)
-        os.set_inheritable(self.readerErr,True)
-        os.set_inheritable(self.writerOut,True)
-        os.set_inheritable(self.writerErr,True)
+        os.set_inheritable(self.readerOut, True)
+        os.set_inheritable(self.readerErr, True)
+        os.set_inheritable(self.writerOut, True)
+        os.set_inheritable(self.writerErr, True)
         super().__init__()
 
     def writeOut(self, bytes_to_write: bytes) -> None:

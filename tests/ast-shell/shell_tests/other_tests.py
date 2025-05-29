@@ -4,6 +4,8 @@
 import shlex
 import subprocess
 
+from shell_scripts import script_path_string
+
 from benchkit.shell.ast_shell_out import shell_out_new
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.variable_node import RuntimeVariable
@@ -97,50 +99,32 @@ def runtest():
     print(str(output.decode("utf-8")))
 
 
-def test():
-
-    # THE TWO EXAMPLES BELOW DONT HALT
-    # They exist to show that functions work in an intuative manner.
-
-    a = shell_out_new(
-        "/home/aaron/benchkitFork/benchkit/tests/ast-shell/waitThenPrint.sh", print_output=True, output_is_log=True, redirect_stderr_to_stdout=False,run_in_background=True
-    )
-    print(f"test{a} -------------------------------------------------------------")
-    a = shell_out_new(
-        "ls", print_output=True, output_is_log=True, redirect_stderr_to_stdout=False,
-    )
-
-    print("--------------------")
-    print(a)
-
-    # To show that output is log works
-    # a = shell_out_new(
-    #     "cat /dev/random", print_output=True, output_is_log=True
+def testhalt():
+    # shell_process = subprocess.Popen(
+    #     # why exec:
+    #     # we want to be able to use shell=True
+    #     # however this would make the shell the pid of the subprocess
+    #     # by using exec we can get make the command take over the pid of the shell
+    #     # this only works for POSIX
+    #     f"./shell_scripts/fillErrThenPrint.sh",
+    #     # shell=True,
+    #     stdout=sys.stdout,
+    #     stderr=sys.stderr,
+    #     stdin=subprocess.PIPE,
     # )
-    # print("--------------------")
-    # print(a)
-    # To show that input works
-    # shell_out_new(
-    #     "ssh user@host -p 22 'cat'", output_is_log=True, std_input="wafel\n" \
-    #     "aeu aeu\n"
-    # )
-
-
-    # a = shell_out_new(
-    #     "ssh user@host -p 22 'perf stat sleep 1'", print_output=True, output_is_log=True,redirect_stderr_to_stdout=False
-    # )
-    # print("--------------------")
-    # print(a)
-    # shell_out_new(["ssh", "user@host", "-p", "57429", "-t", "perf stat sleep 1"])
-    # main_command_ast = makecommand.command("sleep", ["1"])
-    # full_command = makecommand.command("perf stat", [inline(main_command_ast)])
-    # remote_command = execute_on_remote(full_command, "user@host", port=57429)
-    # shell_out_new(remote_command)
+    # shell_process.wait()
+    args = {
+        "print_output": True,
+        "output_is_log": True,
+        "redirect_stderr_to_stdout": False,
+        "current_dir": None,
+        "environment": None,
+        "timeout": None,
+        "ignore_ret_codes": (),
+    }
+    shell_out_new(script_path_string("fillErrThenOut"), **args)
+    print("yeet")
 
 
 if __name__ == "__main__":
-    # commandtests()
-    # localtests()
-    # newtest()
-    # runtest()
-    test()
+    testhalt()

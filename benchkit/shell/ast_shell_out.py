@@ -7,11 +7,11 @@ import shlex
 import subprocess
 from typing import Dict, Iterable, List, Optional
 
-from benchkit.shell.CommunicationLayer.comunication_handle import Output, SshOutput
-from benchkit.shell.CommunicationLayer.hook import OutputBuffer, ReaderHook, VoidOutput
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
 from benchkit.shell.commandAST.visitor import getString
+from benchkit.shell.CommunicationLayer.comunication_handle import Output, SshOutput
+from benchkit.shell.CommunicationLayer.hook import OutputBuffer, ReaderHook, VoidOutput
 
 
 def shell_out_new(
@@ -30,7 +30,7 @@ def shell_out_new(
     timeout: Optional[int] = None,
     output_is_log: bool = False,
     ignore_ret_codes: Iterable[int] = (),
-    run_in_background = False,
+    run_in_background=False,
     # split_arguments: bool = True, Support REMOVED -> can be achieved in another manner
 ) -> str:
     """
@@ -122,10 +122,9 @@ def shell_out_new(
     # Use the visitor patterns to convert our tree to an executable string
     stringCommand = getString(commandTree)
 
-
-    def try_conventing_bystring_to_readable_characters(bytestring:bytes) -> str|bytes:
+    def try_conventing_bystring_to_readable_characters(bytestring: bytes) -> str | bytes:
         try:
-            return bytestring.decode('utf-8')
+            return bytestring.decode("utf-8")
         except Exception:
             return bytestring
 
@@ -134,20 +133,26 @@ def shell_out_new(
     else:
         stderr_out = subprocess.PIPE
 
-    def logger_hook_out(input:Output):
+    def logger_hook_out(input: Output):
         a = input.readOut_line()
         while a:
-            print(f"\33[34m[OUT | {stringCommand}] {try_conventing_bystring_to_readable_characters(a)}\033[0m")
+            print(
+                f"\33[34m[OUT | {stringCommand}] \
+                    {try_conventing_bystring_to_readable_characters(a)}\033[0m"
+            )
             a = input.readOut_line()
 
-    def logger_hook_err(input:Output):
+    def logger_hook_err(input: Output):
         a = input.readErr_line()
         while a:
-            print(f"\033[91m[ERR | {stringCommand}] {try_conventing_bystring_to_readable_characters(a)}\033[0m")
+            print(
+                f"\033[91m[ERR | {stringCommand}] \
+                    {try_conventing_bystring_to_readable_characters(a)}\033[0m"
+            )
             a = input.readErr_line()
 
-    log_std_out_hook = ReaderHook(logger_hook_out,voidStdErr=True)
-    log_std_err_hook = ReaderHook(logger_hook_err,voidStdOut=True)
+    log_std_out_hook = ReaderHook(logger_hook_out, voidStdErr=True)
+    log_std_err_hook = ReaderHook(logger_hook_err, voidStdOut=True)
 
     shell_process = subprocess.Popen(
         # why exec:
@@ -166,13 +171,13 @@ def shell_out_new(
     print(shell_process.pid)
     try:
         if shell_process.stdin is not None and std_input is not None:
-            shell_process.stdin.write(std_input.encode('utf-8'))
+            shell_process.stdin.write(std_input.encode("utf-8"))
             shell_process.stdin.flush()
 
         if shell_process.stdin is not None:
             shell_process.stdin.close()
 
-        command_output = SshOutput(shell_process.stdout,shell_process.stderr)
+        command_output = SshOutput(shell_process.stdout, shell_process.stderr)
 
         if output_is_log:
             log_std_out_hook.startHookFunction(command_output)
@@ -191,7 +196,7 @@ def shell_out_new(
                 output = try_conventing_bystring_to_readable_characters(buffer.get_result())
 
         except subprocess.TimeoutExpired as err:
-            #killing this will send eof to and end the hooks aswell
+            # killing this will send eof to and end the hooks aswell
             shell_process.kill()
             raise err
 
