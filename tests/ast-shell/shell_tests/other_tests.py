@@ -99,6 +99,7 @@ def runtest():
     print(retcode)
     print(str(output.decode("utf-8")))
 
+
 def testhalt():
     # shell_process = subprocess.Popen(
     #     # why exec:
@@ -113,9 +114,18 @@ def testhalt():
     #     stdin=subprocess.PIPE,
     # )
     # shell_process.wait()
-    args = {'print_output': True, 'output_is_log': True, 'redirect_stderr_to_stdout': False, 'current_dir': None, 'environment': None, 'timeout': None, 'ignore_ret_codes': ()}
-    out = shell_out_new(script_path_string('fillErrThenOut'),**args)
+    args = {
+        "print_output": True,
+        "output_is_log": True,
+        "redirect_stderr_to_stdout": False,
+        "current_dir": None,
+        "environment": None,
+        "timeout": None,
+        "ignore_ret_codes": (),
+    }
+    out = shell_out_new(script_path_string("fillErrThenOut"), **args)
     print("yeet")
+
 
 if __name__ == "__main__":
     testhalt()
