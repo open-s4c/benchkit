@@ -167,12 +167,18 @@ class DacapobenchBench(Benchmark):
             "--iterations=1",
         ]
 
+        wrapped_run_command, wrapped_environment = self._wrap_command(
+            run_command=run_command,
+            environment=environment,
+            **kwargs,
+        )
+
         output = self.run_bench_command(
             run_command=run_command,
-            wrapped_run_command=run_command,
+            wrapped_run_command=wrapped_run_command,
             current_dir=self._bench_src_path,
             environment=environment,
-            wrapped_environment=environment,
+            wrapped_environment=wrapped_environment,
             print_output=False,
         )
         return output
