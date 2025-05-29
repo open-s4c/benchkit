@@ -77,7 +77,7 @@ def main() -> None:
         # nb_threads=[4],
         nb_threads=[1, 2, 4],
         command_wrappers=[perfstatwrap, jvmxlogwrap],
-        post_run_hooks=[perfstatwrap.post_run_hook_update_results],
+        post_run_hooks=[perfstatwrap.post_run_hook_update_results, jvmxlogwrap.post_run_hook_update_results],
         enable_data_dir=True,
     )
 
