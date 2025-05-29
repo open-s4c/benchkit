@@ -16,7 +16,11 @@ import importlib.util
 import os
 import pathlib
 import sys
-from typing import Any, List, Protocol
+import json
+import numpy as np
+from typing import Any, Dict, List, Protocol
+
+from numpy import floating, mean
 
 from benchkit.utils.misc import get_benchkit_temp_folder_str
 from benchkit.utils.types import PathType
@@ -119,7 +123,42 @@ def _generate_chart_from_df(
         title = args["title"]
         del args["title"]
 
-    if "catplot" != plot_name:
+    if "catplot" == plot_name: 
+        chart = sns.catplot(
+            data=df,
+            **args,
+        )
+        chart.fig.suptitle(title)
+
+        if process_chart is not None:
+            process_chart(chart=chart)
+
+        chart.fig.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
+        fig = chart.fig
+    elif "speedup-stack" == plot_name:
+        speedup_data = _get_speedup_data(df)
+
+        ind = np.arange(len(speedup_data))
+
+        sns.set_theme()
+        fig, ax = plt.subplots(figsize=(10, 12))
+        colors = sns.color_palette("pastel")
+
+        bottom = np.zeros(len(speedup_data))
+        factors = ['measured', 'gc', 'sync', 'lock', 'other']
+        labels = ['Measured', 'Garbage Collection', 'Synchronization Activities',
+                'Lock Contention', 'Other Overheads']
+        for factor, label, color in zip(factors, labels, colors):
+            factor_values = [d[factor] for d in speedup_data.values()]
+            ax.bar(ind, factor_values, bottom=bottom, label=label, color=color)
+            bottom += factor_values
+
+        ax.set_xlabel('Number of Threads')
+        ax.set_ylabel('Speedup')
+        ax.set_xticks(ind)
+        ax.set_xticklabels([str(k) for k in speedup_data.keys()])
+        ax.legend()
+    else:
         fig = plt.figure(dpi=150)
         chart = fig.add_subplot()
 
@@ -143,18 +182,6 @@ def _generate_chart_from_df(
             process_chart(chart=chart)
 
         fig.tight_layout()
-    else:
-        chart = sns.catplot(
-            data=df,
-            **args,
-        )
-        chart.fig.suptitle(title)
-
-        if process_chart is not None:
-            process_chart(chart=chart)
-
-        chart.fig.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
-        fig = chart.fig
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -177,6 +204,34 @@ def _generate_chart_from_df(
     plt.show()
     plt.close()
 
+def _get_speedup_data(
+        df: DataFrame,
+        ) -> Dict[str, float]:
+    single_threaded_duration = df[df["nb_threads"] == 1]["duration"].values[0]
+    multithreaded_df = df[df["nb_threads"] != 1]
+    data = {}
+
+    for _, row in multithreaded_df.iterrows():
+        perfect_speedup_duration = single_threaded_duration / row["nb_threads"]
+
+        measured_component = perfect_speedup_duration / row["duration"]
+        # gc_component = (multi_durations['gc'] - single_durations['gc']) / multi_durations['total']
+        gc_component = 0
+        sync_component = (row["context-switches"] / 1000) / row["duration"] 
+        # lock_component = multi_durations['lock'] / multi_durations['total']
+        lock_component = 0        
+
+        other_component = 1 - measured_component - gc_component - sync_component - lock_component
+        # print(measured_component + gc_component + sync_component + lock_component)
+        #print("other: " + str(other_component))
+        
+        data[row["nb_threads"]] = {
+                'measured' : measured_component * row["nb_threads"],
+                'gc' : gc_component * row["nb_threads"],
+                'sync' : sync_component * row["nb_threads"],
+                'lock' : lock_component * row["nb_threads"],
+                'other' : other_component * row["nb_threads"]}
+    return data
 
 def _read_csv(
     csv_pathname: PathType,
@@ -289,6 +344,69 @@ def generate_chart_from_multiple_csvs(
         **kwargs,
     )
 
+def generate_chart_from_multiple_csvs_and_jsons(
+    csv_pathnames: List[PathType],
+    json_pathnames: List[List[PathType]],
+    plot_name: str | List[str],
+    output_dir: PathType = "/tmp/figs",
+    xlabel: str | None = None,
+    ylabel: str | None = None,
+    nan_replace: bool = True,
+    process_dataframe: DataframeProcessor = identical_dataframe,
+    **kwargs,
+) -> None:
+    """
+    Generate a chart from data contained in multiple CSV files and JSON files.
+
+    Args:
+        csv_pathnames (List[PathType]):
+            list of paths to the CSV files.
+        json_pathnames (List[List[PathType]]):
+            list of list of paths to the JSON files.
+        plot_name (str | List[str]):
+            name of the (Seaborn) plot to generate.
+        output_dir (PathType, optional):
+            path to the directory where to output the chart.
+            Defaults to "/tmp/figs".
+        xlabel (str | None, optional):
+            label of the x-axis.
+            Defaults to None.
+        ylabel (str | None, optional):
+            label of the y-axis. Defaults to None.
+        nan_replace (bool, optional):
+            whether to fill NaN values to replace None, empty strings, etc.
+            when parsing the dataset.
+        process_dataframe (DataframeProcessor, optional):
+            function to process the dataframe to apply a transformation before plotting.
+            Defaults to identical_dataframe.
+    """
+    if not _LIBRARIES_ENABLED:
+        _print_warning()
+        return
+
+    csv_dataframe = get_global_dataframe(csv_pathnames=csv_pathnames, nan_replace=nan_replace)
+
+    csv_grouping_columns = [col for col in csv_dataframe.columns if col != "duration" and col != "rep"]
+    csv_dataframe = csv_dataframe.groupby(
+            csv_grouping_columns,
+            as_index=False
+            )["duration"].mean()
+
+    json_dataframe = get_global_dataframe_from_jsons(json_pathnames=json_pathnames)
+    json_dataframe = json_dataframe.drop(["rep", "duration"], axis=1)
+
+    global_dataframe = pd.merge(csv_dataframe, json_dataframe, on=csv_grouping_columns, how="outer")
+
+    _generate_chart_from_df(
+        df=global_dataframe,
+        process_dataframe=process_dataframe,
+        plot_name=plot_name,
+        output_dir=output_dir,
+        xlabel=xlabel,
+        ylabel=ylabel,
+        **kwargs,
+    )
+
 
 def get_global_dataframe(
     csv_pathnames: List[PathType],
@@ -306,6 +424,49 @@ def get_global_dataframe(
     result = pd.concat(dataframes)
     return result
 
+def _process_json(
+        json_path: PathType,
+        ) -> Dict[str, int]:
+    with open(json_path, 'r') as f:
+        data = json.load(f)
+    
+        output = {}
+        total_context_switches = 0
+        
+        for entry in data:
+            for k, v in entry.items():
+                # Count context-switch events
+                if k.endswith("/context-switches"):
+                    total_context_switches += int(v)
+                elif "context-switches" not in k:
+                    output[k] = v
+                    
+        output["context-switches"] = total_context_switches            
+        return output
+
+def _process_jsons(
+        json_paths: List[PathType],
+        ) -> Dict[str, floating[Any]]:
+     data = [_process_json(p) for p  in json_paths]
+
+     data_without_context_switches = {k: v for k, v in data[0].items() if k != "context-switches"}
+     context_switches = [d["context-switches"] for d in data]
+     data_without_context_switches["context-switches"] = mean(context_switches)
+     return data_without_context_switches
+
+def get_global_dataframe_from_jsons(
+    json_pathnames: List[List[PathType]],
+) -> DataFrame:
+    if not _LIBRARIES_ENABLED:
+        _print_warning()
+        return
+
+    dataframes = [
+            _process_jsons(ps)
+            for ps in json_pathnames
+    ]
+    result = pd.DataFrame(dataframes)
+    return result
 
 def generate_global_csv_file(
     csv_pathnames: List[PathType],

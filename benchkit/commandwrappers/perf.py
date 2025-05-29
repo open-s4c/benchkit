@@ -382,12 +382,35 @@ class PerfStatWrap(CommandWrapper):
         # Force locale to avoid confusion with "," and "." in json output:
         return environment | {"LC_NUMERIC": "en_US.UTF-8"}
 
+    def is_jvm_thread(self, thread_name: str) -> bool:
+        name = thread_name.strip()
+        jvm_names = [
+                "GC",
+                "G1",
+                "VM",
+                "Reference Handl",
+                "Finalizer",
+                "Signal Dispatch",
+                "Service Thread",
+                "C2",
+                "C1",
+                "Sweeper thread",
+                "VM Periodic Tas",
+                "Common-Cleaner"
+                ]
+        for jvm_name in jvm_names:
+            if name.startswith(jvm_name):
+                return True
+
+        return False
+
     def attach_every_thread(
         self,
         process: AsyncProcess,
         platform: Platform,
         record_data_dir: pathlib.Path,
         poll_ms: int = 10,
+        use_jvm: bool = False,
     ):
         """Command attachment that will attach to every thread of the wrapped process.
 
@@ -404,17 +427,35 @@ class PerfStatWrap(CommandWrapper):
         tids2perf_cmd = {}
 
         while not process.is_finished():
-            current_tids = ps.get_threads_of_process(pid=process.pid)
-            for tid in current_tids:
-                if tid not in tids2perf_cmd:
-                    value_pathname = record_data_dir / f"perf-stat-val-tid{tid}.txt"
-                    cmd = prefix + [f"{tid}", "--output", f"{value_pathname}"]
-                    tids2perf_cmd[tid] = AsyncProcess(
-                        platform=platform,
-                        arguments=cmd,
-                        stdout_path=record_data_dir / f"perf-stat-out-tid{tid}.txt",
-                        stderr_path=record_data_dir / f"perf-stat-err-tid{tid}.txt",
-                    )
+            if use_jvm:
+                # current_tids = ps.get_threads_of_process(pid=process.pid)
+                current_tids = ps.get_threads_of_process_with_names(pid=process.pid)
+                for name, tid in current_tids:
+                    if not self.is_jvm_thread(name):
+                        # print(name, tid)
+                        if tid not in tids2perf_cmd:
+                            # print(f"New thread found !!! ---------------------- {name}")
+                            value_pathname = record_data_dir / f"perf-stat-val-tid{tid}.txt"
+                            cmd = prefix + [f"{tid}", "--output", f"{value_pathname}"]
+                            tids2perf_cmd[tid] = AsyncProcess(
+                                platform=platform,
+                                arguments=cmd,
+                                stdout_path=record_data_dir / f"perf-stat-out-tid{tid}.txt",
+                                stderr_path=record_data_dir / f"perf-stat-err-tid{tid}.txt",
+                            )
+            else:
+                current_tids = ps.get_threads_of_process(pid=process.pid)
+                for tid in current_tids:
+                    if tid not in tids2perf_cmd:
+                        value_pathname = record_data_dir / f"perf-stat-val-tid{tid}.txt"
+                        cmd = prefix + [f"{tid}", "--output", f"{value_pathname}"]
+                        tids2perf_cmd[tid] = AsyncProcess(
+                            platform=platform,
+                            arguments=cmd,
+                            stdout_path=record_data_dir / f"perf-stat-out-tid{tid}.txt",
+                            stderr_path=record_data_dir / f"perf-stat-err-tid{tid}.txt",
+                        )
+
             time.sleep(poll_ms / 1000)
 
         for current_process in tids2perf_cmd.values():
@@ -571,9 +612,8 @@ class PerfStatWrap(CommandWrapper):
         self,
         perf_stat_pathname: PathType,
     ) -> RecordResult:
-        perf_version_output = shell_out("perf --version", print_output=False)
+        perf_version_output = shell_out("perf --version", print_output=False) # TODO: Cache this result
         perf_version = perf_version_output.split(' ')[2].strip()
-        print("perf version:", perf_version)
 
         counter_rows = self._parse_csv(  # TODO adapt for json
             perf_stat_pathname=perf_stat_pathname,
@@ -587,7 +627,6 @@ class PerfStatWrap(CommandWrapper):
 
         output_dict = {}
         for counter_row in counter_rows:
-            print("row:", counter_row)
             taskname_pid = counter_row["taskname-pid"]
             _, pid = taskname_pid.rsplit("-", maxsplit=1)
             assert filename_tid == int(pid)

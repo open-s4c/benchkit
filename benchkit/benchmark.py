@@ -137,6 +137,7 @@ class Benchmark:
         self._use_tilt = None
         self._constants = None
         self._pretty_variables = None
+        self.ignore_perf_csv = False
 
         self._total_nb_runs = None
         self._nb_runs_done = 0
@@ -1130,6 +1131,8 @@ class Benchmark:
 
             with open(self._csv_output_path, "a") as csv_output_file:
                 for experiment_results_line in experiment_results_lines:
+                    if self.ignore_perf_csv:
+                        experiment_results_line = {key: value for key, value in experiment_results_line.items() if "pid" not in key}
                     sep = CSV_SEPARATOR
                     if not self._first_line_is_printed:
                         header_list = list(experiment_results_line.keys())
