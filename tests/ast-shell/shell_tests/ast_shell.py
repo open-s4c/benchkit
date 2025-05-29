@@ -169,7 +169,8 @@ class BasicShellTests(unittest.TestCase):
                     shell_out_new(script_path_string("fillErrThenOut"), **args)
             except TestTimeout:
                 self.fail(
-                    f"the command got halted during excecution for {script_path_string('fillErrThenOut')} with args: {args}"
+                    f"the command got halted during excecution for \
+                        {script_path_string('fillErrThenOut')} with args: {args}"
                 )
                 raise TestTimeout
 

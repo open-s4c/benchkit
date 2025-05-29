@@ -137,7 +137,8 @@ def shell_out_new(
         a = input.readOut_line()
         while a:
             print(
-                f"\33[34m[OUT | {stringCommand}] {try_conventing_bystring_to_readable_characters(a)}\033[0m"
+                f"\33[34m[OUT | {stringCommand}] \
+                    {try_conventing_bystring_to_readable_characters(a)}\033[0m"
             )
             a = input.readOut_line()
 
@@ -145,7 +146,8 @@ def shell_out_new(
         a = input.readErr_line()
         while a:
             print(
-                f"\033[91m[ERR | {stringCommand}] {try_conventing_bystring_to_readable_characters(a)}\033[0m"
+                f"\033[91m[ERR | {stringCommand}] \
+                    {try_conventing_bystring_to_readable_characters(a)}\033[0m"
             )
             a = input.readErr_line()
 

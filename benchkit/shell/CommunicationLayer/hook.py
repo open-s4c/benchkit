@@ -12,7 +12,8 @@ from benchkit.shell.CommunicationLayer.comunication_handle import Output, Writab
 # change -> this should be a "result hook"
 #           -> Hook should be a pastrough hook
 #           -> Hook should have getPassthrough() removed
-# This would allow for composition where every hook needs to end in a result hook (deafault is voiding it -> would be async)
+# This would allow for composition where every hook needs to end in a result hook
+#   (deafault is voiding it -> would be async)
 
 
 class OutputBuffer:

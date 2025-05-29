@@ -3,7 +3,6 @@
 
 import shlex
 import subprocess
-import sys
 
 from shell_scripts import script_path_string
 
@@ -123,7 +122,7 @@ def testhalt():
         "timeout": None,
         "ignore_ret_codes": (),
     }
-    out = shell_out_new(script_path_string("fillErrThenOut"), **args)
+    shell_out_new(script_path_string("fillErrThenOut"), **args)
     print("yeet")
 
 
