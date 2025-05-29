@@ -209,6 +209,7 @@ def _get_speedup_data(
         df: DataFrame,
         ) -> Dict[str, float]:
     single_threaded_duration = df[df["nb_threads"] == 1]["duration"].values[0]
+    single_threaded_gc = df[df["nb_threads"] == 1]["gc"].values[0]
     multithreaded_df = df[df["nb_threads"] != 1]
     data = {}
 
@@ -216,15 +217,14 @@ def _get_speedup_data(
         perfect_speedup_duration = single_threaded_duration / row["nb_threads"]
 
         measured_component = perfect_speedup_duration / row["duration"]
-        # gc_component = (multi_durations['gc'] - single_durations['gc']) / multi_durations['total']
-        gc_component = 0
+        gc_component = (row["gc"] - single_threaded_gc) / row["duration"]
         sync_component = (row["context-switches"] / 1000) / row["duration"] 
         # lock_component = multi_durations['lock'] / multi_durations['total']
         lock_component = 0        
 
         other_component = 1 - measured_component - gc_component - sync_component - lock_component
         # print(measured_component + gc_component + sync_component + lock_component)
-        #print("other: " + str(other_component))
+        # print("other: " + str(other_component))
         
         data[row["nb_threads"]] = {
                 'measured' : measured_component * row["nb_threads"],
@@ -387,14 +387,14 @@ def generate_chart_from_multiple_csvs_and_jsons(
 
     csv_dataframe = get_global_dataframe(csv_pathnames=csv_pathnames, nan_replace=nan_replace)
 
-    csv_grouping_columns = [col for col in csv_dataframe.columns if col != "duration" and col != "rep"]
+    csv_grouping_columns = [col for col in csv_dataframe.columns if col not in ["duration", "rep", "gc"]]
     csv_dataframe = csv_dataframe.groupby(
             csv_grouping_columns,
             as_index=False
-            )["duration"].mean()
+            )[["gc", "duration"]].mean()
 
     json_dataframe = get_global_dataframe_from_jsons(json_pathnames=json_pathnames)
-    json_dataframe = json_dataframe.drop(["rep", "duration"], axis=1)
+    json_dataframe = json_dataframe.drop(["rep", "gc", "duration"], axis=1)
 
     global_dataframe = pd.merge(csv_dataframe, json_dataframe, on=csv_grouping_columns, how="outer")
 

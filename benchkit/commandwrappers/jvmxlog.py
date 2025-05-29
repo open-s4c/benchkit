@@ -7,6 +7,7 @@ Command wrapper for the `Xlog` functionality of the JVM.
 import os
 from typing import List, Optional, Tuple
 
+from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.platforms import get_current_platform
 from benchkit.sharedlibs import EnvironmentVariables
 from benchkit.utils.types import Environment, PathType, SplitCommand
@@ -38,12 +39,41 @@ Command wrapper for the `Xlog` functionality of the JVM.
             raise ValueError("Record data directory cannot be None, it is required to save the JVMXlog data.")
             
         jvmxlog_pathname = os.path.join(record_data_dir, "jvmxlog.log")
-        print(f"DEBUGPRINT[29]: jvmxlog.py:37: jvmxlog_pathname={jvmxlog_pathname}")
         cmd_infix = [f'-Xlog:gc*:file="{jvmxlog_pathname}"' ]
-        # cmd_suffix = []
 
         wrapped_command = [command[0]] + cmd_infix + command[1:]
-        print(f"DEBUGPRINT[30]: jvmxlog.py:45: wrapped_command={wrapped_command}")
         wrapped_environment = environment
 
         return wrapped_command, wrapped_environment
+
+    def post_run_hook_update_results(
+        self,
+        experiment_results_lines: List[RecordResult],
+        record_data_dir: PathType,
+        write_record_file_fun: WriteRecordFileFunction,
+    ) -> RecordResult:
+        """
+        Post run hook to generate extension to record results dict with the captured JVMXlog values.
+        """
+        assert experiment_results_lines  # to remove the "unused" warning
+        assert write_record_file_fun  # to remove the "unused" warning
+
+        jvmxlog_pathname = os.path.join(record_data_dir, "jvmxlog.log")
+
+        total_gc_time = 0
+        with open(jvmxlog_pathname) as file:
+            for line in file:
+                splits = line.split(' ')
+                if splits[0][-2:] == "gc":
+                    gc_event = splits[splits.index(']') + 2:splits.index(']') + 4]
+                    if len(gc_event) == 2 and gc_event[0] != "Concurrent" and gc_event[1] != "Remark" and gc_event[1] != "Cleanup":
+                        timing = splits[-1].strip()[:-2]
+                        try:
+                            value = float(timing.replace(',', '.'))
+                            total_gc_time += value
+                        except ValueError:
+                            pass
+
+        output_dict = {'gc': total_gc_time}
+
+        return output_dict
