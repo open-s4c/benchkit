@@ -211,10 +211,10 @@ class LusearchBench(Benchmark):
 
         output = self.run_bench_command(
             run_command=run_command,
-            wrapped_run_command=wrapped_run_command,
+            wrapped_run_command=run_command,
             current_dir=self._bench_src_path,
             environment=environment,
-            wrapped_environment=wrapped_environment,
+            wrapped_environment=environment,
             print_output=False,
         )
         return output
@@ -277,6 +277,7 @@ def lusearch_campaign(
                     process=process,
                     record_data_dir=record_data_dir,
                     poll_ms=100,
+                    use_jvm=True,
                     ),
                 ],
             shared_libs=shared_libs,
