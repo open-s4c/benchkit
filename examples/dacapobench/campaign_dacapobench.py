@@ -6,6 +6,7 @@ Minimal example to run benchmarks from dacapobench.
 """
 
 
+from benchkit.commandwrappers.jvmxlog import JVMXlogWrap
 from benchmark_dacapobench import dacapobench_campaign
 
 from benchkit.campaign import CampaignSuite
@@ -37,6 +38,8 @@ def main() -> None:
             quiet=False,
             remove_absent_event=False,
             )
+
+    jvmxlogwrap = JVMXlogWrap()
 
     # Define the campaign, associated with the LevelDB benchmark
     campaign = dacapobench_campaign(
@@ -73,7 +76,7 @@ def main() -> None:
         benchmark_duration_seconds=3,
         # nb_threads=[4],
         nb_threads=[1, 2, 4],
-        command_wrappers=[perfstatwrap],
+        command_wrappers=[perfstatwrap, jvmxlogwrap],
         post_run_hooks=[perfstatwrap.post_run_hook_update_results],
         enable_data_dir=True,
     )
