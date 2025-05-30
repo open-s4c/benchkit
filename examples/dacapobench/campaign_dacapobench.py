@@ -78,7 +78,7 @@ def main() -> None:
             # "tradebeans",
             # "tradesoap",
             "xalan",
-            # "zxing",
+            "zxing",
 
             # "h2o", # Not supported due missing data
         ],
@@ -89,6 +89,7 @@ def main() -> None:
         command_wrappers=[perfstatwrap, jvmxlogwrap, perfreportwrap],
         post_run_hooks=[perfstatwrap.post_run_hook_update_results, jvmxlogwrap.post_run_hook_update_results, perfreportwrap.post_run_hook_report],
         enable_data_dir=True,
+        clean_in_between_different_benchmarks = True,
     )
 
     # Define the campaign suite and run the benchmarks in the suite

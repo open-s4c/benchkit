@@ -50,6 +50,7 @@ class DacapobenchBench(Benchmark):
         pre_run_hooks: Iterable[PreRunHook] = (),
         post_run_hooks: Iterable[PostRunHook] = (),
         platform: Platform | None = None,
+        clean_in_between_different_benchmarks: bool = False,
         # build_dir: PathType | None = None,
     ) -> None:
         super().__init__(
@@ -72,6 +73,8 @@ class DacapobenchBench(Benchmark):
             )
         self._bench_src_path = bench_src_path
         self.ignore_perf_csv = True
+        self.clean_in_between_different_benchmarks = clean_in_between_different_benchmarks
+        self.previous_bench_name = None
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -133,12 +136,21 @@ class DacapobenchBench(Benchmark):
                 f"Invalid bench_names for dacapobench: {bench_name}\n"
                 f"The supported bench names are: {supported_bench_names}."
             )
-        if False: # NOTE: This is temporary
+
+        if self.clean_in_between_different_benchmarks and self.previous_bench_name is not bench_name:
             self.platform.comm.shell(
-                command=f"ant {bench_name}",
+                command=f"ant clean",
                 current_dir=self._bench_src_path,
                 output_is_log=True,
             )
+
+        self.platform.comm.shell(
+            command=f"ant {bench_name}",
+            current_dir=self._bench_src_path,
+            output_is_log=True,
+        )
+
+        self.previous_bench_name = bench_name
 
     def clean_bench(self) -> None:
         pass
@@ -217,6 +229,7 @@ def dacapobench_campaign(
     debug: bool = False,
     gdb: bool = False,
     enable_data_dir: bool = False,
+    clean_in_between_different_benchmarks: bool = False,
     continuing: bool = False,
     constants: Constants = None,
     pretty: Optional[Dict[str, str]] = None,
@@ -262,6 +275,7 @@ def dacapobench_campaign(
                     ),
                 ],
             shared_libs=shared_libs,
+            clean_in_between_different_benchmarks=clean_in_between_different_benchmarks,
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,
             platform=platform,

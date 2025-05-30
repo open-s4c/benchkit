@@ -136,29 +136,49 @@ def _generate_chart_from_df(
         chart.fig.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
         fig = chart.fig
     elif "speedup-stack" == plot_name:
-        speedup_data = _get_speedup_data(df)
-
-        ind = np.arange(len(speedup_data))
+        bench_names = df['bench_name'].unique()
+        n_benches = len(bench_names)
 
         sns.set_theme()
-        fig, ax = plt.subplots(figsize=(10, 12))
+        fig, axes = plt.subplots(
+                nrows=1,
+                ncols=n_benches,
+                figsize=(5 * n_benches, 8),
+                sharey=True
+                )
+
+        if n_benches == 1:
+            axes = [axes]
+
         colors = sns.color_palette("pastel")
 
-        bottom = np.zeros(len(speedup_data))
         factors = ['measured', 'gc', 'sync', 'lock', 'other']
         labels = ['Measured', 'Garbage Collection', 'Synchronization Activities',
                 'Lock Contention', 'Other Overheads']
-        for factor, label, color in zip(factors, labels, colors):
-            factor_values = [d[factor] for d in speedup_data.values()]
-            ax.bar(ind, factor_values, bottom=bottom, label=label, color=color)
-            bottom += factor_values
 
-        ax.set_title(title)
-        ax.set_xlabel('Number of Threads')
-        ax.set_ylabel('Speedup')
-        ax.set_xticks(ind)
-        ax.set_xticklabels([str(k) for k in speedup_data.keys()])
-        ax.legend()
+        for ax, bench in zip(axes, bench_names):
+            bench_df = df[df['bench_name'] == bench]
+            speedup_data = _get_speedup_data(bench_df)
+
+            ind = np.arange(len(speedup_data))
+            bottom = np.zeros(len(speedup_data))
+
+            for factor, label, color in zip(factors, labels, colors):
+                vals = [d[factor] for d in speedup_data.values()]
+                ax.bar(ind, vals, bottom=bottom, label=label, color=color)
+                bottom += vals
+
+            ax.set_title(bench)
+            ax.set_xlabel('Number of Threads')
+            ax.set_xticks(ind)
+            ax.set_xticklabels([str(k) for k in speedup_data.keys()])
+            if ax is axes[0]:
+                ax.set_ylabel('Speedup')
+            ax.legend(loc='upper left')
+
+        plt.title(title)
+        plt.tight_layout()
+        plt.show()
     else:
         fig = plt.figure(dpi=150)
         chart = fig.add_subplot()
