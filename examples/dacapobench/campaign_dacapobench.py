@@ -11,7 +11,7 @@ from benchmark_dacapobench import dacapobench_campaign
 
 from benchkit.campaign import CampaignSuite
 from benchkit.utils.dir import caller_dir
-from benchkit.commandwrappers.perf import PerfStatWrap, enable_non_sudo_perf
+from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap, enable_non_sudo_perf
 from benchkit.platforms import get_current_platform
 
 
@@ -40,6 +40,16 @@ def main() -> None:
             )
 
     jvmxlogwrap = JVMXlogWrap()
+
+    perfreportwrap = PerfReportWrap(
+            wrap_command = False,
+            perf_record_options = ["-e", "syscalls:sys_enter_futex,syscalls:sys_exit_futex"],
+            perf_report_options = [],
+            report_file = True,
+            report_interactive = False,
+            script = True,
+            use_jvm = True,
+            )
 
     # Define the campaign, associated with the LevelDB benchmark
     campaign = dacapobench_campaign(
@@ -76,8 +86,8 @@ def main() -> None:
         benchmark_duration_seconds=3,
         # nb_threads=[4],
         nb_threads=[1, 2, 4],
-        command_wrappers=[perfstatwrap, jvmxlogwrap],
-        post_run_hooks=[perfstatwrap.post_run_hook_update_results, jvmxlogwrap.post_run_hook_update_results],
+        command_wrappers=[perfstatwrap, jvmxlogwrap, perfreportwrap],
+        post_run_hooks=[perfstatwrap.post_run_hook_update_results, jvmxlogwrap.post_run_hook_update_results, perfreportwrap.post_run_hook_report],
         enable_data_dir=True,
     )
 

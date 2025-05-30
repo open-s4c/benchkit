@@ -255,6 +255,11 @@ def dacapobench_campaign(
                     poll_ms=100,
                     use_jvm=True,
                     ),
+                lambda process, record_data_dir: command_wrappers[2].attach_every_thread(
+                    platform=get_current_platform(),
+                    process=process,
+                    record_data_dir=record_data_dir,
+                    ),
                 ],
             shared_libs=shared_libs,
             pre_run_hooks=pre_run_hooks,

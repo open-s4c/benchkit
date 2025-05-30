@@ -15,7 +15,7 @@ import subprocess
 import sys
 import time
 from functools import cache
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.commandwrappers import CommandWrapper, PackageDependency
@@ -242,6 +242,28 @@ def enable_non_sudo_perf(comm_layer: CommunicationLayer) -> None:
     if -1 != current_paranoid_value:
         sysctl.set_kernel_perf_event_paranoid(value=-1, comm_layer=comm_layer)
 
+def _is_jvm_thread(thread_name: str) -> bool:
+    name = thread_name.strip()
+    jvm_names = [
+            "GC",
+            "G1",
+            "VM",
+            "Reference Handl",
+            "Finalizer",
+            "Signal Dispatch",
+            "Service Thread",
+            "C2",
+            "C1",
+            "Sweeper thread",
+            "VM Periodic Tas",
+            "Common-Cleaner"
+            ]
+    for jvm_name in jvm_names:
+        if name.startswith(jvm_name):
+            return True
+
+    return False
+
 
 class PerfWrapError(Exception):
     """Error for any `perf` related wrapper."""
@@ -384,28 +406,6 @@ class PerfStatWrap(CommandWrapper):
         # Force locale to avoid confusion with "," and "." in json output:
         return environment | {"LC_NUMERIC": "en_US.UTF-8"}
 
-    def is_jvm_thread(self, thread_name: str) -> bool:
-        name = thread_name.strip()
-        jvm_names = [
-                "GC",
-                "G1",
-                "VM",
-                "Reference Handl",
-                "Finalizer",
-                "Signal Dispatch",
-                "Service Thread",
-                "C2",
-                "C1",
-                "Sweeper thread",
-                "VM Periodic Tas",
-                "Common-Cleaner"
-                ]
-        for jvm_name in jvm_names:
-            if name.startswith(jvm_name):
-                return True
-
-        return False
-
     def attach_every_thread(
         self,
         process: AsyncProcess,
@@ -430,13 +430,10 @@ class PerfStatWrap(CommandWrapper):
 
         while not process.is_finished():
             if use_jvm:
-                # current_tids = ps.get_threads_of_process(pid=process.pid)
                 current_tids = ps.get_threads_of_process_with_names(pid=process.pid)
                 for name, tid in current_tids:
-                    if not self.is_jvm_thread(name):
-                        # print(name, tid)
+                    if not _is_jvm_thread(name):
                         if tid not in tids2perf_cmd:
-                            # print(f"New thread found !!! ---------------------- {name}")
                             value_pathname = record_data_dir / f"perf-stat-val-tid{tid}.txt"
                             cmd = prefix + [f"{tid}", "--output", f"{value_pathname}"]
                             tids2perf_cmd[tid] = AsyncProcess(
@@ -692,6 +689,9 @@ class PerfReportWrap(CommandWrapper):
         freq: Optional[int] = None,
         call_graph: Optional[str] = "dwarf",
         stdio: bool = False,
+        script: bool = False,
+        use_jvm: bool = False,
+        wrap_command: bool = True,
         flamegraph_path: Optional[PathType] = None,
         perf_record_options: Optional[List[str]] = None,
         perf_report_options: Optional[List[str]] = None,
@@ -702,12 +702,15 @@ class PerfReportWrap(CommandWrapper):
 
         self._perf_bin = _find_perf_bin(search_path=perf_path)
 
+        self.wrap_command = wrap_command
         self._report_file = report_file
         self._report_interactive = report_interactive
         self._record_stack_traces = record_stack_traces
         self._freq = freq
         self._call_graph = call_graph
         self._stdio = stdio
+        self._script = script
+        self._use_jvm = use_jvm
         self._flamegraph_path = flamegraph_path
 
         self._perf_record_options = perf_record_options
@@ -782,12 +785,36 @@ class PerfReportWrap(CommandWrapper):
 
         return cmd_prefix
 
+    def attach_every_thread(
+        self,
+        process: AsyncProcess,
+        platform: Platform,
+        record_data_dir: pathlib.Path,
+    ):
+        """Command attachment that will attach to every thread of the wrapped process.
+
+        Args:
+            process (AsyncProcess): the process to attach perf-stat to.
+            platform (Platform): the platform where the process is running.
+            record_data_dir (pathlib.Path): the path to the record data directory of the benchmark.
+            poll_ms (int, optional): the period at which to poll the process to detect newly created
+                                     threads. Defaults to 10.
+        """
+        perf_prefix = _perf_command_prefix(perf_bin=self._perf_bin, platform=platform)
+        prefix = ["sudo"] + perf_prefix + ["record"] + self.perf_record_options + ["--inherit", "-p"]
+
+        perf_data_pathname = record_data_dir / f"perf-record-val-pid{process.pid}.data"
+        self.latest_perf_path = perf_data_pathname
+
+        cmd = prefix + [f"{process.pid}", "--output", f"{perf_data_pathname}"]
+        self.platform.comm.shell(command=cmd)
+
     def post_run_hook_report(
         self,
         experiment_results_lines: List[RecordResult],
         record_data_dir: PathType,
         write_record_file_fun: WriteRecordFileFunction,
-    ) -> None:
+    ) -> Optional[Dict[str, Any]]:
         """Post run hook to generate extension of result dict holding the results of perf report.
 
         Args:
@@ -800,17 +827,73 @@ class PerfReportWrap(CommandWrapper):
 
         perf_data_pathname = self.latest_perf_path
         self._chown(pathname=perf_data_pathname)
-
-        command = self._perf_report_command(perf_data_pathname=perf_data_pathname)
+            
+        command = None
+        if self._script:
+            command = self._perf_script_command(perf_data_pathname=perf_data_pathname)
+        else:
+            command = self._perf_report_command(perf_data_pathname=perf_data_pathname)
 
         # retrieve output into file first for posterity
         if self._report_file:
-            file_command = command + ([] if self._stdio else ["--stdio"])
+            file_command = command + ([] if self._stdio or self._script else ["--stdio"])
             output = shell_out(file_command, print_output=False)
+
             write_record_file_fun(file_content=output.strip(), filename="perf.report")
+
+            if self._use_jvm:
+                processed_script_data = self._process_perf_script_report(output)
+                return {'lock': processed_script_data}
 
         if self._report_interactive:
             shell_interactive(command=command, ignore_ret_codes=(-13,))  # ignore broken pipe error
+
+    def _process_perf_script_report(
+            self,
+            output: str,
+            ) -> float:
+
+        allowed_threads = re.compile(r'^(?:java|pool-\d+-thread-\d+)$', re.IGNORECASE)
+
+        wait_start = {}
+        total_wait_time = 0.0
+        total_wait_time_per_thread = {}
+        
+        for line in output.splitlines():
+            splits = line.split()
+            if not allowed_threads.match(splits[0]):
+                continue
+
+            if len(splits) == 17:
+                timestamp = float(splits[3][:-1])
+                thread_id = int(splits[1])
+                wait_start[thread_id] = timestamp
+
+            elif len(splits) == 6:
+                timestamp = float(splits[3][:-1])
+                thread_id = int(splits[1])
+                key_to_remove = None
+
+                # Find the corresponding futex enter event for this thread
+                for key in wait_start.keys():
+                    if key == thread_id:  # Match on thread ID
+                        start_time = wait_start[key]
+                        wait_time = (timestamp - start_time) * 1000
+                        total_wait_time += wait_time
+                        key_to_remove = key  # Mark key for deletion
+
+                        if thread_id in total_wait_time_per_thread:
+                            total_wait_time_per_thread[thread_id] += wait_time
+                        else:
+                            total_wait_time_per_thread[thread_id] = wait_time
+                        break
+                
+                # Remove the matched key
+                if key_to_remove:
+                    del wait_start[key_to_remove]
+
+        mean = sum(total_wait_time_per_thread.values()) / len(total_wait_time_per_thread)
+        return mean
 
     def post_run_hook_flamegraph(
         self,
@@ -995,6 +1078,16 @@ class PerfReportWrap(CommandWrapper):
         command = [
             self._perf_bin,
             "report",
+            "--input",
+            f"{perf_data_pathname}",
+        ] + self.perf_report_options
+
+        return command
+
+    def _perf_script_command(self, perf_data_pathname: PathType) -> SplitCommand:
+        command = [
+            self._perf_bin,
+            "script",
             "--input",
             f"{perf_data_pathname}",
         ] + self.perf_report_options

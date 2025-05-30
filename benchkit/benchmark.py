@@ -12,6 +12,7 @@ import pathlib
 from multiprocessing import Barrier
 from subprocess import CalledProcessError
 from typing import IO, Any, Dict, Iterable, List, Optional, Protocol, Tuple
+from concurrent.futures import ThreadPoolExecutor
 
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies import check_dependencies
@@ -1064,27 +1065,43 @@ class Benchmark:
                 if barrier_ret == 0:
                     barrier.reset()
 
-            single_run_return = self.single_run(
-                platform=self.platform,
-                benchmark_duration_seconds=self._benchmark_duration_seconds,
-                constants=self._constants,
-                build_variables=build_variables,
-                record_data_dir=temp_record_data_dir,
-                other_variables=other_variables,
-                write_record_file_fun=wrdr,
-                **run_variables,
-            )
+            with ThreadPoolExecutor(max_workers=max(len(self._command_attachments), 1)) as pool:
+                single_run_return = self.single_run(
+                    platform=self.platform,
+                    benchmark_duration_seconds=self._benchmark_duration_seconds,
+                    constants=self._constants,
+                    build_variables=build_variables,
+                    record_data_dir=temp_record_data_dir,
+                    other_variables=other_variables,
+                    **run_variables,
+                )
 
-            if self._command_is_async():
-                single_run_process: AsyncProcess = single_run_return
-                for attachment in self._command_attachments:
-                    attachment(
-                        process=single_run_process,
-                        record_data_dir=record_data_dir,
-                    )
-                single_run_output = single_run_process.output()
-            else:
-                single_run_output: str = single_run_return
+                if self._command_is_async():
+                    single_run_process: AsyncProcess = single_run_return
+
+                    if len(self._command_attachments) > 0:
+                        *parallel_attachments, main_thread_attachment = self._command_attachments
+
+                    futures = [
+                            pool.submit(
+                                attachment,
+                                process=single_run_process,
+                                record_data_dir=record_data_dir,
+                                )
+                            for attachment in parallel_attachments
+                            ]
+
+                    main_thread_attachment(
+                            process=single_run_process,
+                            record_data_dir=record_data_dir,
+                            )
+
+                    for future in futures:
+                        future.result()
+
+                    single_run_output = single_run_process.output()
+                else:
+                    single_run_output: str = single_run_return
 
             # If the host was remote, all the wrappers generated files on the remote machine and
             # these need to be copied back to the host machine.

@@ -39,7 +39,7 @@ Command wrapper for the `Xlog` functionality of the JVM.
             raise ValueError("Record data directory cannot be None, it is required to save the JVMXlog data.")
             
         jvmxlog_pathname = os.path.join(record_data_dir, "jvmxlog.log")
-        cmd_infix = [f'-Xlog:gc*:file="{jvmxlog_pathname}"' ]
+        cmd_infix = ["-XX:+ExtendedDTraceProbes", "-XX:+PreserveFramePointer", f'-Xlog:gc*:file="{jvmxlog_pathname}"' ]
 
         wrapped_command = [command[0]] + cmd_infix + command[1:]
         wrapped_environment = environment

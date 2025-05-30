@@ -219,8 +219,7 @@ def _get_speedup_data(
         measured_component = perfect_speedup_duration / row["duration"]
         gc_component = (row["gc"] - single_threaded_gc) / row["duration"]
         sync_component = (row["context-switches"] / 1000) / row["duration"] 
-        # lock_component = multi_durations['lock'] / multi_durations['total']
-        lock_component = 0        
+        lock_component = row["lock"] / row["duration"] 
 
         other_component = 1 - measured_component - gc_component - sync_component - lock_component
         # print(measured_component + gc_component + sync_component + lock_component)
@@ -387,14 +386,17 @@ def generate_chart_from_multiple_csvs_and_jsons(
 
     csv_dataframe = get_global_dataframe(csv_pathnames=csv_pathnames, nan_replace=nan_replace)
 
-    csv_grouping_columns = [col for col in csv_dataframe.columns if col not in ["duration", "rep", "gc"]]
+    csv_useful_columns = ["gc", "duration", "lock"] 
+    csv_non_useful_columns = ["rep"]
+
+    csv_grouping_columns = [col for col in csv_dataframe.columns if col not in csv_useful_columns + csv_non_useful_columns]
     csv_dataframe = csv_dataframe.groupby(
             csv_grouping_columns,
             as_index=False
-            )[["gc", "duration"]].mean()
+            )[csv_useful_columns].mean()
 
     json_dataframe = get_global_dataframe_from_jsons(json_pathnames=json_pathnames)
-    json_dataframe = json_dataframe.drop(["rep", "gc", "duration"], axis=1)
+    json_dataframe = json_dataframe.drop(csv_useful_columns + csv_non_useful_columns, axis=1)
 
     global_dataframe = pd.merge(csv_dataframe, json_dataframe, on=csv_grouping_columns, how="outer")
 
