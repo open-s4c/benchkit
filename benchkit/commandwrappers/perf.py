@@ -242,22 +242,23 @@ def enable_non_sudo_perf(comm_layer: CommunicationLayer) -> None:
     if -1 != current_paranoid_value:
         sysctl.set_kernel_perf_event_paranoid(value=-1, comm_layer=comm_layer)
 
+
 def _is_jvm_thread(thread_name: str) -> bool:
     name = thread_name.strip()
     jvm_names = [
-            "GC",
-            "G1",
-            "VM",
-            "Reference Handl",
-            "Finalizer",
-            "Signal Dispatch",
-            "Service Thread",
-            "C2",
-            "C1",
-            "Sweeper thread",
-            "VM Periodic Tas",
-            "Common-Cleaner"
-            ]
+        "GC",
+        "G1",
+        "VM",
+        "Reference Handl",
+        "Finalizer",
+        "Signal Dispatch",
+        "Service Thread",
+        "C2",
+        "C1",
+        "Sweeper thread",
+        "VM Periodic Tas",
+        "Common-Cleaner",
+    ]
     for jvm_name in jvm_names:
         if name.startswith(jvm_name):
             return True
@@ -460,7 +461,7 @@ class PerfStatWrap(CommandWrapper):
         for current_process in tids2perf_cmd.values():
             try:
                 current_process.wait()
-            except AsyncProcess.AsyncProcessError as _:
+            except AsyncProcess.AsyncProcessError:
                 pass
         self._every_thread_cleanup(record_data_dir=record_data_dir)
 
@@ -593,12 +594,7 @@ class PerfStatWrap(CommandWrapper):
 
     # TODO: Look into different version of perf. This might not be needed.
     # Furthermore, this is only tested on my machine
-    def _get_perf_field(
-            self,
-            perf_counter_row: dict,
-            field: str,
-            perf_version: str
-            ):
+    def _get_perf_field(self, perf_counter_row: dict, field: str, perf_version: str):
         if perf_version == "6.8.12":
             match field:
                 case "event_name":
@@ -613,16 +609,17 @@ class PerfStatWrap(CommandWrapper):
                     return perf_counter_row["pcnt-running"]
                 case _:
                     raise ValueError(f"No field named {field} known for this version of perf")
-        else: 
+        else:
             return perf_counter_row[field]
-
 
     def _results_per_thread(
         self,
         perf_stat_pathname: PathType,
     ) -> RecordResult:
-        perf_version_output = shell_out("perf --version", print_output=False) # TODO: Cache this result
-        perf_version = perf_version_output.split(' ')[2].strip()
+        perf_version_output = shell_out(
+            "perf --version", print_output=False
+        )  # TODO: Cache this result
+        perf_version = perf_version_output.split(" ")[2].strip()
 
         counter_rows = self._parse_csv(  # TODO adapt for json
             perf_stat_pathname=perf_stat_pathname,
@@ -641,17 +638,17 @@ class PerfStatWrap(CommandWrapper):
             assert filename_tid == int(pid)
 
             # event_name = counter_row["event_name"]
-            event_name = self._get_perf_field(counter_row ,"event_name", perf_version)
+            event_name = self._get_perf_field(counter_row, "event_name", perf_version)
             if event_name.endswith("/"):
                 event_name = event_name[:-1]
             # counter_value = counter_row["counter_value"]
-            counter_value = self._get_perf_field(counter_row ,"counter_value", perf_version)
+            counter_value = self._get_perf_field(counter_row, "counter_value", perf_version)
             # unit = counter_row["counter_unit"]
-            unit = self._get_perf_field(counter_row ,"counter_unit", perf_version)
+            unit = self._get_perf_field(counter_row, "counter_unit", perf_version)
             # run_time = counter_row["run_time"]
-            run_time = self._get_perf_field(counter_row ,"run_time", perf_version)
+            run_time = self._get_perf_field(counter_row, "run_time", perf_version)
             # coverage = counter_row["percentage_counter_cover"]
-            coverage = self._get_perf_field(counter_row ,"percentage_counter_cover", perf_version)
+            coverage = self._get_perf_field(counter_row, "percentage_counter_cover", perf_version)
 
             output_dict[f"perf-stat/pid{pid}/{event_name}"] = counter_value
             output_dict[f"perf-stat/pid{pid}/{event_name}.unit"] = unit
@@ -813,7 +810,9 @@ class PerfReportWrap(CommandWrapper):
                                      threads. Defaults to 10.
         """
         perf_prefix = _perf_command_prefix(perf_bin=self._perf_bin, platform=platform)
-        prefix = ["sudo"] + perf_prefix + ["record"] + self.perf_record_options + ["--inherit", "-p"]
+        prefix = (
+            ["sudo"] + perf_prefix + ["record"] + self.perf_record_options + ["--inherit", "-p"]
+        )
 
         perf_data_pathname = record_data_dir / f"perf-record-val-pid{process.pid}.data"
         self.latest_perf_path = perf_data_pathname
@@ -839,7 +838,7 @@ class PerfReportWrap(CommandWrapper):
 
         perf_data_pathname = self.latest_perf_path
         self._chown(pathname=perf_data_pathname)
-            
+
         command = None
         if self._script:
             command = self._perf_script_command(perf_data_pathname=perf_data_pathname)
@@ -855,22 +854,22 @@ class PerfReportWrap(CommandWrapper):
 
             if self._use_jvm:
                 processed_script_data = self._process_perf_script_report(output)
-                return {'lock': processed_script_data}
+                return {"lock": processed_script_data}
 
         if self._report_interactive:
             shell_interactive(command=command, ignore_ret_codes=(-13,))  # ignore broken pipe error
 
     def _process_perf_script_report(
-            self,
-            output: str,
-            ) -> float:
+        self,
+        output: str,
+    ) -> float:
 
-        allowed_threads = re.compile(r'^(?:java|pool-\d+-thread-\d+)$', re.IGNORECASE)
+        allowed_threads = re.compile(r"^(?:java|pool-\d+-thread-\d+)$", re.IGNORECASE)
 
         wait_start = {}
         total_wait_time = 0.0
         total_wait_time_per_thread = {}
-        
+
         for line in output.splitlines():
             splits = line.split()
             if not allowed_threads.match(splits[0]):
@@ -899,7 +898,7 @@ class PerfReportWrap(CommandWrapper):
                         else:
                             total_wait_time_per_thread[thread_id] = wait_time
                         break
-                
+
                 # Remove the matched key
                 if key_to_remove:
                     del wait_start[key_to_remove]
