@@ -27,7 +27,7 @@ def convert_command_to_ast(command:str | List[str] | CommandNode) -> CommandNode
         )
     return command_tree
 
-def try_conventing_bystring_to_readable_characters(bytestring: bytes) -> str | bytes:
+def try_converting_bystring_to_readable_characters(bytestring: bytes) -> str | bytes:
     try:
         return bytestring.decode("utf-8")
     except UnicodeDecodeError:
@@ -36,7 +36,7 @@ def try_conventing_bystring_to_readable_characters(bytestring: bytes) -> str | b
 
 
 def shell_out_new(
-    command: str | List[str] | CommandNode,
+    command_tree: CommandNode,
     std_input: Optional[str] = None,
     current_dir: Optional[pathlib.Path | os.PathLike | str] = None,
     environment: Optional[Dict[str, str]] = None,
@@ -44,7 +44,7 @@ def shell_out_new(
     timeout: Optional[int] = None,
     output_is_log: bool = False,
     ignore_ret_codes: Optional[Iterable[int]] | None = None,
-    success_value = 0, # New feature
+    success_value:int = 0, # New feature
     redirect_stderr_to_stdout: bool = True,  # New feature
     run_in_background=False, # New feature
 
@@ -123,9 +123,8 @@ def shell_out_new(
     """
     if ignore_ret_codes is None:
         ignore_ret_codes = (success_value,)
-
-    # Convert the existing structures over to the tree structure
-    command_tree: CommandNode = convert_command_to_ast(command=command)
+    else:
+        ignore_ret_codes += (success_value,)
 
     # Use the visitor patterns to convert our tree to an executable string
     command_string = getString(command_tree)
@@ -140,7 +139,7 @@ def shell_out_new(
         while a:
             print(
                 f"\33[34m[OUT | {command_string}] \
-                    {try_conventing_bystring_to_readable_characters(a)!r}\033[0m"
+                    {try_converting_bystring_to_readable_characters(a)!r}\033[0m"
             )
             a = input_object.readOut_line()
 
@@ -149,7 +148,7 @@ def shell_out_new(
         while a:
             print(
                 f"\033[91m[ERR | {command_string}] \
-                    {try_conventing_bystring_to_readable_characters(a)!r}\033[0m"
+                    {try_converting_bystring_to_readable_characters(a)!r}\033[0m"
             )
             a = input_object.readErr_line()
 
@@ -210,6 +209,7 @@ def shell_out_new(
         # not a sucsessfull execution and not an alowed exit code
         # raise the appropriate error
         if retcode not in ignore_ret_codes:
+            print(ignore_ret_codes)
             raise subprocess.CalledProcessError(
                 retcode,
                 shell_process.args,
