@@ -13,6 +13,7 @@ from benchkit.campaign import CampaignSuite
 from benchkit.utils.dir import caller_dir
 from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap, enable_non_sudo_perf
 from benchkit.platforms import get_current_platform
+from examples.dacapobench.speedupstackwrapper import SpeedupStackWrapper
 
 
 def main() -> None:
@@ -22,34 +23,7 @@ def main() -> None:
     # Where is the benchmark code located
     dacapobench_src_dir = (caller_dir() / "deps/dacapobench/benchmarks/").resolve()
 
-    # Define the "perf-stat" command wrapper to be passed to the benchmark initialization
-    # It is used to collect information from the PMCs.
-    # perfstatwrap = PerfStatWrap(events=["cache-misses"])
-    perfstatwrap = PerfStatWrap(
-            perf_path=None,
-            events=[
-                # "cache-misses",
-                "context-switches"
-                # "sched:sched_switch"
-                ],
-            use_json = False,
-            wrap_command = False,
-            separator=";",
-            quiet=False,
-            remove_absent_event=False,
-            )
-
-    jvmxlogwrap = JVMXlogWrap()
-
-    perfreportwrap = PerfReportWrap(
-            wrap_command = False,
-            perf_record_options = ["-e", "syscalls:sys_enter_futex,syscalls:sys_exit_futex"],
-            perf_report_options = [],
-            report_file = True,
-            report_interactive = False,
-            script = True,
-            use_jvm = True,
-            )
+    speedupstackwrapper = SpeedupStackWrapper()
 
     # Define the campaign, associated with the LevelDB benchmark
     campaign = dacapobench_campaign(
@@ -70,10 +44,10 @@ def main() -> None:
             # "jython",
             # "kafka",
             # "luindex",
-            "lusearch",
-            "pmd",
+            # "lusearch",
+            # "pmd",
             # "spring",
-            "sunflow",
+            # "sunflow",
             # "tomcat",
             # "tradebeans",
             # "tradesoap",
@@ -85,8 +59,8 @@ def main() -> None:
         nb_runs=1,
         benchmark_duration_seconds=3,
         nb_threads=[1, 2, 4],
-        command_wrappers=[perfstatwrap, jvmxlogwrap, perfreportwrap],
-        post_run_hooks=[perfstatwrap.post_run_hook_update_results, jvmxlogwrap.post_run_hook_update_results, perfreportwrap.post_run_hook_report],
+        command_wrappers=speedupstackwrapper.command_wrappers(),
+        post_run_hooks=speedupstackwrapper.post_run_hooks(),
         enable_data_dir=True,
         clean_in_between_different_benchmarks = True,
     )
@@ -105,11 +79,10 @@ def main() -> None:
         kind="bar",
     )
 
-    # Generate a graph to visualize the output of perf stat
+    # Generate a speedup stacks
     suite.generate_graph(
         plot_name="speedup-stack",
     )
-
 
 if __name__ == "__main__":
     main()
