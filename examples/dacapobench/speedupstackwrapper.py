@@ -36,4 +36,4 @@ class SpeedupStackWrapper():
     def post_run_hooks(self):
         return [self.perfstatwrap.post_run_hook_update_results,
                 self.jvmxlogwrap.post_run_hook_update_results,
-                self.perfreportwrap.post_run_hook_report ]
+                self.perfreportwrap.post_run_hook_report]

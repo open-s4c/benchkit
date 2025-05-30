@@ -239,13 +239,11 @@ def _get_speedup_data(
         perfect_speedup_duration = single_threaded_duration / row["nb_threads"]
 
         measured_component = perfect_speedup_duration / row["duration"]
-        gc_component = (row["gc"] - single_threaded_gc) / row["duration"]
+        gc_component = ((row["nb_threads"] * row["gc"]) - single_threaded_gc) / row["duration"]
         sync_component = (row["context-switches"] / 1000) / row["duration"] 
         lock_component = row["lock"] / row["duration"] 
 
         other_component = 1 - measured_component - gc_component - sync_component - lock_component
-        # print(measured_component + gc_component + sync_component + lock_component)
-        # print("other: " + str(other_component))
         
         data[row["nb_threads"]] = {
                 'measured' : measured_component * row["nb_threads"],
