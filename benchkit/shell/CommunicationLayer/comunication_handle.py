@@ -13,7 +13,6 @@ class Output(ABC):
     def __init__(self):
         self.__bufferd_out: bytes = b""
         self.__bufferd_err: bytes = b""
-        self.a = 2
 
     @abstractmethod
     def _read_bytes_out(self, amount_of_bytes: int) -> bytes:
@@ -28,9 +27,7 @@ class Output(ABC):
         if self.__bufferd_out:
             ret = self.__bufferd_out
             self.__bufferd_out = b""
-            self.a = 0
             return ret
-        self.a += 1
         return self._read_bytes_out(amount_of_bytes)
 
     def readErr(self, amount_of_bytes: int) -> bytes:
