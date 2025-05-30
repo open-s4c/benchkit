@@ -4,6 +4,7 @@
 import shlex
 import subprocess
 
+from benchkit.shell.shell import shell_out
 from shell_scripts import script_path_string
 
 from benchkit.shell.ast_shell_out import shell_out_new
@@ -113,17 +114,34 @@ def testhalt():
     #     stdin=subprocess.PIPE,
     # )
     # shell_process.wait()
-    args = {
-        "print_output": True,
-        "output_is_log": True,
-        "redirect_stderr_to_stdout": False,
-        "current_dir": None,
-        "environment": None,
-        "timeout": None,
-        "ignore_ret_codes": (),
-    }
-    shell_out_new(script_path_string("fillErrThenOut"), **args)
-    print("yeet")
+    # args = {
+    #     "print_output": True,
+    #     "output_is_log": True,
+    #     "redirect_stderr_to_stdout": False,
+    #     "current_dir": None,
+    #     "environment": None,
+    #     "timeout": None,
+    #     "ignore_ret_codes": (),
+    # }
+    # shell_out_new(script_path_string("fillErrThenOut"), **args)
+    # print("yeet")
+
+    # test for the newlines
+    raw_output = shell_out(
+        command=f"cat",
+        std_input="a \n\n b \n c\n",
+        print_input=False,
+        print_output=False,
+    )
+
+
+    # test for command that does not fully output in deafault terminal
+    raw_output = shell_out(
+        command=f"/usr/bin/perf list --no-desc",
+        print_input=False,
+        print_output=False,
+    )
+    return raw_output
 
 
 if __name__ == "__main__":

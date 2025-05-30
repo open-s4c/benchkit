@@ -10,7 +10,7 @@ from typing import Any
 
 from shell_scripts import TestTimeout, script_path_string, timeout
 
-from benchkit.shell.ast_shell_out import shell_out_new
+from benchkit.shell.ast_shell_out import convert_command_to_ast, shell_out_new, try_converting_bystring_to_readable_characters
 
 # Due to print statements being inside of threads unittest does
 # not allow us to check the output of stdout.
@@ -66,11 +66,13 @@ class BasicShellTests(unittest.TestCase):
             with timeout(1):
                 # test echo with multiple parameters to make sure none mess up the result
                 a = shell_out_new(
-                    f"echo benchkit_echo_test {str(args)}", print_command=True, **args
+                    convert_command_to_ast(f"echo benchkit_echo_test {str(args)}"), print_command=True, **args
                 )
+                print(a)
                 expeced_result = re.sub(r"\'", "", f"benchkit_echo_test {str(args)}")
+                print(expeced_result)
                 self.assertEqual(
-                    a,
+                    try_converting_bystring_to_readable_characters(a),
                     f"{expeced_result}\n",
                     "shell does not provide the right output in the result",
                 )
@@ -90,7 +92,7 @@ class BasicShellTests(unittest.TestCase):
         for args in argument_list:
             with self.assertRaises(TestTimeout):
                 with timeout(5):
-                    shell_out_new(script_path_string("runForever"), **args)
+                    shell_out_new(convert_command_to_ast(script_path_string("runForever")), **args)
 
     # @unittest.skip("disabled for debugging")
     def test_timeout(self):
@@ -108,7 +110,7 @@ class BasicShellTests(unittest.TestCase):
         for args in argument_list:
             with timeout(5):
                 with self.assertRaises(subprocess.TimeoutExpired):
-                    shell_out_new(script_path_string("runForever"), **args)
+                    shell_out_new(convert_command_to_ast(script_path_string("runForever")), **args)
 
         argument_list = get_arguments_dict_list(
             {
@@ -124,7 +126,7 @@ class BasicShellTests(unittest.TestCase):
         for args in argument_list:
             with self.assertRaises(TestTimeout):
                 with timeout(5):
-                    shell_out_new(script_path_string("runForever"), **args)
+                    shell_out_new(convert_command_to_ast(script_path_string("runForever")), **args)
 
     # @unittest.skip("disabled for debugging")
     def test_input(self):
@@ -141,11 +143,11 @@ class BasicShellTests(unittest.TestCase):
         for args in argument_list:
             with timeout(10):
                 out = shell_out_new(
-                    script_path_string("writeBack"),
+                    convert_command_to_ast(script_path_string("writeBack")),
                     std_input=f"benchkit input test {str(args)}\n",
                     **args,
                 )
-                self.assertEqual(out, f"benchkit input test {str(args)}\n", f"recieved{out}")
+                self.assertEqual(try_converting_bystring_to_readable_characters(out), f"benchkit input test {str(args)}\n", f"recieved{out}")
 
     # @unittest.skip("disabled for debugging")
     def test_command_blocks_io_overfull(self):
@@ -166,7 +168,7 @@ class BasicShellTests(unittest.TestCase):
             try:
                 with timeout(20):
                     # tests for filling the std_err
-                    shell_out_new(script_path_string("fillErrThenOut"), **args)
+                    shell_out_new(convert_command_to_ast(script_path_string("fillErrThenOut")), **args)
             except TestTimeout:
                 self.fail(
                     f"the command got halted during excecution for \
@@ -177,7 +179,7 @@ class BasicShellTests(unittest.TestCase):
             try:
                 with timeout(20):
                     # tests for filling the std_io
-                    shell_out_new(script_path_string("fillOutThenErr"), **args)
+                    shell_out_new(convert_command_to_ast(script_path_string("fillOutThenErr")), **args)
             except TestTimeout:
                 self.fail("the command got halted during excecution")
                 raise TestTimeout
