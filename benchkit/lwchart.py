@@ -147,6 +147,8 @@ def _generate_chart_from_df(
                 sharey=True
                 )
 
+        fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=18, y=0.98)
+
         if n_benches == 1:
             axes = [axes]
 
@@ -176,7 +178,7 @@ def _generate_chart_from_df(
                 ax.set_ylabel('Speedup')
             ax.legend(loc='upper left')
 
-        plt.title(title)
+        # plt.title(title + ": " + ", ".join(bench_names))
         plt.tight_layout()
         plt.show()
     else:
