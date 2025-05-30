@@ -62,7 +62,7 @@ sudo update-alternatives --config javac # select javac 11
 . ./venv/bin/activate
 ```
 
-## Run simple test campaign
+## Run campaign
 
 ```bash
 ./campaign_dacapobench.py

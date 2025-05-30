@@ -13,13 +13,13 @@ Otherwise, the generation is skipped (with a warning).
 
 import datetime
 import importlib.util
+import json
 import os
 import pathlib
 import sys
-import json
-import numpy as np
 from typing import Any, Dict, List, Protocol
 
+import numpy as np
 from numpy import floating, mean
 
 from benchkit.utils.types import PathType
@@ -122,7 +122,7 @@ def _generate_chart_from_df(
         title = args["title"]
         del args["title"]
 
-    if "catplot" == plot_name: 
+    if "catplot" == plot_name:
         chart = sns.catplot(
             data=df,
             **args,
@@ -135,16 +135,11 @@ def _generate_chart_from_df(
         chart.fig.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
         fig = chart.fig
     elif "speedup-stack" == plot_name:
-        bench_names = df['bench_name'].unique()
+        bench_names = df["bench_name"].unique()
         n_benches = len(bench_names)
 
         sns.set_theme()
-        fig, axes = plt.subplots(
-                nrows=1,
-                ncols=n_benches,
-                figsize=(5 * n_benches, 8),
-                sharey=True
-                )
+        fig, axes = plt.subplots(nrows=1, ncols=n_benches, figsize=(5 * n_benches, 8), sharey=True)
 
         fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=18, y=0.98)
 
@@ -153,12 +148,17 @@ def _generate_chart_from_df(
 
         colors = sns.color_palette("pastel")
 
-        factors = ['measured', 'gc', 'sync', 'lock', 'other']
-        labels = ['Measured', 'Garbage Collection', 'Synchronization Activities',
-                'Lock Contention', 'Other Overheads']
+        factors = ["measured", "gc", "sync", "lock", "other"]
+        labels = [
+            "Measured",
+            "Garbage Collection",
+            "Synchronization Activities",
+            "Lock Contention",
+            "Other Overheads",
+        ]
 
         for ax, bench in zip(axes, bench_names):
-            bench_df = df[df['bench_name'] == bench]
+            bench_df = df[df["bench_name"] == bench]
             speedup_data = _get_speedup_data(bench_df)
 
             ind = np.arange(len(speedup_data))
@@ -170,12 +170,12 @@ def _generate_chart_from_df(
                 bottom += vals
 
             ax.set_title(bench)
-            ax.set_xlabel('Number of Threads')
+            ax.set_xlabel("Number of Threads")
             ax.set_xticks(ind)
             ax.set_xticklabels([str(k) for k in speedup_data.keys()])
             if ax is axes[0]:
-                ax.set_ylabel('Speedup')
-            ax.legend(loc='upper left')
+                ax.set_ylabel("Speedup")
+            ax.legend(loc="upper left")
 
         # plt.title(title + ": " + ", ".join(bench_names))
         plt.tight_layout()
@@ -226,9 +226,10 @@ def _generate_chart_from_df(
     plt.show()
     plt.close()
 
+
 def _get_speedup_data(
-        df: DataFrame,
-        ) -> Dict[str, float]:
+    df: DataFrame,
+) -> Dict[str, float]:
     single_threaded_duration = df[df["nb_threads"] == 1]["duration"].values[0]
     single_threaded_gc = df[df["nb_threads"] == 1]["gc"].values[0]
     multithreaded_df = df[df["nb_threads"] != 1]
@@ -239,18 +240,20 @@ def _get_speedup_data(
 
         measured_component = perfect_speedup_duration / row["duration"]
         gc_component = ((row["nb_threads"] * row["gc"]) - single_threaded_gc) / row["duration"]
-        sync_component = (row["context-switches"] / 1000) / row["duration"] 
-        lock_component = row["lock"] / row["duration"] 
+        sync_component = (row["context-switches"] / 1000) / row["duration"]
+        lock_component = row["lock"] / row["duration"]
 
         other_component = 1 - measured_component - gc_component - sync_component - lock_component
-        
+
         data[row["nb_threads"]] = {
-                'measured' : measured_component * row["nb_threads"],
-                'gc' : gc_component * row["nb_threads"],
-                'sync' : sync_component * row["nb_threads"],
-                'lock' : lock_component * row["nb_threads"],
-                'other' : other_component * row["nb_threads"]}
+            "measured": measured_component * row["nb_threads"],
+            "gc": gc_component * row["nb_threads"],
+            "sync": sync_component * row["nb_threads"],
+            "lock": lock_component * row["nb_threads"],
+            "other": other_component * row["nb_threads"],
+        }
     return data
+
 
 def _read_csv(
     csv_pathname: PathType,
@@ -363,6 +366,7 @@ def generate_chart_from_multiple_csvs(
         **kwargs,
     )
 
+
 def generate_chart_from_multiple_csvs_and_jsons(
     csv_pathnames: List[PathType],
     json_pathnames: List[List[PathType]],
@@ -405,14 +409,17 @@ def generate_chart_from_multiple_csvs_and_jsons(
 
     csv_dataframe = get_global_dataframe(csv_pathnames=csv_pathnames, nan_replace=nan_replace)
 
-    csv_useful_columns = ["gc", "duration", "lock"] 
+    csv_useful_columns = ["gc", "duration", "lock"]
     csv_non_useful_columns = ["rep"]
 
-    csv_grouping_columns = [col for col in csv_dataframe.columns if col not in csv_useful_columns + csv_non_useful_columns]
-    csv_dataframe = csv_dataframe.groupby(
-            csv_grouping_columns,
-            as_index=False
-            )[csv_useful_columns].mean()
+    csv_grouping_columns = [
+        col
+        for col in csv_dataframe.columns
+        if col not in csv_useful_columns + csv_non_useful_columns
+    ]
+    csv_dataframe = csv_dataframe.groupby(csv_grouping_columns, as_index=False)[
+        csv_useful_columns
+    ].mean()
 
     json_dataframe = get_global_dataframe_from_jsons(json_pathnames=json_pathnames)
     json_dataframe = json_dataframe.drop(csv_useful_columns + csv_non_useful_columns, axis=1)
@@ -446,15 +453,16 @@ def get_global_dataframe(
     result = pd.concat(dataframes)
     return result
 
+
 def _process_json(
-        json_path: PathType,
-        ) -> Dict[str, int]:
-    with open(json_path, 'r') as f:
+    json_path: PathType,
+) -> Dict[str, int]:
+    with open(json_path, "r") as f:
         data = json.load(f)
-    
+
         output = {}
         total_context_switches = 0
-        
+
         for entry in data:
             for k, v in entry.items():
                 # Count context-switch events
@@ -462,19 +470,21 @@ def _process_json(
                     total_context_switches += int(v)
                 elif "context-switches" not in k:
                     output[k] = v
-                    
-        output["context-switches"] = total_context_switches            
+
+        output["context-switches"] = total_context_switches
         return output
 
-def _process_jsons(
-        json_paths: List[PathType],
-        ) -> Dict[str, floating[Any]]:
-     data = [_process_json(p) for p  in json_paths]
 
-     data_without_context_switches = {k: v for k, v in data[0].items() if k != "context-switches"}
-     context_switches = [d["context-switches"] for d in data]
-     data_without_context_switches["context-switches"] = mean(context_switches)
-     return data_without_context_switches
+def _process_jsons(
+    json_paths: List[PathType],
+) -> Dict[str, floating[Any]]:
+    data = [_process_json(p) for p in json_paths]
+
+    data_without_context_switches = {k: v for k, v in data[0].items() if k != "context-switches"}
+    context_switches = [d["context-switches"] for d in data]
+    data_without_context_switches["context-switches"] = mean(context_switches)
+    return data_without_context_switches
+
 
 def get_global_dataframe_from_jsons(
     json_pathnames: List[List[PathType]],
@@ -483,12 +493,10 @@ def get_global_dataframe_from_jsons(
         _print_warning()
         return
 
-    dataframes = [
-            _process_jsons(ps)
-            for ps in json_pathnames
-    ]
+    dataframes = [_process_jsons(ps) for ps in json_pathnames]
     result = pd.DataFrame(dataframes)
     return result
+
 
 def generate_global_csv_file(
     csv_pathnames: List[PathType],
