@@ -184,6 +184,89 @@ class BasicShellTests(unittest.TestCase):
                 self.fail("the command got halted during excecution")
                 raise TestTimeout
 
+    # @unittest.skip("disabled for debugging")
+    def test_ignore_return_codes(self):
+        """Overfull internal IO buffers would halt the execution of the command
+        Here we test whether or not this happens in our implementation
+        """
+
+        # test that success value does not throw an error regardles of ignore ret_codes
+        argument_list = get_arguments_dict_list(
+            {
+                "redirect_stderr_to_stdout": [True, False],
+                "current_dir": [None, pathlib.Path(__file__).parent.resolve()],
+                "environment": [None, {"test": "test"}],
+                "timeout": [None, 20],
+                "ignore_ret_codes": [(), (1,4,), (2,7,), (4,5,), (63,), (0,)],
+                "success_value": [1,6,53,19]
+            }
+        )
+
+        for args in argument_list:
+            try:
+                with timeout(20):
+                    # tests for filling the std_err
+                    retcode_to_output = args["success_value"]
+                    shell_out_new(convert_command_to_ast(script_path_string("returnExitCode")), **args,std_input=f'{retcode_to_output}\n')
+            except TestTimeout:
+                self.fail(
+                    f"the command got halted during excecution for \
+                        {script_path_string('fillErrThenOut')} with args: {args}"
+                )
+                raise TestTimeout
+
+        # test that error codes in ignore list do not throw error
+        argument_list = get_arguments_dict_list(
+            {
+                "redirect_stderr_to_stdout": [True, False],
+                "current_dir": [None, pathlib.Path(__file__).parent.resolve()],
+                "environment": [None, {"test": "test"}],
+                "timeout": [None, 20],
+                "ignore_ret_codes": [(), (1,4,), (2,7,), (4,5,), (63,), (0,)],
+                "output_is_log":[True]
+            }
+        )
+
+        for args in argument_list:
+            try:
+                with timeout(20):
+                    retcode_to_output = args["ignore_ret_codes"][len(args["ignore_ret_codes"])-1%3] if len(args["ignore_ret_codes"]) > 0 else 0
+                    shell_out_new(convert_command_to_ast(script_path_string("returnExitCode")), **args,std_input=f'{retcode_to_output}\n')
+            except TestTimeout:
+                self.fail(
+                    f"the command got halted during excecution for \
+                        {script_path_string('fillErrThenOut')} with args: {args}"
+                )
+                raise TestTimeout
+
+        #test that error code still throws an error
+        argument_list = get_arguments_dict_list(
+            {
+                "redirect_stderr_to_stdout": [True, False],
+                "current_dir": [None, pathlib.Path(__file__).parent.resolve()],
+                "environment": [None, {"test": "test"}],
+                "timeout": [None, 20],
+                "ignore_ret_codes": [(), (1,4,), (2,7,), (4,5,), (63,), (0,)],
+                "success_value": [0,1,6,53,19]
+            }
+        )
+
+        for args in argument_list:
+            try:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    with timeout(20):
+                        # tests for filling the std_err
+                        retcode_to_output = 3 + args["success_value"] + (args["ignore_ret_codes"][len(args["ignore_ret_codes"])-1%3] if len(args["ignore_ret_codes"]) > 0 else args["success_value"])
+                        print("----------------------")
+                        print(retcode_to_output)
+                        shell_out_new(convert_command_to_ast(script_path_string("returnExitCode")), **args,std_input=f'{retcode_to_output}\n')
+            except TestTimeout:
+                self.fail(
+                    f"the command got halted during excecution for \
+                        {script_path_string('fillErrThenOut')} with args: {args}"
+                )
+                raise TestTimeout
+
 
 if __name__ == "__main__":
     unittest.main()
