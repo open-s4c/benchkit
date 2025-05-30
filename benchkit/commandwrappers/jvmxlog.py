@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 """
 Command wrapper for the `Xlog` functionality of the JVM.
@@ -17,7 +17,7 @@ from . import CommandWrapper, PackageDependency
 
 class JVMXlogWrap(CommandWrapper):
     """
-Command wrapper for the `Xlog` functionality of the JVM.
+    Command wrapper for the `Xlog` functionality of the JVM.
     """
 
     def __init__(self) -> None:
@@ -36,10 +36,16 @@ Command wrapper for the `Xlog` functionality of the JVM.
     ) -> Tuple[SplitCommand, EnvironmentVariables]:
 
         if record_data_dir is None:
-            raise ValueError("Record data directory cannot be None, it is required to save the JVMXlog data.")
-            
+            raise ValueError(
+                "Record data directory cannot be None, it is required to save the JVMXlog data."
+            )
+
         jvmxlog_pathname = os.path.join(record_data_dir, "jvmxlog.log")
-        cmd_infix = ["-XX:+ExtendedDTraceProbes", "-XX:+PreserveFramePointer", f'-Xlog:gc*:file="{jvmxlog_pathname}"']
+        cmd_infix = [
+            "-XX:+ExtendedDTraceProbes",
+            "-XX:+PreserveFramePointer",
+            f'-Xlog:gc*:file="{jvmxlog_pathname}"',
+        ]
 
         wrapped_command = [command[0]] + cmd_infix + command[1:]
         wrapped_environment = environment
@@ -63,17 +69,22 @@ Command wrapper for the `Xlog` functionality of the JVM.
         total_gc_time = 0
         with open(jvmxlog_pathname) as file:
             for line in file:
-                splits = line.split(' ')
+                splits = line.split(" ")
                 if splits[0][-2:] == "gc":
-                    gc_event = splits[splits.index(']') + 2:splits.index(']') + 4]
-                    if len(gc_event) == 2 and gc_event[0] != "Concurrent" and gc_event[1] != "Remark" and gc_event[1] != "Cleanup":
+                    gc_event = splits[splits.index("]") + 2 : splits.index("]") + 4]
+                    if (
+                        len(gc_event) == 2
+                        and gc_event[0] != "Concurrent"
+                        and gc_event[1] != "Remark"
+                        and gc_event[1] != "Cleanup"
+                    ):
                         timing = splits[-1].strip()[:-2]
                         try:
-                            value = float(timing.replace(',', '.'))
+                            value = float(timing.replace(",", "."))
                             total_gc_time += value
                         except ValueError:
                             pass
 
-        output_dict = {'gc': total_gc_time}
+        output_dict = {"gc": total_gc_time}
 
         return output_dict

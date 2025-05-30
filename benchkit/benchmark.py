@@ -9,10 +9,10 @@ import itertools
 import json
 import os
 import pathlib
+from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Barrier
 from subprocess import CalledProcessError
 from typing import IO, Any, Dict, Iterable, List, Optional, Protocol, Tuple
-from concurrent.futures import ThreadPoolExecutor
 
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies import check_dependencies
@@ -1083,18 +1083,18 @@ class Benchmark:
                         *parallel_attachments, main_thread_attachment = self._command_attachments
 
                     futures = [
-                            pool.submit(
-                                attachment,
-                                process=single_run_process,
-                                record_data_dir=record_data_dir,
-                                )
-                            for attachment in parallel_attachments
-                            ]
-
-                    main_thread_attachment(
+                        pool.submit(
+                            attachment,
                             process=single_run_process,
                             record_data_dir=record_data_dir,
-                            )
+                        )
+                        for attachment in parallel_attachments
+                    ]
+
+                    main_thread_attachment(
+                        process=single_run_process,
+                        record_data_dir=record_data_dir,
+                    )
 
                     for future in futures:
                         future.result()
@@ -1149,7 +1149,11 @@ class Benchmark:
             with open(self._csv_output_path, "a") as csv_output_file:
                 for experiment_results_line in experiment_results_lines:
                     if self.ignore_perf_csv:
-                        experiment_results_line = {key: value for key, value in experiment_results_line.items() if "pid" not in key}
+                        experiment_results_line = {
+                            key: value
+                            for key, value in experiment_results_line.items()
+                            if "pid" not in key
+                        }
                     sep = CSV_SEPARATOR
                     if not self._first_line_is_printed:
                         header_list = list(experiment_results_line.keys())

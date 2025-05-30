@@ -22,6 +22,7 @@ from benchkit.utils.types import Environment, EnvironmentVariables, SplitCommand
 
 class CommandWrapper:
     """Base class for command wrappers."""
+
     def __init__(self) -> None:
         self.wrap_command = True
 

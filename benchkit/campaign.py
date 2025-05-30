@@ -6,7 +6,6 @@ A campaign is roughly 1 benchmark + N variables. A campaign also defines how the
 over the variables.
 """
 
-from collections import defaultdict
 import datetime
 import glob
 import multiprocessing
@@ -15,6 +14,7 @@ import os.path
 import pathlib
 import shutil
 import sys
+from collections import defaultdict
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark
@@ -470,24 +470,25 @@ class CampaignSuite:
         )
 
     def get_json_files(
-            self,
-            campaign_path: PathType,
-            **kwargs,
-            ) -> List[List[PathType]]:
+        self,
+        campaign_path: PathType,
+        **kwargs,
+    ) -> List[List[PathType]]:
         json_paths = []
         for dirpath, dirnames, filenames in os.walk(campaign_path):
             for fname in filenames:
-                if fname.lower().endswith('.json'):
+                if fname.lower().endswith(".json"):
                     full_path = os.path.join(dirpath, fname)
                     json_paths.append(full_path)
 
-        groups = defaultdict(list) 
+        groups = defaultdict(list)
         for json_path in json_paths:
             leaf_dir = os.path.dirname(json_path)
             parent_dir = os.path.dirname(leaf_dir)
             groups[parent_dir].append(json_path)
 
         return [groups[parent] for parent in groups]
+
 
 class CampaignTemplate(Campaign):
     """

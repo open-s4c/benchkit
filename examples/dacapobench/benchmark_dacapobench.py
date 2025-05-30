@@ -8,10 +8,9 @@ from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRun
 from benchkit.campaign import CampaignCartesianProduct, Constants
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
-from benchkit.platforms import Platform
+from benchkit.platforms import Platform, get_current_platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import PathType
-from benchkit.platforms import get_current_platform
 
 supported_bench_names = [
     "avrora",
@@ -137,9 +136,12 @@ class DacapobenchBench(Benchmark):
                 f"The supported bench names are: {supported_bench_names}."
             )
 
-        if self.clean_in_between_different_benchmarks and self.previous_bench_name is not bench_name:
+        if (
+            self.clean_in_between_different_benchmarks
+            and self.previous_bench_name is not bench_name
+        ):
             self.platform.comm.shell(
-                command=f"ant clean",
+                command="ant clean",
                 current_dir=self._bench_src_path,
                 output_is_log=True,
             )
@@ -266,13 +268,13 @@ def dacapobench_campaign(
                     record_data_dir=record_data_dir,
                     poll_ms=100,
                     use_jvm=True,
-                    ),
+                ),
                 lambda process, record_data_dir: command_wrappers[2].attach_every_thread(
                     platform=get_current_platform(),
                     process=process,
                     record_data_dir=record_data_dir,
-                    ),
-                ],
+                ),
+            ],
             shared_libs=shared_libs,
             clean_in_between_different_benchmarks=clean_in_between_different_benchmarks,
             pre_run_hooks=pre_run_hooks,

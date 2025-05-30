@@ -41,6 +41,7 @@ def get_threads_of_process(pid: int) -> List[int]:
 
     return tids
 
+
 def get_threads_of_process_with_names(pid: int) -> List[Tuple[str, int]]:
     """Get thread identifiers (TIDs) and their names of the given process identifier (PID).
 
