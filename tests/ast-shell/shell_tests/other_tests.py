@@ -4,10 +4,6 @@
 import shlex
 import subprocess
 
-from benchkit.shell.shell import shell_out
-from shell_scripts import script_path_string
-
-from benchkit.shell.ast_shell_out import shell_out_new
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.variable_node import RuntimeVariable
 from benchkit.shell.commandAST.visitor import (
@@ -17,6 +13,7 @@ from benchkit.shell.commandAST.visitor import (
     printAst,
     resolveAllVariablesWithDict,
 )
+from benchkit.shell.shell import shell_out
 
 
 def commandtests():
@@ -128,16 +125,15 @@ def testhalt():
 
     # test for the newlines
     raw_output = shell_out(
-        command=f"cat",
+        command="cat",
         std_input="a \n\n b \n c\n",
         print_input=False,
         print_output=False,
     )
 
-
     # test for command that does not fully output in deafault terminal
     raw_output = shell_out(
-        command=f"/usr/bin/perf list --no-desc",
+        command="/usr/bin/perf list --no-desc",
         print_input=False,
         print_output=False,
     )

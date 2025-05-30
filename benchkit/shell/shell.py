@@ -8,10 +8,13 @@ import subprocess
 import sys
 from typing import Iterable, Optional
 
-from benchkit.shell.ast_shell_out import convert_command_to_ast, shell_out_new, try_converting_bystring_to_readable_characters
+from benchkit.shell.ast_shell_out import (
+    convert_command_to_ast,
+    shell_out_new,
+    try_converting_bystring_to_readable_characters,
+)
 from benchkit.shell.utils import get_args, print_header
 from benchkit.utils.types import Command, Environment, PathType
-
 
 USE_NEW_SHELL = True
 
@@ -156,7 +159,8 @@ def shell_out(
             print_output=print_output,
             timeout=timeout,
             output_is_log=output_is_log,
-            ignore_ret_codes= ignore_ret_codes if ignore_ret_codes is not () else None
+            # If ignore_ret_codes is empty we swap it over to None instead
+            ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
         )
         return try_converting_bystring_to_readable_characters(output_bytes)
 

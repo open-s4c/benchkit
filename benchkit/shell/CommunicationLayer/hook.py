@@ -45,14 +45,12 @@ class OutputBuffer:
             outlines += outline
             outline = out.readOut(10)
         output_queue.put(outlines)
-        print("res ends")
 
     @staticmethod
     def void_err(out: Output) -> None:
         outline = out.readErr(10)
         while outline:
             outline = out.readErr(10)
-        print("err ends")
 
     def get_result(self) -> bytes:
         output = self.queue_out.get()

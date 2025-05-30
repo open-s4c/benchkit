@@ -3,7 +3,6 @@
 
 import os
 from abc import ABC, abstractmethod
-from io import BufferedReader
 from typing import IO
 
 
@@ -32,7 +31,6 @@ class Output(ABC):
             self.a = 0
             return ret
         self.a += 1
-        # print(f'come from buffer non {self.a}')
         return self._read_bytes_out(amount_of_bytes)
 
     def readErr(self, amount_of_bytes: int) -> bytes:
@@ -49,7 +47,7 @@ class Output(ABC):
             sp = byt.split(b"\n", 1)
             if len(sp) > 1:
                 self.__bufferd_out = sp[1]
-                return sp[0] + b'\n'
+                return sp[0] + b"\n"
             byt += self.readOut(10)
         return byt
 
@@ -59,7 +57,7 @@ class Output(ABC):
             sp = byt.split(b"\n", 1)
             if len(sp) > 1:
                 self.__bufferd_err = sp[1]
-                return sp[0] + b'\n'
+                return sp[0] + b"\n"
             byt += self.readErr(10)
         return byt
 

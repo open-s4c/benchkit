@@ -13,7 +13,8 @@ from benchkit.shell.commandAST.visitor import getString
 from benchkit.shell.CommunicationLayer.comunication_handle import Output, SshOutput
 from benchkit.shell.CommunicationLayer.hook import OutputBuffer, ReaderHook, VoidOutput
 
-def convert_command_to_ast(command:str | List[str] | CommandNode) -> CommandNode:
+
+def convert_command_to_ast(command: str | List[str] | CommandNode) -> CommandNode:
     if isinstance(command, str):
         command_tree = makecommand.command(command)
     elif isinstance(command, list):
@@ -27,12 +28,12 @@ def convert_command_to_ast(command:str | List[str] | CommandNode) -> CommandNode
         )
     return command_tree
 
+
 def try_converting_bystring_to_readable_characters(bytestring: bytes) -> str | bytes:
     try:
         return bytestring.decode("utf-8")
     except UnicodeDecodeError:
         return bytestring
-
 
 
 def shell_out_new(
@@ -43,14 +44,13 @@ def shell_out_new(
     print_output: bool = False,
     timeout: Optional[int] = None,
     output_is_log: bool = False,
-    ignore_ret_codes: Optional[Iterable[int]] | None = None,
-    success_value:int = 0, # New feature
+    ignore_ret_codes: Optional[Iterable[int]] = None,
+    success_value: int = 0,  # New feature
     redirect_stderr_to_stdout: bool = True,  # New feature
-    run_in_background=False, # New feature
-
-    # Some of the visual printing concepts do not make much sence at the moment so they are not supported.
-    # Will probably swap over to a file based logging system for these larger amounts of additionaly information
-
+    run_in_background=False,  # New feature
+    # Some of the visual printing are not supported.
+    # Will probably swap over to a file based logging
+    # system for these larger amounts of additionaly information
     print_env: bool = True,  # TEMPORARALY not suported
     print_curdir: bool = True,  # TEMPORARALY not suported
     print_shell_cmd: bool = False,  # TEMPORARALY not suported
@@ -192,7 +192,7 @@ def shell_out_new(
                 VoidOutput(command_output)
                 # TODO: run_in_background makes it incompatible with timeout, this is fixable
                 # shell_process.wait(timeout=timeout)
-                return b''
+                return b""
             else:
                 buffer = OutputBuffer(command_output)
                 retcode = shell_process.wait(timeout=timeout)
@@ -212,7 +212,6 @@ def shell_out_new(
         # not a sucsessfull execution and not an alowed exit code
         # raise the appropriate error
         if retcode not in ignore_ret_codes:
-            print(ignore_ret_codes)
             raise subprocess.CalledProcessError(
                 retcode,
                 shell_process.args,
@@ -236,4 +235,3 @@ def shell_out_new(
             shell_process.terminate()
             # Wait allows the Popen process to cleanly terminate
             ret = shell_process.wait(1)
-            print(f"ret:{ret}")

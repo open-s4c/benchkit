@@ -10,7 +10,11 @@ from typing import Any
 
 from shell_scripts import TestTimeout, script_path_string, timeout
 
-from benchkit.shell.ast_shell_out import convert_command_to_ast, shell_out_new, try_converting_bystring_to_readable_characters
+from benchkit.shell.ast_shell_out import (
+    convert_command_to_ast,
+    shell_out_new,
+    try_converting_bystring_to_readable_characters,
+)
 
 # Due to print statements being inside of threads unittest does
 # not allow us to check the output of stdout.
@@ -66,7 +70,9 @@ class BasicShellTests(unittest.TestCase):
             with timeout(1):
                 # test echo with multiple parameters to make sure none mess up the result
                 a = shell_out_new(
-                    convert_command_to_ast(f"echo benchkit_echo_test {str(args)}"), print_command=True, **args
+                    convert_command_to_ast(f"echo benchkit_echo_test {str(args)}"),
+                    print_command=True,
+                    **args,
                 )
                 print(a)
                 expeced_result = re.sub(r"\'", "", f"benchkit_echo_test {str(args)}")
@@ -147,7 +153,11 @@ class BasicShellTests(unittest.TestCase):
                     std_input=f"benchkit input test {str(args)}\n",
                     **args,
                 )
-                self.assertEqual(try_converting_bystring_to_readable_characters(out), f"benchkit input test {str(args)}\n", f"recieved{out}")
+                self.assertEqual(
+                    try_converting_bystring_to_readable_characters(out),
+                    f"benchkit input test {str(args)}\n",
+                    f"recieved{out}",
+                )
 
     # @unittest.skip("disabled for debugging")
     def test_command_blocks_io_overfull(self):
@@ -168,7 +178,9 @@ class BasicShellTests(unittest.TestCase):
             try:
                 with timeout(20):
                     # tests for filling the std_err
-                    shell_out_new(convert_command_to_ast(script_path_string("fillErrThenOut")), **args)
+                    shell_out_new(
+                        convert_command_to_ast(script_path_string("fillErrThenOut")), **args
+                    )
             except TestTimeout:
                 self.fail(
                     f"the command got halted during excecution for \
@@ -179,7 +191,9 @@ class BasicShellTests(unittest.TestCase):
             try:
                 with timeout(20):
                     # tests for filling the std_io
-                    shell_out_new(convert_command_to_ast(script_path_string("fillOutThenErr")), **args)
+                    shell_out_new(
+                        convert_command_to_ast(script_path_string("fillOutThenErr")), **args
+                    )
             except TestTimeout:
                 self.fail("the command got halted during excecution")
                 raise TestTimeout
@@ -197,8 +211,24 @@ class BasicShellTests(unittest.TestCase):
                 "current_dir": [None, pathlib.Path(__file__).parent.resolve()],
                 "environment": [None, {"test": "test"}],
                 "timeout": [None, 20],
-                "ignore_ret_codes": [(), (1,4,), (2,7,), (4,5,), (63,), (0,)],
-                "success_value": [1,6,53,19]
+                "ignore_ret_codes": [
+                    (),
+                    (
+                        1,
+                        4,
+                    ),
+                    (
+                        2,
+                        7,
+                    ),
+                    (
+                        4,
+                        5,
+                    ),
+                    (63,),
+                    (0,),
+                ],
+                "success_value": [1, 6, 53, 19],
             }
         )
 
@@ -207,7 +237,11 @@ class BasicShellTests(unittest.TestCase):
                 with timeout(20):
                     # tests for filling the std_err
                     retcode_to_output = args["success_value"]
-                    shell_out_new(convert_command_to_ast(script_path_string("returnExitCode")), **args,std_input=f'{retcode_to_output}\n')
+                    shell_out_new(
+                        convert_command_to_ast(script_path_string("returnExitCode")),
+                        **args,
+                        std_input=f"{retcode_to_output}\n",
+                    )
             except TestTimeout:
                 self.fail(
                     f"the command got halted during excecution for \
@@ -222,16 +256,40 @@ class BasicShellTests(unittest.TestCase):
                 "current_dir": [None, pathlib.Path(__file__).parent.resolve()],
                 "environment": [None, {"test": "test"}],
                 "timeout": [None, 20],
-                "ignore_ret_codes": [(), (1,4,), (2,7,), (4,5,), (63,), (0,)],
-                "output_is_log":[True]
+                "ignore_ret_codes": [
+                    (),
+                    (
+                        1,
+                        4,
+                    ),
+                    (
+                        2,
+                        7,
+                    ),
+                    (
+                        4,
+                        5,
+                    ),
+                    (63,),
+                    (0,),
+                ],
+                "output_is_log": [True],
             }
         )
 
         for args in argument_list:
             try:
                 with timeout(20):
-                    retcode_to_output = args["ignore_ret_codes"][len(args["ignore_ret_codes"])-1%3] if len(args["ignore_ret_codes"]) > 0 else 0
-                    shell_out_new(convert_command_to_ast(script_path_string("returnExitCode")), **args,std_input=f'{retcode_to_output}\n')
+                    retcode_to_output = (
+                        args["ignore_ret_codes"][len(args["ignore_ret_codes"]) - 1 % 3]
+                        if len(args["ignore_ret_codes"]) > 0
+                        else 0
+                    )
+                    shell_out_new(
+                        convert_command_to_ast(script_path_string("returnExitCode")),
+                        **args,
+                        std_input=f"{retcode_to_output}\n",
+                    )
             except TestTimeout:
                 self.fail(
                     f"the command got halted during excecution for \
@@ -239,15 +297,31 @@ class BasicShellTests(unittest.TestCase):
                 )
                 raise TestTimeout
 
-        #test that error code still throws an error
+        # test that error code still throws an error
         argument_list = get_arguments_dict_list(
             {
                 "redirect_stderr_to_stdout": [True, False],
                 "current_dir": [None, pathlib.Path(__file__).parent.resolve()],
                 "environment": [None, {"test": "test"}],
                 "timeout": [None, 20],
-                "ignore_ret_codes": [(), (1,4,), (2,7,), (4,5,), (63,), (0,)],
-                "success_value": [0,1,6,53,19]
+                "ignore_ret_codes": [
+                    (),
+                    (
+                        1,
+                        4,
+                    ),
+                    (
+                        2,
+                        7,
+                    ),
+                    (
+                        4,
+                        5,
+                    ),
+                    (63,),
+                    (0,),
+                ],
+                "success_value": [0, 1, 6, 53, 19],
             }
         )
 
@@ -256,10 +330,22 @@ class BasicShellTests(unittest.TestCase):
                 with self.assertRaises(subprocess.CalledProcessError):
                     with timeout(20):
                         # tests for filling the std_err
-                        retcode_to_output = 3 + args["success_value"] + (args["ignore_ret_codes"][len(args["ignore_ret_codes"])-1%3] if len(args["ignore_ret_codes"]) > 0 else args["success_value"])
+                        retcode_to_output = (
+                            3
+                            + args["success_value"]
+                            + (
+                                args["ignore_ret_codes"][len(args["ignore_ret_codes"]) - 1 % 3]
+                                if len(args["ignore_ret_codes"]) > 0
+                                else args["success_value"]
+                            )
+                        )
                         print("----------------------")
                         print(retcode_to_output)
-                        shell_out_new(convert_command_to_ast(script_path_string("returnExitCode")), **args,std_input=f'{retcode_to_output}\n')
+                        shell_out_new(
+                            convert_command_to_ast(script_path_string("returnExitCode")),
+                            **args,
+                            std_input=f"{retcode_to_output}\n",
+                        )
             except TestTimeout:
                 self.fail(
                     f"the command got halted during excecution for \
