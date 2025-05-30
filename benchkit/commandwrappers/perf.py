@@ -458,7 +458,10 @@ class PerfStatWrap(CommandWrapper):
             time.sleep(poll_ms / 1000)
 
         for current_process in tids2perf_cmd.values():
-            current_process.wait()
+            try:
+                current_process.wait()
+            except AsyncProcess.AsyncProcessError as _:
+                pass
         self._every_thread_cleanup(record_data_dir=record_data_dir)
 
     def post_run_hook_update_results(
@@ -491,6 +494,8 @@ class PerfStatWrap(CommandWrapper):
         for perf_stat_pathname in perf_stat_pathnames:
             if not os.path.exists(perf_stat_pathname):
                 continue
+            if "err-tid" in perf_stat_pathname:
+                continue
             if "val-tid" in perf_stat_pathname:
                 output_dict |= self._results_per_thread(perf_stat_pathname=perf_stat_pathname)
             else:
@@ -503,7 +508,7 @@ class PerfStatWrap(CommandWrapper):
         perf_stat_pathname: PathType,
         events: List[str],
         field_names: List[str],
-    ) -> List[str]:
+    ) -> Optional[List[str]]:
         # For reasons beyond my understanding, perf stat returns a CSV file format that contains
         # optional fields without giving you the header of the file. To combat this, we try to
         # align the fields that are guaranteed to be given (given in field_names)
@@ -517,7 +522,9 @@ class PerfStatWrap(CommandWrapper):
                 lambda row: not row.strip().startswith("#") and row.strip() != "",
                 perf_stat_file,
             )
-            row = next(first_line_filter)
+            row = next(first_line_filter, None)
+            if row is None:
+                return None
             fields = row.split(self._separator)
 
             event_idxes = [fields.index(event) for event in events if event in fields]
@@ -566,6 +573,9 @@ class PerfStatWrap(CommandWrapper):
             events=self._events,
             field_names=field_names,
         )
+
+        if field_names is None:
+            return []
 
         with open(perf_stat_pathname, "r") as perf_stat_file:
             comments_filtered_file = filter(
@@ -662,6 +672,8 @@ class PerfStatWrap(CommandWrapper):
         output_dict = {}
         for counter_row in counter_rows:
             event_name = counter_row["event"]
+            if event_name is None:
+                continue
             if event_name.endswith("/"):
                 event_name = event_name[:-1]
             counter_value = counter_row["counter-value"]
