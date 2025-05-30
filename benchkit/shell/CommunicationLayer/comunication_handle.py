@@ -4,6 +4,7 @@
 import os
 from abc import ABC, abstractmethod
 from io import BufferedReader
+from typing import IO
 
 
 class Output(ABC):
@@ -64,7 +65,7 @@ class Output(ABC):
 
 
 class SshOutput(Output):
-    def __init__(self, out: BufferedReader | None, err: BufferedReader | None):
+    def __init__(self, out: IO[bytes] | None, err: IO[bytes] | None):
         self.__out = out
         self.__err = err
         super().__init__()

@@ -13,26 +13,50 @@ from benchkit.shell.commandAST.visitor import getString
 from benchkit.shell.CommunicationLayer.comunication_handle import Output, SshOutput
 from benchkit.shell.CommunicationLayer.hook import OutputBuffer, ReaderHook, VoidOutput
 
+def convert_command_to_ast(command:str | List[str] | CommandNode) -> CommandNode:
+    if isinstance(command, str):
+        command_tree = makecommand.command(command)
+    elif isinstance(command, list):
+        command_tree = makecommand.command(shlex.join(command))
+    elif isinstance(command, CommandNode):
+        command_tree = command
+    else:
+        raise TypeError(
+            f"Shell out was called with a command of type {type(command)},"
+            "this is unexpected and not suported"
+        )
+    return command_tree
+
+def try_conventing_bystring_to_readable_characters(bytestring: bytes) -> str | bytes:
+    try:
+        return bytestring.decode("utf-8")
+    except UnicodeDecodeError:
+        return bytestring
+
+
 
 def shell_out_new(
     command: str | List[str] | CommandNode,
-    std_input: str | None = None,
-    redirect_stderr_to_stdout: bool = True,  # New feature
+    std_input: Optional[str] = None,
     current_dir: Optional[pathlib.Path | os.PathLike | str] = None,
-    environment: None | Dict[str, str] = None,
-    # shell: bool = False, Support REMOVED
-    print_command: bool = True,  # TEMPORARALY not suported
+    environment: Optional[Dict[str, str]] = None,
     print_output: bool = False,
+    timeout: Optional[int] = None,
+    output_is_log: bool = False,
+    ignore_ret_codes: Optional[Iterable[int]] | None = None,
+    success_value = 0, # New feature
+    redirect_stderr_to_stdout: bool = True,  # New feature
+    run_in_background=False, # New feature
+
+    # Some of the visual printing concepts do not make much sence at the moment so they are not supported.
+    # Will probably swap over to a file based logging system for these larger amounts of additionaly information
+
     print_env: bool = True,  # TEMPORARALY not suported
     print_curdir: bool = True,  # TEMPORARALY not suported
     print_shell_cmd: bool = False,  # TEMPORARALY not suported
     print_file_shell_cmd: bool = True,  # TEMPORARALY not suported
-    timeout: Optional[int] = None,
-    output_is_log: bool = False,
-    ignore_ret_codes: Iterable[int] = (),
-    run_in_background=False,
-    # split_arguments: bool = True, Support REMOVED -> can be achieved in another manner
-) -> str:
+    print_command: bool = True,  # TEMPORARALY not suported
+) -> bytes:
     """
     Run a shell command on the host system.
 
@@ -97,59 +121,37 @@ def shell_out_new(
     Returns:
         str: the output of the shell command that completed successfully.
     """
-
-    # this will run the true command confirming the exit code instead of assuming it
-    completedProcess = subprocess.run(["true"], timeout=None)
-    sucsess_value = completedProcess.returncode
-
-    def sucsess(value):
-        return value == sucsess_value
+    if ignore_ret_codes is None:
+        ignore_ret_codes = (success_value,)
 
     # Convert the existing structures over to the tree structure
-    commandTree: CommandNode
-    if isinstance(command, str):
-        commandTree = makecommand.command(command)
-    elif isinstance(command, list):
-        commandTree = makecommand.command(shlex.join(command))
-    elif isinstance(command, CommandNode):
-        commandTree = command
-    else:
-        raise TypeError(
-            f"Shell out was called with a command of type {type(command)},"
-            "this is unexpected and not suported"
-        )
+    command_tree: CommandNode = convert_command_to_ast(command=command)
 
     # Use the visitor patterns to convert our tree to an executable string
-    stringCommand = getString(commandTree)
-
-    def try_conventing_bystring_to_readable_characters(bytestring: bytes) -> str | bytes:
-        try:
-            return bytestring.decode("utf-8")
-        except Exception:
-            return bytestring
+    command_string = getString(command_tree)
 
     if redirect_stderr_to_stdout:
         stderr_out = subprocess.STDOUT
     else:
         stderr_out = subprocess.PIPE
 
-    def logger_hook_out(input: Output):
-        a = input.readOut_line()
+    def logger_hook_out(input_object: Output):
+        a = input_object.readOut_line()
         while a:
             print(
-                f"\33[34m[OUT | {stringCommand}] \
-                    {try_conventing_bystring_to_readable_characters(a)}\033[0m"
+                f"\33[34m[OUT | {command_string}] \
+                    {try_conventing_bystring_to_readable_characters(a)!r}\033[0m"
             )
-            a = input.readOut_line()
+            a = input_object.readOut_line()
 
-    def logger_hook_err(input: Output):
-        a = input.readErr_line()
+    def logger_hook_err(input_object: Output):
+        a = input_object.readErr_line()
         while a:
             print(
-                f"\033[91m[ERR | {stringCommand}] \
-                    {try_conventing_bystring_to_readable_characters(a)}\033[0m"
+                f"\033[91m[ERR | {command_string}] \
+                    {try_conventing_bystring_to_readable_characters(a)!r}\033[0m"
             )
-            a = input.readErr_line()
+            a = input_object.readErr_line()
 
     log_std_out_hook = ReaderHook(logger_hook_out, voidStdErr=True)
     log_std_err_hook = ReaderHook(logger_hook_err, voidStdOut=True)
@@ -159,8 +161,8 @@ def shell_out_new(
         # we want to be able to use shell=True
         # however this would make the shell the pid of the subprocess
         # by using exec we can get make the command take over the pid of the shell
-        # this only works for POSIX
-        f"exec {stringCommand}",
+        # this only works for POSIX (fixable for non posix by finding child)
+        f"exec {command_string}",
         shell=True,
         cwd=current_dir,
         env=environment,
@@ -168,7 +170,7 @@ def shell_out_new(
         stderr=stderr_out,
         stdin=subprocess.PIPE,
     )
-    print(shell_process.pid)
+
     try:
         if shell_process.stdin is not None and std_input is not None:
             shell_process.stdin.write(std_input.encode("utf-8"))
@@ -189,11 +191,11 @@ def shell_out_new(
                 VoidOutput(command_output)
                 # TODO: run_in_background makes it incompatible with timeout, this is fixable
                 # shell_process.wait(timeout=timeout)
-                return ""
+                return b''
             else:
                 buffer = OutputBuffer(command_output)
                 retcode = shell_process.wait(timeout=timeout)
-                output = try_conventing_bystring_to_readable_characters(buffer.get_result())
+                output = buffer.get_result()
 
         except subprocess.TimeoutExpired as err:
             # killing this will send eof to and end the hooks aswell
@@ -207,7 +209,7 @@ def shell_out_new(
 
         # not a sucsessfull execution and not an alowed exit code
         # raise the appropriate error
-        if not sucsess(retcode) and retcode not in ignore_ret_codes:
+        if retcode not in ignore_ret_codes:
             raise subprocess.CalledProcessError(
                 retcode,
                 shell_process.args,
@@ -218,9 +220,8 @@ def shell_out_new(
                 print("[OUT]")
                 print(output.strip())
 
-        # assert isinstance(output, str)
         return output
-    except Exception as e:
+    finally:
         # If something goes wrong we try to clean up after ourself
         # This can happen for example if we recieve a signal while waiting on an output
         try:
@@ -233,4 +234,3 @@ def shell_out_new(
             # Wait allows the Popen process to cleanly terminate
             ret = shell_process.wait(1)
             print(f"ret:{ret}")
-            raise e
