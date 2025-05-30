@@ -45,6 +45,7 @@ def shell_out_new(
     timeout: Optional[int] = None,
     output_is_log: bool = False,
     ignore_ret_codes: Optional[Iterable[int]] = None,
+    print_command_start: bool = True,  # Reworked feature
     success_value: int = 0,  # New feature
     redirect_stderr_to_stdout: bool = True,  # New feature
     run_in_background=False,  # New feature
@@ -55,7 +56,6 @@ def shell_out_new(
     print_curdir: bool = True,  # TEMPORARALY not suported
     print_shell_cmd: bool = False,  # TEMPORARALY not suported
     print_file_shell_cmd: bool = True,  # TEMPORARALY not suported
-    print_command: bool = True,  # TEMPORARALY not suported
 ) -> bytes:
     """
     Run a shell command on the host system.
@@ -169,6 +169,8 @@ def shell_out_new(
         stderr=stderr_out,
         stdin=subprocess.PIPE,
     )
+    if print_command_start:
+        print(f"\033[32m[START | {command_string}]\033[0m")
 
     try:
         if shell_process.stdin is not None and std_input is not None:
@@ -218,9 +220,8 @@ def shell_out_new(
             )
 
         if print_output and not output_is_log:
-            if "" != output.strip():
-                print("[OUT]")
-                print(output.strip())
+            print("[OUT]")
+            print(f"{try_converting_bystring_to_readable_characters(output)}")
 
         return output
     finally:

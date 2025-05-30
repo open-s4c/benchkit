@@ -159,6 +159,7 @@ def shell_out(
             print_output=print_output,
             timeout=timeout,
             output_is_log=output_is_log,
+            print_command_start=print_input,
             # If ignore_ret_codes is empty we swap it over to None instead
             ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
         )
