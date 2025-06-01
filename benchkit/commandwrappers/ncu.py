@@ -82,24 +82,21 @@ def _find_ncu_bin(search_path: Optional[PathType]) -> PathType:
 def _get_available_sets(
     ncu_bin: PathType
 ) -> List[NcuSet] :
-    return _get_available_options(ncu_bin, False, "--list-sets")
+    return _get_available_sets(ncu_bin, "--list-sets")
 
 def _get_available_sections(
     ncu_bin: PathType
 ) -> List[Section]:
-    return _get_available_options(ncu_bin, False, "--list-sections")
+    return _get_available_sections(ncu_bin, "--list-sections")
 
 def _get_available_metrics(
     ncu_bin: PathType,
 ) -> List[Metric]:
-    return _get_available_options(ncu_bin, True, "--query-metrics")
+    return _get_available_metrics(ncu_bin, "--query-metrics")
 
 
-def _get_available_options(
-        ncu_bin: PathType,
-        is_metrics: bool,
-        cmd_suffix: str,
-) -> List[str]:
+def _get_all_metrics(ncu_bin: PathType,
+                     cmd_suffix: str):
 
     raw_output = shell_out(
         command=f"{ncu_bin} {cmd_suffix}",
@@ -107,17 +104,61 @@ def _get_available_options(
         print_output=False,
     )
 
-    ids = []
-
     lines = raw_output.splitlines()
-    # skips the first 4 rows which are just useless metadata
-    useful_lines = lines[3:]
+    # first 4 rows and last 2 rows are junk
+    useful_lines = lines[4:-2]
+
+    names = []
     for line in useful_lines:
         sline = line.strip()
         vals = sline.split()
-        ids.append(vals[0+is_metrics].strip(',')) # metrics are stored in the 2nd column
+        metric_name = vals[0]
+        names.append(metric_name)
 
-    return ids
+    return names
+
+
+def _get_all_sets(ncu_bin: PathType,
+                  cmd_suffix: str):
+
+    raw_output = shell_out(
+        command=f"{ncu_bin} {cmd_suffix}",
+        print_input=False,
+        print_output=False,
+    )
+
+    lines = raw_output.splitlines()
+    useful_lines = lines[3:]
+    names = []
+    for line in useful_lines:
+        if (not line[0].isalnum()): continue
+        sline = line.strip()
+        vals = sline.split()
+        set_name = vals[0]
+        names.append(set_name)
+
+    return names
+
+
+def _get_all_sections(ncu_bin: PathType,
+                     cmd_suffix: str):
+
+    raw_output = shell_out(
+        command=f"{ncu_bin} {cmd_suffix}",
+        print_input=False,
+        print_output=False,
+    )
+
+    lines = raw_output.splitlines()
+    useful_lines = lines[3:]
+    names = []
+    for line in useful_lines:
+        sline = line.strip()
+        vals = sline.split()
+        section_name = vals[0]
+        names.append(section_name)
+
+    return names
 
 
 def _validate_metrics(
