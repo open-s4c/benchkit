@@ -169,10 +169,8 @@ class CyclictestBenchhmark(Benchmark):
         bins = min(maxLatency, self._buckets)
         binWidth = math.ceil(maxLatency / bins)
         df["bin"] = pandas.cut(df["latency"], bins=range(0, maxLatency + binWidth, binWidth))
-        df["avgAmount"] = df.groupby("bin", observed=False)["amount"].transform(
-            lambda df: df.sum() / 10
-        )
-        avgDf = df.groupby("bin", observed=False)["avgAmount"].mean().reset_index()
+        df["totAmount"] = df.groupby("bin", observed=False)["amount"].transform(lambda df: df.sum())
+        avgDf = df.groupby("bin", observed=False)["totAmount"].mean().reset_index()
         avgDf = avgDf.fillna(0, axis=1)
 
         # Plot the latencies for this run
@@ -181,7 +179,7 @@ class CyclictestBenchhmark(Benchmark):
         ax = seaborn.barplot(
             data=avgDf,
             x="bin",
-            y="avgAmount",
+            y="totAmount",
             fill=True,
         )
         ax.set_xlabel("Latency")
@@ -223,14 +221,17 @@ class CyclictestBenchhmark(Benchmark):
                 dfPercentile["latency"],
                 bins=range(0, self._maxLatencyPercentile + binWidthPercentile, binWidthPercentile),
             )
+            dfPercentile["totAmount"] = dfPercentile.groupby("bin", observed=False)[
+                "amount"
+            ].transform(lambda df: df.sum())
             df = (
-                df.groupby("bin", observed=False)["avgAmount"]
+                df.groupby("bin", observed=False)["totAmount"]
                 .mean()
                 .reset_index()
                 .fillna(0, axis=1)
             )
             dfPercentile = (
-                dfPercentile.groupby("bin", observed=False)["avgAmount"]
+                dfPercentile.groupby("bin", observed=False)["totAmount"]
                 .mean()
                 .reset_index()
                 .fillna(0, axis=1)
@@ -277,7 +278,7 @@ def main() -> None:
         xlabel="latency",
         x="bin",
         ylabel="Occurrences",
-        y="avgAmount",
+        y="totAmount",
         output_dir=data_dir,
         process_chart=process,
         errorbar="ci",
@@ -289,7 +290,7 @@ def main() -> None:
         xlabel="latency",
         x="bin",
         ylabel="Occurrences",
-        y="avgAmount",
+        y="totAmount",
         output_dir=data_dir,
         process_chart=process,
         errorbar="ci",
