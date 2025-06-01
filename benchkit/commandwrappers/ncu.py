@@ -102,7 +102,7 @@ class NcuWrap(CommandWrapper):
         exclude_process: Optional[str] = None,
         target_kernels: Optional[str] = None,
         launch_count: int = 1,
-        user_set: Optional[NcuSet] = "basic",
+        user_set: Optional[NcuSet] = None,
         sections: Optional[List[Section]] = None,
         remove_absent_sections: bool = True,
         metrics: Optional[List[Metric]] = None,
@@ -187,7 +187,8 @@ class NcuWrap(CommandWrapper):
             if self._target_kernels is not None:
                 options.extend(["--kernel-name",f"regex:{self._target_kernels}"])
 
-            options.extend(["--set",f"{self._set}"])
+            if self._set is not None:
+                options.extend(["--set",f"{self._set}"])
 
             if self._sections is not None:
                 for section in self._sections:
@@ -224,18 +225,36 @@ class NcuWrap(CommandWrapper):
         profile_context
     ) -> RecordResult:
 
-        output_dict = {}
+        # "https://pythonhow.com/how/check-if-a-string-is-a-float/"
+        # def is_float(word):
+        #     try:
+        #         float(word)
+        #         return True
+        #     except ValueError:
+        #         return False
+
+        metric_dict = {}
         for rnge_idx in range(len(profile_context)):
             rnge = profile_context[rnge_idx]
-            output_dict[f"ncu/range_{rnge_idx}"] = {}
             for action_idx in range(len(rnge)):
                 action = rnge[action_idx]
-                output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"] = {}
+                # output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"] = {}
                 for metric in (action):
-                    output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"][f"{metric}"] = action[metric].value()
-                    output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"][f"{metric}.unit"] = action[metric].unit()
+                    # handling of string parameters needs to be discussed - better to analyse ncu report file instead
+                    if type(action[metric].value() is str):
+                        continue
+                    if metric not in metric_dict:
+                        metric_dict[f"{rnge_idx}_{metric}"] = action[metric].value()
+                    else:
+                        metric_dict[f"{rnge_idx}_{metric}"] += action[metric].value()
 
-        return output_dict
+            num_actions = len(rnge)
+            for key in metric_dict:
+                sum = metric_dict[key]
+                mean = sum / num_actions
+                metric_dict[key] = mean
+
+        return metric_dict
 
 
     def post_run_hook_update_results(

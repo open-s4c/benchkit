@@ -16,10 +16,15 @@ from benchkit.sharedlibs import SharedLib
 from benchkit.utils.dir import get_curdir, parentdir
 from benchkit.platforms import get_current_platform
 
-ncu_wrapper = NcuWrap(set="full")
+ncu_wrapper = NcuWrap(metrics=["smsp__sass_l1tex_tags_mem_global"])
 
-MA_WIDTHS = [32,64,128,256,512]
-MA_HEIGHTS = [32,64,128,256,512]
+# MA_WIDTHS = [32,64,128,256,512]
+# MA_HEIGHTS = [32,64,128,256,512]
+# MB_HEIGHTS = [32,64,128,256,512]
+
+MA_WIDTHS = [32,64]
+MA_HEIGHTS = [32,64]
+MB_WIDTHS = [32,64]
 
 class MatrixMulBench(Benchmark):
     def __init__(
@@ -66,7 +71,7 @@ class MatrixMulBench(Benchmark):
         return [
             "ma_width",
             "ma_height",
-            "mb_height"
+            "mb_width"
         ]
 
     @staticmethod
@@ -93,7 +98,7 @@ class MatrixMulBench(Benchmark):
         self,
         ma_width: int,
         ma_height: int,
-        mb_height: int,
+        mb_width: int,
         **kwargs,
     ) -> str:
         current_dir = self._build_dir
@@ -103,8 +108,8 @@ class MatrixMulBench(Benchmark):
             "./matrixMul",
             f"-wA={ma_width}",
             f"-hA={ma_height}",
-            f"-wB={ma_height}",
-            f"-hB={mb_height}"
+            f"-wB={mb_width}",
+            f"-hB={ma_width}"
         ]
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
@@ -128,51 +133,47 @@ class MatrixMulBench(Benchmark):
     def _parse_results(
         ma_width: int,
         ma_height: int,
-        mb_height: int,
+        mb_width: int,
         output: str
     ) -> Dict[str, Any]:
         output_lines = output.splitlines()
         result_line = next(line for line in output_lines if line.startswith("Performance="))
-        words = result_line.split()[1:-1]
+        sections = result_line.split(',')
         names=[
             "ma_width",
             "ma_height",
             "mb_width",
-            "mb_height",
+            "ma_width",
             "GFlops/s",
             "Time ms",
             "Ops",
             "Workgroup Size"
         ]
-        values = [ma_width,ma_height,ma_height,mb_height]
+        values = [ma_width,ma_height,ma_height,mb_width]
 
-        try:
-            gflops_idx = words.index('GFlop/s,') - 1
-            values.append(words[gflops_idx])
-        except ValueError:
-            values.append(0)
-            print("GFlops/s could not be recorded...")
+        gflops = " "
+        ops = " "
+        time = " "
+        wgsize = " "
 
-        try:
-            time_idx = words.index('Time=') + 1
-            values.append(words[time_idx])
-        except ValueError:
-            values.append(0)
-            print("Time could not be recorded...")
+        for section in sections:
+            if "GFlop/s" in section:
+                words = section.split()
+                gflops = words[1]
+            if "Ops" in section:
+                words = section.split()
+                ops = words[1] 
+            if "Time" in section:
+                words = section.split()
+                time = words[1]
+            if "WorkgroupSize" in section:
+                words = section.split()
+                wgsize = words[1]
 
-        try:
-            ops_idx = words.index('Ops,') - 1
-            values.append(words[ops_idx])
-        except ValueError:
-            values.append(0)
-            print("Ops could not be recorded...")
-        
-        try:
-            workgroup_idx = words.index('WorkgroupSize=') + 1
-            values.append(words[workgroup_idx])
-        except ValueError:
-            values.append(0)
-            print("Workgroup size could not be recorded...")
+        values.append(gflops)
+        values.append(ops)
+        values.append(time)
+        values.append(wgsize)
 
         result_dict = dict(zip(names,values))
 
@@ -189,12 +190,12 @@ class MatrixMulBench(Benchmark):
 
         ma_width = int(run_variables["ma_width"])
         ma_height = int(run_variables["ma_height"])
-        mb_height = int(run_variables["mb_height"])
+        mb_width = int(run_variables["mb_width"])
 
         result_dict = self._parse_results(
             ma_width,
             ma_height,
-            mb_height,
+            mb_width,
             command_output)
 
         return result_dict
@@ -217,6 +218,7 @@ def main():
         variables={
             "ma_width": MA_WIDTHS,
             "ma_height": MA_HEIGHTS,
+            "mb_width": MB_WIDTHS
         },
         constants={},
         debug=False,
