@@ -124,20 +124,20 @@ class NcuWrap(CommandWrapper):
 
         self._set = set
         if self._set is not None:
-            _validate_set(
+            self._validate_set(
                 ncu_bin=self._ncu_bin,
                 set=self._set)
 
         self._metrics = metrics
         if self._metrics is not None:
-            _validate_metrics(
+            self._validate_metrics(
                 ncu_bin=self._ncu_bin,
                 metrics=metrics,
                 remove_absent_metric=remove_absent_metrics)
 
         self._sections = sections
         if self._sections is not None:
-            _validate_sections(
+            self._validate_sections(
                 ncu_bin=self._ncu_bin,
                 sections=self._sections,
                 remove_absent_section=remove_absent_sections)
@@ -311,7 +311,7 @@ class NcuWrap(CommandWrapper):
         return names
 
 
-    def get_available_options(
+    def _get_available_options(
             self,
             ncu_bin: PathType,
             cmd_suffix: str):
@@ -340,7 +340,7 @@ class NcuWrap(CommandWrapper):
                             )
 
 
-    def validate_options(
+    def _validate_options(
         self,
         ncu_bin: PathType,
         cmd_suffix: str,
@@ -370,14 +370,14 @@ class NcuWrap(CommandWrapper):
         return List(available_options)
 
 
-    def validate_metrics(
+    def _validate_metrics(
         self,
         ncu_bin: PathType,
         metrics: List[Metric],
         remove_absent_metric: bool
     ) -> List[Metric]:
 
-        self.validate_options(ncu_bin, metrics, True, remove_absent_metric)
+        self._validate_options(ncu_bin, metrics, True, remove_absent_metric)
 
     def _validate_sections(
         self,
@@ -386,7 +386,7 @@ class NcuWrap(CommandWrapper):
         remove_absent_section: bool
     ) -> List[Metric]:
 
-        self.validate_options(ncu_bin, sections, False, remove_absent_section)
+        self._validate_options(ncu_bin, sections, False, remove_absent_section)
 
     def _validate_set(
         self,
@@ -394,7 +394,7 @@ class NcuWrap(CommandWrapper):
         set: NcuSet
     ) -> NcuSet:
         
-        all_sets = self.get_available_sets(ncu_bin)
+        all_sets = self._get_all_sets(ncu_bin)
         if set not in all_sets:
             raise ValueError(
                 f"Specified set is not available: {set}"
