@@ -79,145 +79,6 @@ def _find_ncu_bin(search_path: Optional[PathType]) -> PathType:
     return result
 
 
-def _get_available_sets(
-    ncu_bin: PathType
-) -> List[NcuSet] :
-    return _get_available_sets(ncu_bin, "--list-sets")
-
-def _get_available_sections(
-    ncu_bin: PathType
-) -> List[Section]:
-    return _get_available_sections(ncu_bin, "--list-sections")
-
-def _get_available_metrics(
-    ncu_bin: PathType,
-) -> List[Metric]:
-    return _get_available_metrics(ncu_bin, "--query-metrics")
-
-
-def _get_all_metrics(ncu_bin: PathType,
-                     cmd_suffix: str):
-
-    raw_output = shell_out(
-        command=f"{ncu_bin} {cmd_suffix}",
-        print_input=False,
-        print_output=False,
-    )
-
-    lines = raw_output.splitlines()
-    # first 4 rows and last 2 rows are junk
-    useful_lines = lines[4:-2]
-
-    names = []
-    for line in useful_lines:
-        sline = line.strip()
-        vals = sline.split()
-        metric_name = vals[0]
-        names.append(metric_name)
-
-    return names
-
-
-def _get_all_sets(ncu_bin: PathType,
-                  cmd_suffix: str):
-
-    raw_output = shell_out(
-        command=f"{ncu_bin} {cmd_suffix}",
-        print_input=False,
-        print_output=False,
-    )
-
-    lines = raw_output.splitlines()
-    useful_lines = lines[3:]
-    names = []
-    for line in useful_lines:
-        if (not line[0].isalnum()): continue
-        sline = line.strip()
-        vals = sline.split()
-        set_name = vals[0]
-        names.append(set_name)
-
-    return names
-
-
-def _get_all_sections(ncu_bin: PathType,
-                     cmd_suffix: str):
-
-    raw_output = shell_out(
-        command=f"{ncu_bin} {cmd_suffix}",
-        print_input=False,
-        print_output=False,
-    )
-
-    lines = raw_output.splitlines()
-    useful_lines = lines[3:]
-    names = []
-    for line in useful_lines:
-        sline = line.strip()
-        vals = sline.split()
-        section_name = vals[0]
-        names.append(section_name)
-
-    return names
-
-
-def _validate_metrics(
-    ncu_bin: PathType,
-    metrics: List[Metric],
-    remove_absent_metric: bool
-) -> List[Metric]:
-
-    _validate_options(ncu_bin, metrics, True, remove_absent_metric)
-
-def _validate_sections(
-    ncu_bin: PathType,
-    sections: List[Section],
-    remove_absent_section: bool
-) -> List[Metric]:
-
-    _validate_options(ncu_bin, sections, False, remove_absent_section)
-
-def _validate_set(
-    ncu_bin: PathType,
-    set: NcuSet
-) -> NcuSet:
-    
-    all_sets = _get_available_sets(ncu_bin)
-    if set not in all_sets:
-        raise ValueError(
-            f"Specified set is not available: {set}"
-        )
-
-    return set
-
-
-def _validate_options(
-    ncu_bin: PathType,
-    options: List[str],
-    is_metric: bool,
-    remove_absent_options: bool
-) -> List[str]:
-    
-    all_options = []
-    if is_metric:
-        all_options = _get_available_metrics(ncu_bin)
-    else:
-        all_options = _get_available_sections(ncu_bin)
-        
-    set_all_options = set(all_options)
-    set_user_options = set(options)
-
-    not_available_options = set_user_options.difference(set_all_options)
-    available_options = set_user_options
-
-    if len(not_available_options) != 0:
-        if not remove_absent_options:
-            raise ValueError(
-                f"The following provided metrics are not available: {', '.join(not_available_options)}"
-            )
-        available_options = set_user_options.difference(not_available_options)
-
-    return List(available_options)
 
 
 """
@@ -280,6 +141,11 @@ class NcuWrap(CommandWrapper):
                 ncu_bin=self._ncu_bin,
                 sections=self._sections,
                 remove_absent_section=remove_absent_sections)
+
+        # for caching purposes
+        self.available_sets = []
+        self.available_sections = []
+        self.available_metrics = []
 
         super().__init__()
 
@@ -395,6 +261,148 @@ class NcuWrap(CommandWrapper):
         output_dict = self._process_ncu_context(profile_context)
 
         return output_dict
+
+
+    def _get_all_metrics(self, raw_output):
+
+        lines = raw_output.splitlines()
+        # first 4 rows and last 2 rows are junk
+        useful_lines = lines[4:-2]
+
+        names = []
+        for line in useful_lines:
+            sline = line.strip()
+            vals = sline.split()
+            metric_name = vals[0]
+            names.append(metric_name)
+
+        self.available_metrics = names
+        return names
+
+
+    def _get_all_sets(self, raw_output):
+
+        lines = raw_output.splitlines()
+        useful_lines = lines[3:]
+        names = []
+        for line in useful_lines:
+            if (not line[0].isalnum()): continue
+            sline = line.strip()
+            vals = sline.split()
+            set_name = vals[0]
+            names.append(set_name)
+
+        self.available_sets = names
+        return names
+
+
+    def _get_all_sections(self, raw_output):
+
+        lines = raw_output.splitlines()
+        useful_lines = lines[3:]
+        names = []
+        for line in useful_lines:
+            sline = line.strip()
+            vals = sline.split()
+            section_name = vals[0]
+            names.append(section_name)
+
+        self.available_sections = names
+        return names
+
+
+    def get_available_options(
+            self,
+            ncu_bin: PathType,
+            cmd_suffix: str):
+
+        raw_output = shell_out(
+            command=f"{ncu_bin} {cmd_suffix}",
+            print_input=False,
+            print_output=False,
+        )
+
+        if "metrics" in cmd_suffix:
+            if len(self.available_metrics) != 0:
+                return self.available_metrics
+            return self.get_all_metrics(raw_output)
+        elif "sets" in cmd_suffix:
+            if len(self.available_sets) != 0:
+                return self.available_sets
+            return self.get_all_sets(raw_output)
+        elif "sections" in cmd_suffix:
+            if len(self.available_sections) != 0:
+                return self.available_sections
+            return self.get_all_sections(raw_output)
+        else:
+            raise ValueError(
+                                f"The provided command line suffix is not supported: {cmd_suffix}"
+                            )
+
+
+    def validate_options(
+        self,
+        ncu_bin: PathType,
+        cmd_suffix: str,
+        options: List[str],
+        remove_absent_options: bool
+    ) -> List[str]:
+        
+        all_options = self.get_available_options(ncu_bin, cmd_suffix)
+            
+        set_all_options = set(all_options)
+        set_user_options = set(options)
+
+        not_available_options = set_user_options.difference(set_all_options)
+        available_options = set_user_options
+
+        if len(not_available_options) != 0:
+            if not remove_absent_options:
+                raise ValueError(
+                    f"The following provided metrics are not available: {', '.join(not_available_options)}"
+                )
+            available_options = set_user_options.difference(not_available_options)
+            if len(available_options) == 0:
+                raise ValueError(
+                    f"The options you provided simply do not exist... Options: {', '.join(options)}"
+                )
+
+        return List(available_options)
+
+
+    def validate_metrics(
+        self,
+        ncu_bin: PathType,
+        metrics: List[Metric],
+        remove_absent_metric: bool
+    ) -> List[Metric]:
+
+        self.validate_options(ncu_bin, metrics, True, remove_absent_metric)
+
+    def _validate_sections(
+        self,
+        ncu_bin: PathType,
+        sections: List[Section],
+        remove_absent_section: bool
+    ) -> List[Metric]:
+
+        self.validate_options(ncu_bin, sections, False, remove_absent_section)
+
+    def _validate_set(
+        self,
+        ncu_bin: PathType,
+        set: NcuSet
+    ) -> NcuSet:
+        
+        all_sets = self.get_available_sets(ncu_bin)
+        if set not in all_sets:
+            raise ValueError(
+                f"Specified set is not available: {set}"
+            )
+
+        return set
+
+
 
 
     #https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#post-installation-actions
