@@ -102,7 +102,7 @@ class NcuWrap(CommandWrapper):
         exclude_process: Optional[str] = None,
         target_kernels: Optional[str] = None,
         launch_count: int = 1,
-        set: Optional[NcuSet] = "basic",
+        user_set: Optional[NcuSet] = "basic",
         sections: Optional[List[Section]] = None,
         remove_absent_sections: bool = True,
         metrics: Optional[List[Metric]] = None,
@@ -122,11 +122,11 @@ class NcuWrap(CommandWrapper):
 
         self._ncu_bin = _find_ncu_bin(ncu_path)
 
-        self._set = set
+        self._set = user_set
         if self._set is not None:
             self._validate_set(
                 ncu_bin=self._ncu_bin,
-                set=self._set)
+                user_set=self._set)
 
         self._metrics = metrics
         if self._metrics is not None:
@@ -141,11 +141,6 @@ class NcuWrap(CommandWrapper):
                 ncu_bin=self._ncu_bin,
                 sections=self._sections,
                 remove_absent_section=remove_absent_sections)
-
-        # for caching purposes
-        self.available_sets = []
-        self.available_sections = []
-        self.available_metrics = []
 
         super().__init__()
 
@@ -276,7 +271,6 @@ class NcuWrap(CommandWrapper):
             metric_name = vals[0]
             names.append(metric_name)
 
-        self.available_metrics = names
         return names
 
 
@@ -292,7 +286,6 @@ class NcuWrap(CommandWrapper):
             set_name = vals[0]
             names.append(set_name)
 
-        self.available_sets = names
         return names
 
 
@@ -307,7 +300,6 @@ class NcuWrap(CommandWrapper):
             section_name = vals[0]
             names.append(section_name)
 
-        self.available_sections = names
         return names
 
 
@@ -323,17 +315,11 @@ class NcuWrap(CommandWrapper):
         )
 
         if "metrics" in cmd_suffix:
-            if len(self.available_metrics) != 0:
-                return self.available_metrics
-            return self.get_all_metrics(raw_output)
+            return self._get_all_metrics(raw_output)
         elif "sets" in cmd_suffix:
-            if len(self.available_sets) != 0:
-                return self.available_sets
-            return self.get_all_sets(raw_output)
+            return self._get_all_sets(raw_output)
         elif "sections" in cmd_suffix:
-            if len(self.available_sections) != 0:
-                return self.available_sections
-            return self.get_all_sections(raw_output)
+            return self._get_all_sections(raw_output)
         else:
             raise ValueError(
                                 f"The provided command line suffix is not supported: {cmd_suffix}"
@@ -348,7 +334,7 @@ class NcuWrap(CommandWrapper):
         remove_absent_options: bool
     ) -> List[str]:
         
-        all_options = self.get_available_options(ncu_bin, cmd_suffix)
+        all_options = self._get_available_options(ncu_bin, cmd_suffix)
             
         set_all_options = set(all_options)
         set_user_options = set(options)
@@ -367,7 +353,7 @@ class NcuWrap(CommandWrapper):
                     f"The options you provided simply do not exist... Options: {', '.join(options)}"
                 )
 
-        return List(available_options)
+        return list(available_options)
 
 
     def _validate_metrics(
@@ -377,7 +363,7 @@ class NcuWrap(CommandWrapper):
         remove_absent_metric: bool
     ) -> List[Metric]:
 
-        self._validate_options(ncu_bin, metrics, True, remove_absent_metric)
+        self._validate_options(ncu_bin, "--query-metrics", metrics, remove_absent_metric)
 
     def _validate_sections(
         self,
@@ -386,21 +372,15 @@ class NcuWrap(CommandWrapper):
         remove_absent_section: bool
     ) -> List[Metric]:
 
-        self._validate_options(ncu_bin, sections, False, remove_absent_section)
+        self._validate_options(ncu_bin, "--list-sections", sections, remove_absent_section)
 
     def _validate_set(
         self,
         ncu_bin: PathType,
-        set: NcuSet
+        user_set: NcuSet
     ) -> NcuSet:
         
-        all_sets = self._get_all_sets(ncu_bin)
-        if set not in all_sets:
-            raise ValueError(
-                f"Specified set is not available: {set}"
-            )
-
-        return set
+        all_sets = self._validate_options(ncu_bin, "--list-sets", [user_set], False)
 
 
 
