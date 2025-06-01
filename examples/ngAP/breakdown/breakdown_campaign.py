@@ -234,47 +234,112 @@ class BreakdownBench(Benchmark):
     def clean_bench(self) -> None:
         pass
 
+    """
+    ngap -a ${NGAP_ROOT}/small_dataset/apple.anml                                         \
+    -i ${NGAP_ROOT}/small_dataset/inputstream.txt                                       \
+    --app-name=apple --algorithm=nonblockingallgroups --input-start-pos=0               \
+    --input-len=81 --split-entire-inputstream-to-chunk-size=81  --group-num=1           \
+    --duplicate-input-stream=1 --unique=false --unique-frequency=10 --use-soa=false     \
+    --result-capacity=54619400 --use-uvm=false --data-buffer-fetch-size=25600000        \
+    --add-aan-start=256 --add-aas-interval=32 --active-threshold=10                     \
+    --precompute-cutoff=-1 --precompute-depth=3 --compress-prec-table=true              \
+    --report-off=false --validation=true
+    """
+
     def single_run(  # pylint: disable=arguments-differ
+        excluded_apps,
+        app,
+        algorithm,
+        output_name,
+        input_start_pos,
+        input_len,
+        split_to_chunk_size,
+        group_num,
+        duplicate_input_stream,
+        unique,
+        unique_frequency,
+        use_soa,
+        result_capacity,
+        use_uvm,
+        data_buffer_fetch_size,
+        add_aan_start,
+        add_aas_interval,
+        active_threshold,
+        precompute_cutoff,
+        precompute_depth,
+        compress_prec_table,
+        pc_use_uvm,
+        report_off,
+        remove_degree,
+        quit_degree,
+        max_nfa_size,
         self,
-        benchmark_duration_seconds: int,
-        lock: str = "",
-        nb_threads: int = 2,
-        cpu_order: CpuOrder = None,
-        use_lse: bool = False,
-        atomics: Optional[str] = None,
-        bench_name: str = "readrandom",
-        master_thread_core: Optional[int] = None,
-        num: int = 1000000,
-        freshdb_foreach_run: bool = False,
         **kwargs,
     ) -> str:
-        if freshdb_foreach_run:
-            db_init_command = [
-                "./db_bench",
-                "--threads=1",
-                "--benchmarks=fillseq",
-                f"--db={self._tmpdb_dir}",
-            ]
-            self.platform.comm.shell(
-                command=db_init_command,
-                current_dir=self._build_dir,
-                print_output=False,
-            )
+
+        command = [
+            "ngap",
+            "-a",
+            f"{self.anml_file}",
+            "-i",
+            f"{self.input_file}"]
+
+        if app is not None: command.extend([f"--app-name={app}"])
+        if algorithm is not None: command.extend([f"--algorithm={algorithm}"])
+        if input_start_pos is not None: command.extend([f"--input-start-pos={input_start_pos}"])
+        if input_len is not None: command.extend([f"--input-len={input_len}"])
+        if split_to_chunk_size is not None: command.extend([f"--split-entire-inputstream-to-chunk-size={split_to_chunk_size}"])
+        if group_num is not None: command.extend([f"--input-len={input_len}"])
+        if duplicate_input_stream is not None: command.extend([f"--input-len={input_len}"])
+        if unique is not None: command.extend([f"--unique={unique}"])
+        if unique_frequency is not None: command.extend([f"--unique-frequency={unique_frequency}"])
+        if use_soa is not None: command.extend([f"--use_soa={use_soa}"])
+        if result_capacity is not None: command.extend([f"--result_capacity={result_capacity}"])
+        if use_uvm is not None: command.extend([f"--use_uvm={use_uvm}"])
+        if data_buffer_fetch_size: command.extend([f"--data_buffer_fetch_size={data_buffer_fetch_size}"]) 
+        if add_aan_start: command.extend([f"--add_aan_start={add_aan_start}"]) 
+        if add_aas_interval: command.extend([f"--add_aas_interval={add_aas_interval}"]) 
+        if active_threshold: command.extend([f"--active_threshold={active_threshold}"]) 
+        if precompute_cutoff: command.extend([f"--precompute_cutoff={precompute_cutoff}"]) 
+        if precompute_depth: command.extend([f"--precompute_depth={precompute_depth}"]) 
+        if compress_prec_table: command.extend([f"--compress_prec_table={compress_prec_table}"]) 
+        if pc_use_uvm: command.extend([f"--pc_use_uvm={pc_use_uvm}"]) 
+        if report_off: command.extend([f"--report_off={report_off}"]) 
+        if remove_degree: command.extend([f"--remove_degree={remove_degree}"]) 
+        if quit_degree: command.extend([f"--quit_degree={quit_degree}"]) 
+        if max_nfa_size: command.extend([f"--max_nfa_size={max_nfa_size}"]) 
 
         environment = self._preload_env(
-            lock=lock,
-            use_lse=use_lse,
-            atomics=atomics,
-            cpu_order=cpu_order,
-            master_thread_core=master_thread_core,
-            **kwargs,
+            excluded_apps = excluded_apps,                    
+            app = app,
+            algorithm = algorithm,
+            output_name = output_name,
+            input_start_pos = input_start_pos,                  
+            input_len = input_len,
+            split_to_chunk_size = split_to_chunk_size,
+            group_num = group_num,
+            duplicate_input_stream = duplicate_input_stream,
+            unique = unique,
+            unique_frequency = unique_frequency,
+            use_soa = use_soa,
+            result_capacity = result_capacity,
+            use_uvm = use_uvm,
+            data_buffer_fetch_size = data_buffer_fetch_size,
+            add_aan_start = add_aan_start,
+            add_aas_interval = add_aas_interval,
+            active_threshold = active_threshold,
+            precompute_cutoff = precompute_cutoff,
+            precompute_depth = precompute_depth,
+            compress_prec_table = compress_prec_table,
+            pc_use_uvm = pc_use_uvm,
+            report_off = report_off,
+            remove_degree = remove_degree,
+            quit_degree = quit_degree,                      
+            max_nfa_size = max_nfa_size,     
+            kwargs**,
         )
 
-        """
-        Notice that, distinct from other LevelDb benchmarks using the `num` parameter,
-        `readreverse` and `readsequential` benchmarks have a very short duration.
-        As such, consider increasing the size of `num` for those.
-        """
+
         if bench_name in ["readrandom", "readmissing", "readhot", "seekrandom"]:
             duration_num = f"--duration={benchmark_duration_seconds}"
         else:
