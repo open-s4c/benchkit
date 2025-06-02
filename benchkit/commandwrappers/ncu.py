@@ -79,104 +79,6 @@ def _find_ncu_bin(search_path: Optional[PathType]) -> PathType:
     return result
 
 
-def _get_available_sets(
-    ncu_bin: PathType
-) -> List[NcuSet] :
-    return _get_available_options(ncu_bin, False, "--list-sets")
-
-def _get_available_sections(
-    ncu_bin: PathType
-) -> List[Section]:
-    return _get_available_options(ncu_bin, False, "--list-sections")
-
-def _get_available_metrics(
-    ncu_bin: PathType,
-) -> List[Metric]:
-    return _get_available_options(ncu_bin, True, "--query-metrics")
-
-
-def _get_available_options(
-        ncu_bin: PathType,
-        is_metrics: bool,
-        cmd_suffix: str,
-) -> List[str]:
-
-    raw_output = shell_out(
-        command=f"{ncu_bin} {cmd_suffix}",
-        print_input=False,
-        print_output=False,
-    )
-
-    ids = []
-
-    lines = raw_output.splitlines()
-    # skips the first 4 rows which are just useless metadata
-    useful_lines = lines[3:]
-    for line in useful_lines:
-        sline = line.strip()
-        vals = sline.split()
-        ids.append(vals[0+is_metrics].strip(',')) # metrics are stored in the 2nd column
-
-    return ids
-
-
-def _validate_metrics(
-    ncu_bin: PathType,
-    metrics: List[Metric],
-    remove_absent_metric: bool
-) -> List[Metric]:
-
-    _validate_options(ncu_bin, metrics, True, remove_absent_metric)
-
-def _validate_sections(
-    ncu_bin: PathType,
-    sections: List[Section],
-    remove_absent_section: bool
-) -> List[Metric]:
-
-    _validate_options(ncu_bin, sections, False, remove_absent_section)
-
-def _validate_set(
-    ncu_bin: PathType,
-    set: NcuSet
-) -> NcuSet:
-    
-    all_sets = _get_available_sets(ncu_bin)
-    if set not in all_sets:
-        raise ValueError(
-            f"Specified set is not available: {set}"
-        )
-
-    return set
-
-
-def _validate_options(
-    ncu_bin: PathType,
-    options: List[str],
-    is_metric: bool,
-    remove_absent_options: bool
-) -> List[str]:
-    
-    all_options = []
-    if is_metric:
-        all_options = _get_available_metrics(ncu_bin)
-    else:
-        all_options = _get_available_sections(ncu_bin)
-        
-    set_all_options = set(all_options)
-    set_user_options = set(options)
-
-    not_available_options = set_user_options.difference(set_all_options)
-    available_options = set_user_options
-
-    if len(not_available_options) != 0:
-        if not remove_absent_options:
-            raise ValueError(
-                f"The following provided metrics are not available: {', '.join(not_available_options)}"
-            )
-        available_options = set_user_options.difference(not_available_options)
-
-    return List(available_options)
 
 
 """
@@ -200,7 +102,7 @@ class NcuWrap(CommandWrapper):
         exclude_process: Optional[str] = None,
         target_kernels: Optional[str] = None,
         launch_count: int = 1,
-        set: Optional[NcuSet] = "basic",
+        user_set: Optional[NcuSet] = None,
         sections: Optional[List[Section]] = None,
         remove_absent_sections: bool = True,
         metrics: Optional[List[Metric]] = None,
@@ -220,22 +122,22 @@ class NcuWrap(CommandWrapper):
 
         self._ncu_bin = _find_ncu_bin(ncu_path)
 
-        self._set = set
+        self._set = user_set
         if self._set is not None:
-            _validate_set(
+            self._validate_set(
                 ncu_bin=self._ncu_bin,
-                set=self._set)
+                user_set=self._set)
 
         self._metrics = metrics
         if self._metrics is not None:
-            _validate_metrics(
+            self._validate_metrics(
                 ncu_bin=self._ncu_bin,
                 metrics=metrics,
                 remove_absent_metric=remove_absent_metrics)
 
         self._sections = sections
         if self._sections is not None:
-            _validate_sections(
+            self._validate_sections(
                 ncu_bin=self._ncu_bin,
                 sections=self._sections,
                 remove_absent_section=remove_absent_sections)
@@ -285,7 +187,8 @@ class NcuWrap(CommandWrapper):
             if self._target_kernels is not None:
                 options.extend(["--kernel-name",f"regex:{self._target_kernels}"])
 
-            options.extend(["--set",f"{self._set}"])
+            if self._set is not None:
+                options.extend(["--set",f"{self._set}"])
 
             if self._sections is not None:
                 for section in self._sections:
@@ -322,18 +225,36 @@ class NcuWrap(CommandWrapper):
         profile_context
     ) -> RecordResult:
 
-        output_dict = {}
+        # "https://pythonhow.com/how/check-if-a-string-is-a-float/"
+        # def is_float(word):
+        #     try:
+        #         float(word)
+        #         return True
+        #     except ValueError:
+        #         return False
+
+        metric_dict = {}
         for rnge_idx in range(len(profile_context)):
             rnge = profile_context[rnge_idx]
-            output_dict[f"ncu/range_{rnge_idx}"] = {}
             for action_idx in range(len(rnge)):
                 action = rnge[action_idx]
-                output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"] = {}
+                # output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"] = {}
                 for metric in (action):
-                    output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"][f"{metric}"] = action[metric].value()
-                    output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"][f"{metric}.unit"] = action[metric].unit()
+                    # handling of string parameters needs to be discussed - better to analyse ncu report file instead
+                    if type(action[metric].value()) is str:
+                        continue
+                    if metric not in metric_dict:
+                        metric_dict[f"{rnge_idx}_{metric}"] = action[metric].value()
+                    else:
+                        metric_dict[f"{rnge_idx}_{metric}"] += action[metric].value()
 
-        return output_dict
+            num_actions = len(rnge)
+            for key in metric_dict:
+                sum = metric_dict[key]
+                mean = sum / num_actions
+                metric_dict[key] = mean
+
+        return metric_dict
 
 
     def post_run_hook_update_results(
@@ -354,6 +275,133 @@ class NcuWrap(CommandWrapper):
         output_dict = self._process_ncu_context(profile_context)
 
         return output_dict
+
+
+    def _get_all_metrics(self, raw_output):
+
+        lines = raw_output.splitlines()
+        # first 4 rows and last 2 rows are junk
+        useful_lines = lines[4:-2]
+
+        names = []
+        for line in useful_lines:
+            sline = line.strip()
+            vals = sline.split()
+            metric_name = vals[0]
+            names.append(metric_name)
+
+        return names
+
+
+    def _get_all_sets(self, raw_output):
+
+        lines = raw_output.splitlines()
+        useful_lines = lines[3:]
+        names = []
+        for line in useful_lines:
+            if (not line[0].isalnum()): continue
+            sline = line.strip()
+            vals = sline.split()
+            set_name = vals[0]
+            names.append(set_name)
+
+        return names
+
+
+    def _get_all_sections(self, raw_output):
+
+        lines = raw_output.splitlines()
+        useful_lines = lines[3:]
+        names = []
+        for line in useful_lines:
+            sline = line.strip()
+            vals = sline.split()
+            section_name = vals[0]
+            names.append(section_name)
+
+        return names
+
+
+    def _get_available_options(
+            self,
+            ncu_bin: PathType,
+            cmd_suffix: str):
+
+        raw_output = shell_out(
+            command=f"{ncu_bin} {cmd_suffix}",
+            print_input=False,
+            print_output=False,
+        )
+
+        if "metrics" in cmd_suffix:
+            return self._get_all_metrics(raw_output)
+        elif "sets" in cmd_suffix:
+            return self._get_all_sets(raw_output)
+        elif "sections" in cmd_suffix:
+            return self._get_all_sections(raw_output)
+        else:
+            raise ValueError(
+                                f"The provided command line suffix is not supported: {cmd_suffix}"
+                            )
+
+
+    def _validate_options(
+        self,
+        ncu_bin: PathType,
+        cmd_suffix: str,
+        options: List[str],
+        remove_absent_options: bool
+    ) -> List[str]:
+        
+        all_options = self._get_available_options(ncu_bin, cmd_suffix)
+            
+        set_all_options = set(all_options)
+        set_user_options = set(options)
+
+        not_available_options = set_user_options.difference(set_all_options)
+        available_options = set_user_options
+
+        if len(not_available_options) != 0:
+            if not remove_absent_options:
+                raise ValueError(
+                    f"The following provided metrics are not available: {', '.join(not_available_options)}"
+                )
+            available_options = set_user_options.difference(not_available_options)
+            if len(available_options) == 0:
+                raise ValueError(
+                    f"The options you provided simply do not exist... Options: {', '.join(options)}"
+                )
+
+        return list(available_options)
+
+
+    def _validate_metrics(
+        self,
+        ncu_bin: PathType,
+        metrics: List[Metric],
+        remove_absent_metric: bool
+    ) -> List[Metric]:
+
+        self._validate_options(ncu_bin, "--query-metrics", metrics, remove_absent_metric)
+
+    def _validate_sections(
+        self,
+        ncu_bin: PathType,
+        sections: List[Section],
+        remove_absent_section: bool
+    ) -> List[Metric]:
+
+        self._validate_options(ncu_bin, "--list-sections", sections, remove_absent_section)
+
+    def _validate_set(
+        self,
+        ncu_bin: PathType,
+        user_set: NcuSet
+    ) -> NcuSet:
+        
+        all_sets = self._validate_options(ncu_bin, "--list-sets", [user_set], False)
+
+
 
 
     #https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#post-installation-actions
