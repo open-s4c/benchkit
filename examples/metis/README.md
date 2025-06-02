@@ -62,7 +62,6 @@ The following benchmarks require extra data files:
 
 - `hist`
 - `linear_regression`
-	-
 	- sometimes fails with "Segmentation fault" (mistake in the Metis benchmark code)
 - `string_match`
 - `wc`
@@ -90,3 +89,12 @@ In the following we assume you are in the `metis` directory.
 ```bash
 ./campaign_metis.py
 ```
+
+## TODO
+
+- [ ] Fix `linear_regression` benchmark
+- [ ] Additional benchkit support for
+  - [ ] Different memory allocators
+  - [ ] different map datastructures
+  - [ ] different sorting algorithms
+  - [ ] different modes

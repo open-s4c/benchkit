@@ -123,13 +123,6 @@ def campaign_wrmem() -> CampaignIterateVariables:
 		gdb=False,
 		enable_data_dir=False,
 		benchmark_duration_seconds=DURATION_SECONDS,
-		# pretty={
-		#     "lock": {
-		#         "cas": "CAS spinlock",
-		#         "ttas": "TTAS lock",
-		#         "ticket": "Ticketlock",
-		#     }
-		# },
 	)
 
 
@@ -367,15 +360,15 @@ def main() -> None:
     # kernel = shell_out("uname -r").strip()
 
     campaigns = [
-		# campaign_wrmem(),
-		# campaign_kmeans(),
-		# campaign_pca(),
-		# campaign_matmult(),
-		# campaign_hist(),
-		# campaign_linear_reg(),
-		# campaign_string_match(),
-		# campaign_wc(),
-		# campaign_wr(),
+		campaign_wrmem(),
+		campaign_kmeans(),
+		campaign_pca(),
+		campaign_matmult(),
+		campaign_hist(),
+		# campaign_linear_reg(), # TODO: fix linear regression benchmark; sometimes SEGFAULT
+		campaign_string_match(),
+		campaign_wc(),
+		campaign_wr(),
 	]
     suite = CampaignSuite(campaigns=campaigns)
     suite.print_durations()
