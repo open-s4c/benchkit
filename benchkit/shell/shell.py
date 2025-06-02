@@ -318,6 +318,19 @@ def shell_interactive(
             if the command exited with a non-zero exit code that is not ignored in
             `ignore_ret_codes`.
     """
+    if USE_NEW_SHELL:
+        shell_out_new(
+            convert_command_to_ast(command),
+            std_input=sys.stdin,
+            current_dir=current_dir,
+            environment=environment,
+            output_is_log=True,
+            print_command_start=print_input,
+            # If ignore_ret_codes is empty we swap it over to None instead
+            ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
+        )
+
+
     arguments = get_args(command)
     print_header(
         arguments=arguments,
