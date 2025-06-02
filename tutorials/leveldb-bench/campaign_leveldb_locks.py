@@ -119,6 +119,13 @@ def get_vcaslock_lse_prefetch_campaign(build_path: Path) -> CampaignCartesianPro
         shared_libs=[PrecompiledSharedLib(path=vcaslocklib_path, env_vars=None)],
     )
 
+def get_clhlock_campaign(build_path: Path) -> CampaignCartesianProduct:
+    clhlocklib_path = (build_path / "libclhlock.so").resolve()
+    return get_campaign(
+        mutex_constant="CLH lock",
+        shared_libs=[PrecompiledSharedLib(path=clhlocklib_path, env_vars=None)],
+    )
+
 def get_hemlock_campaign(build_path: Path) -> CampaignCartesianProduct:
     hemlocklib_path = (build_path / "libhemlock.so").resolve()
     return get_campaign(
@@ -166,6 +173,7 @@ def main() -> None:
         get_vcaslock_lse_campaign(build_path=build_ok),
         get_vcaslock_nolse_prefetch_campaign(build_path=build_regression),
         get_vcaslock_lse_prefetch_campaign(build_path=build_regression),
+        # get_clhlock_campaign(build_path=build_ok), # TODO: fix Tilt implementation
         get_hemlock_campaign(build_path=build_ok),
         get_mcslock_campaign(build_path=build_ok),
         get_reciplock_campaign(build_path=build_ok),

@@ -4,7 +4,6 @@
 
 ```bash
 cd examples/tilt/
-mkdir deps/
 cd deps/
 git clone https://github.com/open-s4c/libvsync.git
 git clone https://github.com/open-s4c/tilt.git
@@ -18,8 +17,13 @@ cd ../
 . ./venv/bin/activate
 ```
 
-## Run simple test campaign
+## Run campaign for Reciprocating lock benchmarks
 
 ```bash
 ./campaign_tilt.py
 ```
+
+## Todo
+
+- [ ] Fix implemenation of CLH lock
+- [ ] Fix implementation of the atomic benchmark

@@ -26,7 +26,7 @@ std::atomic<uint64_t> iterations_total{0};
 void* worker(void* arg) {
 	S local = {1, 2, 3, 4, 5};
 	uint64_t iterations_local = 0;
-	while (!atomic_load_explicit(&done, std::memory_order_relaxed)) {
+	while (!atomic_load_explicit(&done, std::memory_order_relaxed)) { // TODO: fix
 		pthread_mutex_lock(&lock);
 		// Critical section
 		atomic_exchange_explicit(&shared, local, std::memory_order_seq_cst); // exchange with global
@@ -51,7 +51,7 @@ int main() {
 
 	// Initialize shared atomic with zeros
 	S zeroes = {0, 0, 0, 0, 0};
-	shared.store(zeroes, std::memory_order_relaxed);
+	shared.store(zeroes, std::memory_order_relaxed); // TODO: fix
 	//atomic_store_explicit(&shared, {0, 0, 0, 0, 0}, std::memory_order_relaxed);
 
 	pthread_t threads[NB_THREADS];

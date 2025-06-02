@@ -21,7 +21,7 @@ vsync_dir = (tilt_locks_dir / "../deps/libvsync/").resolve()
 
 NB_RUNS = 7
 LOCKS = [
-	# "clhlock", # Does not work
+	# "clhlock", # TODO: fix Tilt implementation
 	"hemlock",
 	"mcslock",
 	"reciplock",
