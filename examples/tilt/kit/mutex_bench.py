@@ -19,6 +19,7 @@ from benchkit.utils.types import PathType
 from tiltlib import cmake_configure_build
 
 class MutexBench(Benchmark):
+	"""Benchmark object for the mutex benchmark as described in the reciprocating locks paper."""
 	def __init__(
 		self,
 		src_dir: PathType = "",

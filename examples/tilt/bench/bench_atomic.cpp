@@ -1,3 +1,6 @@
+// Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
+// SPDX-License-Identifier: MIT
+
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
@@ -7,9 +10,7 @@
 #include <iostream>
 #include <vector>
 #include <thread>
-
-#define THREAD_COUNT 8
-#define BENCH_DURATION_SEC 10
+#include <config.h> /* defines NB_THREADS, RUN_DURATION_SECONDS */
 
 #define IMPLICIT_INIT
 
@@ -19,7 +20,6 @@ struct S {
 	uint32_t a, b, c, d, e;
 };
 std::atomic<S> shared;
-
 std::atomic<bool> done{false};
 std::atomic<uint64_t> iterations_total{0};
 
@@ -50,21 +50,35 @@ int main() {
     #endif /* EXPLICIT_INIT */
 
 	// Initialize shared atomic with zeros
+	S zeroes = {0, 0, 0, 0, 0};
+	shared.store(zeroes, std::memory_order_relaxed);
 	//atomic_store_explicit(&shared, {0, 0, 0, 0, 0}, std::memory_order_relaxed);
 
-	pthread_t threads[THREAD_COUNT];
-	for (int i = 0; i < THREAD_COUNT; ++i)
+	pthread_t threads[NB_THREADS];
+	unsigned long thread_iterations[NB_THREADS];
+	for (int i = 0; i < NB_THREADS; ++i)
 		pthread_create(&threads[i], NULL, worker, NULL);
 
-	//sleep(BENCH_DURATION_SEC);
-	std::this_thread::sleep_for(std::chrono::seconds(BENCH_DURATION_SEC));
+	// Run for a fixed duration
+	std::this_thread::sleep_for(std::chrono::seconds(RUN_DURATION_SECONDS));
 	atomic_store_explicit(&done, 1, std::memory_order_relaxed);
 
+	for (int i = 0; i < NB_THREADS; ++i) {
+        void* return_value;
+		pthread_join(threads[i], &return_value);
+		thread_iterations[i] = (unsigned long) return_value;
+	}
 
-	for (int i = 0; i < THREAD_COUNT; ++i)
-		pthread_join(threads[i], NULL);
+	std::cout << "total_iterations=" << iterations_total.load();
+	std::cout << ";duration=" << RUN_DURATION_SECONDS;
+	std::cout << ";nb_threads=" << NB_THREADS;
 
-	std::cout << "Total iterations: " << iterations_total.load() << "\n";
+	// print per thread iterations
+	for (size_t k = 0u; k < NB_THREADS; ++k) {
+		std::cout << ";thread_" << k << "=" << thread_iterations[k];
+	}
+
+	std::cout << "\n";
     pthread_mutex_destroy(&lock);
 
     return 0;

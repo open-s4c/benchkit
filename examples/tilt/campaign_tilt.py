@@ -21,7 +21,7 @@ vsync_dir = (tilt_locks_dir / "../deps/libvsync/").resolve()
 
 NB_RUNS = 7
 LOCKS = [
-	# "clhlock",
+	# "clhlock", # Does not work
 	"hemlock",
 	"mcslock",
 	"reciplock_impl",
@@ -32,68 +32,29 @@ LOCKS = [
 BENCHMARK_DURATION_SECONDS = 10
 
 
-# def campaign_test(tilt_lib) -> CampaignCartesianProduct:	
-# 	benchmark_name = "mutex_test"
-# 	return CampaignCartesianProduct(
-# 		name=f"tilt_{benchmark_name}",
-# 		benchmark=TestBench(
-# 			src_dir=bench_src_dir,
-# 			shared_libs=[tilt_lib],
-# 		),
-# 		nb_runs=1,
-# 		variables={
-# 			"lock": LOCKS + ["taslock", "caslock", "vcaslock-nolse", "vcaslock-lse"],
-# 		},
-# 		constants={
-# 			"benchmark_duration_seconds": BENCHMARK_DURATION_SECONDS,
-# 			"benchmark_name": benchmark_name,
-# 		},
-# 		debug=False,
-# 		gdb=False,
-# 		enable_data_dir=True,
-# 		continuing=False,
-# 	)
+def get_campaign_test(tiltlib) -> CampaignCartesianProduct:
+	benchmark_name = "test_mutex"
+	return CampaignCartesianProduct(
+		name="tilt",
+		benchmark=TestBench(
+			src_dir=bench_src_dir,
+			shared_libs=[tiltlib],
+		),
+		nb_runs=1,
+		variables={
+			"lock": LOCKS + ["taslock", "caslock", "vcaslock-nolse", "vcaslock-lse"],
+		},
+		constants={
+			"benchmark_name": benchmark_name,
+		},
+		debug=False,
+		gdb=False,
+		enable_data_dir=True,
+		continuing=False,
+	)
 
-# def campaign_mutex_bench(tilt_lib) -> CampaignCartesianProduct:
-# 	benchmark_name = "mutex_bench"
-# 	CampaignCartesianProduct(
-# 		name=f"tilt_{benchmark_name}",
-# 		benchmark=MutexBench(
-# 			src_dir=bench_src_dir,
-# 			shared_libs=[tilt_lib],
-# 		),
-# 		nb_runs=1,
-# 		variables={
-# 			"lock": LOCKS,
-# 			# "nb_threads": THREADS,
-# 		},
-# 		constants={
-# 			"benchmark_name": benchmark_name,
-# 			"benchmark_duration_seconds": BENCHMARK_DURATION_SECONDS,
-# 		},
-# 		debug=False,
-# 		gdb=False,
-# 		enable_data_dir=True,
-# 		continuing=False,
-# 		benchmark_duration_seconds=BENCHMARK_DURATION_SECONDS,
-# 		pretty={
-# 			"lock": {
-# 				# "clhlock": "CLH lock",
-# 				"hemlock": "Hemlock",
-# 				"mcslock": "MCS lock",
-# 				"reciplock_impl": "Reciprocating lock",
-# 				"ticketlock": "Ticketlock",
-# 				"twalock": "TWA lock",
-# 			},
-# 		},
-# 	)
-
-def main() -> None:
-	tiltlib = TiltLib(tilt_locks_dir=tilt_locks_dir)
-	tiltlib.build()
-
-	benchmark_name = "mutex_bench"
-	campaign_mutex = CampaignCartesianProduct(
+def get_campaign_mutex(tiltlib, benchmark_name: str) -> CampaignCartesianProduct:
+	return CampaignCartesianProduct(
 		name="tilt",
 		benchmark=MutexBench(
 			src_dir=bench_src_dir,
@@ -125,31 +86,14 @@ def main() -> None:
 		},
 	)
 
-	benchmark_name = "mutex_test"
-	campaign_test =	CampaignCartesianProduct(
-		name="tilt",
-		benchmark=TestBench(
-			src_dir=bench_src_dir,
-			shared_libs=[tiltlib],
-		),
-		nb_runs=1,
-		variables={
-			"lock": LOCKS + ["taslock", "caslock", "vcaslock-nolse", "vcaslock-lse"],
-		},
-		constants={
-			"benchmark_name": benchmark_name,
-		},
-		debug=False,
-		gdb=False,
-		enable_data_dir=True,
-		continuing=False,
-	)
+def main() -> None:
+	tiltlib = TiltLib(tilt_locks_dir=tilt_locks_dir)
+	tiltlib.build()
 
 	campaigns = [
-		# campaign_test(tiltlib),
-		# campaign_mutex_bench(tiltlib),
-		# campaign_test,
-		campaign_mutex,
+		get_campaign_test(tiltlib),
+		get_campaign_mutex(tiltlib, "bench_mutex"), # High contention
+		get_campaign_mutex(tiltlib, "bench_mutex_moderate"), # Moderate contention
 	]
 
 	suite = CampaignSuite(campaigns=campaigns)
