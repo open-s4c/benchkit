@@ -1,4 +1,4 @@
-# Tutorial: Tilt
+# Tilt
 
 ## Clone libvsync and tilt repositories
 
@@ -17,10 +17,22 @@ cd ../
 . ./venv/bin/activate
 ```
 
-## Run campaign for Reciprocating lock benchmarks
+## Campaigns
+
+### Simple Mutex test
+
+Runs a simple campaign to run Tilt locks.
 
 ```bash
-./campaign_tilt.py
+./campaign_test.py
+```
+
+### Reciprocating lock benchmarks
+
+Runs a campaign that runs the benchmarks described in the Reciprocating Locks paper, using the Tilt.
+
+```bash
+./campaign_reciprocating_locks.py
 ```
 
 ## Todo
