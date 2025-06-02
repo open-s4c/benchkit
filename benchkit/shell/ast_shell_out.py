@@ -1,15 +1,14 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from multiprocessing import Queue
 import os
 import pathlib
 import shlex
 import subprocess
 from typing import Dict, Iterable, List, Optional
 
-from benchkit.shell.CommunicationLayer.IO_stream import IOStream
-from benchkit.shell.CommunicationLayer.hook import IOReaderHook, IOResultHook, IOWriterHook, OutputHook
+from benchkit.shell.CommunicationLayer.IO_stream import try_converting_bystring_to_readable_characters
+from benchkit.shell.CommunicationLayer.hooks.basic_hooks import logger_hook, std_out_result_void_err, void_hook
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
 from benchkit.shell.commandAST.visitor import getString
@@ -29,13 +28,6 @@ def convert_command_to_ast(command: str | List[str] | CommandNode) -> CommandNod
             "this is unexpected and not suported"
         )
     return command_tree
-
-
-def try_converting_bystring_to_readable_characters(bytestring: bytes) -> str | bytes:
-    try:
-        return bytestring.decode("utf-8")
-    except UnicodeDecodeError:
-        return bytestring
 
 
 def shell_out_new(
@@ -136,48 +128,6 @@ def shell_out_new(
     else:
         stderr_out = subprocess.PIPE
 
-    def create_voiding_result_hook() -> IOResultHook:
-        def hook_function(input_object:IOStream,_,result_queue:Queue):
-            # we do not write to the out stream thus this is "voiding"
-            outlines: bytes = b""
-            outline = input_object.read(10)
-            while outline:
-                outlines += outline
-                outline = input_object.read(10)
-            result_queue.put(outlines)
-        return IOResultHook(hook_function)
-
-
-    def create_stream_logger_hook(prefix:str) -> IOReaderHook:
-        def hook_function(input_object: IOStream):
-            a = input_object.read_line()
-            while a:
-                print(
-                    f"{prefix} {try_converting_bystring_to_readable_characters(a)!r}\033[0m"
-                )
-                a = input_object.read_line()
-        return IOReaderHook(hook_function)
-
-    logger_hook = OutputHook(
-        create_stream_logger_hook("\33[34m[OUT | {command_string}"),
-        create_stream_logger_hook("\033[91m[ERR | {command_string}]")
-    )
-
-    def void_input(input_object,_):
-        outline = input_object.read(10)
-        while outline:
-            outline = input_object.read(10)
-
-    output_hook_object = create_voiding_result_hook()
-
-    voiding_result_hook = OutputHook(
-        output_hook_object,
-        IOWriterHook(void_input))
-
-    voiding_hook = OutputHook(
-        IOWriterHook(void_input),
-        IOWriterHook(void_input))
-
     shell_process = subprocess.Popen(
         # why exec:
         # we want to be able to use shell=True
@@ -207,14 +157,15 @@ def shell_out_new(
 
 
         if output_is_log:
-            command_output = logger_hook.attatch(command_output)
+            command_output = logger_hook().attatch(command_output)
         try:
             if run_in_background:
-                voiding_hook.attatch(command_output)
+                void_hook().attatch(command_output)
                 # TODO: run_in_background makes it incompatible with timeout, this is fixable
                 # shell_process.wait(timeout=timeout)
                 return b""
             else:
+                output_hook_object, voiding_result_hook = std_out_result_void_err()
                 voiding_result_hook.attatch(command_output)
                 retcode = shell_process.wait(timeout=timeout)
                 output = output_hook_object.get_result()

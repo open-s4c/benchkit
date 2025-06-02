@@ -8,12 +8,12 @@ import subprocess
 import unittest
 from typing import Any
 
+from benchkit.shell.CommunicationLayer.IO_stream import try_converting_bystring_to_readable_characters
 from shell_scripts import TestTimeout, script_path_string, timeout
 
 from benchkit.shell.ast_shell_out import (
     convert_command_to_ast,
     shell_out_new,
-    try_converting_bystring_to_readable_characters,
 )
 
 # Due to print statements being inside of threads unittest does

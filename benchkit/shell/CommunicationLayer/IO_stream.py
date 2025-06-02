@@ -64,3 +64,9 @@ class WritableIOStream(IOStream):
 
     def _read_bytes(self, amount_of_bytes: int) -> bytes:
         return os.read(self.reader, amount_of_bytes)
+
+def try_converting_bystring_to_readable_characters(bytestring: bytes) -> str | bytes:
+    try:
+        return bytestring.decode("utf-8")
+    except UnicodeDecodeError:
+        return bytestring
