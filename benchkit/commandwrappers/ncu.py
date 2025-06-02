@@ -241,7 +241,7 @@ class NcuWrap(CommandWrapper):
                 # output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"] = {}
                 for metric in (action):
                     # handling of string parameters needs to be discussed - better to analyse ncu report file instead
-                    if type(action[metric].value() is str):
+                    if type(action[metric].value()) is str:
                         continue
                     if metric not in metric_dict:
                         metric_dict[f"{rnge_idx}_{metric}"] = action[metric].value()
