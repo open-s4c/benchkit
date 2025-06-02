@@ -24,7 +24,7 @@ LOCKS = [
 	# "clhlock", # Does not work
 	"hemlock",
 	"mcslock",
-	"reciplock_impl",
+	"reciplock",
 	"ticketlock",
 	"twalock",
 ]
@@ -63,7 +63,7 @@ def get_campaign_mutex(tiltlib, benchmark_name: str) -> CampaignCartesianProduct
 		nb_runs=NB_RUNS,
 		variables={
 			"lock": LOCKS,
-			"nb_threads": range(1, 5), # 1-4 threads
+			"nb_threads": range(1, 17), # 1-16 threads
 		},
 		constants={
 			"benchmark_name": benchmark_name,
@@ -79,7 +79,7 @@ def get_campaign_mutex(tiltlib, benchmark_name: str) -> CampaignCartesianProduct
 				# "clhlock": "CLH lock",
 				"hemlock": "Hemlock",
 				"mcslock": "MCS lock",
-				"reciplock_impl": "Reciprocating lock",
+				"reciplock": "Reciprocating lock",
 				"ticketlock": "Ticketlock",
 				"twalock": "TWA lock",
 			},

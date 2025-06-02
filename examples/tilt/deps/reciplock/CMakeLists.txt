@@ -3,11 +3,11 @@
 
 cmake_minimum_required(VERSION 3.10)
 project(
-    reciplock
+    reciplock_headers
     LANGUAGES C
     VERSION 2.1.0
 )
 
 include_directories(include)
-add_library(reciplock INTERFACE)
-target_include_directories(reciplock INTERFACE include)
+add_library(reciplock_headers INTERFACE)
+target_include_directories(reciplock_headers INTERFACE include)

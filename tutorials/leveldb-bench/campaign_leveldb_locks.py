@@ -134,7 +134,7 @@ def get_mcslock_campaign(build_path: Path) -> CampaignCartesianProduct:
     )
 
 def get_reciplock_campaign(build_path: Path) -> CampaignCartesianProduct:
-    reciplocklib_path = (build_path / "libreciplock_impl.so").resolve()
+    reciplocklib_path = (build_path / "libreciplock.so").resolve()
     return get_campaign(
         mutex_constant="Reciprocating lock",
         shared_libs=[PrecompiledSharedLib(path=reciplocklib_path, env_vars=None)],
