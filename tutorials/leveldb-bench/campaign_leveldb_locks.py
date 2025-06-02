@@ -119,6 +119,40 @@ def get_vcaslock_lse_prefetch_campaign(build_path: Path) -> CampaignCartesianPro
         shared_libs=[PrecompiledSharedLib(path=vcaslocklib_path, env_vars=None)],
     )
 
+def get_hemlock_campaign(build_path: Path) -> CampaignCartesianProduct:
+    hemlocklib_path = (build_path / "libhemlock.so").resolve()
+    return get_campaign(
+        mutex_constant="Hemlock",
+        shared_libs=[PrecompiledSharedLib(path=hemlocklib_path, env_vars=None)],
+    )
+
+def get_mcslock_campaign(build_path: Path) -> CampaignCartesianProduct:
+    mcslocklib_path = (build_path / "libmcslock.so").resolve()
+    return get_campaign(
+        mutex_constant="MCS lock",
+        shared_libs=[PrecompiledSharedLib(path=mcslocklib_path, env_vars=None)],
+    )
+
+def get_reciplock_campaign(build_path: Path) -> CampaignCartesianProduct:
+    reciplocklib_path = (build_path / "libreciplock_impl.so").resolve()
+    return get_campaign(
+        mutex_constant="Reciprocating lock",
+        shared_libs=[PrecompiledSharedLib(path=reciplocklib_path, env_vars=None)],
+    )
+
+def get_ticketlock_campaign(build_path: Path) -> CampaignCartesianProduct:
+    ticketlocklib_path = (build_path / "libticketlock.so").resolve()
+    return get_campaign(
+        mutex_constant="Ticketlock",
+        shared_libs=[PrecompiledSharedLib(path=ticketlocklib_path, env_vars=None)],
+    )
+
+def get_twalock_campaign(build_path: Path) -> CampaignCartesianProduct:
+    twalocklib_path = (build_path / "libtwalock.so").resolve()
+    return get_campaign(
+        mutex_constant="TWA lock",
+        shared_libs=[PrecompiledSharedLib(path=twalocklib_path, env_vars=None)],
+    )
 
 def main() -> None:
     platform = get_current_platform()
@@ -132,6 +166,11 @@ def main() -> None:
         get_vcaslock_lse_campaign(build_path=build_ok),
         get_vcaslock_nolse_prefetch_campaign(build_path=build_regression),
         get_vcaslock_lse_prefetch_campaign(build_path=build_regression),
+        get_hemlock_campaign(build_path=build_ok),
+        get_mcslock_campaign(build_path=build_ok),
+        get_reciplock_campaign(build_path=build_ok),
+        get_ticketlock_campaign(build_path=build_ok),
+        get_twalock_campaign(build_path=build_ok),
     ]
     suite = CampaignSuite(campaigns=campaigns)
     suite.print_durations()
