@@ -1,3 +1,6 @@
+// Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
+// SPDX-License-Identifier: MIT
+
 #include <vsync/spinlock/hemlock.h>
 #include <tilt.h>
 

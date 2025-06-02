@@ -1,6 +1,5 @@
-//
-// Created by niels on 30/05/2025.
-//
+// Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
+// SPDX-License-Identifier: MIT
 
 #ifndef RECIP_RECIPLOCK_H
 #define RECIP_RECIPLOCK_H

@@ -1,3 +1,6 @@
+// Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
+// SPDX-License-Identifier: MIT
+
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
@@ -9,9 +12,6 @@
 #include <thread>
 
 #include <config.h> /* defines NB_THREADS, RUN_DURATION_SECONDS and lock_* operations and types. */
-
-// #define RUN_DURATION_SECONDS 5
-// #define NB_THREADS 8
 
 #define IMPLICIT_INIT
 
