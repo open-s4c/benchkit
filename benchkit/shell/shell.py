@@ -8,10 +8,9 @@ import subprocess
 import sys
 from typing import Iterable, Optional
 
-from benchkit.shell.CommunicationLayer.IO_stream import try_converting_bystring_to_readable_characters
-from benchkit.shell.ast_shell_out import (
-    convert_command_to_ast,
-    shell_out_new,
+from benchkit.shell.ast_shell_out import convert_command_to_ast, shell_out_new
+from benchkit.shell.CommunicationLayer.IO_stream import (
+    try_converting_bystring_to_readable_characters,
 )
 from benchkit.shell.utils import get_args, print_header
 from benchkit.utils.types import Command, Environment, PathType

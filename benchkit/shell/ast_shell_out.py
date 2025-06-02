@@ -7,11 +7,17 @@ import shlex
 import subprocess
 from typing import Dict, Iterable, List, Optional
 
-from benchkit.shell.CommunicationLayer.IO_stream import try_converting_bystring_to_readable_characters
-from benchkit.shell.CommunicationLayer.hooks.basic_hooks import logger_hook, std_out_result_void_err, void_hook
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
 from benchkit.shell.commandAST.visitor import getString
+from benchkit.shell.CommunicationLayer.hooks.basic_hooks import (
+    logger_hook,
+    std_out_result_void_err,
+    void_hook,
+)
+from benchkit.shell.CommunicationLayer.IO_stream import (
+    try_converting_bystring_to_readable_characters,
+)
 from benchkit.shell.CommunicationLayer.OutputObject import sshOutput
 
 
@@ -154,7 +160,6 @@ def shell_out_new(
             shell_process.stdin.close()
 
         command_output = sshOutput(shell_process.stdout, shell_process.stderr)
-
 
         if output_is_log:
             command_output = logger_hook().attatch(command_output)

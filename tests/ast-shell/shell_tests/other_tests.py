@@ -4,7 +4,7 @@
 import shlex
 import subprocess
 
-from shell_scripts import TestTimeout, script_path_string, timeout
+from shell_scripts import script_path_string
 
 from benchkit.shell.ast_shell_out import convert_command_to_ast, shell_out_new
 from benchkit.shell.commandAST import command as makecommand
@@ -16,7 +16,6 @@ from benchkit.shell.commandAST.visitor import (
     printAst,
     resolveAllVariablesWithDict,
 )
-from benchkit.shell.shell import shell_out
 
 
 def commandtests():
@@ -123,9 +122,7 @@ def testhalt():
         "timeout": None,
         "ignore_ret_codes": (),
     }
-    shell_out_new(
-                        convert_command_to_ast(script_path_string("fillOutThenErr")), **args
-                    )
+    shell_out_new(convert_command_to_ast(script_path_string("fillOutThenErr")), **args)
     print("yeet")
 
     # test for the newlines
