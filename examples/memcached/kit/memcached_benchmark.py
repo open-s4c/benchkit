@@ -258,7 +258,7 @@ class MemcachedBench(Benchmark):
         fields = output_lines[start_table - 1].split()[1:4]
         sets = output_lines[start_table + 1].split()[1:4]
         gets = output_lines[start_table + 2].split()[1:4]
-        # waits = output_lines[start_table + 3].split()[1:4] # Is this necessary? in th
+        # waits = output_lines[start_table + 3].split()[1:4] # Is this necessary?
         totals = output_lines[start_table + 4].split()[1:4]
 
         sets_dict = {"Sets " + fields[i]: sets[i] for i in range(0, len(fields))}
