@@ -1,208 +1,100 @@
-# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
-# SPDX-License-Identifier: MIT
-
 from __future__ import annotations  # Otherwise Queue comlains about typing
 
 from abc import ABC, abstractmethod
 from multiprocessing import Process, Queue
-from typing import Callable
+from typing import Any, Callable
+from benchkit.shell.CommunicationLayer.IO_stream import IOStream, WritableIOStream
+from benchkit.shell.CommunicationLayer.OutputObject import Output
 
-from benchkit.shell.CommunicationLayer.comunication_handle import Output, WritableOutput
-
-# change -> this should be a "result hook"
-#           -> Hook should be a pastrough hook
-#           -> Hook should have getPassthrough() removed
-# This would allow for composition where every hook needs to end in a result hook
-#   (deafault is voiding it -> would be async)
-
-
-class OutputBuffer:
-    def __init__(self, out: Output) -> None:
-        self.queue_out: Queue[bytes] = Queue()
-        self.out = out
-
-        logger_process_out = Process(
-            target=self.result_thread,
-            args=(
-                self.out,
-                self.queue_out,
-            ),
-        )
-
-        err_void = Process(
-            target=self.void_err,
-            args=(self.out,),
-        )
-
-        logger_process_out.start()
-        err_void.start()
-
-    @staticmethod
-    def result_thread(out: Output, output_queue: Queue[bytes]) -> None:
-        outlines: bytes = b""
-        outline = out.readOut(10)
-        while outline:
-            outlines += outline
-            outline = out.readOut(10)
-        output_queue.put(outlines)
-
-    @staticmethod
-    def void_err(out: Output) -> None:
-        outline = out.readErr(10)
-        while outline:
-            outline = out.readErr(10)
-
-    def get_result(self) -> bytes:
-        output = self.queue_out.get()
-        return output
-
-
-class VoidOutput:
-    def __init__(self, out: Output) -> None:
-        self.out = out
-        void_process_out = Process(
-            target=self.void_out,
-            args=(self.out,),
-        )
-        void_process_err = Process(
-            target=self.void_err,
-            args=(self.out,),
-        )
-        void_process_out.start()
-        void_process_err.start()
-
-    @staticmethod
-    def void_out(out: Output) -> None:
-        outline = out.readOut(10)
-        while outline:
-            outline = out.readOut(10)
-
-    @staticmethod
-    def void_err(out: Output) -> None:
-        outline = out.readErr(10)
-        while outline:
-            outline = out.readErr(10)
-
-
-class Hook(ABC):
-    @abstractmethod
-    def startHookFunction(self, comandOutput: Output) -> None:
-        pass
+class IOHook(ABC):
+    def __init__(self):
+        self._output = WritableIOStream()
 
     @abstractmethod
-    def getPassthrough(self) -> WritableOutput:
+    def start_hook_function(self, input_stream: IOStream) -> None:
         pass
 
+    def get_outgoing_io_stream(self) -> IOStream:
+        return self._output
 
-class WriterHook(Hook):
-    def __init__(self, hookFunction: Callable[[Output, WritableOutput], None]):
-        self.__output = WritableOutput()
-        self.hookFunction = hookFunction
 
-    def startHookFunction(self, comandOutput: Output):
-        p = Process(target=self.hookFunction, args=(comandOutput, self.__output))
+class IOWriterHook(IOHook):
+    def __init__(self, hook_function:Callable[[IOStream,WritableIOStream],None]):
+        self.hook_function = hook_function
+        super().__init__()
+
+    def start_hook_function(self, input_stream: IOStream) -> None:
+        p = Process(target=self.hook_function, args=(input_stream, self._output))
         p.start()
-        self.__output.endWritingErr()
-        self.__output.endWritingOut()
 
-    def getPassthrough(self):
-        return self.__output
+        #Close the file descriptor of the main thread, the one from the process will still be alive
+        self._output.endWriting()
 
+class IOReaderHook(IOHook):
 
-class ReaderHook(Hook):
+    def __init__(self, hook_function:Callable[[IOStream],None]):
+        self.hook_function = hook_function
+        self._stream_duplicate = WritableIOStream()
+        super().__init__()
 
     @staticmethod
-    def pasAlongStdOut(
-        input: Output, output: WritableOutput, splitof: WritableOutput, void_stdout: bool
-    ):
-        output.endWritingErr()
-        splitof.endWritingErr()
-
+    def __pas_along_original_stream(input_stream:IOStream,output1_stream:WritableIOStream,output2_stream:WritableIOStream):
         while True:
-            data = input.readOut(1)
+            data = input_stream.read(1)
             if not data:
                 break
-            output.writeOut(data)
-            if not void_stdout:
-                splitof.writeOut(data)
-        output.endWritingOut()
+            output1_stream.write(data)
+            output2_stream.write(data)
+        output1_stream.endWriting()
+        output2_stream.endWriting()
 
-        if not void_stdout:
-            splitof.endWritingOut()
 
-    @staticmethod
-    def pasAlongStdErr(
-        input: Output, output: WritableOutput, splitof: WritableOutput, void_stderr: bool
-    ):
 
-        output.endWritingOut()
-        splitof.endWritingOut()
+    def start_hook_function(self, input_stream: IOStream) -> None:
+        duplication_process = Process(target=self.__pas_along_original_stream, args=(input_stream, self._output,self._stream_duplicate,))
+        reader_hook_process = Process(target=self.hook_function,args=(self._stream_duplicate,))
 
-        while True:
-            data = input.readErr(1)
-            if not data:
-                break
-            output.writeErr(data)
-            if not void_stderr:
-                splitof.writeErr(data)
-        output.endWritingErr()
+        duplication_process.start()
+        #Close the file descriptor of the main thread, the one from the process will still be alive
+        self._output.endWriting()
+        self._stream_duplicate.endWriting()
+        reader_hook_process.start()
 
-        if not void_stderr:
-            splitof.endWritingErr()
+class IOResultHook(IOHook):
+    def __init__(self, hook_function:Callable[[IOStream,WritableIOStream,Queue],None]):
+        self.__queue:Queue[Any] = Queue()
+        self.hook_function = hook_function
+        super().__init__()
 
-    def __init__(
-        self,
-        hookFunction: Callable[[Output], None],
-        voidStdOut: bool = False,
-        voidStdErr: bool = False,
-    ):
-        self.__output = WritableOutput()
-        self.__splitof = WritableOutput()
-        self.hookfunction = hookFunction
-        self.__voidStdErr = voidStdErr
-        self.__voidStdOut = voidStdOut
+    def start_hook_function(self, input_stream: IOStream) -> None:
+        p = Process(target=self.hook_function, args=(input_stream, self._output,self.__queue))
+        p.start()
 
-    @staticmethod
-    def hookwrap(input: WritableOutput, hookfunction: Callable[[Output], None]):
+        #Close the file descriptor of the main thread, the one from the process will still be alive
+        self._output.endWriting()
 
-        input.endWritingOut()
-        input.endWritingErr()
-        hookfunction(input)
+    def get_result(self) -> Any:
+        return self.__queue.get()
 
-    def startHookFunction(self, comandOutput: Output):
-        p1 = Process(
-            target=self.pasAlongStdOut,
-            args=(comandOutput, self.__output, self.__splitof, self.__voidStdOut),
+
+
+
+
+class OutputHook():
+    def __init__(self,std_out_hook:IOHook|None,std_err_hook:IOHook|None):
+        self._std_out_hook = std_out_hook
+        self._std_err_hook = std_err_hook
+
+    def attatch(self,output:Output) -> Output:
+        std_out = output.std_out
+        std_err = output.std_err
+        if self._std_out_hook:
+            self._std_out_hook.start_hook_function(output.std_out)
+            std_out = self._std_out_hook.get_outgoing_io_stream()
+        if self._std_err_hook:
+            self._std_err_hook.start_hook_function(output.std_err)
+            std_err = self._std_err_hook.get_outgoing_io_stream()
+        return Output(
+            std_out,
+            std_err
         )
-        p2 = Process(
-            target=self.pasAlongStdErr,
-            args=(comandOutput, self.__output, self.__splitof, self.__voidStdErr),
-        )
-        p3 = Process(target=self.hookwrap, args=(self.__splitof, self.hookfunction))
-        p1.start()
-        p2.start()
-        p3.start()
-        self.__output.endWritingErr()
-        self.__output.endWritingOut()
-        self.__splitof.endWritingErr()
-        self.__splitof.endWritingOut()
-
-    def getPassthrough(self):
-        return self.__output
-
-
-"""
-file notes
-voiding something for the reader function can be done in a more efficient method,
-we could create an empty passthrouh for the splitof part and just replace the stdOut in the __output
-would need to check if this is a clean solution or more of a hack
-the current implementation is consisten and 'clean' albe it with a lot of overhead
-
-
-TODO implement the voiding of certain streams for the writer hooks
-this makes it less likely people will make mistakes by ignoring streams and blocking
-
-TODO implement passtrough of certian streams for writer hooks
-this makes it less likely people will make mistakes by ignoring streams and blocking
-
-"""

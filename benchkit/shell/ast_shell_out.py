@@ -1,17 +1,19 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+from multiprocessing import Queue
 import os
 import pathlib
 import shlex
 import subprocess
 from typing import Dict, Iterable, List, Optional
 
+from benchkit.shell.CommunicationLayer.IO_stream import IOStream
+from benchkit.shell.CommunicationLayer.hook import IOReaderHook, IOResultHook, IOWriterHook, OutputHook
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
 from benchkit.shell.commandAST.visitor import getString
-from benchkit.shell.CommunicationLayer.comunication_handle import Output, SshOutput
-from benchkit.shell.CommunicationLayer.hook import OutputBuffer, ReaderHook, VoidOutput
+from benchkit.shell.CommunicationLayer.OutputObject import sshOutput
 
 
 def convert_command_to_ast(command: str | List[str] | CommandNode) -> CommandNode:
@@ -134,26 +136,47 @@ def shell_out_new(
     else:
         stderr_out = subprocess.PIPE
 
-    def logger_hook_out(input_object: Output):
-        a = input_object.readOut_line()
-        while a:
-            print(
-                f"\33[34m[OUT | {command_string}] \
-                    {try_converting_bystring_to_readable_characters(a)!r}\033[0m"
-            )
-            a = input_object.readOut_line()
+    def create_voiding_result_hook() -> IOResultHook:
+        def hook_function(input_object:IOStream,_,result_queue:Queue):
+            # we do not write to the out stream thus this is "voiding"
+            outlines: bytes = b""
+            outline = input_object.read(10)
+            while outline:
+                outlines += outline
+                outline = input_object.read(10)
+            result_queue.put(outlines)
+        return IOResultHook(hook_function)
 
-    def logger_hook_err(input_object: Output):
-        a = input_object.readErr_line()
-        while a:
-            print(
-                f"\033[91m[ERR | {command_string}] \
-                    {try_converting_bystring_to_readable_characters(a)!r}\033[0m"
-            )
-            a = input_object.readErr_line()
 
-    log_std_out_hook = ReaderHook(logger_hook_out, voidStdErr=True)
-    log_std_err_hook = ReaderHook(logger_hook_err, voidStdOut=True)
+    def create_stream_logger_hook(prefix:str) -> IOReaderHook:
+        def hook_function(input_object: IOStream):
+            a = input_object.read_line()
+            while a:
+                print(
+                    f"{prefix} {try_converting_bystring_to_readable_characters(a)!r}\033[0m"
+                )
+                a = input_object.read_line()
+        return IOReaderHook(hook_function)
+
+    logger_hook = OutputHook(
+        create_stream_logger_hook("\33[34m[OUT | {command_string}"),
+        create_stream_logger_hook("\033[91m[ERR | {command_string}]")
+    )
+
+    def void_input(input_object,_):
+        outline = input_object.read(10)
+        while outline:
+            outline = input_object.read(10)
+
+    output_hook_object = create_voiding_result_hook()
+
+    voiding_result_hook = OutputHook(
+        output_hook_object,
+        IOWriterHook(void_input))
+
+    voiding_hook = OutputHook(
+        IOWriterHook(void_input),
+        IOWriterHook(void_input))
 
     shell_process = subprocess.Popen(
         # why exec:
@@ -175,33 +198,28 @@ def shell_out_new(
     try:
         if shell_process.stdin is not None and std_input is not None:
             shell_process.stdin.write(std_input.encode("utf-8"))
-            shell_process.stdin.write(std_input.encode("utf-8"))
             shell_process.stdin.flush()
 
         if shell_process.stdin is not None:
             shell_process.stdin.close()
 
-        command_output = SshOutput(shell_process.stdout, shell_process.stderr)
-        command_output = SshOutput(shell_process.stdout, shell_process.stderr)
+        command_output = sshOutput(shell_process.stdout, shell_process.stderr)
+
 
         if output_is_log:
-            log_std_out_hook.startHookFunction(command_output)
-            pas = log_std_out_hook.getPassthrough()
-            log_std_err_hook.startHookFunction(pas)
-            command_output = log_std_err_hook.getPassthrough()
+            command_output = logger_hook.attatch(command_output)
         try:
             if run_in_background:
-                VoidOutput(command_output)
+                voiding_hook.attatch(command_output)
                 # TODO: run_in_background makes it incompatible with timeout, this is fixable
                 # shell_process.wait(timeout=timeout)
                 return b""
             else:
-                buffer = OutputBuffer(command_output)
+                voiding_result_hook.attatch(command_output)
                 retcode = shell_process.wait(timeout=timeout)
-                output = buffer.get_result()
+                output = output_hook_object.get_result()
 
         except subprocess.TimeoutExpired as err:
-            # killing this will send eof to and end the hooks aswell
             # killing this will send eof to and end the hooks aswell
             shell_process.kill()
             raise err
@@ -235,4 +253,4 @@ def shell_out_new(
         finally:
             shell_process.terminate()
             # Wait allows the Popen process to cleanly terminate
-            ret = shell_process.wait(1)
+            shell_process.wait(1)

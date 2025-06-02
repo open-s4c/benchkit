@@ -4,6 +4,9 @@
 import shlex
 import subprocess
 
+from shell_scripts import TestTimeout, script_path_string, timeout
+
+from benchkit.shell.ast_shell_out import convert_command_to_ast, shell_out_new
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.variable_node import RuntimeVariable
 from benchkit.shell.commandAST.visitor import (
@@ -111,33 +114,34 @@ def testhalt():
     #     stdin=subprocess.PIPE,
     # )
     # shell_process.wait()
-    # args = {
-    #     "print_output": True,
-    #     "output_is_log": True,
-    #     "redirect_stderr_to_stdout": False,
-    #     "current_dir": None,
-    #     "environment": None,
-    #     "timeout": None,
-    #     "ignore_ret_codes": (),
-    # }
-    # shell_out_new(script_path_string("fillErrThenOut"), **args)
-    # print("yeet")
+    args = {
+        "print_output": True,
+        "output_is_log": True,
+        "redirect_stderr_to_stdout": False,
+        "current_dir": None,
+        "environment": None,
+        "timeout": None,
+        "ignore_ret_codes": (),
+    }
+    shell_out_new(
+                        convert_command_to_ast(script_path_string("fillOutThenErr")), **args
+                    )
+    print("yeet")
 
     # test for the newlines
-    raw_output = shell_out(
-        command="cat",
-        std_input="a \n\n b \n c\n",
-        print_input=False,
-        print_output=False,
-    )
+    # raw_output = shell_out(
+    #     command="cat",
+    #     std_input="a \n\n b \n c\n",
+    #     print_input=False,
+    #     print_output=False,
+    # )
 
-    # test for command that does not fully output in deafault terminal
-    raw_output = shell_out(
-        command="/usr/bin/perf list --no-desc",
-        print_input=False,
-        print_output=False,
-    )
-    return raw_output
+    # # test for command that does not fully output in deafault terminal
+    # raw_output = shell_out(
+    #     command="/usr/bin/perf list --no-desc",
+    #     output_is_log=True,
+    # )
+    # return raw_output
 
 
 if __name__ == "__main__":

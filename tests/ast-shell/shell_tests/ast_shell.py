@@ -71,7 +71,6 @@ class BasicShellTests(unittest.TestCase):
                 # test echo with multiple parameters to make sure none mess up the result
                 a = shell_out_new(
                     convert_command_to_ast(f"echo benchkit_echo_test {str(args)}"),
-                    print_command=True,
                     **args,
                 )
                 print(a)
@@ -339,8 +338,6 @@ class BasicShellTests(unittest.TestCase):
                                 else args["success_value"]
                             )
                         )
-                        print("----------------------")
-                        print(retcode_to_output)
                         shell_out_new(
                             convert_command_to_ast(script_path_string("returnExitCode")),
                             **args,
