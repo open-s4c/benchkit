@@ -1,11 +1,13 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+from io import TextIOWrapper
 import os
 import pathlib
 import shlex
 import subprocess
-from typing import Dict, Iterable, List, Optional
+import sys
+from typing import IO, Dict, Iterable, List, Optional, TextIO
 
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
@@ -38,7 +40,7 @@ def convert_command_to_ast(command: str | List[str] | CommandNode) -> CommandNod
 
 def shell_out_new(
     command_tree: CommandNode,
-    std_input: Optional[str] = None,
+    std_input: Optional[str | TextIO] = None,
     current_dir: Optional[pathlib.Path | os.PathLike | str] = None,
     environment: Optional[Dict[str, str]] = None,
     print_output: bool = False,
@@ -129,10 +131,17 @@ def shell_out_new(
     # Use the visitor patterns to convert our tree to an executable string
     command_string = getString(command_tree)
 
+    stderr_out = subprocess.PIPE
     if redirect_stderr_to_stdout:
         stderr_out = subprocess.STDOUT
-    else:
-        stderr_out = subprocess.PIPE
+
+
+    std_input_arg = subprocess.PIPE
+    print(type(std_input))
+    if isinstance(std_input,TextIOWrapper):
+        print("------------------------------")
+        std_input_arg = std_input
+        std_input = None
 
     shell_process = subprocess.Popen(
         # why exec:
@@ -146,7 +155,7 @@ def shell_out_new(
         env=environment,
         stdout=subprocess.PIPE,
         stderr=stderr_out,
-        stdin=subprocess.PIPE,
+        stdin=std_input_arg,
     )
     if print_command_start:
         print(f"\033[32m[START | {command_string}]\033[0m")
@@ -162,7 +171,7 @@ def shell_out_new(
         command_output = sshOutput(shell_process.stdout, shell_process.stderr)
 
         if output_is_log:
-            command_output = logger_hook().attatch(command_output)
+            command_output = logger_hook(command_string).attatch(command_output)
         try:
             if run_in_background:
                 void_hook().attatch(command_output)

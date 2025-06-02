@@ -44,10 +44,10 @@ def void_input(input_object, _):
         outline = input_object.read(10)
 
 
-def logger_hook():
+def logger_hook(command_string):
     return OutputHook(
-        create_stream_logger_hook("\33[34m[OUT | {command_string}"),
-        create_stream_logger_hook("\033[91m[ERR | {command_string}]"),
+        create_stream_logger_hook(f"\33[34m[OUT | {command_string}]"),
+        create_stream_logger_hook(f"\033[91m[ERR | {command_string}]"),
     )
 
 
