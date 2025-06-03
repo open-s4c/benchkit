@@ -137,9 +137,7 @@ def shell_out_new(
 
 
     std_input_arg = subprocess.PIPE
-    print(type(std_input))
     if isinstance(std_input,TextIOWrapper):
-        print("------------------------------")
         std_input_arg = std_input
         std_input = None
 

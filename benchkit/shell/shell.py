@@ -324,6 +324,7 @@ def shell_interactive(
             std_input=sys.stdin,
             current_dir=current_dir,
             environment=environment,
+            # TODO: swap for custom logger once shell suports custom hooks
             output_is_log=True,
             print_command_start=print_input,
             # If ignore_ret_codes is empty we swap it over to None instead
