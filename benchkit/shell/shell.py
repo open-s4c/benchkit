@@ -8,8 +8,14 @@ import subprocess
 import sys
 from typing import Iterable, Optional
 
+from benchkit.shell.ast_shell_out import convert_command_to_ast, shell_out_new
+from benchkit.shell.CommunicationLayer.IO_stream import (
+    try_converting_bystring_to_readable_characters,
+)
 from benchkit.shell.utils import get_args, print_header
 from benchkit.utils.types import Command, Environment, PathType
+
+USE_NEW_SHELL = True
 
 
 def pipe_shell_out(
@@ -144,6 +150,21 @@ def shell_out(
     Returns:
         str: the output of the shell command that completed successfully.
     """
+    if USE_NEW_SHELL:
+        output_bytes = shell_out_new(
+            convert_command_to_ast(command),
+            std_input=std_input,
+            current_dir=current_dir,
+            environment=environment,
+            print_output=print_output,
+            timeout=timeout,
+            output_is_log=output_is_log,
+            print_command_start=print_input,
+            # If ignore_ret_codes is empty we swap it over to None instead
+            ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
+        )
+        return try_converting_bystring_to_readable_characters(output_bytes)
+
     arguments = get_args(command)
     print_header(
         arguments=arguments,
@@ -299,6 +320,20 @@ def shell_interactive(
             if the command exited with a non-zero exit code that is not ignored in
             `ignore_ret_codes`.
     """
+    if USE_NEW_SHELL:
+        shell_out_new(
+            convert_command_to_ast(command),
+            std_input=sys.stdin,
+            current_dir=current_dir,
+            environment=environment,
+            # TODO: swap for custom logger once shell suports custom hooks
+            output_is_log=True,
+            print_command_start=print_input,
+            # If ignore_ret_codes is empty we swap it over to None instead
+            ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
+        )
+
+
     arguments = get_args(command)
     print_header(
         arguments=arguments,
