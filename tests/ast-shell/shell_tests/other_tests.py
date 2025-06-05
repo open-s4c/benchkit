@@ -3,7 +3,9 @@
 
 import shlex
 import subprocess
+import sys
 
+from benchkit.shell.CommunicationLayer.IO_stream import PipeIOStream, ReadableIOStream
 from benchkit.shell.shell import shell_interactive
 from shell_scripts import script_path_string
 
@@ -135,6 +137,17 @@ def testhalt():
     # )
 
     # test for command that does not fully output in deafault terminal
+
+    # def pasalong(input_stream:ReadableIOStream,_) -> None:
+    #     outline = input_stream.read(10)
+    #     print(f'outline{outline!r}')
+    #     while outline:
+    #         print(f'outline{outline}')
+    #         outline = input_stream.read(10)
+
+    # a = StdinIOStream(sys.stdin)
+
+    # pasalong(a,2)
 
     shell_interactive(
         command="sh",
