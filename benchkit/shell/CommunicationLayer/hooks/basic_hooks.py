@@ -10,13 +10,13 @@ from benchkit.shell.CommunicationLayer.hooks.hook import (
     OutputHook,
 )
 from benchkit.shell.CommunicationLayer.IO_stream import (
-    IOStream,
+    ReadableIOStream,
     try_converting_bystring_to_readable_characters,
 )
 
 
 def create_voiding_result_hook() -> IOResultHook:
-    def hook_function(input_object: IOStream, _, result_queue: Queue):
+    def hook_function(input_object: ReadableIOStream, _, result_queue: Queue):
         # we do not write to the out stream thus this is "voiding"
         outlines: bytes = b""
         outline = input_object.read(10)
@@ -29,7 +29,7 @@ def create_voiding_result_hook() -> IOResultHook:
 
 
 def create_stream_logger_hook(prefix: str) -> IOReaderHook:
-    def hook_function(input_object: IOStream):
+    def hook_function(input_object: ReadableIOStream):
         a = input_object.read_line()
         while a:
             print(f"{prefix} {try_converting_bystring_to_readable_characters(a)!r}\033[0m")

@@ -1,14 +1,14 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from io import TextIOWrapper
 import os
 import pathlib
 import shlex
 import subprocess
-import sys
-from typing import IO, Dict, Iterable, List, Optional, TextIO
 
+from typing import Dict, Iterable, List, Optional
+
+from benchkit.shell.CommunicationLayer.hooks.hook import IOWriterHook
 from benchkit.shell.commandAST import command as makecommand
 from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
 from benchkit.shell.commandAST.visitor import getString
@@ -18,7 +18,7 @@ from benchkit.shell.CommunicationLayer.hooks.basic_hooks import (
     void_hook,
 )
 from benchkit.shell.CommunicationLayer.IO_stream import (
-    try_converting_bystring_to_readable_characters,
+    ReadableIOStream,
 )
 from benchkit.shell.CommunicationLayer.OutputObject import sshOutput
 
@@ -40,10 +40,9 @@ def convert_command_to_ast(command: str | List[str] | CommandNode) -> CommandNod
 
 def shell_out_new(
     command_tree: CommandNode,
-    std_input: Optional[str | TextIO] = None,
+    std_input: Optional[ReadableIOStream] = None,
     current_dir: Optional[pathlib.Path | os.PathLike | str] = None,
     environment: Optional[Dict[str, str]] = None,
-    print_output: bool = False,
     timeout: Optional[int] = None,
     output_is_log: bool = False,
     ignore_ret_codes: Optional[Iterable[int]] = None,
@@ -131,15 +130,10 @@ def shell_out_new(
     # Use the visitor patterns to convert our tree to an executable string
     command_string = getString(command_tree)
 
+    #TODO: I dont like this should be a hook so we can manipulate when this is done
     stderr_out = subprocess.PIPE
     if redirect_stderr_to_stdout:
         stderr_out = subprocess.STDOUT
-
-
-    std_input_arg = subprocess.PIPE
-    if isinstance(std_input,TextIOWrapper):
-        std_input_arg = std_input
-        std_input = None
 
     shell_process = subprocess.Popen(
         # why exec:
@@ -153,20 +147,49 @@ def shell_out_new(
         env=environment,
         stdout=subprocess.PIPE,
         stderr=stderr_out,
-        stdin=std_input_arg,
+        stdin=subprocess.PIPE,
     )
-    if print_command_start:
-        print(f"\033[32m[START | {command_string}]\033[0m")
 
+    # TODO:move to higher abstraction
+    # if print_command_start:
+    #     print(f"\033[32m[START | {command_string}]\033[0m")
     try:
-        if shell_process.stdin is not None and std_input is not None:
-            shell_process.stdin.write(std_input.encode("utf-8"))
-            shell_process.stdin.flush()
+        # hookfunction to write a ReadableIOStream to stdin
+        # TODO: check if we can turn this into a deafault external hook (shell_process is accesed by scope)
+        def pasalong(input_stream:ReadableIOStream,_) -> None:
+            if shell_process.stdin is not None:
+                outline = input_stream.read(1)
+                while outline:
+                    shell_process.stdin.write(outline)
+                    shell_process.stdin.flush()
+                    outline = input_stream.read(1)
 
-        if shell_process.stdin is not None:
+        # feeding the standard input into the command
+        if std_input is not None:
+            hook = IOWriterHook(pasalong)
+            # TODO: replace std_input by hooked input
+            hook.start_hook_function(std_input)
+        elif shell_process.stdin is not None:
             shell_process.stdin.close()
 
         command_output = sshOutput(shell_process.stdout, shell_process.stderr)
+
+        for hk in outhooks:
+            command_output = hk.attatch(command_output)
+
+        void_hook().attatch(command_output)
+
+        if shell_process.stdout is not None:
+            shell_process.stdout.close()
+        if shell_process.stderr is not None:
+            shell_process.stderr.close()
+        if shell_process.stdin is not None:
+            shell_process.stdin.close()
+
+        return CommandProcess(shell_process,timeout)
+
+
+
 
         if output_is_log:
             command_output = logger_hook(command_string).attatch(command_output)
@@ -175,6 +198,7 @@ def shell_out_new(
                 void_hook().attatch(command_output)
                 # TODO: run_in_background makes it incompatible with timeout, this is fixable
                 # shell_process.wait(timeout=timeout)
+                print("pa")
                 return b""
             else:
                 output_hook_object, voiding_result_hook = std_out_result_void_err()
@@ -187,10 +211,6 @@ def shell_out_new(
             shell_process.kill()
             raise err
 
-        if shell_process.stdout is not None:
-            shell_process.stdout.close()
-        if shell_process.stderr is not None:
-            shell_process.stderr.close()
 
         # not a sucsessfull execution and not an alowed exit code
         # raise the appropriate error
@@ -200,20 +220,18 @@ def shell_out_new(
                 shell_process.args,
             )
 
-        if print_output and not output_is_log:
-            print("[OUT]")
-            print(f"{try_converting_bystring_to_readable_characters(output)}")
-
         return output
     finally:
         # If something goes wrong we try to clean up after ourself
         # This can happen for example if we recieve a signal while waiting on an output
-        try:
-            if shell_process.stderr is not None:
-                shell_process.stderr.close()
-            if shell_process.stdout is not None:
-                shell_process.stdout.close()
-        finally:
-            shell_process.terminate()
-            # Wait allows the Popen process to cleanly terminate
-            shell_process.wait(1)
+        # TODO: dumbass this does not work with the "run_in_background argument"
+        pass
+        # try:
+        #     if shell_process.stderr is not None:
+        #         shell_process.stderr.close()
+        #     if shell_process.stdout is not None:
+        #         shell_process.stdout.close()
+        # finally:
+        #     shell_process.terminate()
+        #     # Wait allows the Popen process to cleanly terminate
+        #     shell_process.wait(1)

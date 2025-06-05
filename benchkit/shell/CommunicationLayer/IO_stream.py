@@ -3,10 +3,22 @@
 
 import os
 from abc import ABC, abstractmethod
+import sys
 from typing import IO
 
+class WritableIOStream(ABC):
 
-class IOStream(ABC):
+    @abstractmethod
+    def write(self, bytes_to_write: bytes) -> None:
+        pass
+
+    @abstractmethod
+    def endWriting(self) -> None:
+        pass
+
+
+
+class ReadableIOStream(ABC):
     """interface to communicate with command output on all platforms,
     functions are  due to compatibility"""
 
@@ -36,7 +48,7 @@ class IOStream(ABC):
         return byt
 
 
-class SshIOStream(IOStream):
+class SshIOStream(ReadableIOStream):
     def __init__(self, stream: IO[bytes] | None):
         self.__stream = stream
         super().__init__()
@@ -47,7 +59,7 @@ class SshIOStream(IOStream):
         return b""
 
 
-class WritableIOStream(IOStream):
+class PipeIOStream(ReadableIOStream,WritableIOStream):
     """A way to create a fileStream that can be used as a CommandOutput by other functions"""
 
     def __init__(self) -> None:

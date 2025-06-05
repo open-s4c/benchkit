@@ -4,12 +4,14 @@
 Interactions with a shell.
 """
 
+import signal
 import subprocess
 import sys
 from typing import Iterable, Optional
 
 from benchkit.shell.ast_shell_out import convert_command_to_ast, shell_out_new
 from benchkit.shell.CommunicationLayer.IO_stream import (
+    PipeIOStream,
     try_converting_bystring_to_readable_characters,
 )
 from benchkit.shell.utils import get_args, print_header
@@ -319,9 +321,11 @@ def shell_interactive(
             `ignore_ret_codes`.
     """
     if USE_NEW_SHELL:
+        stdin_pipe = PipeIOStream()
+
         shell_out_new(
             convert_command_to_ast(command),
-            std_input=sys.stdin,
+            std_input=stdin_pipe,
             current_dir=current_dir,
             environment=environment,
             # TODO: swap for custom logger once shell suports custom hooks
@@ -329,7 +333,23 @@ def shell_interactive(
             print_command_start=print_input,
             # If ignore_ret_codes is empty we swap it over to None instead
             ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
+            run_in_background=True
         )
+
+        # TODO: return to this once we have a frame for the return value of shell_out_new
+        def signal_handler(sig, frame):
+            print('You pressed Ctrl+C!')
+            print(sig)
+            sys.exit(sig)
+
+        signal.signal(signal.SIGINT, signal_handler)
+
+
+        outline = sys.stdin.read(1).encode("utf-8")
+        while outline:
+            print(outline)
+            stdin_pipe.write(outline)
+            outline = sys.stdin.read(1).encode("utf-8")
 
 
     arguments = get_args(command)

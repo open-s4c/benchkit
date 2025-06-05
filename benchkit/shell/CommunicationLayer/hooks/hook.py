@@ -7,28 +7,28 @@ from abc import ABC, abstractmethod
 from multiprocessing import Process, Queue
 from typing import Any, Callable
 
-from benchkit.shell.CommunicationLayer.IO_stream import IOStream, WritableIOStream
+from benchkit.shell.CommunicationLayer.IO_stream import ReadableIOStream, PipeIOStream
 from benchkit.shell.CommunicationLayer.OutputObject import Output
 
 
 class IOHook(ABC):
     def __init__(self):
-        self._output = WritableIOStream()
+        self._output = PipeIOStream()
 
     @abstractmethod
-    def start_hook_function(self, input_stream: IOStream) -> None:
+    def start_hook_function(self, input_stream: ReadableIOStream) -> None:
         pass
 
-    def get_outgoing_io_stream(self) -> IOStream:
+    def get_outgoing_io_stream(self) -> ReadableIOStream:
         return self._output
 
 
 class IOWriterHook(IOHook):
-    def __init__(self, hook_function: Callable[[IOStream, WritableIOStream], None]):
+    def __init__(self, hook_function: Callable[[ReadableIOStream, PipeIOStream], None]):
         self.hook_function = hook_function
         super().__init__()
 
-    def start_hook_function(self, input_stream: IOStream) -> None:
+    def start_hook_function(self, input_stream: ReadableIOStream) -> None:
         p = Process(target=self.hook_function, args=(input_stream, self._output))
         p.start()
 
@@ -38,14 +38,14 @@ class IOWriterHook(IOHook):
 
 class IOReaderHook(IOHook):
 
-    def __init__(self, hook_function: Callable[[IOStream], None]):
+    def __init__(self, hook_function: Callable[[ReadableIOStream], None]):
         self.hook_function = hook_function
-        self._stream_duplicate = WritableIOStream()
+        self._stream_duplicate = PipeIOStream()
         super().__init__()
 
     @staticmethod
     def __pas_along_original_stream(
-        input_stream: IOStream, output1_stream: WritableIOStream, output2_stream: WritableIOStream
+        input_stream: ReadableIOStream, output1_stream: PipeIOStream, output2_stream: PipeIOStream
     ):
         while True:
             data = input_stream.read(1)
@@ -56,7 +56,7 @@ class IOReaderHook(IOHook):
         output1_stream.endWriting()
         output2_stream.endWriting()
 
-    def start_hook_function(self, input_stream: IOStream) -> None:
+    def start_hook_function(self, input_stream: ReadableIOStream) -> None:
         duplication_process = Process(
             target=self.__pas_along_original_stream,
             args=(
@@ -75,12 +75,12 @@ class IOReaderHook(IOHook):
 
 
 class IOResultHook(IOHook):
-    def __init__(self, hook_function: Callable[[IOStream, WritableIOStream, Queue], None]):
+    def __init__(self, hook_function: Callable[[ReadableIOStream, PipeIOStream, Queue], None]):
         self.__queue: Queue[Any] = Queue()
         self.hook_function = hook_function
         super().__init__()
 
-    def start_hook_function(self, input_stream: IOStream) -> None:
+    def start_hook_function(self, input_stream: ReadableIOStream) -> None:
         p = Process(target=self.hook_function, args=(input_stream, self._output, self.__queue))
         p.start()
 
