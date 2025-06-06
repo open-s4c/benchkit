@@ -4,24 +4,47 @@
 Interactions with a shell.
 """
 
+import shlex
 import signal
 import subprocess
 import sys
-from typing import Iterable, Optional
+from time import sleep
+from typing import Iterable, List, Optional
 
-from benchkit.shell.ast_shell_out import convert_command_to_ast, shell_out_new
+from benchkit.shell.CommunicationLayer.hooks.basic_hooks import create_stream_logger_hook, logger_hook, std_out_result_void_err, void_hook, void_input
+from benchkit.shell.CommunicationLayer.hooks.hook import IOWriterHook, MergeErrToOut
+from benchkit.shell.commandAST import command as makecommand
+from benchkit.shell.ast_shell_out import execute_command
 from benchkit.shell.CommunicationLayer.IO_stream import (
+    EmptyIOStream,
     PipeIOStream,
-    try_converting_bystring_to_readable_characters,
+    ReadableIOStream,
+    StringIOStream,
 )
+from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
 from benchkit.shell.utils import get_args, print_header
 from benchkit.utils.types import Command, Environment, PathType
+
+def convert_command_to_ast(command: str | List[str] | CommandNode) -> CommandNode:
+    if isinstance(command, str):
+        command_tree = makecommand.command(command)
+    elif isinstance(command, list):
+        command_tree = makecommand.command(shlex.join(command))
+    elif isinstance(command, CommandNode):
+        command_tree = command
+    else:
+        raise TypeError(
+            f"Shell out was called with a command of type {type(command)},"
+            "this is unexpected and not suported"
+        )
+    return command_tree
 
 USE_NEW_SHELL = True
 
 
 def pipe_shell_out(
-    command: Command,
+    # command: Command,
+    commands: List[Command],
     current_dir: Optional[PathType] = None,
     shell: bool = True,
     print_command: bool = True,
@@ -41,6 +64,41 @@ def pipe_shell_out(
     Returns:
         str: the output of the piped command.
     """
+    i:ReadableIOStream = EmptyIOStream()
+    processes = []
+    for com in commands:
+        command = shlex.split(com) if isinstance(com,str) else com
+        command_string = shlex.join(command)
+        output_hooks = []
+        log = logger_hook(
+                f"\033[34m[OUT | {command_string}]\033[0m" + " {}",
+                f"\033[91m[ERR | {command_string}]\033[0m" + " {}"
+            )
+        output_hooks.append(log)
+        input_hooks = []
+
+        a = create_stream_logger_hook(f'input of {command_string} |' + ' {}')
+        input_hooks.append(a)
+        print(f"\033[32m[START | {command_string}]\033[0m")
+        process = execute_command(
+            command = command,
+            std_input=i,
+            current_dir=current_dir,
+            ordered_output_hooks=output_hooks,
+            ordered_input_hooks=input_hooks,
+            # If ignore_ret_codes is empty we swap it over to None instead
+            ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
+        )
+        processes.append(process)
+        i = process.get_output().std_out
+        # IOWriterHook(void_input).start_hook_function(process.get_output().std_err)
+
+    # IOWriterHook(void_input).start_hook_function(i)
+    for p in processes:
+        print(p.get_return_code())
+
+
+    return ''
     arguments = get_args(command)
     if print_command:
         print_header(
@@ -152,19 +210,57 @@ def shell_out(
         str: the output of the shell command that completed successfully.
     """
     if USE_NEW_SHELL:
-        output_bytes = shell_out_new(
-            convert_command_to_ast(command),
-            std_input=std_input,
+        command = shlex.split(command) if isinstance(command,str) else command
+        command_string = shlex.join(command)
+
+        # convert string input to an IOStream
+        std_input_io = StringIOStream(std_input) if std_input is not None else None
+        output_hooks = []
+
+        # add hook to log the output of the command
+        # TODO: make this customizable
+        if output_is_log:
+            log = logger_hook(
+                f"\033[34m[OUT | {command_string}]\033[0m" + " {}",
+                f"\033[91m[ERR | {command_string}]\033[0m" + " {}"
+            )
+            output_hooks.append(log)
+
+        # Print the input string
+        if print_input:
+            print(f"\033[32m[START | {command_string}]\033[0m")
+
+        # Original implementation considered the error to be part of the output,
+        # we merge them together here (done line wise)
+        merge = MergeErrToOut()
+        output_hooks.append(merge)
+
+        # gather the entire stdout stream into a variable
+        output_hook_object, voiding_result_hook = std_out_result_void_err()
+
+        output_hooks.append(voiding_result_hook)
+
+        # this will make sure we clear all our outputs in the end
+        # otherwise the command might block
+        # TODO: we can make the voiding result hook do this
+        output_hooks.append(void_hook())
+
+        process = execute_command(
+            command = command,
+            std_input=std_input_io,
             current_dir=current_dir,
             environment=environment,
-            print_output=print_output,
             timeout=timeout,
-            output_is_log=output_is_log,
+            ordered_output_hooks=output_hooks,
             print_command_start=print_input,
             # If ignore_ret_codes is empty we swap it over to None instead
             ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
         )
-        return try_converting_bystring_to_readable_characters(output_bytes)
+
+        # decode to turn bytestream of into the desired string
+        # this can fail but is in line with original implementation
+        return output_hook_object.get_result().decode("utf-8")
+
 
     arguments = get_args(command)
     print_header(
@@ -278,78 +374,75 @@ def shell_interactive(
     print_file_shell_cmd: bool = True,
     ignore_ret_codes: Iterable[int] = (),
 ) -> None:
-    """
-    Run a shell command that is interactive (with prompts, etc.).
-
-    Args:
-        command (Command):
-            the command to run.
-        current_dir (Optional[PathType], optional):
-            directory where to run the command. If None, the current directory is used.
-            Defaults to None.
-        environment (Environment, optional):
-            environment variables to pass to the command.
-            Defaults to None.
-        shell (bool, optional):
-            whether to run the command in a shell environment (like "bash") or as a real command
-            given to "exec".
-            Defaults to False.
-        print_input (bool, optional):
-            whether to print the command. TODO should be renamed "print_command"
-            Defaults to True.
-        print_env (bool, optional):
-            whether to print the environment variables when they are defined.
-            Defaults to True.
-        print_curdir (bool, optional):
-            whether to print the current directory if provided.
-            Defaults to True.
-        print_shell_cmd (bool, optional):
-            whether to print the complete shell command, ready to be copy-pasted in a terminal.
-            Defaults to False.
-        print_file_shell_cmd (bool, optional):
-            whether to print the shell command in a log file (`/tmp/benchkit.sh`).
-            Defaults to True.
-        ignore_ret_codes (Iterable[int], optional):
-            collection of error return codes to ignore if they are triggered.
-            This allows to avoid an exception to be raised for commands that do not end with 0 even
-            if they are successful.
-            Defaults to ().
-
-    Raises:
-        subprocess.CalledProcessError:
-            if the command exited with a non-zero exit code that is not ignored in
-            `ignore_ret_codes`.
-    """
     if USE_NEW_SHELL:
-        stdin_pipe = PipeIOStream()
+        command = shlex.split(command) if isinstance(command,str) else command
 
-        shell_out_new(
-            convert_command_to_ast(command),
-            std_input=stdin_pipe,
+        # convert string input to an IOStream
+        std_input_io = PipeIOStream()
+        output_hooks = []
+
+        # add hook to log the output of the command
+        # TODO: make this customizable
+        log = logger_hook(
+            "> {}",
+            "! {}",
+        )
+        output_hooks.append(log)
+
+        # TODO: log hook could be written better here to do this
+        output_hooks.append(void_hook())
+
+        # Print the input string
+        if print_input:
+            print(f"\033[32m[START | {shlex.join(command)}]\033[0m")
+
+        process = execute_command(
+            command = command,
+            std_input=std_input_io,
             current_dir=current_dir,
             environment=environment,
-            # TODO: swap for custom logger once shell suports custom hooks
-            output_is_log=True,
+            ordered_output_hooks=output_hooks,
             print_command_start=print_input,
             # If ignore_ret_codes is empty we swap it over to None instead
             ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
-            run_in_background=True
         )
 
-        # TODO: return to this once we have a frame for the return value of shell_out_new
+        # We want that the first interupt signal
+        # goes to the process we are interacting with
+        original_sigint_handler = signal.getsignal(signal.SIGINT)
         def signal_handler(sig, frame):
-            print('You pressed Ctrl+C!')
-            print(sig)
-            sys.exit(sig)
-
+            process.signal(sig)
+            # sys.stdin.close()
+            signal.signal(signal.SIGINT, original_sigint_handler)
         signal.signal(signal.SIGINT, signal_handler)
 
-
-        outline = sys.stdin.read(1).encode("utf-8")
-        while outline:
-            print(outline)
-            stdin_pipe.write(outline)
+        # use our stdin as the interaction for the process
+        try:
             outline = sys.stdin.read(1).encode("utf-8")
+            while outline:
+                std_input_io.write(outline)
+                outline = sys.stdin.read(1).encode("utf-8")
+        # The implementation of sigint will error above code
+        # This is intended as the exit method
+        except Exception:
+            pass
+        # Cleanly close the input file
+        std_input_io.endWriting()
+
+
+        return None
+
+
+
+
+
+
+
+
+
+
+
+        # TODO: return to this once we have a frame for the return value of shell_out_new
 
 
     arguments = get_args(command)

@@ -5,9 +5,10 @@ from __future__ import annotations  # Otherwise Queue comlains about typing
 
 from abc import ABC, abstractmethod
 from multiprocessing import Process, Queue
+import signal
 from typing import Any, Callable
 
-from benchkit.shell.CommunicationLayer.IO_stream import ReadableIOStream, PipeIOStream
+from benchkit.shell.CommunicationLayer.IO_stream import EmptyIOStream, ReadableIOStream, PipeIOStream, WritableIOStream
 from benchkit.shell.CommunicationLayer.OutputObject import Output
 
 
@@ -29,7 +30,7 @@ class IOWriterHook(IOHook):
         super().__init__()
 
     def start_hook_function(self, input_stream: ReadableIOStream) -> None:
-        p = Process(target=self.hook_function, args=(input_stream, self._output))
+        p = Process(target=self.hook_function, args=(input_stream, self._output),)
         p.start()
 
         # Close the file descriptor of the main thread, the one from the process will still be alive
@@ -65,7 +66,7 @@ class IOReaderHook(IOHook):
                 self._stream_duplicate,
             ),
         )
-        reader_hook_process = Process(target=self.hook_function, args=(self._stream_duplicate,))
+        reader_hook_process = Process(target=self.hook_function, args=(self._stream_duplicate,),)
 
         duplication_process.start()
         # Close the file descriptor of the main thread, the one from the process will still be alive
@@ -81,7 +82,7 @@ class IOResultHook(IOHook):
         super().__init__()
 
     def start_hook_function(self, input_stream: ReadableIOStream) -> None:
-        p = Process(target=self.hook_function, args=(input_stream, self._output, self.__queue))
+        p = Process(target=self.hook_function, args=(input_stream, self._output, self.__queue),)
         p.start()
 
         # Close the file descriptor of the main thread, the one from the process will still be alive
@@ -106,3 +107,23 @@ class OutputHook:
             self._std_err_hook.start_hook_function(output.std_err)
             std_err = self._std_err_hook.get_outgoing_io_stream()
         return Output(std_out, std_err)
+
+class MergeErrToOut(OutputHook):
+    def __init__(self):
+        self.std_out = PipeIOStream()
+
+    def hookfunction(self,input_object:ReadableIOStream,_):
+        outline = input_object.read_line()
+        while outline:
+            self.std_out.write(outline)
+            outline = input_object.read_line()
+
+
+    def attatch(self, output:Output) -> Output:
+        stdout_hook = IOWriterHook(self.hookfunction)
+        stderr_hook = IOWriterHook(self.hookfunction)
+        stdout_hook.start_hook_function(output.std_out)
+        stderr_hook.start_hook_function(output.std_err)
+        self.std_out.endWriting()
+
+        return Output(self.std_out,EmptyIOStream())

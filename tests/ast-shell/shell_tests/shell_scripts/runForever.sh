@@ -1,1 +1,3 @@
+#!/bin/bash
+
 while true ; do date -Ins;sleep 1; done
