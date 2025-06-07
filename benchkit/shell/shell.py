@@ -8,12 +8,11 @@ import shlex
 import signal
 import subprocess
 import sys
-from time import sleep
 from typing import Iterable, List, Optional
 
-from benchkit.shell.CommunicationLayer.hooks.basic_hooks import create_stream_logger_hook, logger_hook, std_out_result_void_err, void_hook, void_input
-from benchkit.shell.CommunicationLayer.hooks.hook import IOWriterHook, MergeErrToOut
-from benchkit.shell.commandAST import command as makecommand
+from benchkit.shell.CommunicationLayer.CommandProcess import CommandProcess
+from benchkit.shell.CommunicationLayer.hooks.basic_hooks import create_stream_line_logger_hook, logger_line_hook, std_out_result_void_err, void_hook
+from benchkit.shell.CommunicationLayer.hooks.hook import IOHook, MergeErrToOut, OutputHook
 from benchkit.shell.ast_shell_out import execute_command
 from benchkit.shell.CommunicationLayer.IO_stream import (
     EmptyIOStream,
@@ -21,23 +20,9 @@ from benchkit.shell.CommunicationLayer.IO_stream import (
     ReadableIOStream,
     StringIOStream,
 )
-from benchkit.shell.commandAST.nodes.commandNodes import CommandNode
+
 from benchkit.shell.utils import get_args, print_header
 from benchkit.utils.types import Command, Environment, PathType
-
-def convert_command_to_ast(command: str | List[str] | CommandNode) -> CommandNode:
-    if isinstance(command, str):
-        command_tree = makecommand.command(command)
-    elif isinstance(command, list):
-        command_tree = makecommand.command(shlex.join(command))
-    elif isinstance(command, CommandNode):
-        command_tree = command
-    else:
-        raise TypeError(
-            f"Shell out was called with a command of type {type(command)},"
-            "this is unexpected and not suported"
-        )
-    return command_tree
 
 USE_NEW_SHELL = True
 
@@ -65,19 +50,20 @@ def pipe_shell_out(
         str: the output of the piped command.
     """
     i:ReadableIOStream = EmptyIOStream()
-    processes = []
+    processes:List[CommandProcess] = []
     for com in commands:
         command = shlex.split(com) if isinstance(com,str) else com
         command_string = shlex.join(command)
-        output_hooks = []
-        log = logger_hook(
+        output_hooks:List[OutputHook] = []
+        log = logger_line_hook(
                 f"\033[34m[OUT | {command_string}]\033[0m" + " {}",
                 f"\033[91m[ERR | {command_string}]\033[0m" + " {}"
             )
         output_hooks.append(log)
-        input_hooks = []
+        
+        input_hooks:List[IOHook] = []
 
-        a = create_stream_logger_hook(f'input of {command_string} |' + ' {}')
+        a = create_stream_line_logger_hook(f'input of {command_string} |' + ' {}')
         input_hooks.append(a)
         print(f"\033[32m[START | {command_string}]\033[0m")
         process = execute_command(
@@ -215,7 +201,7 @@ def shell_out(
 
         # convert string input to an IOStream
         std_input_io = StringIOStream(std_input) if std_input is not None else None
-        output_hooks = []
+        output_hooks:List[OutputHook] = []
 
         # add hook to log the output of the command
         # TODO: make this customizable
@@ -252,7 +238,6 @@ def shell_out(
             environment=environment,
             timeout=timeout,
             ordered_output_hooks=output_hooks,
-            print_command_start=print_input,
             # If ignore_ret_codes is empty we swap it over to None instead
             ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
         )

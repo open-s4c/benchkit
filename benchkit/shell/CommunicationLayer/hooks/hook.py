@@ -5,7 +5,6 @@ from __future__ import annotations  # Otherwise Queue comlains about typing
 
 from abc import ABC, abstractmethod
 from multiprocessing import Process, Queue
-import signal
 from typing import Any, Callable
 
 from benchkit.shell.CommunicationLayer.IO_stream import EmptyIOStream, ReadableIOStream, PipeIOStream, WritableIOStream
@@ -76,7 +75,7 @@ class IOReaderHook(IOHook):
 
 
 class IOResultHook(IOHook):
-    def __init__(self, hook_function: Callable[[ReadableIOStream, PipeIOStream, Queue], None]):
+    def __init__(self, hook_function: Callable[[ReadableIOStream, PipeIOStream, Queue[Any]], None]):
         self.__queue: Queue[Any] = Queue()
         self.hook_function = hook_function
         super().__init__()
@@ -112,7 +111,7 @@ class MergeErrToOut(OutputHook):
     def __init__(self):
         self.std_out = PipeIOStream()
 
-    def hookfunction(self,input_object:ReadableIOStream,_):
+    def hookfunction(self,input_object:ReadableIOStream,_:WritableIOStream):
         outline = input_object.read_line()
         while outline:
             self.std_out.write(outline)

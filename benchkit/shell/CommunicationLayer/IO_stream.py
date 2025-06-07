@@ -3,11 +3,9 @@
 
 import os
 from abc import ABC, abstractmethod
-import sys
 from typing import IO
 
 class WritableIOStream(ABC):
-
     @abstractmethod
     def write(self, bytes_to_write: bytes) -> None:
         pass
@@ -65,7 +63,7 @@ class StringIOStream(ReadableIOStream):
         self.index = 0
         super().__init__()
 
-    def _read_bytes(self, amount_of_bytes):
+    def _read_bytes(self, amount_of_bytes:int):
         if self.index + amount_of_bytes < self.length:
             return_byte_string = self.byte_string[self.index:self.index + amount_of_bytes]
             self.index += amount_of_bytes
@@ -81,7 +79,7 @@ class EmptyIOStream(ReadableIOStream):
     def __init__(self):
         super().__init__()
 
-    def  _read_bytes(self, _):
+    def  _read_bytes(self, amount_of_bytes:int):
         return b''
 
 
