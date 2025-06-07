@@ -78,4 +78,7 @@ EOF
 
   echo "-- running black. --"
   ${black} -l 100 .
+
+  echo "-- checking final newlines. --"
+  ${py3} scripts/check_final_newline.py
 )
