@@ -159,15 +159,17 @@ def testhalt():
     shell_out(
         # command=['/home/aaronb/Documents/benchFork/benchkit/tests/ast-shell/shell_tests/shell_scripts/runForever.sh'],
         # command=['ssh', 'aaronb@soft24.vub.ac.be', 'sleep 10'],
-        command=['ls'],
-        output_is_log=True
+        # command=['ls'],
+        command='/home/aaron/benchkitFork/benchkit/tests/ast-shell/shell_tests/shell_scripts/runForever.sh',
+        output_is_log=True,
+        timeout=5
     )
 
-    pipe_shell_out(
-        [
-            "/home/aaronb/Documents/benchFork/benchkit/tests/ast-shell/shell_tests/shell_scripts/runForever.sh","cat"
-        ]
-    )
+    # pipe_shell_out(
+    #     [
+    #         "/home/aaron/benchkitFork/benchkit/tests/ast-shell/shell_tests/shell_scripts/runForever.sh","cat"
+    #     ]
+    # )
     print('a')
     # print(a)
     # raw_output = shell_out(
