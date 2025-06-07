@@ -18,6 +18,7 @@ class CommandProcess():
         self.__retcode_queue:Queue[int] = Queue()
         self.success_value:int = success_value
         self.retcode:Optional[int] = None
+        self.error:Optional[Exception] = None
         self.process:Thread = self.__wait_async()
 
     #TODO: ignore ret codes and succes value and errors
@@ -27,10 +28,13 @@ class CommandProcess():
         try:
             retcode = subprocess.wait(timeout)
             queue.put(retcode)
-        except TimeoutExpired:
+            queue.put(None)
+        except TimeoutExpired as exc:
             #TODO: we can add some form of logging here to warn the user if something went wrong
             subprocess.terminate()
             queue.put(-1)
+            queue.put(exc)
+
 
     def __wait_async(self) -> Thread:
         waiting_thread = Thread(target=self.wait_func,args=(self.__popen_object,self.__retcode_queue,self.__timeout))
@@ -43,10 +47,15 @@ class CommandProcess():
     # TODO: throw error when needed instead of the -1
     def get_return_code(self) -> int:
         print(f'poll main: {self.__popen_object.poll()}')
+        if self.error is not None:
+            raise self.error
         if self.retcode:
             return self.retcode
         self.process.join()
         self.retcode = self.__retcode_queue.get()
+        self.error = self.__retcode_queue.get()
+        if self.error is not None:
+            raise self.error
         return self.retcode
 
     # TODO: check how this interacts with ssh

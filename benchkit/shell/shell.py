@@ -256,6 +256,8 @@ def shell_out(
             # If ignore_ret_codes is empty we swap it over to None instead
             ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
         )
+        # this line is here to check if the program failed
+        process.get_return_code()
 
         # decode to turn bytestream of into the desired string
         # this can fail but is in line with original implementation

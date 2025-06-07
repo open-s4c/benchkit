@@ -105,6 +105,7 @@ class DockerCommLayer(CommunicationLayer):
             timeout=timeout,
             output_is_log=output_is_log,
             ignore_ret_codes=ignore_ret_codes,
+            ignore_any_error_code=ignore_any_error_code,
         )
 
         return output
