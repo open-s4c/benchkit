@@ -52,7 +52,7 @@ def get_arguments_dict_list(
 
 class BasicShellTests(unittest.TestCase):
 
-    @unittest.skip("disabled for debugging")
+    # @unittest.skip("disabled for debugging")
     def test_echo(self):
         """Basic tests to see if the command-line can execute a given command
         and return the correct output given a range of arguments"""
@@ -80,7 +80,7 @@ class BasicShellTests(unittest.TestCase):
                     "shell does not provide the right output in the result",
                 )
 
-    @unittest.skip("disabled for debugging")
+    # @unittest.skip("disabled for debugging")
     def test_run_forever(self):
         """Test to make sure that commands do not exit prematurely"""
         argument_list = get_arguments_dict_list(
@@ -94,7 +94,7 @@ class BasicShellTests(unittest.TestCase):
         for args in argument_list:
             with self.assertRaises(TestTimeout):
                 with timeout(5):
-                    shell_out(convert_command_to_ast(script_path_string("runForever")), **args)
+                    shell_out(script_path_string("runForever"), **args)
 
     # @unittest.skip("disabled for debugging")
     def test_timeout(self):
@@ -128,7 +128,7 @@ class BasicShellTests(unittest.TestCase):
                 with timeout(5):
                     shell_out(script_path_string("runForever"), **args)
 
-    @unittest.skip("disabled for debugging")
+    # @unittest.skip("disabled for debugging")
     def test_input(self):
         """testing the use of the std_input parameter"""
         argument_list = get_arguments_dict_list(
