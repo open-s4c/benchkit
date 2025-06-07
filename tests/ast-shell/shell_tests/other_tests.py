@@ -5,9 +5,6 @@ import shlex
 import subprocess
 import sys
 
-from benchkit.shell.CommunicationLayer.IO_stream import PipeIOStream, ReadableIOStream
-from benchkit.shell.CommunicationLayer.hooks.basic_hooks import logger_hook, std_out_result_void_err
-from benchkit.shell.shell import pipe_shell_out, shell_interactive, shell_out
 from shell_scripts import script_path_string
 
 from benchkit.shell.ast_shell_out import execute_command
@@ -20,6 +17,12 @@ from benchkit.shell.commandAST.visitor import (
     printAst,
     resolveAllVariablesWithDict,
 )
+from benchkit.shell.CommunicationLayer.hooks.basic_hooks import (
+    logger_hook,
+    std_out_result_void_err,
+)
+from benchkit.shell.CommunicationLayer.IO_stream import PipeIOStream, ReadableIOStream
+from benchkit.shell.shell import pipe_shell_out, shell_interactive, shell_out
 
 
 def commandtests():
@@ -160,9 +163,9 @@ def testhalt():
         # command=['/home/aaronb/Documents/benchFork/benchkit/tests/ast-shell/shell_tests/shell_scripts/runForever.sh'],
         # command=['ssh', 'aaronb@soft24.vub.ac.be', 'sleep 10'],
         # command=['ls'],
-        command='/home/aaron/benchkitFork/benchkit/tests/ast-shell/shell_tests/shell_scripts/runForever.sh',
+        command="/home/aaron/benchkitFork/benchkit/tests/ast-shell/shell_tests/shell_scripts/runForever.sh",
         output_is_log=True,
-        timeout=5
+        timeout=5,
     )
 
     # pipe_shell_out(
@@ -170,7 +173,7 @@ def testhalt():
     #         "/home/aaron/benchkitFork/benchkit/tests/ast-shell/shell_tests/shell_scripts/runForever.sh","cat"
     #     ]
     # )
-    print('a')
+    print("a")
     # print(a)
     # raw_output = shell_out(
     #     command="/usr/bin/perf list --no-desc",

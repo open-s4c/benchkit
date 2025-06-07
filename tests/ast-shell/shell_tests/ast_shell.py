@@ -11,9 +11,6 @@ from typing import Any
 from shell_scripts import TestTimeout, script_path_string, timeout
 
 from benchkit.shell.shell import shell_out
-from benchkit.shell.CommunicationLayer.IO_stream import (
-    try_converting_bystring_to_readable_characters,
-)
 
 # Due to print statements being inside of threads unittest does
 # not allow us to check the output of stdout.
@@ -68,7 +65,7 @@ class BasicShellTests(unittest.TestCase):
             with timeout(1):
                 # test echo with multiple parameters to make sure none mess up the result
                 a = shell_out(
-                    ['echo', 'benchkit_echo_test', str(args)],
+                    ["echo", "benchkit_echo_test", str(args)],
                     **args,
                 )
                 print(a)
@@ -170,9 +167,7 @@ class BasicShellTests(unittest.TestCase):
             try:
                 with timeout(20):
                     # tests for filling the std_err
-                    shell_out(
-                        script_path_string("fillErrThenOut"), **args
-                    )
+                    shell_out(script_path_string("fillErrThenOut"), **args)
             except TestTimeout:
                 self.fail(
                     f"the command got halted during excecution for \
@@ -183,15 +178,12 @@ class BasicShellTests(unittest.TestCase):
             try:
                 with timeout(20):
                     # tests for filling the std_io
-                    shell_out(
-                        script_path_string("fillOutThenErr"), **args
-                    )
+                    shell_out(script_path_string("fillOutThenErr"), **args)
             except TestTimeout:
                 self.fail("the command got halted during excecution")
                 raise TestTimeout
 
-
-    #TODO: success value should be tested at lower abstraction level
+    # TODO: success value should be tested at lower abstraction level
     @unittest.skip("disabled for debugging")
     def test_ignore_return_codes(self):
         """Overfull internal IO buffers would halt the execution of the command

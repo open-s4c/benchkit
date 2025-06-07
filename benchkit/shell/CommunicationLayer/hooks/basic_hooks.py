@@ -18,7 +18,9 @@ from benchkit.shell.CommunicationLayer.IO_stream import (
 
 
 def create_voiding_result_hook() -> IOResultHook:
-    def hook_function(input_object: ReadableIOStream, _:WritableIOStream, result_queue:Queue[Any]):
+    def hook_function(
+        input_object: ReadableIOStream, _: WritableIOStream, result_queue: Queue[Any]
+    ):
         # we do not write to the out stream thus this is "voiding"
         outlines: bytes = b""
         outline = input_object.read(10)
@@ -30,33 +32,35 @@ def create_voiding_result_hook() -> IOResultHook:
     return IOResultHook(hook_function)
 
 
-def create_stream_line_logger_hook(formating_string:str) -> IOReaderHook:
+def create_stream_line_logger_hook(formating_string: str) -> IOReaderHook:
     def hook_function_line(input_object: ReadableIOStream):
         byt = input_object.read_line()
         while byt:
-            print(formating_string.format(f"{try_converting_bystring_to_readable_characters(byt)}"),end="")
+            print(
+                formating_string.format(f"{try_converting_bystring_to_readable_characters(byt)}"),
+                end="",
+            )
             byt = input_object.read_line()
         print(f"exited {formating_string.format('')}")
 
     return IOReaderHook(hook_function_line)
 
+
 # TODO: Voiding can be done be done better but this will do for now
 # problem: if there are hooks on the output they will wait for input still
 # can be resolved by making use of EmptyIOStream
 # Needs to be done on a higher level than hooks
-def void_input(input_object:ReadableIOStream, _:WritableIOStream):
+def void_input(input_object: ReadableIOStream, _: WritableIOStream):
     outline = input_object.read(10)
     while outline:
         outline = input_object.read(10)
 
 
-def logger_line_hook(outformat:str,errformat:str):
+def logger_line_hook(outformat: str, errformat: str):
     return OutputHook(
         create_stream_line_logger_hook(outformat),
         create_stream_line_logger_hook(errformat),
     )
-
-
 
 
 def void_hook():

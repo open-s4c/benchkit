@@ -10,17 +10,25 @@ import subprocess
 import sys
 from typing import Iterable, List, Optional
 
-from benchkit.shell.CommunicationLayer.CommandProcess import CommandProcess
-from benchkit.shell.CommunicationLayer.hooks.basic_hooks import create_stream_line_logger_hook, logger_line_hook, std_out_result_void_err, void_hook
-from benchkit.shell.CommunicationLayer.hooks.hook import IOHook, MergeErrToOut, OutputHook
 from benchkit.shell.ast_shell_out import execute_command
+from benchkit.shell.CommunicationLayer.CommandProcess import CommandProcess
+from benchkit.shell.CommunicationLayer.hooks.basic_hooks import (
+    create_stream_line_logger_hook,
+    logger_line_hook,
+    std_out_result_void_err,
+    void_hook,
+)
+from benchkit.shell.CommunicationLayer.hooks.hook import (
+    IOHook,
+    MergeErrToOut,
+    OutputHook,
+)
 from benchkit.shell.CommunicationLayer.IO_stream import (
     EmptyIOStream,
     PipeIOStream,
     ReadableIOStream,
     StringIOStream,
 )
-
 from benchkit.shell.utils import get_args, print_header
 from benchkit.utils.types import Command, Environment, PathType
 
@@ -49,25 +57,25 @@ def pipe_shell_out(
     Returns:
         str: the output of the piped command.
     """
-    i:ReadableIOStream = EmptyIOStream()
-    processes:List[CommandProcess] = []
+    i: ReadableIOStream = EmptyIOStream()
+    processes: List[CommandProcess] = []
     for com in commands:
-        command = shlex.split(com) if isinstance(com,str) else com
+        command = shlex.split(com) if isinstance(com, str) else com
         command_string = shlex.join(command)
-        output_hooks:List[OutputHook] = []
+        output_hooks: List[OutputHook] = []
         log = logger_line_hook(
-                f"\033[34m[OUT | {command_string}]\033[0m" + " {}",
-                f"\033[91m[ERR | {command_string}]\033[0m" + " {}"
-            )
+            f"\033[34m[OUT | {command_string}]\033[0m" + " {}",
+            f"\033[91m[ERR | {command_string}]\033[0m" + " {}",
+        )
         output_hooks.append(log)
-        
-        input_hooks:List[IOHook] = []
 
-        a = create_stream_line_logger_hook(f'input of {command_string} |' + ' {}')
+        input_hooks: List[IOHook] = []
+
+        a = create_stream_line_logger_hook(f"input of {command_string} |" + " {}")
         input_hooks.append(a)
         print(f"\033[32m[START | {command_string}]\033[0m")
         process = execute_command(
-            command = command,
+            command=command,
             std_input=i,
             current_dir=current_dir,
             ordered_output_hooks=output_hooks,
@@ -83,8 +91,7 @@ def pipe_shell_out(
     for p in processes:
         print(p.get_return_code())
 
-
-    return ''
+    return ""
     arguments = get_args(command)
     if print_command:
         print_header(
@@ -196,19 +203,19 @@ def shell_out(
         str: the output of the shell command that completed successfully.
     """
     if USE_NEW_SHELL:
-        command = shlex.split(command) if isinstance(command,str) else command
+        command = shlex.split(command) if isinstance(command, str) else command
         command_string = shlex.join(command)
 
         # convert string input to an IOStream
         std_input_io = StringIOStream(std_input) if std_input is not None else None
-        output_hooks:List[OutputHook] = []
+        output_hooks: List[OutputHook] = []
 
         # add hook to log the output of the command
         # TODO: make this customizable
         if output_is_log:
-            log = logger_hook(
+            log = logger_line_hook(
                 f"\033[34m[OUT | {command_string}]\033[0m" + " {}",
-                f"\033[91m[ERR | {command_string}]\033[0m" + " {}"
+                f"\033[91m[ERR | {command_string}]\033[0m" + " {}",
             )
             output_hooks.append(log)
 
@@ -232,7 +239,7 @@ def shell_out(
         output_hooks.append(void_hook())
 
         process = execute_command(
-            command = command,
+            command=command,
             std_input=std_input_io,
             current_dir=current_dir,
             environment=environment,
@@ -247,7 +254,6 @@ def shell_out(
         # decode to turn bytestream of into the desired string
         # this can fail but is in line with original implementation
         return output_hook_object.get_result().decode("utf-8")
-
 
     arguments = get_args(command)
     print_header(
@@ -362,7 +368,7 @@ def shell_interactive(
     ignore_ret_codes: Iterable[int] = (),
 ) -> None:
     if USE_NEW_SHELL:
-        command = shlex.split(command) if isinstance(command,str) else command
+        command = shlex.split(command) if isinstance(command, str) else command
 
         # convert string input to an IOStream
         std_input_io = PipeIOStream()
@@ -370,7 +376,7 @@ def shell_interactive(
 
         # add hook to log the output of the command
         # TODO: make this customizable
-        log = logger_hook(
+        log = logger_line_hook(
             "> {}",
             "! {}",
         )
@@ -384,7 +390,7 @@ def shell_interactive(
             print(f"\033[32m[START | {shlex.join(command)}]\033[0m")
 
         process = execute_command(
-            command = command,
+            command=command,
             std_input=std_input_io,
             current_dir=current_dir,
             environment=environment,
@@ -397,10 +403,12 @@ def shell_interactive(
         # We want that the first interupt signal
         # goes to the process we are interacting with
         original_sigint_handler = signal.getsignal(signal.SIGINT)
+
         def signal_handler(sig, frame):
             process.signal(sig)
             # sys.stdin.close()
             signal.signal(signal.SIGINT, original_sigint_handler)
+
         signal.signal(signal.SIGINT, signal_handler)
 
         # use our stdin as the interaction for the process
@@ -416,21 +424,9 @@ def shell_interactive(
         # Cleanly close the input file
         std_input_io.endWriting()
 
-
         return None
 
-
-
-
-
-
-
-
-
-
-
         # TODO: return to this once we have a frame for the return value of shell_out_new
-
 
     arguments = get_args(command)
     print_header(
