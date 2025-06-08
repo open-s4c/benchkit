@@ -4,7 +4,7 @@
 Module to handle communication between the host running the benchkit and the target that needs to
 run the benchmark.
 In some cases, these two are the same, when running locally.
-In other case, the target is a remote host reachable with some communication protocols (e.g. SSH).
+In other cases, the target is a remote host reachable with some communication protocols (e.g. SSH).
 The right instance of `CommunicationLayer` will transparently execute the machine/OS operations,
 while the client code can remain the same for any scenario.
 """
@@ -12,9 +12,9 @@ while the client code can remain the same for any scenario.
 import getpass
 import os
 import os.path
-import pathlib
 import subprocess
 from functools import lru_cache
+from pathlib import Path
 from shutil import which
 from typing import Dict, Iterable, List, Optional
 
@@ -106,7 +106,7 @@ class CommunicationLayer:
                 number of seconds to wait for the command to complete, or None for no timeout.
                 Defaults to None.
             output_is_log (bool, optional):
-                whether the output of the command is expected to be logging (e.g. when running
+                whether the output of the command is expected to be logging (e.g., when running
                 `cmake`). If it is the case, the logging will be printed in a `tail -f` fashion.
                 Defaults to False.
             ignore_ret_codes (Iterable[int], optional):
@@ -328,7 +328,7 @@ class CommunicationLayer:
         """
         raise NotImplementedError
 
-    def host_to_comm_path(self, host_path: pathlib.Path) -> pathlib.Path:
+    def host_to_comm_path(self, host_path: Path) -> Path:
         """
         Convert a path from the host namespace to the namespace visible to the communication
         platform (e.g., container, remote host).
@@ -348,6 +348,22 @@ class CommunicationLayer:
             Path: Corresponding path visible to the communication platform.
         """
         return host_path
+
+    def comm_to_host_path(self, comm_path: Path) -> Path:
+        """
+        Convert a platform-side path (e.g., from inside a container or remote node)
+        to the corresponding host-side path.
+
+        Default implementation assumes the platform shares the host filesystem and performs
+        no rewriting. Override in subclasses if path translation is required.
+
+        Args:
+            comm_path (Path): Path as seen by the platform.
+
+        Returns:
+            Path: Corresponding path on the host system.
+        """
+        return comm_path
 
     def copy_from_host(self, source: PathType, destination: PathType) -> None:
         """Copy a file from the host (the machine benchkit is run on), to the
@@ -397,7 +413,7 @@ class CommunicationLayer:
         ).strip()
         return result
 
-    def realpath(self, path: PathType) -> pathlib.Path:
+    def realpath(self, path: PathType) -> Path:
         """Get real path, following symlinks, of the given path.
         Communication aware equivalent of path.resolve().
 
@@ -412,7 +428,7 @@ class CommunicationLayer:
             print_input=False,
             print_output=False,
         ).strip()
-        result = pathlib.Path(output)
+        result = Path(output)
         return result
 
     def isfile(self, path: PathType) -> bool:
@@ -468,7 +484,7 @@ class CommunicationLayer:
         """
         return self._bracket_test(path=path, opt="-d")
 
-    def which(self, cmd: str) -> pathlib.Path | None:
+    def which(self, cmd: str) -> Path | None:
         """Return the absolute path of a given executable in the path.
 
         Args:
@@ -497,7 +513,7 @@ class CommunicationLayer:
         if not path:
             return None
 
-        result = pathlib.Path(path)
+        result = Path(path)
         return result
 
     def _bracket_test(
@@ -691,9 +707,9 @@ class LocalCommLayer(CommunicationLayer):
     def current_user(self) -> str:
         return getpass.getuser()
 
-    def realpath(self, path: PathType) -> pathlib.Path:
+    def realpath(self, path: PathType) -> Path:
         output = os.path.realpath(path)
-        result = pathlib.Path(output)
+        result = Path(output)
         return result
 
     def isfile(self, path: PathType) -> bool:
@@ -705,7 +721,7 @@ class LocalCommLayer(CommunicationLayer):
     def isdir(self, path: PathType) -> bool:
         return os.path.isdir(path)
 
-    def which(self, cmd: str) -> pathlib.Path | None:
+    def which(self, cmd: str) -> Path | None:
         result = which(cmd=cmd)
 
         # If result is None, pathlib.Path will throw an error because it
@@ -713,7 +729,7 @@ class LocalCommLayer(CommunicationLayer):
         if result is None:
             return None
 
-        return pathlib.Path(result)
+        return Path(result)
 
 
 class SSHCommLayer(CommunicationLayer):
@@ -983,7 +999,7 @@ class SSHCommLayer(CommunicationLayer):
     @staticmethod
     @lru_cache(maxsize=None)
     def _list_ssh_hosts() -> List[str]:
-        if not pathlib.Path("/usr/bin/fish").is_file():
+        if not Path("/usr/bin/fish").is_file():
             return []
         output = shell_out(
             command=["/usr/bin/fish", "-c", "__fish_print_hostnames"],

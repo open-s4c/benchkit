@@ -179,6 +179,30 @@ class DockerCommLayer(CommunicationLayer):
 
         return host_path  # No mapping found; return original
 
+    def comm_to_host_path(self, comm_path: Path) -> Path:
+        """
+        Convert a platform-side path (e.g., from inside a container) to the corresponding
+        path on the host system.
+
+        Args:
+            comm_path (Path): The path as seen from inside the container/platform.
+
+        Returns:
+            Path: The corresponding absolute path on the host.
+        """
+        comm_path = comm_path.resolve()
+        for host_base_str, container_base_str in self._docker_runner._volumes.items():
+            host_base = Path(host_base_str).resolve()
+            container_base = Path(container_base_str)
+
+            try:
+                relative = comm_path.relative_to(container_base)
+                return host_base / relative
+            except ValueError:
+                continue  # Not a subpath of this volume, try next
+
+        return comm_path  # No mapping found; return original
+
     def _remote_shell_command(
         self,
         remote_command: Command,
