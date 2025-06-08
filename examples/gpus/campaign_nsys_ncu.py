@@ -9,11 +9,11 @@ from typing import List
 from addvec import AddVecBench
 from gpus import get_gpu_docker_platform
 from nsightwrappers import NcuWrap, NsysWrap
-from platforms import Platform
 
 from benchkit.benchmark import PostRunHook
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
 from benchkit.commandwrappers import CommandWrapper
+from benchkit.platforms import Platform
 from benchkit.utils.dir import caller_dir
 
 nb_runs = 1
