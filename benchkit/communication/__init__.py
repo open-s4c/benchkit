@@ -328,6 +328,27 @@ class CommunicationLayer:
         """
         raise NotImplementedError
 
+    def host_to_comm_path(self, host_path: pathlib.Path) -> pathlib.Path:
+        """
+        Convert a path from the host namespace to the namespace visible to the communication
+        platform (e.g., container, remote host).
+
+        This function is used to adapt paths that Benchkit generates (e.g., to save results)
+        into equivalent paths visible inside the platform that actually runs the benchmark.
+
+        Default behavior assumes a shared filesystem and returns the original path.
+
+        Override in platform-specific subclasses if path rewriting is required
+        (e.g., Docker volume mounts or remote mount points).
+
+        Args:
+            host_path (Path): Absolute path on the host machine.
+
+        Returns:
+            Path: Corresponding path visible to the communication platform.
+        """
+        return host_path
+
     def copy_from_host(self, source: PathType, destination: PathType) -> None:
         """Copy a file from the host (the machine benchkit is run on), to the
            target machine the benchmark will be performed on.

@@ -4,12 +4,15 @@
 
 from pythainer.builders import PartialDockerBuilder, UbuntuDockerBuilder
 from pythainer.examples.builders import get_user_gui_builder
+from pythainer.examples.installs import nsight_systems_install
 from pythainer.examples.runners import gpu_runner, gui_runner, personal_runner
 from pythainer.runners import ConcreteDockerRunner, DockerRunner
 from smctrl import install_libsmctrl_from_src
 
+from benchkit.commandwrappers.perf import enable_non_sudo_perf
 from benchkit.communication.docker import DockerCommLayer
-from benchkit.platforms import Platform
+from benchkit.platforms import Platform, get_current_platform
+from benchkit.utils.dir import caller_dir
 from benchkit.utils.types import PathType
 
 
@@ -32,6 +35,17 @@ def get_gpu_builder(
     builder = get_user_gui_builder(
         image_name=image_name,
         base_ubuntu_image="nvidia/cuda:12.2.0-devel-ubuntu22.04",
+    )
+    builder.space()
+
+    builder.root()
+    nsight_systems_install(builder=builder)
+    builder.user()
+    builder.space()
+
+    install_libsmctrl_from_src(
+        builder=builder,
+        workdir="/home/${USER_NAME}/workspace/libraries",
     )
     builder.space()
 
@@ -93,13 +107,26 @@ def get_gpu_docker_platform(
     return platform
 
 
-if __name__ == "__main__":
+def get_docker_runner() -> ConcreteDockerRunner:
+    host_dir = caller_dir().parent.resolve()
+    guest_dir = "/home/user/gpus"
+
+    runner = get_gpu_runner(workdir=guest_dir)
+    runner |= DockerRunner(volumes={f"{host_dir}": guest_dir})
+    return runner
+
+
+def main() -> None:
+    platform = get_current_platform()
+    enable_non_sudo_perf(comm_layer=platform.comm)
+
     builder = get_gpu_builder()
-    install_libsmctrl_from_src(
-        builder=builder,
-        workdir="/home/${USER_NAME}/workspace/libraries",
-    )
+
     builder.build()
 
-    runner = get_gpu_runner()
+    runner = get_docker_runner()
     runner.run()
+
+
+if __name__ == "__main__":
+    main()

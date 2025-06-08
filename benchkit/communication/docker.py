@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import subprocess
+from pathlib import Path
 from typing import Iterable
 
 from pythainer.runners import ConcreteDockerRunner
@@ -154,6 +155,29 @@ class DockerCommLayer(CommunicationLayer):
             command=f"{prefix}tee -a {output_filename}",
             std_input=line + "\n",
         )
+
+    def host_to_comm_path(self, host_path: Path) -> Path:
+        """
+        Convert a host-side path to the corresponding path visible to the container/platform.
+
+        Args:
+            host_path (Path): The path as seen on the host system.
+
+        Returns:
+            Path: The equivalent path as seen inside the container or remote platform.
+        """
+        host_path = host_path.resolve()
+        for host_base_str, container_base_str in self._docker_runner._volumes.items():
+            host_base = Path(host_base_str).resolve()
+            container_base = Path(container_base_str)
+
+            try:
+                relative = host_path.relative_to(host_base)
+                return container_base / relative
+            except ValueError:
+                continue  # Not a subpath of this volume, try next
+
+        return host_path  # No mapping found; return original
 
     def _remote_shell_command(
         self,
