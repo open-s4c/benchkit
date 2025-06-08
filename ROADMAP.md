@@ -53,6 +53,7 @@ future.
     - OS-specific benchmarks
     - used in Huawei OSDI'24 paper
     - ref: https://lmbench.sourceforge.net/why_lmbench.html
+[ ] https://github.com/eembc/coremark
 
 ## Functional changes
 
