@@ -26,7 +26,8 @@ from benchkit.shell.CommunicationLayer.OutputObject import sshOutput
 def execute_command(
     # needed for starting the command
     command: List[str],
-    current_dir: Optional[pathlib.Path | os.PathLike[Any] | str] = None,
+    # This dir can only be a path on the local machine
+    current_dir: Optional[pathlib.Path] = None,
     environment: Optional[Dict[str, str]] = None,
     # needed for construction and evaluation of output
     timeout: Optional[int] = None,

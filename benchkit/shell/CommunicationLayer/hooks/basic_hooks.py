@@ -1,6 +1,8 @@
 # Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations  # Otherwise Queue comlains about typing
+
 from multiprocessing import Queue
 from typing import Any
 
