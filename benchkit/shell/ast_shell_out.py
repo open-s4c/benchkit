@@ -28,6 +28,9 @@ def execute_command(
     command: List[str],
     # This dir can only be a path on the local machine
     current_dir: Optional[pathlib.Path] = None,
+
+    # TODO: the environment variable will start a process with only these env variables
+    # Do we want to add os.environ to this?
     environment: Optional[Dict[str, str]] = None,
     # needed for construction and evaluation of output
     timeout: Optional[int] = None,
@@ -38,6 +41,9 @@ def execute_command(
     ordered_input_hooks: Optional[List[IOHook]] = None,
     ordered_output_hooks: Optional[List[OutputHook]] = None,
 ) -> CommandProcess:
+
+    if environment is None:
+        environment = {}
 
     shell_process = subprocess.Popen(
         command,
