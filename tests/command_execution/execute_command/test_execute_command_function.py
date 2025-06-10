@@ -184,10 +184,7 @@ class BasicShellTests(unittest.TestCase):
         """Test to see if the correct directory is used when running commands"""
         def expected_full_path(path_lib:pathlib.Path):
             expected_path = os.getcwd()
-            print('----------------')
-            print(expected_path)
             path = str(path_lib)
-            print(path)
             while True:
                 if path.startswith('/'):
                     return path
@@ -211,7 +208,6 @@ class BasicShellTests(unittest.TestCase):
         arguments_list = get_arguments_dict_list(
             {
                 'current_dir':[None, pathlib.Path(__file__).parent.resolve(),pathlib.Path('/tmp'),pathlib.Path('./'),pathlib.Path('../../')],
-                # 'current_dir':[pathlib.Path('./'),pathlib.Path('../../')],
                 'environment':[None,{'test':'test'},{'a':'12','b':'11'},{}],
                 'timeout':[None,1,10,99999999999],
                 'ignore_ret_codes':[None,(1,),(1,7,),()],
@@ -244,6 +240,45 @@ class BasicShellTests(unittest.TestCase):
                             f'{expected_path}\n'.encode('utf-8'),
                             "the paths do not match"
                         )
+                except TestTimeout:
+                    self.fail(
+                        "execution timed out"
+                    )
+
+
+    # @unittest.skip("disabled for debugging")
+    def test_input(self):
+        """testing the use of the std_input parameter"""
+         # standard arguments
+        arguments_list = get_arguments_dict_list(
+            {
+                'current_dir':[None, pathlib.Path(__file__).parent.resolve(),pathlib.Path('/')],
+                'environment':[None,{'test':'test'},{'a':'12','b':'11'},{}],
+                'timeout':[None,1,10,99999999999],
+                'ignore_ret_codes':[None,(1,),(1,7,),()],
+            }
+        )
+        for arguments in arguments_list:
+
+            # hook based argumens
+            hooklist = generate_test_hook_lists(force_output=True)
+            for input_hooks,output_hooks,result_hook_object in hooklist:
+                try:
+                # execution
+                    with timeout(5):
+                        execute_command(
+                        [script_path_string("writeBack")],
+                        std_input=StringIOStream(f"benchkit input test {str(arguments)}\n"),
+                        ordered_input_hooks=input_hooks,
+                        ordered_output_hooks=output_hooks,
+                        **arguments,
+                        )
+                    out = result_hook_object.get_result()
+                    self.assertEqual(
+                        out,
+                        f"benchkit input test {str(arguments)}\n",
+                        f"recieved{out}",
+                    )
                 except TestTimeout:
                     self.fail(
                         "execution timed out"
@@ -300,7 +335,7 @@ class BasicShellTests(unittest.TestCase):
                         f"process trew an error with retcode {retcode_to_output} and ignored list {arguments["ignore_ret_codes"]}"
                     )
 
-    # @unittest.skip("disabled for debugging")
+    @unittest.skip("disabled for debugging")
     def test_ignore_ret_codes_dont_ignore_other(self) -> None:
         # standard arguments
         arguments_list = get_arguments_dict_list(
