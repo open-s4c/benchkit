@@ -8,7 +8,7 @@ import os
 import signal
 import subprocess
 import sys
-from typing import Optional
+from typing import Iterable, Optional
 
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.shell.utils import get_args, print_header
@@ -35,6 +35,7 @@ class AsyncProcess:
         stderr_path: PathType,
         current_dir: Optional[PathType] = None,
         environment: Environment = None,
+        ignore_ret_codes: Iterable[int] = (),
     ):
         self._platform = platform
         self._arguments = arguments
@@ -44,6 +45,7 @@ class AsyncProcess:
         self._stderr_handle = open(stderr_path, "w")
         self._stdout_handle = open(stdout_path, "w")
         self._error_code = None
+        self._ignore_ret_codes = ignore_ret_codes
 
         self._process = self._platform.comm.background_subprocess(
             arguments,
@@ -127,7 +129,7 @@ class AsyncProcess:
         self._stdout_handle.close()
         self._stderr_handle.close()
 
-        if 0 != self._error_code:
+        if 0 != self._error_code and self._error_code not in self._ignore_ret_codes:
             _flush()
             print(self._error(), file=sys.stderr)
             _flush()
@@ -244,6 +246,7 @@ def shell_async(
     platform: Platform,
     current_dir: Optional[PathType] = None,
     environment: Environment = None,
+    ignore_ret_codes: Iterable[int] = (),
     print_input: bool = True,
     print_env: bool = True,
     print_curdir: bool = True,
@@ -284,6 +287,11 @@ def shell_async(
             whether to print the shell command in a log file
             (`/tmp/benchkit-[USERNAME]/benchkit.sh`).
             Defaults to True.
+        ignore_ret_codes (Iterable[int], optional):
+            collection of error return codes to ignore if they are triggered.
+            This allows to avoid an exception to be raised for commands that do not end with 0 even
+            if they are successful.
+            Defaults to ().
 
     Returns:
         AsyncProcess: the handle of the newly created asynchronous process.
@@ -310,6 +318,7 @@ def shell_async(
         stderr_path=stderr_path,
         current_dir=current_dir,
         environment=environment,
+        ignore_ret_codes=ignore_ret_codes,
     )
 
     return process
