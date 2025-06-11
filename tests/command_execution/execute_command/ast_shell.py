@@ -8,7 +8,7 @@ import subprocess
 import unittest
 from typing import Any
 
-from shell_scripts import TestTimeout, script_path_string, timeout
+from tests.command_execution.execute_command.util import TestTimeout, script_path_string, timeout
 
 from benchkit.shell.shell import shell_out
 

@@ -5,7 +5,7 @@ import shlex
 import subprocess
 import sys
 
-from shell_scripts import script_path_string
+from tests.command_execution.execute_command.util import script_path_string
 
 from benchkit.shell.ast_shell_out import execute_command
 from benchkit.shell.commandAST import command as makecommand
