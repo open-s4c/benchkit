@@ -43,7 +43,6 @@ def create_stream_line_logger_hook(formating_string: str) -> IOReaderHook:
                 end="",
             )
             byt = input_object.read_line()
-        print(f"exited {formating_string.format('')}")
 
     return IOReaderHook(hook_function_line)
 

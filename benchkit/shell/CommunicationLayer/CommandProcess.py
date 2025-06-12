@@ -96,4 +96,4 @@ class CommandProcess:
     # THIS DOES NOT SEND IT TO THE RIGHT ONE -> move abstraction higher
     def signal(self, signalcode: int) -> None:
         self.__popen_object.send_signal(signalcode)
-        # self.__popen_object.wait(1)
+        self.__popen_object.wait(1)

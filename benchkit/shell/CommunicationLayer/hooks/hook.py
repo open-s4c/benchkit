@@ -31,12 +31,15 @@ class IOHook(ABC):
 class IOWriterHook(IOHook):
     def __init__(self, hook_function: Callable[[ReadableIOStream, PipeIOStream], None]):
         self.hook_function = hook_function
+        self.__name = self.hook_function.__name__
         super().__init__()
 
     def start_hook_function(self, input_stream: ReadableIOStream) -> None:
         p = Process(
             target=self.hook_function,
             args=(input_stream, self._output),
+            name=self.__name,
+            daemon=True,
         )
         p.start()
 
@@ -49,6 +52,7 @@ class IOReaderHook(IOHook):
     def __init__(self, hook_function: Callable[[ReadableIOStream], None]):
         self.hook_function = hook_function
         self._stream_duplicate = PipeIOStream()
+        self.__name = self.hook_function.__name__
         super().__init__()
 
     @staticmethod
@@ -72,10 +76,14 @@ class IOReaderHook(IOHook):
                 self._output,
                 self._stream_duplicate,
             ),
+            name=self.__name + " pasalong",
+            daemon=True,
         )
         reader_hook_process = Process(
             target=self.hook_function,
             args=(self._stream_duplicate,),
+            name=self.__name,
+            daemon=True,
         )
 
         duplication_process.start()
@@ -89,12 +97,15 @@ class IOResultHook(IOHook):
     def __init__(self, hook_function: Callable[[ReadableIOStream, PipeIOStream, Queue[Any]], None]):
         self.__queue: Queue[Any] = Queue()
         self.hook_function = hook_function
+        self.__name = self.hook_function.__name__
         super().__init__()
 
     def start_hook_function(self, input_stream: ReadableIOStream) -> None:
         p = Process(
             target=self.hook_function,
             args=(input_stream, self._output, self.__queue),
+            name=self.__name,
+            daemon=True,
         )
         p.start()
 
@@ -126,15 +137,15 @@ class MergeErrToOut(OutputHook):
     def __init__(self):
         self.std_out = PipeIOStream()
 
-    def hookfunction(self, input_object: ReadableIOStream, _: WritableIOStream):
+    def mergehookfunction(self, input_object: ReadableIOStream, _: WritableIOStream):
         outline = input_object.read_line()
         while outline:
             self.std_out.write(outline)
             outline = input_object.read_line()
 
     def attatch(self, output: Output) -> Output:
-        stdout_hook = IOWriterHook(self.hookfunction)
-        stderr_hook = IOWriterHook(self.hookfunction)
+        stdout_hook = IOWriterHook(self.mergehookfunction)
+        stderr_hook = IOWriterHook(self.mergehookfunction)
         stdout_hook.start_hook_function(output.std_out)
         stderr_hook.start_hook_function(output.std_err)
         self.std_out.endWriting()

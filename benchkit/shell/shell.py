@@ -13,13 +13,13 @@ from typing import Iterable, List, Optional
 from benchkit.shell.ast_shell_out import execute_command
 from benchkit.shell.CommunicationLayer.CommandProcess import CommandProcess
 from benchkit.shell.CommunicationLayer.hooks.basic_hooks import (
-    create_stream_line_logger_hook,
     logger_line_hook,
     std_out_result_void_err,
     void_hook,
+    void_input,
 )
 from benchkit.shell.CommunicationLayer.hooks.hook import (
-    IOHook,
+    IOWriterHook,
     MergeErrToOut,
     OutputHook,
 )
@@ -34,10 +34,22 @@ from benchkit.utils.types import Command, Environment, PathType
 
 USE_NEW_SHELL = True
 
+def split_on_pipe(sub_commands:List[str]):
+    full_list:List[List[str]] = []
+    sub_command:List[str] = []
+    for s in sub_commands:
+        if s == "|":
+            full_list.append(sub_command)
+            sub_command = []
+        else:
+            sub_command.append(s)
+    full_list.append(sub_command)
+    return full_list
+
+
 
 def pipe_shell_out(
-    # command: Command,
-    commands: List[Command],
+    command: Command,
     current_dir: Optional[PathType] = None,
     shell: bool = True,
     print_command: bool = True,
@@ -57,41 +69,70 @@ def pipe_shell_out(
     Returns:
         str: the output of the piped command.
     """
-    i: ReadableIOStream = EmptyIOStream()
-    processes: List[CommandProcess] = []
-    for com in commands:
-        command = shlex.split(com) if isinstance(com, str) else com
-        command_string = shlex.join(command)
-        output_hooks: List[OutputHook] = []
-        log = logger_line_hook(
-            f"\033[34m[OUT | {command_string}]\033[0m" + " {}",
-            f"\033[91m[ERR | {command_string}]\033[0m" + " {}",
-        )
-        output_hooks.append(log)
+    if USE_NEW_SHELL:
+        # create a list for all processes that will be run
+        processes: List[CommandProcess] = []
 
-        input_hooks: List[IOHook] = []
+        # no input posible in the begining so we create an empty stream for the first command
+        input_stream: ReadableIOStream = EmptyIOStream()
 
-        a = create_stream_line_logger_hook(f"input of {command_string} |" + " {}")
-        input_hooks.append(a)
-        print(f"\033[32m[START | {command_string}]\033[0m")
-        process = execute_command(
-            command=command,
-            std_input=i,
-            current_dir=current_dir,
-            ordered_output_hooks=output_hooks,
-            ordered_input_hooks=input_hooks,
-            # If ignore_ret_codes is empty we swap it over to None instead
-            ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
-        )
-        processes.append(process)
-        i = process.get_output().std_out
-        # IOWriterHook(void_input).start_hook_function(process.get_output().std_err)
+        # create a hook for the last process to gather the result of the piped command
+        gather_result_object, gather_result_hook = std_out_result_void_err()
 
-    # IOWriterHook(void_input).start_hook_function(i)
-    for p in processes:
-        print(p.get_return_code())
+        # break our command in pieces in case there are pipes
+        command_split = shlex.split(command) if isinstance(command,str) else command
+        command_string = command_string = shlex.join(command_split)
+        commands = split_on_pipe(command_split)
 
-    return ""
+        if print_command:
+                print(f"\033[32m[Full piped command | {command_string}]\033[0m")
+
+        # enumerate all commands and start a process for each of them
+        for idx, com in enumerate(commands):
+            # break the command for the execution
+            command = shlex.split(com) if isinstance(com, str) else com
+            command_string = shlex.join(command)
+
+            # TODO: this technicaly is not the deafault but it stays here for demonstration reasons for a bit
+            # log each command
+            output_hooks: List[OutputHook] = []
+            log = logger_line_hook(
+                f"\033[34m[OUT | {command_string}]\033[0m" + " {}",
+                f"\033[91m[ERR | {command_string}]\033[0m" + " {}",
+            )
+            output_hooks.append(log)
+
+            if idx == len(commands) - 1:
+                # for the last command we merge err and out and gather it
+                output_hooks.append(MergeErrToOut())
+                output_hooks.append(gather_result_hook)
+            else:
+                # for all other commands we void error and out will be used by next command
+                void_err = OutputHook(None,IOWriterHook(void_input))
+                output_hooks.append(void_err)
+
+            # print the command we are about to start
+            if print_command:
+                print(f"\033[32m[START | {command_string}]\033[0m")
+            process = execute_command(
+                command=command,
+                std_input=input_stream,
+                current_dir=current_dir,
+                ordered_output_hooks=output_hooks,
+                # If ignore_ret_codes is empty we swap it over to None instead
+                ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
+            )
+            # remember the process
+            processes.append(process)
+
+            # Link the output stream to the next by making it the input stream
+            input_stream = process.get_output().std_out
+
+        # wait for all procces to finish
+        for p in processes:
+            p.get_return_code()
+
+        return gather_result_object.get_result().decode("utf-8")
     arguments = get_args(command)
     if print_command:
         print_header(
@@ -210,8 +251,12 @@ def shell_out(
         std_input_io = StringIOStream(std_input) if std_input is not None else None
         output_hooks: List[OutputHook] = []
 
+        # if we need to ignore any error code we just add all of them to the ignore list
+        # the overhead of doing this is minimal and it keeps the code cleaner
+        if ignore_any_error_code:
+            ignore_ret_codes = (x for x in range(226))
+
         # add hook to log the output of the command
-        # TODO: make this customizable
         if output_is_log:
             log = logger_line_hook(
                 f"\033[34m[OUT | {command_string}]\033[0m" + " {}",
@@ -230,12 +275,10 @@ def shell_out(
 
         # gather the entire stdout stream into a variable
         output_hook_object, voiding_result_hook = std_out_result_void_err()
-
         output_hooks.append(voiding_result_hook)
 
         # this will make sure we clear all our outputs in the end
         # otherwise the command might block
-        # TODO: we can make the voiding result hook do this
         output_hooks.append(void_hook())
 
         process = execute_command(
@@ -245,8 +288,7 @@ def shell_out(
             environment=environment,
             timeout=timeout,
             ordered_output_hooks=output_hooks,
-            # If ignore_ret_codes is empty we swap it over to None instead
-            ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
+            ignore_ret_codes=ignore_ret_codes,
         )
         # this line is here to check if the program failed
         process.get_return_code()
@@ -368,6 +410,13 @@ def shell_interactive(
     ignore_ret_codes: Iterable[int] = (),
 ) -> None:
     if USE_NEW_SHELL:
+        # ok so, you can not exit this,
+        # you exit the shell you exit the benchmark
+
+        # TODO: workaround: we can add make custom hooks for this function that survive the interupt signal once
+        # using try: except Keyinterupt
+        #
+
         command = shlex.split(command) if isinstance(command, str) else command
 
         # convert string input to an IOStream
@@ -375,14 +424,12 @@ def shell_interactive(
         output_hooks = []
 
         # add hook to log the output of the command
-        # TODO: make this customizable
         log = logger_line_hook(
             "> {}",
             "! {}",
         )
         output_hooks.append(log)
 
-        # TODO: log hook could be written better here to do this
         output_hooks.append(void_hook())
 
         # Print the input string
@@ -395,7 +442,6 @@ def shell_interactive(
             current_dir=current_dir,
             environment=environment,
             ordered_output_hooks=output_hooks,
-            print_command_start=print_input,
             # If ignore_ret_codes is empty we swap it over to None instead
             ignore_ret_codes=ignore_ret_codes if not any(True for _ in ignore_ret_codes) else None,
         )
@@ -404,14 +450,15 @@ def shell_interactive(
         # goes to the process we are interacting with
         original_sigint_handler = signal.getsignal(signal.SIGINT)
 
-        def signal_handler(sig, frame):
-            process.signal(sig)
-            # sys.stdin.close()
-            signal.signal(signal.SIGINT, original_sigint_handler)
+        # def signal_handler(sig, frame):
+        #     process.signal(sig)
+        #     sys.stdin.close()
+        #     signal.signal(signal.SIGINT, original_sigint_handler)
 
-        signal.signal(signal.SIGINT, signal_handler)
+        # signal.signal(signal.SIGINT, signal_handler)
 
         # use our stdin as the interaction for the process
+
         try:
             outline = sys.stdin.read(1).encode("utf-8")
             while outline:
@@ -421,12 +468,12 @@ def shell_interactive(
         # This is intended as the exit method
         except Exception:
             pass
+        # except KeyboardInterrupt:
+        #     pass
         # Cleanly close the input file
         std_input_io.endWriting()
 
         return None
-
-        # TODO: return to this once we have a frame for the return value of shell_out_new
 
     arguments = get_args(command)
     print_header(
