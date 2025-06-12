@@ -254,7 +254,7 @@ def shell_out(
         # if we need to ignore any error code we just add all of them to the ignore list
         # the overhead of doing this is minimal and it keeps the code cleaner
         if ignore_any_error_code:
-            ignore_ret_codes = (x for x in range(226))
+            ignore_ret_codes = (x for x in range(256))
 
         # add hook to log the output of the command
         if output_is_log:
