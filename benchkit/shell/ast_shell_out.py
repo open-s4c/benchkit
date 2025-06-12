@@ -4,7 +4,7 @@
 # Otherwise os.PathLike[Any] complains
 from __future__ import annotations
 
-import os
+import multiprocessing
 import pathlib
 import subprocess
 from typing import Any, Dict, Iterable, List, Optional
@@ -41,6 +41,8 @@ def execute_command(
     ordered_input_hooks: Optional[List[IOHook]] = None,
     ordered_output_hooks: Optional[List[OutputHook]] = None,
 ) -> CommandProcess:
+
+    # untested but this line should force it to work on mac
 
     if environment is None:
         environment = {}
