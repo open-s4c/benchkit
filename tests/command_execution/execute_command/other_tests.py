@@ -1,10 +1,16 @@
 # Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations  # Otherwise Queue comlains about typing
+
+from multiprocessing import Queue
 import shlex
 import subprocess
 import sys
+from time import sleep
+from typing import Any
 
+from benchkit.shell.CommunicationLayer.hooks.hook import IOResultHook, MergeErrToOut, OutputHook
 from tests.command_execution.execute_command.util import script_path_string
 
 from benchkit.shell.ast_shell_out import execute_command
@@ -18,11 +24,12 @@ from benchkit.shell.commandAST.visitor import (
     resolveAllVariablesWithDict,
 )
 from benchkit.shell.CommunicationLayer.hooks.basic_hooks import (
-    logger_hook,
+    logger_line_hook,
     std_out_result_void_err,
+    void_hook,
 )
-from benchkit.shell.CommunicationLayer.IO_stream import PipeIOStream, ReadableIOStream
-from benchkit.shell.shell import pipe_shell_out, shell_interactive, shell_out
+from benchkit.shell.CommunicationLayer.IO_stream import PipeIOStream, ReadableIOStream, WritableIOStream
+from benchkit.shell.shell import pipe_shell_out, shell_interactive, shell_out, split_on_pipe
 
 
 def commandtests():
@@ -106,81 +113,137 @@ def runtest():
     print(str(output.decode("utf-8")))
 
 
+def shell_test():
+    a = pipe_shell_out('ls | cat')
+    print(a)
+    a = pipe_shell_out([script_path_string("runForever"), '|', 'cat'])
+    print(a)
+
+    # shell_interactive("ssh aaronb@soft24.vub.ac.be 'sh'")
+
+
 def testhalt():
-    # shell_process = subprocess.Popen(
-    #     # why exec:
-    #     # we want to be able to use shell=True
-    #     # however this would make the shell the pid of the subprocess
-    #     # by using exec we can get make the command take over the pid of the shell
-    #     # this only works for POSIX
-    #     f"./shell_scripts/fillErrThenPrint.sh",
-    #     # shell=True,
-    #     stdout=sys.stdout,
-    #     stderr=sys.stderr,
-    #     stdin=subprocess.PIPE,
+
+    # -------------------------------------------------------
+    # pid hook example
+    # for end
+    # -------------------------------------------------------
+
+    def stdout_pid_result_filter(inputStream:ReadableIOStream,OutputStream:WritableIOStream,queue:Queue[Any]):
+        first_line = inputStream.read_line()
+        queue.put(first_line)
+        outline = inputStream.read(10)
+        while outline:
+            OutputStream.write(outline)
+            outline = inputStream.read(10)
+
+    pid_stream_hook = IOResultHook(stdout_pid_result_filter)
+
+
+    pid_output_hook = OutputHook(pid_stream_hook,None)
+
+    # -------------------------------------------------------
+    # commands work
+    # first step
+    # get return codes/errors
+    # -------------------------------------------------------
+
+    # process_dir = execute_command(["mkdir", "test"],ordered_output_hooks=[void_hook()])
+    # print(process_dir.get_return_code())
+
+    # execute_command(["command that does not exist"])
+
+    # wrong_retcode = execute_command(["cat", "wafel"],
+    #                                 # success_value=1,
+    #                                 # ignore_ret_codes=(1,),
+    #                                 ordered_output_hooks=[void_hook()])
+    # print(wrong_retcode.get_return_code())
+
+    # -------------------------------------------------------
+    # ls
+    # -> does not work
+    #   -> voidhook
+    #     -> drawio
+    # -> would be nice to see what it is doing
+    #   -> log_ls
+    #     -> show
+    #       -> drawio
+    # -> would be nice to get output
+    #   -> output
+    #     -> drawio
+    # -> move over to pipe cat
+    # -------------------------------------------------------
+
+    # command = ["ls"]
+    command = [script_path_string("runForever")]
+
+    log_ls = logger_line_hook(
+                f"\033[34m[OUT | ls]\033[0m" + " {}",
+                f"\033[91m[ERR | ls]\033[0m" + " {}",
+            )
+
+    outobj, outhook = std_out_result_void_err()
+
+    merge = MergeErrToOut()
+
+    ls_command = execute_command(command,
+                        ordered_output_hooks=[
+                            merge,
+                            log_ls,
+                            # outhook,
+                            # void_hook(),
+                            ]
+                        )
+
+    # print(outobj.get_result())
+    # print(ls_command.get_return_code())
+
+    ls_out_stream = ls_command.get_output().std_out
+
+    log_cat = logger_line_hook(
+                f"\033[34m[OUT | cat]\033[0m" + " {}",
+                f"\033[91m[ERR | cat]\033[0m" + " {}",
+            )
+
+    # cat_command_string = ["cat"]
+    # cat_command_string = shlex.split("ssh aaronb@soft24.vub.ac.be 'cat'")
+    cat_command_string = shlex.split("ssh aaronb@soft24.vub.ac.be 'echo $$; cat'")
+
+    cat_command = execute_command(cat_command_string,
+                        std_input=ls_out_stream,
+                        ordered_output_hooks=[
+                            pid_output_hook,
+                            log_cat,
+                            # outhook,
+                            void_hook(),
+                            ]
+                        )
+
+    print(f'-------\n{pid_stream_hook.get_result()}\n----------')
+
+    ls_command.get_return_code()
+    cat_command.get_return_code()
+
+
+
+
+    # these can not be reused
+    # log = logger_line_hook(
+    #             f"\033[34m[OUT | ]\033[0m" + " {}",
+    #             f"\033[91m[ERR | ]\033[0m" + " {}",
+    #         )
+
+    # a = execute_command(
+    #     shlex.split("ssh aaronb@soft24.vub.ac.be 'cd test; echo $$; exec sudo -S env varname=varvalue printenv varname'"),
+    #     ordered_output_hooks=[log]
     # )
-    # shell_process.wait()
-    # args = {
-    #     "print_output": True,
-    #     "output_is_log": True,
-    #     "redirect_stderr_to_stdout": False,
-    #     "current_dir": None,
-    #     "environment": None,
-    #     "timeout": None,
-    #     "ignore_ret_codes": (),
-    # }
-    # shell_out_new(convert_command_to_ast(script_path_string("fillOutThenErr")), **args)
-    # print("yeet")
 
-    # test for the newlines
-    # raw_output = shell_out(
-    #     command="cat",
-    #     std_input="a \n\n b \n c\n",
-    #     print_input=False,
-    #     print_output=False,
-    # )
 
-    # test for command that does not fully output in deafault terminal
 
-    # def pasalong(input_stream:ReadableIOStream,_) -> None:
-    #     outline = input_stream.read(10)
-    #     print(f'outline{outline!r}')
-    #     while outline:
-    #         print(f'outline{outline}')
-    #         outline = input_stream.read(10)
-
-    # a = StdinIOStream(sys.stdin)
-
-    # pasalong(a,2)
-    # ssh aaronb@soft24.vub.ac.be sleep 10
-    # shell_interactive(
-    #     # command=['ssh', 'aaronb@soft24.vub.ac.be', 'ls -A -w 1'],
-    #     # command=['ssh', 'aaronb@soft24.vub.ac.be', 'sleep 10'],
-    #     command=['sh'],
-    #     # output_is_log=True
-    # )
-    shell_out(
-        # command=['/home/aaronb/Documents/benchFork/benchkit/tests/ast-shell/shell_tests/shell_scripts/runForever.sh'],
-        # command=['ssh', 'aaronb@soft24.vub.ac.be', 'sleep 10'],
-        # command=['ls'],
-        command="/home/aaron/benchkitFork/benchkit/tests/ast-shell/shell_tests/shell_scripts/runForever.sh",
-        output_is_log=True,
-        timeout=5,
-    )
-
-    # pipe_shell_out(
-    #     [
-    #         "/home/aaron/benchkitFork/benchkit/tests/ast-shell/shell_tests/shell_scripts/runForever.sh","cat"
-    #     ]
-    # )
-    print("a")
-    # print(a)
-    # raw_output = shell_out(
-    #     command="/usr/bin/perf list --no-desc",
-    #     output_is_log=True,
-    # )
-    # return raw_output
+    # r = a.get_return_code()
+    # print(r)
 
 
 if __name__ == "__main__":
-    testhalt()
+    # testhalt()
+    shell_test()
