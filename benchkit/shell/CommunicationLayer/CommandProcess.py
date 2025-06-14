@@ -63,6 +63,7 @@ class CommandProcess:
         except TimeoutExpired as exc:
             # TODO: we can add some form of logging here to warn the user if something went wrong
             subprocess.terminate()
+            subprocess.wait(1)
             queue.put((-1, exc))
 
     def __wait_async(self) -> Thread:
