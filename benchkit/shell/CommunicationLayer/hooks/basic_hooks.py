@@ -4,7 +4,9 @@
 from __future__ import annotations  # Otherwise Queue comlains about typing
 
 from multiprocessing import Queue
+from time import sleep
 from typing import Any
+from pathlib import Path
 
 from benchkit.shell.CommunicationLayer.hooks.hook import (
     IOReaderHook,
@@ -14,6 +16,7 @@ from benchkit.shell.CommunicationLayer.hooks.hook import (
 )
 from benchkit.shell.CommunicationLayer.IO_stream import (
     ReadableIOStream,
+    StringIOStream,
     WritableIOStream,
     try_converting_bystring_to_readable_characters,
 )
@@ -32,6 +35,35 @@ def create_voiding_result_hook() -> IOResultHook:
         result_queue.put(outlines)
 
     return IOResultHook(hook_function)
+
+def stream_prepend_hook(stream:StringIOStream):
+    def hook_function(
+        input_object: ReadableIOStream, output_object: WritableIOStream,
+    ):
+        outline = stream.read(10)
+        while outline:
+            output_object.write(outline)
+            outline = input_object.read(10)
+        outline = input_object.read(10)
+        while outline:
+            output_object.write(outline)
+            outline = input_object.read(10)
+
+    return IOWriterHook(hook_function)
+
+def write_to_file_hook(path:Path,mode:str="a"):
+    def hook_function(
+        input_object: ReadableIOStream,
+    ):
+        with path.open(mode=f'{mode}b', buffering=0) as file:
+            outline = input_object.read(10)
+            while outline:
+                file.write(outline)
+                outline = input_object.read(10)
+            file.flush()
+
+    return IOReaderHook(hook_function)
+
 
 
 def create_stream_line_logger_hook(formating_string: str) -> IOReaderHook:

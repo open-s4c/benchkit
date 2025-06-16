@@ -4,6 +4,7 @@
 from __future__ import annotations  # Otherwise Queue comlains about typing
 
 from multiprocessing import Queue
+from pathlib import Path
 import shlex
 import subprocess
 import sys
@@ -26,9 +27,11 @@ from benchkit.shell.commandAST.visitor import (
 from benchkit.shell.CommunicationLayer.hooks.basic_hooks import (
     logger_line_hook,
     std_out_result_void_err,
+    stream_prepend_hook,
     void_hook,
+    write_to_file_hook,
 )
-from benchkit.shell.CommunicationLayer.IO_stream import PipeIOStream, ReadableIOStream, WritableIOStream
+from benchkit.shell.CommunicationLayer.IO_stream import PipeIOStream, ReadableIOStream, StringIOStream, WritableIOStream
 from benchkit.shell.shell import pipe_shell_out, shell_interactive, shell_out, split_on_pipe
 
 
@@ -114,10 +117,29 @@ def runtest():
 
 
 def shell_test():
-    a = pipe_shell_out('ls | cat')
-    print(a)
-    a = pipe_shell_out([script_path_string("runForever"), '|', 'cat'])
-    print(a)
+
+    log_ls = logger_line_hook(
+            f"\033[34m[OUT | sudo]\033[0m" + " {}",
+            f"\033[91m[ERR | sudo]\033[0m" + " {}",
+        )
+    filewriterIO = write_to_file_hook(Path("/tmp/testfile.txt"))
+    filewriter = OutputHook(filewriterIO,None)
+
+    a = execute_command(
+        shlex.split("ssh aaronb@soft67.vub.ac.be 'sudo -S -k ls'"),
+        ordered_input_hooks=[stream_prepend_hook(StringIOStream("123456789"))],
+        ordered_output_hooks=[log_ls,MergeErrToOut(),filewriter,void_hook()]
+    )
+
+    a.get_return_code()
+
+    sleep(1)
+
+
+    # a = pipe_shell_out('sudo perf stat ls')
+    # print(a)
+    # a = pipe_shell_out([script_path_string("runForever"), '|', 'cat'])
+    # print(a)
 
     # shell_interactive("ssh aaronb@soft24.vub.ac.be 'sh'")
 
