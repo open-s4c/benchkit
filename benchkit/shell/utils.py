@@ -8,7 +8,6 @@ import os
 import pathlib
 import re
 import sys
-import tempfile
 from typing import Optional
 
 from benchkit.utils.misc import get_benchkit_temp_folder_str
@@ -94,7 +93,7 @@ def _print_file_shell_cmd(
     remote_host: str | None = None,
 ) -> None:
     if pathname is None:
-        pathname = os.path.join(tempfile.gettempdir(), "benchkit.sh")
+        pathname = os.path.join(get_benchkit_temp_folder_str(), "benchkit.sh")
 
     header = []
     if not os.path.isfile(pathname):
