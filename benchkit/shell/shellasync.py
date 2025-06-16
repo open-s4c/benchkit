@@ -281,7 +281,8 @@ def shell_async(
             whether to print the complete shell command, ready to be copy-pasted in a terminal.
             Defaults to False.
         print_file_shell_cmd (bool, optional):
-            whether to print the shell command in a log file (`/tmp/benchkit.sh`).
+            whether to print the shell command in a log file
+            (`/tmp/benchkit-[USERNAME]/benchkit.sh`).
             Defaults to True.
 
     Returns:

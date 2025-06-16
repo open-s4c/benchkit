@@ -3,5 +3,6 @@ venv/
 .venv/
 .idea/
 .vscode/
+.DS_Store
 results/
 benchkit.egg-info/

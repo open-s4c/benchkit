@@ -21,7 +21,13 @@ from benchkit.sharedlibs import SharedLib
 from benchkit.sharedlibs.tiltlib import TiltLib
 from benchkit.shell.shellasync import AsyncProcess, shell_async
 from benchkit.utils.gdb import generate_gdb_script_from_cmd
-from benchkit.utils.misc import CSV_SEPARATOR, TimeMeasure, dict_union, seconds2pretty
+from benchkit.utils.misc import (
+    CSV_SEPARATOR,
+    TimeMeasure,
+    dict_union,
+    get_benchkit_temp_folder_str,
+    seconds2pretty,
+)
 from benchkit.utils.system import get_boot_args
 from benchkit.utils.tee import teeprint
 from benchkit.utils.types import (
@@ -941,7 +947,7 @@ class Benchmark:
     def _temp_record_prefix(self) -> pathlib.Path:
         # TODO warning, does not support concurrent execution
         # for this, need a unique record path for each benchmark run
-        return pathlib.Path("/tmp/benchkit_record")
+        return pathlib.Path(f"{get_benchkit_temp_folder_str()}/benchkit_record")
 
     def _temp_record_data_dir(self, record_data_dir: pathlib.Path):
         # The ./ prefix is necessary since pathlib ignores the first
@@ -1253,8 +1259,8 @@ class Benchmark:
             stdout_path = record_data_dir / "cmd_stdout.txt"
             stderr_path = record_data_dir / "cmd_stderr.txt"
         else:
-            stdout_path = "/tmp/benchkit_lastcmd_stdout.txt"
-            stderr_path = "/tmp/benchkit_lastcmd_stderr.txt"
+            stdout_path = f"{get_benchkit_temp_folder_str()}/benchkit_lastcmd_stdout.txt"
+            stderr_path = f"{get_benchkit_temp_folder_str()}/benchkit_lastcmd_stderr.txt"
 
         current_process = shell_async(
             command=wrapped_run_command,

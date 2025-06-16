@@ -117,7 +117,8 @@ def shell_out(
             whether to print the complete shell command, ready to be copy-pasted in a terminal.
             Defaults to False.
         print_file_shell_cmd (bool, optional):
-            whether to print the shell command in a log file (`/tmp/benchkit.sh`).
+            whether to print the shell command in a log file
+            (`/tmp/benchkit-[USERNAME]/benchkit.sh`).
             Defaults to True.
         timeout (Optional[int], optional):
             if not None, the command will be stopped after `timeout` seconds if it did not stop
@@ -284,7 +285,8 @@ def shell_interactive(
             whether to print the complete shell command, ready to be copy-pasted in a terminal.
             Defaults to False.
         print_file_shell_cmd (bool, optional):
-            whether to print the shell command in a log file (`/tmp/benchkit.sh`).
+            whether to print the shell command in a log file
+            (`/tmp/benchkit-[USERNAME]/benchkit.sh`).
             Defaults to True.
         ignore_ret_codes (Iterable[int], optional):
             collection of error return codes to ignore if they are triggered.
