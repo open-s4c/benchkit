@@ -14,7 +14,7 @@ import os.path
 import pathlib
 import shutil
 import sys
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark
 from benchkit.lwchart import (
@@ -565,8 +565,13 @@ class CampaignCartesianProduct(CampaignTemplate):
         benchmark_duration_seconds: Optional[int] = None,
         results_dir: Optional[PathType] = None,
         pretty: Pretty | None = None,
+        filter_func: Optional[Callable[[Dict[str, Any]], bool]] = None,
     ):
         records_gen = cartesian_product(variables)
+
+        if filter_func:
+            records_gen = filter(filter_func, records_gen)
+
         super().__init__(
             name=name,
             benchmark=benchmark,
