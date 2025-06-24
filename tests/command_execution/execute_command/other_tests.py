@@ -7,133 +7,62 @@ from multiprocessing import Queue
 from pathlib import Path
 import shlex
 import subprocess
-import sys
 from time import sleep
 from typing import Any
 
-from benchkit.shell.CommunicationLayer.hooks.hook import IOResultHook, MergeErrToOut, OutputHook
+from benchkit.shell.command_execution.io.hooks.basic_hooks import logger_line_hook, std_out_result_void_err, void_hook
+from benchkit.shell.command_execution.io.hooks.hook import MergeErrToOut
 from tests.command_execution.execute_command.util import script_path_string
 
-from benchkit.shell.ast_shell_out import execute_command
-from benchkit.shell.commandAST import command as makecommand
-from benchkit.shell.commandAST.nodes.variable_node import RuntimeVariable
-from benchkit.shell.commandAST.visitor import (
-    execute_on_remote,
-    getString,
-    inline,
-    printAst,
-    resolveAllVariablesWithDict,
-)
-from benchkit.shell.CommunicationLayer.hooks.basic_hooks import (
-    logger_line_hook,
-    std_out_result_void_err,
-    stream_prepend_hook,
-    void_hook,
-    write_to_file_hook,
-)
-from benchkit.shell.CommunicationLayer.IO_stream import PipeIOStream, ReadableIOStream, StringIOStream, WritableIOStream
+from benchkit.shell.command_execution.execute import execute_command
+
+from benchkit.shell.command_execution.io.stream import PipeIOStream, ReadableIOStream, StringIOStream, WritableIOStream
 from benchkit.shell.shell import pipe_shell_out, shell_interactive, shell_out, split_on_pipe
 
 
-def commandtests():
-
-    commandres = makecommand.command("'ls -R'", ["arg0", "arg1"])
-    print("-------------------------------------------")
-    printAst(commandres)
-    commandres = makecommand.command("'ls -R '", ["arg0", "arg1"])
-    print("-------------------------------------------")
-    printAst(commandres)
-    commandres = makecommand.command("' ls -R'", ["arg0", "arg1"])
-    print("-------------------------------------------")
-    printAst(commandres)
-    commandres = makecommand.command("ls -R", ["arg0", "arg1"])
-    print("-------------------------------------------")
-    printAst(commandres)
-    commandres = makecommand.command("ls -R   ", ["arg0", "arg1"])
-    print("-------------------------------------------")
-    printAst(commandres)
-    commandres = makecommand.command("   ls -R", ["arg0", "arg1"])
-    print("-------------------------------------------")
-    printAst(commandres)
-    commandres = makecommand.command("ls     -R", ["arg0", "arg1"])
-    print("-------------------------------------------")
-    printAst(commandres)
-    commandres = makecommand.command("ls", ["arg0", "arg1"])
-    print("-------------------------------------------")
-    printAst(commandres)
-    print("-------------------------------------------")
-    commandres = makecommand.command("ls     -R", [RuntimeVariable("QQ", [1, 2]), "arg1"])
-
-
-"""
-Tests for the file to show that the functions are working
-"""
-
-
-def localtests():
-    amount_of_time_to_sleep = RuntimeVariable("amountOfTimeToSleep", [1, 2, 5, 40])
-    main_command_ast = makecommand.command("sleep", [amount_of_time_to_sleep])
-    full_command = makecommand.command("perf stat", [inline(main_command_ast), "-a"])
-    remote_command = execute_on_remote(full_command, "user@host", port=57429)
-    printAst(remote_command)
-
-    resolved_command = resolveAllVariablesWithDict(
-        remote_command,
-        {
-            "amountOfTimeToSleep": "40",
-        },
-    )
-
-    string = getString(resolved_command)
-
-    print(string)
-
-
-def newtest():
-    c = makecommand.command("ssh user@host -p 57429 -t 'perf stat sleep 1'")
-    printAst(c)
-    string = getString(c)
-    print(string)
-
-
-def runtest():
-    t = shlex.split("perf stat 'sleep 10' -a")
-    print(t)
-
-    main_command_ast = makecommand.command("sleep", ["1"])
-    full_command = makecommand.command("perf stat", [inline(main_command_ast)])
-    remote_command = execute_on_remote(full_command, "user@host", port=57429)
-    printAst(remote_command)
-    string = getString(remote_command)
-    print(string)
-    local_proc_1 = subprocess.Popen(
-        string, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    outs, errs = local_proc_1.communicate()
-    retcode = local_proc_1.poll()
-    output = outs
-    print(retcode)
-    print(str(output.decode("utf-8")))
-
-
 def shell_test():
+    command = [script_path_string("runForever")]
 
     log_ls = logger_line_hook(
-            f"\033[34m[OUT | sudo]\033[0m" + " {}",
-            f"\033[91m[ERR | sudo]\033[0m" + " {}",
-        )
-    filewriterIO = write_to_file_hook(Path("/tmp/testfile.txt"))
-    filewriter = OutputHook(filewriterIO,None)
+                f"\033[34m[OUT | ls]\033[0m" + " {}",
+                f"\033[91m[ERR | ls]\033[0m" + " {}",
+            )
 
-    a = execute_command(
-        shlex.split("ssh aaronb@soft67.vub.ac.be 'sudo -S -k ls'"),
-        ordered_input_hooks=[stream_prepend_hook(StringIOStream("123456789"))],
-        ordered_output_hooks=[log_ls,MergeErrToOut(),filewriter,void_hook()]
-    )
+    outobj, outhook = std_out_result_void_err()
 
-    a.get_return_code()
+    merge = MergeErrToOut()
 
-    sleep(1)
+    ls_command = execute_command(command,
+                                timeout=2,
+                                ordered_output_hooks=[
+                                    merge,
+                                    log_ls,
+                                    # outhook,
+                                    void_hook(),
+                                    ]
+                                )
+    try:
+        ls_command.get_return_code()
+    except:
+        sleep(5)
+
+
+    # log_ls = logger_line_hook(
+    #         f"\033[34m[OUT | sudo]\033[0m" + " {}",
+    #         f"\033[91m[ERR | sudo]\033[0m" + " {}",
+    #     )
+    # filewriterIO = write_to_file_hook(Path("/tmp/testfile.txt"))
+    # filewriter = OutputHook(filewriterIO,None)
+
+    # a = execute_command(
+    #     shlex.split("ssh aaronb@soft67.vub.ac.be 'sudo -S -k ls'"),
+    #     ordered_input_hooks=[stream_prepend_hook(StringIOStream("123456789"))],
+    #     ordered_output_hooks=[log_ls,MergeErrToOut(),filewriter,void_hook()]
+    # )
+
+    # a.get_return_code()
+
+    # sleep(1)
 
 
     # a = pipe_shell_out('sudo perf stat ls')

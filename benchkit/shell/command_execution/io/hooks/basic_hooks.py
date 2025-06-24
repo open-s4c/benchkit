@@ -4,17 +4,16 @@
 from __future__ import annotations  # Otherwise Queue comlains about typing
 
 from multiprocessing import Queue
-from time import sleep
 from typing import Any
 from pathlib import Path
 
-from benchkit.shell.CommunicationLayer.hooks.hook import (
+from benchkit.shell.command_execution.io.hooks.hook import (
     IOReaderHook,
     IOResultHook,
     IOWriterHook,
     OutputHook,
 )
-from benchkit.shell.CommunicationLayer.IO_stream import (
+from benchkit.shell.command_execution.io.stream import (
     ReadableIOStream,
     StringIOStream,
     WritableIOStream,

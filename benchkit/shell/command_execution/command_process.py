@@ -9,10 +9,11 @@ from subprocess import CalledProcessError, Popen, TimeoutExpired
 from threading import Thread
 from typing import Iterable, Optional, Tuple
 
-from benchkit.shell.CommunicationLayer.OutputObject import Output
+from benchkit.shell.command_execution.io.output import Output
 
 
 class CommandProcess:
+    """Encaptulation of the Popen process with functions to use it in an asyncronous way"""
     def __init__(
         self,
         popen_object: Popen[bytes],
@@ -40,7 +41,7 @@ class CommandProcess:
         self.process: Thread = self.__wait_async()
 
     @staticmethod
-    def wait_func(
+    def __wait_func(
         subprocess: Popen[bytes],
         queue: Queue[Tuple[int, Optional[Exception]]],
         timeout: Optional[int],
@@ -68,7 +69,7 @@ class CommandProcess:
 
     def __wait_async(self) -> Thread:
         waiting_thread = Thread(
-            target=self.wait_func,
+            target=self.__wait_func,
             args=(
                 self.__popen_object,
                 self.__retcode_queue,
@@ -80,9 +81,14 @@ class CommandProcess:
         return waiting_thread
 
     def get_output(self) -> Output:
+        """get the Output object related to this process
+           can be used as input for other processes"""
         return self.__output
 
     def get_return_code(self) -> int:
+        """halt until the process has a return code
+           if the return code is not ignored
+           or the waittime was exceded throw an error instead"""
         if self.error is not None:
             raise self.error
         if self.retcode:

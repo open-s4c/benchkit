@@ -7,20 +7,23 @@ from typing import IO
 
 
 class WritableIOStream(ABC):
-    @abstractmethod
-    def write(self, bytes_to_write: bytes) -> None:
-        pass
+    """Interface to write any form of data that can be made
+       compatible by implementing write and end_writing"""
 
     @abstractmethod
-    def endWriting(self) -> None:
-        pass
+    def write(self, bytes_to_write: bytes) -> None:
+        """write bytes to the given IOStream needs to be implemented depending on what it is"""
+
+    @abstractmethod
+    def end_writing(self) -> None:
+        """signal that the IOStream can be closed"""
 
 
 class ReadableIOStream(ABC):
-    """interface to communicate with command output on all platforms,
-    functions are  due to compatibility"""
+    """interface to read from anny form of data that can be made
+       compatible by implementing _read_bytes"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__buffer: bytes = b""
 
     @abstractmethod
@@ -28,7 +31,8 @@ class ReadableIOStream(ABC):
         pass
 
     def read(self, amount_of_bytes: int) -> bytes:
-        """reads at most amount_of_bytes from the available stdout"""
+        """reads at most amount_of_bytes from the available stdout
+           returns the current buffer before it attemts to read more bytes"""
         if self.__buffer:
             ret = self.__buffer
             self.__buffer = b""
@@ -36,6 +40,7 @@ class ReadableIOStream(ABC):
         return self._read_bytes(amount_of_bytes)
 
     def read_line(self) -> bytes:
+        """reads one line overflows into __buffer"""
         byt = self.read(10)
         while byt:
             sp = byt.split(b"\n", 1)
@@ -46,8 +51,9 @@ class ReadableIOStream(ABC):
         return byt
 
 
-class SshIOStream(ReadableIOStream):
-    def __init__(self, stream: IO[bytes] | None):
+class PopenIOStream(ReadableIOStream):
+    """Class that can interact with the stdout type objects given by Popen"""
+    def __init__(self, stream: IO[bytes]):
         self.__stream = stream
         super().__init__()
 
@@ -58,6 +64,7 @@ class SshIOStream(ReadableIOStream):
 
 
 class StringIOStream(ReadableIOStream):
+    """Class to convert a string to an IOStream so they can be interchanged"""
     def __init__(self, string: str, encoding: str = "utf-8"):
         self.byte_string = string.encode(encoding)
         self.length = len(self.byte_string)
@@ -76,6 +83,7 @@ class StringIOStream(ReadableIOStream):
 
 
 class EmptyIOStream(ReadableIOStream):
+    "Class to create an empty IOStream"
     def __init__(self):
         super().__init__()
 
@@ -84,7 +92,7 @@ class EmptyIOStream(ReadableIOStream):
 
 
 class PipeIOStream(ReadableIOStream, WritableIOStream):
-    """A way to create a fileStream that can be used as a CommandOutput by other functions"""
+    """A readable and writable IOStream that is used to communicate between hooks mostly"""
 
     def __init__(self) -> None:
         self.reader, self.writer = os.pipe()
@@ -95,7 +103,7 @@ class PipeIOStream(ReadableIOStream, WritableIOStream):
     def write(self, bytes_to_write: bytes) -> None:
         os.write(self.writer, bytes_to_write)
 
-    def endWriting(self) -> None:
+    def end_writing(self) -> None:
         os.close(self.writer)
 
     def _read_bytes(self, amount_of_bytes: int) -> bytes:
@@ -103,6 +111,8 @@ class PipeIOStream(ReadableIOStream, WritableIOStream):
 
 
 def try_converting_bystring_to_readable_characters(bytestring: bytes) -> str | bytes:
+    """ function that will try to convert a bytestring to string
+        if it fails it will return back the bytestring so nothing is lost"""
     try:
         return bytestring.decode("utf-8")
     except UnicodeDecodeError:

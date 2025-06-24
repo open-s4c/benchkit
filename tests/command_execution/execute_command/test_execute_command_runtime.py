@@ -4,7 +4,7 @@ import pathlib
 from subprocess import TimeoutExpired
 import tracemalloc
 import unittest
-from benchkit.shell.ast_shell_out import execute_command
+from benchkit.shell.command_execution.execute import execute_command
 from tests.command_execution.execute_command.util import TestTimeout, generate_test_hook_lists, get_arguments_dict_list, script_path_string, timeout
 
 tracemalloc.start()
@@ -41,12 +41,12 @@ class RuntimeExecutionTests(unittest.TestCase):
 
                             # result gathering
                             p.get_return_code()
-                            
+
                 except TestTimeout:
                     self.fail(
                         "execution timed out, but not by the timeout argument"
                     )
-    
+
     # @unittest.skip("disabled for debugging")
     def test_fill_std_err(self) -> None:
         """test to see if the command times out after the given time period"""
@@ -76,7 +76,7 @@ class RuntimeExecutionTests(unittest.TestCase):
 
                         # result gathering
                         p.get_return_code()
-                            
+
                 except TestTimeout:
                     self.fail(
                         "execution timed out"
@@ -111,7 +111,7 @@ class RuntimeExecutionTests(unittest.TestCase):
 
                         # result gathering
                         p.get_return_code()
-                            
+
                 except TestTimeout:
                     self.fail(
                         "execution timed out"

@@ -6,9 +6,9 @@ import pathlib
 import signal
 from typing import Any, Dict, List, Optional, Tuple
 
-from benchkit.shell.CommunicationLayer.IO_stream import ReadableIOStream, WritableIOStream
-from benchkit.shell.CommunicationLayer.hooks.basic_hooks import create_stream_line_logger_hook, create_voiding_result_hook, logger_line_hook, void_hook
-from benchkit.shell.CommunicationLayer.hooks.hook import IOHook, IOResultHook, IOWriterHook, OutputHook
+from benchkit.shell.command_execution.io.stream import ReadableIOStream, WritableIOStream
+from benchkit.shell.command_execution.io.hooks.basic_hooks import create_stream_line_logger_hook, create_voiding_result_hook, logger_line_hook, void_hook
+from benchkit.shell.command_execution.io.hooks.hook import IOHook, IOResultHook, IOWriterHook, OutputHook
 
 
 class TestTimeout(Exception):

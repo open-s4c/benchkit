@@ -3,9 +3,9 @@ import pathlib
 from subprocess import CalledProcessError
 import unittest
 
-from benchkit.shell.CommunicationLayer.IO_stream import StringIOStream
+from benchkit.shell.command_execution.io.stream import StringIOStream
 from tests.command_execution.execute_command.util import TestTimeout, generate_test_hook_lists, get_arguments_dict_list, script_path_string, timeout
-from benchkit.shell.ast_shell_out import execute_command
+from benchkit.shell.command_execution.execute import execute_command
 
 class FunctionalExecutionTests(unittest.TestCase):
 
