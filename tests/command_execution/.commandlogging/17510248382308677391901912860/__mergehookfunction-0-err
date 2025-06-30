@@ -1,0 +1,4 @@
+hookstart,command,location
+1751024838.129747,/home/aaronb/Documents/benchFork/benchkit/tests/command_execution/execute_command/shell_scripts/runForever.sh,__mergehookfunction-0-err
+hookend
+0.0003368854522705078

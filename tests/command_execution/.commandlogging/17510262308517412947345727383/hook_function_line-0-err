@@ -1,0 +1,4 @@
+hookstart,command,location
+1751026230.2741935,/home/aaronb/Documents/benchFork/benchkit/tests/command_execution/execute_command/shell_scripts/runForever.sh,hook_function_line-0-err
+hookend
+2.066547155380249

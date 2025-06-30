@@ -8,6 +8,8 @@ import pathlib
 import subprocess
 from typing import Dict, Iterable, List, Optional
 
+from shell.command_execution.io.hooks.execution_debugging.debugging_hook import add_logging_hooks
+
 from benchkit.shell.command_execution.command_process import CommandProcess
 from benchkit.shell.command_execution.io.hooks.hook import (
     IOHook,
@@ -21,6 +23,8 @@ from benchkit.shell.command_execution.io.stream import (
 )
 from benchkit.shell.command_execution.io.output import popen_get_output
 
+
+DEBUG = False
 
 def execute_command(
     # needed for starting the command
@@ -38,6 +42,9 @@ def execute_command(
     ordered_input_hooks: Optional[List[IOHook]] = None,
     ordered_output_hooks: Optional[List[OutputHook]] = None,
 ) -> CommandProcess:
+
+    if DEBUG:
+        ordered_input_hooks, ordered_output_hooks = add_logging_hooks(ordered_input_hooks,ordered_output_hooks,command)
 
     if environment is None:
         environment = {}
