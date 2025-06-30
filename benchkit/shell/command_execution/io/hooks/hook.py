@@ -5,6 +5,7 @@ from __future__ import annotations  # Otherwise Queue comlains about typing
 
 from abc import ABC, abstractmethod
 from multiprocessing import Process, Queue
+from threading import Thread
 from typing import Any, Callable, Optional
 
 from benchkit.shell.command_execution.io.stream import (
@@ -20,6 +21,7 @@ class IOHook(ABC):
     """basic interface that each hook needs to implement"""
     def __init__(self,name:str):
         self._output = PipeIOStream()
+        self._stream_duplicate = PipeIOStream()
         self.name=name
 
     @abstractmethod
@@ -42,7 +44,7 @@ class IOWriterHook(IOHook):
 
     def start_hook_function(self, input_stream: ReadableIOStream) -> None:
         # A process is spawned to keep the hookfunction running on the stream
-        p = Process(
+        p = Thread(
             target=self.hook_function,
             args=(input_stream, self._output),
             name=self.name,
@@ -50,14 +52,12 @@ class IOWriterHook(IOHook):
         p.start()
 
         # Close the file descriptor of the main thread, the one from the process will still be alive
-        self._output.end_writing()
 
 
 class IOReaderHook(IOHook):
 
     def __init__(self, hook_function: Callable[[ReadableIOStream], None], name:Optional[str] = None):
         self.hook_function = hook_function
-        self._stream_duplicate = PipeIOStream()
         if not name:
             name = self.hook_function.__name__
         super().__init__(name)
@@ -75,7 +75,7 @@ class IOReaderHook(IOHook):
     def start_hook_function(self, input_stream: ReadableIOStream) -> None:
 
         # A process is spawned to duplicate the input stream for the reading function
-        duplication_process = Process(
+        duplication_process = Thread(
             target=self.__pas_along_original_stream,
             args=(
                 input_stream,
@@ -86,7 +86,7 @@ class IOReaderHook(IOHook):
         )
 
         # A process is spawned to keep the hookfunction running on the stream
-        reader_hook_process = Process(
+        reader_hook_process = Thread(
             target=self.hook_function,
             args=(self._stream_duplicate,),
             name=self.name,
@@ -95,8 +95,6 @@ class IOReaderHook(IOHook):
         duplication_process.start()
         reader_hook_process.start()
         # Close the file descriptor of the main thread, the one from the process will still be alive
-        self._output.end_writing()
-        self._stream_duplicate.end_writing()
 
 
 class IOResultHook(IOHook):
@@ -112,7 +110,7 @@ class IOResultHook(IOHook):
         super().__init__(name)
 
     def start_hook_function(self, input_stream: ReadableIOStream) -> None:
-        p = Process(
+        p = Thread(
             target=self.hook_function,
             args=(input_stream, self._output, self.__queue),
             name=self.name,
@@ -120,7 +118,6 @@ class IOResultHook(IOHook):
         p.start()
 
         # Close the file descriptor of the main thread, the one from the process will still be alive
-        self._output.end_writing()
 
     def get_result(self) -> Any:
         return self.__queue.get()
@@ -159,6 +156,5 @@ class MergeErrToOut(OutputHook):
     def attatch(self, output: Output) -> Output:
         self._std_err_hook.start_hook_function(output.std_out)
         self._std_out_hook.start_hook_function(output.std_err)
-        self.std_out.end_writing()
 
         return Output(self.std_out, EmptyIOStream())
