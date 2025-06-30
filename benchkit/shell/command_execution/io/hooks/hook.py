@@ -55,7 +55,7 @@ class IOWriterHook(IOHook):
 
 class IOReaderHook(IOHook):
 
-    def __init__(self, hook_function: Callable[[ReadableIOStream], None], name:Optional[str]):
+    def __init__(self, hook_function: Callable[[ReadableIOStream], None], name:Optional[str] = None):
         self.hook_function = hook_function
         self._stream_duplicate = PipeIOStream()
         if not name:
