@@ -8,10 +8,10 @@ from typing import Any, Dict, Iterable, List
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
+from benchkit.helpers.linux.predictable.cpupower import CPUPower
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import PathType
-from benchkit.helpers.linux.predictable.cpupower import CPUPower
 
 
 class HeaterSeqBench(Benchmark):
@@ -121,12 +121,12 @@ class HeaterSeqBench(Benchmark):
         frequency: int = 600000,
         **kwargs,
     ) -> str:
-        #init cpuPower
+        # initialize CPUPower
         cpu_power = CPUPower()
-        #set freq
+        # set freq & govnor
         cpu_power.set_governor(governor="userspace")
-        cpu_power.set_frequency(frequency_mhz=(frequency/1000000), cpus=[cpu])
-        
+        cpu_power.set_frequency(frequency_mhz=(frequency / 1000000), cpus=[cpu])
+
         run_command = [
             "./heater",
             f"{benchmark_duration_seconds}",
