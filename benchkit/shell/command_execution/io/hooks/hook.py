@@ -5,7 +5,7 @@ from __future__ import annotations  # Otherwise Queue comlains about typing
 
 from abc import ABC, abstractmethod
 from multiprocessing import Process, Queue
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from benchkit.shell.command_execution.io.stream import (
     EmptyIOStream,
@@ -18,8 +18,9 @@ from benchkit.shell.command_execution.io.output import Output
 
 class IOHook(ABC):
     """basic interface that each hook needs to implement"""
-    def __init__(self):
+    def __init__(self,name:str):
         self._output = PipeIOStream()
+        self.name=name
 
     @abstractmethod
     def start_hook_function(self, input_stream: ReadableIOStream) -> None:
@@ -33,18 +34,18 @@ class IOWriterHook(IOHook):
     """Hook that expects a function of the form Callable[[ReadableIOStream, PipeIOStream]
        intended as a general purpouse stream manupulator"""
 
-    def __init__(self, hook_function: Callable[[ReadableIOStream, PipeIOStream], None]):
+    def __init__(self, hook_function: Callable[[ReadableIOStream, PipeIOStream], None], name:Optional[str] = None):
         self.hook_function = hook_function
-        self.__name = self.hook_function.__name__
-        super().__init__()
+        if not name:
+            name = self.hook_function.__name__
+        super().__init__(name)
 
     def start_hook_function(self, input_stream: ReadableIOStream) -> None:
         # A process is spawned to keep the hookfunction running on the stream
         p = Process(
             target=self.hook_function,
             args=(input_stream, self._output),
-            name=self.__name,
-            daemon=True,
+            name=self.name,
         )
         p.start()
 
@@ -54,22 +55,22 @@ class IOWriterHook(IOHook):
 
 class IOReaderHook(IOHook):
 
-    def __init__(self, hook_function: Callable[[ReadableIOStream], None]):
+    def __init__(self, hook_function: Callable[[ReadableIOStream], None], name:Optional[str]):
         self.hook_function = hook_function
         self._stream_duplicate = PipeIOStream()
-        self.__name = self.hook_function.__name__
-        super().__init__()
+        if not name:
+            name = self.hook_function.__name__
+        super().__init__(name)
 
     @staticmethod
     def __pas_along_original_stream(
-        input_stream: ReadableIOStream, output1_stream: PipeIOStream, output2_stream: PipeIOStream
+        input_stream: ReadableIOStream, output1_stream: WritableIOStream, output2_stream: WritableIOStream
     ):
-        while True:
-            data = input_stream.read(1)
-            if not data:
-                break
+        data = input_stream.read(1)
+        while data:
             output1_stream.write(data)
             output2_stream.write(data)
+            data = input_stream.read(1)
 
     def start_hook_function(self, input_stream: ReadableIOStream) -> None:
 
@@ -81,23 +82,21 @@ class IOReaderHook(IOHook):
                 self._output,
                 self._stream_duplicate,
             ),
-            name=self.__name + " pasalong",
-            daemon=True,
+            name=self.name + " pasalong",
         )
 
         # A process is spawned to keep the hookfunction running on the stream
         reader_hook_process = Process(
             target=self.hook_function,
             args=(self._stream_duplicate,),
-            name=self.__name,
-            daemon=True,
+            name=self.name,
         )
 
         duplication_process.start()
+        reader_hook_process.start()
         # Close the file descriptor of the main thread, the one from the process will still be alive
         self._output.end_writing()
         self._stream_duplicate.end_writing()
-        reader_hook_process.start()
 
 
 class IOResultHook(IOHook):
@@ -105,18 +104,18 @@ class IOResultHook(IOHook):
        Callable[[ReadableIOStream, PipeIOStream, Queue[Any]]
        can be used as a writer hook with the added functionality of
        being being able to use the queue as output"""
-    def __init__(self, hook_function: Callable[[ReadableIOStream, PipeIOStream, Queue[Any]], None]):
+    def __init__(self, hook_function: Callable[[ReadableIOStream, PipeIOStream, Queue[Any]], None], name:Optional[str] = None):
         self.__queue: Queue[Any] = Queue()
         self.hook_function = hook_function
-        self.__name = self.hook_function.__name__
-        super().__init__()
+        if not name:
+            name = self.hook_function.__name__
+        super().__init__(name)
 
     def start_hook_function(self, input_stream: ReadableIOStream) -> None:
         p = Process(
             target=self.hook_function,
             args=(input_stream, self._output, self.__queue),
-            name=self.__name,
-            daemon=True,
+            name=self.name,
         )
         p.start()
 
@@ -146,8 +145,10 @@ class OutputHook:
 
 
 class MergeErrToOut(OutputHook):
-    def __init__(self):
+    def __init__(self) -> None:
         self.std_out = PipeIOStream()
+        self._std_err_hook:IOWriterHook = IOWriterHook(self.__mergehookfunction)
+        self._std_out_hook:IOWriterHook = IOWriterHook(self.__mergehookfunction)
 
     def __mergehookfunction(self, input_object: ReadableIOStream, _: WritableIOStream):
         outline = input_object.read_line()
@@ -156,10 +157,8 @@ class MergeErrToOut(OutputHook):
             outline = input_object.read_line()
 
     def attatch(self, output: Output) -> Output:
-        stdout_hook = IOWriterHook(self.__mergehookfunction)
-        stderr_hook = IOWriterHook(self.__mergehookfunction)
-        stdout_hook.start_hook_function(output.std_out)
-        stderr_hook.start_hook_function(output.std_err)
+        self._std_err_hook.start_hook_function(output.std_out)
+        self._std_out_hook.start_hook_function(output.std_err)
         self.std_out.end_writing()
 
         return Output(self.std_out, EmptyIOStream())
