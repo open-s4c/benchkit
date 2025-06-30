@@ -11,6 +11,7 @@ from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import PathType
+from benchkit.helpers.linux.predictable.cpupower import CPUPower
 
 
 class HeaterSeqBench(Benchmark):
@@ -66,6 +67,7 @@ class HeaterSeqBench(Benchmark):
     def get_run_var_names() -> List[str]:
         return [
             "cpu",
+            "frequency",
         ]
 
     @staticmethod
@@ -116,8 +118,15 @@ class HeaterSeqBench(Benchmark):
         self,
         benchmark_duration_seconds: int,
         cpu: int = 1,
+        frequency: int = 600000,
         **kwargs,
     ) -> str:
+        #init cpuPower
+        cpu_power = CPUPower()
+        #set freq
+        cpu_power.set_governor(governor="userspace")
+        cpu_power.set_frequency(frequency_mhz=(frequency/1000000), cpus=[cpu])
+        
         run_command = [
             "./heater",
             f"{benchmark_duration_seconds}",

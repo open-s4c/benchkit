@@ -14,6 +14,7 @@ from benchkit.platforms import Platform, get_current_platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.dir import get_curdir
 from benchkit.utils.types import PathType
+from benchkit.helpers.linux.predictable.cpupower import CPUPower
 
 
 def heater_seq_campaign(
@@ -31,6 +32,7 @@ def heater_seq_campaign(
     nb_runs: int = 1,
     benchmark_duration_seconds: int = 5,
     cpu: Iterable[int] = (0),
+    frequency: Iterable[int] = (10000),
     debug: bool = False,
     gdb: bool = False,
     enable_data_dir: bool = False,
@@ -41,6 +43,7 @@ def heater_seq_campaign(
     """Return a cartesian product campaign configured for the LevelDB benchmark."""
     variables = {
         "cpu": cpu,
+        "frequency": frequency,
     }
 
     if src_dir is None:
@@ -76,9 +79,14 @@ def heater_seq_campaign(
 
 def main() -> None:
     """Main function of the campaign script."""
+    
+    # to get the frequencies
+    cpuPower = CPUPower()
 
     # Where is the benchmark code located
     leveldb_src_dir = (get_curdir(__file__) / "").resolve()
+    
+    print(cpuPower.get_frequency_values(range(0, os.cpu_count())))
 
     # Define the campaign, associated with the LevelDB benchmark
     campaign = heater_seq_campaign(
@@ -86,6 +94,7 @@ def main() -> None:
         nb_runs=3,
         benchmark_duration_seconds=3,
         cpu=range(0, os.cpu_count()),
+        frequency=cpuPower.get_frequency_values(range(0, os.cpu_count()))
     )
 
     # Define the campaign suite and run the benchmarks in the suite
@@ -99,6 +108,7 @@ def main() -> None:
         plot_name="barplot",
         x="cpu",
         y="ops",
+        hue="frequency",
         title=f"Sequential Heater on {get_current_platform().comm.hostname()}",
     )
 
