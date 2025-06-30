@@ -21,7 +21,6 @@ class IOHook(ABC):
     """basic interface that each hook needs to implement"""
     def __init__(self,name:str):
         self._output = PipeIOStream()
-        self._stream_duplicate = PipeIOStream()
         self.name=name
 
     @abstractmethod
@@ -58,6 +57,7 @@ class IOReaderHook(IOHook):
 
     def __init__(self, hook_function: Callable[[ReadableIOStream], None], name:Optional[str] = None):
         self.hook_function = hook_function
+        self._stream_duplicate = PipeIOStream()
         if not name:
             name = self.hook_function.__name__
         super().__init__(name)
