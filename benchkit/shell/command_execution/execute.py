@@ -24,7 +24,7 @@ from benchkit.shell.command_execution.io.stream import (
 from benchkit.shell.command_execution.io.output import popen_get_output
 
 
-DEBUG = False
+DEBUG = True
 
 def execute_command(
     # needed for starting the command

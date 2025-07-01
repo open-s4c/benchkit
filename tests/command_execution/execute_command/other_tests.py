@@ -7,6 +7,8 @@ from multiprocessing import Queue
 from pathlib import Path
 import shlex
 import subprocess
+import sys
+import threading
 from time import sleep
 from typing import Any
 
@@ -26,6 +28,8 @@ def shell_test():
     log_ls = logger_line_hook(
                 f"\033[34m[OUT | ls]\033[0m" + " {}",
                 f"\033[91m[ERR | ls]\033[0m" + " {}",
+                "---logger_hook_out---",
+                "---logger_hook_err---"
             )
 
     outobj, outhook = std_out_result_void_err()
@@ -37,7 +41,7 @@ def shell_test():
                                 ordered_output_hooks=[
                                     merge,
                                     log_ls,
-                                    # outhook,
+                                    outhook,
                                     void_hook(),
                                     ]
                                 )
@@ -45,6 +49,9 @@ def shell_test():
         ls_command.get_return_code()
     except:
         sleep(5)
+        for thread in threading.enumerate():
+            print(thread.name)
+
 
 
     # log_ls = logger_line_hook(

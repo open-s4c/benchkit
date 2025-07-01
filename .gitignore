@@ -6,3 +6,4 @@ venv/
 .DS_Store
 results/
 benchkit.egg-info/
+.commandlogging/

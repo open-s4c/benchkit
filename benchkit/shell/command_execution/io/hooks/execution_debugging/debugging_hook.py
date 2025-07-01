@@ -33,7 +33,7 @@ def debugger_hook(command:str,hooklocation:str) -> IOWriterHook:
             output_file.write('hookend\n'.encode("utf-8"))
             output_file.write(f'{time_accurate() - start_time}'.encode("utf-8"))
 
-    return IOWriterHook(hook_function)
+    return IOWriterHook(hook_function,"debugger_hook" + hooklocation)
 
 def add_logging_hooks(ordered_input_hooks:Optional[List[IOHook]], ordered_output_hooks:Optional[List[OutputHook]],command:List[str]):
     new_ordered_input_hooks:List[IOHook] = []
