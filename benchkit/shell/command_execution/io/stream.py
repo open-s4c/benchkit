@@ -54,13 +54,21 @@ class ReadableIOStream(ABC):
 class PopenIOStream(ReadableIOStream):
     """Class that can interact with the stdout type objects given by Popen"""
     def __init__(self, stream: IO[bytes]):
+        self.__done=False
         self.__stream = stream
         super().__init__()
 
     def _read_bytes(self, amount_of_bytes: int) -> bytes:
+        if self.__done:
+            return b''
         if self.__stream:
-            return self.__stream.read(amount_of_bytes)
-        return b"s"
+            r = self.__stream.read(amount_of_bytes)
+            if r:
+                return r
+            self.__done = True
+            self.__stream.close()
+            return r
+        return b""
 
 
 class StringIOStream(ReadableIOStream):

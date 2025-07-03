@@ -74,7 +74,6 @@ def create_stream_line_logger_hook(formating_string: str, name: Optional[str] = 
                 end="",
             )
             byt = input_object.read_line()
-    print(f'name:{name}')
     return IOReaderHook(hook_function_line,name=name)
 
 

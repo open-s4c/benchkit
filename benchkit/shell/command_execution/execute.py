@@ -24,7 +24,7 @@ from benchkit.shell.command_execution.io.stream import (
 from benchkit.shell.command_execution.io.output import popen_get_output
 
 
-DEBUG = True
+DEBUG = False
 
 def execute_command(
     # needed for starting the command
@@ -75,7 +75,7 @@ def execute_command(
                     process.stdin.write(outline)
                     process.stdin.flush()
                     outline = input_stream.read(1)
-                # process.stdin.close()
+                process.stdin.close()
 
         if std_input is not None:
             hook = IOWriterHook(pasalong)
