@@ -8,8 +8,6 @@ import pathlib
 import subprocess
 from typing import Dict, Iterable, List, Optional
 
-from shell.command_execution.io.hooks.execution_debugging.debugging_hook import add_logging_hooks
-
 from benchkit.shell.command_execution.command_process import CommandProcess
 from benchkit.shell.command_execution.io.hooks.hook import (
     IOHook,
