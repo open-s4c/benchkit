@@ -43,9 +43,6 @@ def execute_command(
     ordered_output_hooks: Optional[List[OutputHook]] = None,
 ) -> CommandProcess:
 
-    if DEBUG:
-        ordered_input_hooks, ordered_output_hooks = add_logging_hooks(ordered_input_hooks,ordered_output_hooks,command)
-
     if environment is None:
         environment = {}
 
