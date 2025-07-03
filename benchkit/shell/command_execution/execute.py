@@ -21,9 +21,6 @@ from benchkit.shell.command_execution.io.stream import (
 )
 from benchkit.shell.command_execution.io.output import popen_get_output
 
-
-DEBUG = False
-
 def execute_command(
     # needed for starting the command
     command: List[str],
