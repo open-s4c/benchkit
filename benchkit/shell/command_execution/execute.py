@@ -21,6 +21,7 @@ from benchkit.shell.command_execution.io.stream import (
 )
 from benchkit.shell.command_execution.io.output import popen_get_output
 
+
 def execute_command(
     # needed for starting the command
     command: List[str],
@@ -72,8 +73,8 @@ def execute_command(
         if std_input is not None:
             hook = IOWriterHook(pasalong)
             hook.start_hook_function(std_input)
-        # if process.stdin is not None:
-            # process.stdin.close()
+        if process.stdin is not None:
+            process.stdin.close()
 
         # 3) manipulate teh output stream using the orderd output hooks
         command_output = popen_get_output(process.stdout, process.stderr)
@@ -83,12 +84,12 @@ def execute_command(
                 command_output = outhook.attatch(command_output)
 
         # close all the main thread file descriptors
-        # if process.stdout is not None:
-        #     process.stdout.close()
-        # if process.stderr is not None:
-        #     process.stderr.close()
-        # if process.stdin is not None:
-        #     process.stdin.close()
+        if process.stdout is not None:
+            process.stdout.close()
+        if process.stderr is not None:
+            process.stderr.close()
+        if process.stdin is not None:
+            process.stdin.close()
 
         # 4) construct the object we can use to monitor the process
         return CommandProcess(
