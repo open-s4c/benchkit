@@ -41,13 +41,15 @@ class ReadableIOStream(ABC):
 
     def read_line(self) -> bytes:
         """reads one line overflows into __buffer"""
-        byt = self.read(10)
-        while byt:
+        new_byt = self.read(10)
+        byt = b''
+        while new_byt:
+            byt += new_byt
             sp = byt.split(b"\n", 1)
             if len(sp) > 1:
                 self.__buffer = sp[1]
                 return sp[0] + b"\n"
-            byt += self.read(10)
+            new_byt = self.read(10)
         return byt
 
 
