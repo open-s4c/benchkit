@@ -46,6 +46,7 @@ single_dict_format = {
 from typing import Any, Dict, List
 import itertools
 import os
+import csv
 
 
 def get_app_names(apps_dict: Dict) -> List[str]:
@@ -55,21 +56,12 @@ def get_app_names(apps_dict: Dict) -> List[str]:
 
     return app_names
 
-app_file = "./app_spec_ngap_new_quickvalidation_part1"
-config_file = "./exec_config_ngap_groups_design_NAP"
-
-app_file_2 = "./app_spec_ngap_new_quickvalidation_part1"
-config_file_2 = "./exec_config_ngap_groups_design_NAP"
-
-app_file_3 = "./app_spec_ngap_new_quickvalidation_part1"
-config_file_3 = "./exec_config_ngap_groups_design_NAP"
 
 
-def construct_dict(config_dict, cfg_name, app, isHS, isVASim, input_file, anml, param_order, params, quick_validation = False) -> Dict[str: Any]:
+def construct_dict(config_dict, cfg_name, app, isHS, isVASim, input_file, anml, param_order, params, quick_validation = False) -> Dict[str, Any]:
     assert(cfg_name in config_dict['exp_parameters'])
 
     d = {}
-
     if isHS:
         for param_idx in range(len(param_order)):
             d[param_order[param_idx]] = params[param_idx]
@@ -92,7 +84,6 @@ def construct_dict(config_dict, cfg_name, app, isHS, isVASim, input_file, anml, 
         d["-i"] = input_file
         d["--app-name"] = app
 
-
         for param_idx in range(len(param_order)):
             d[f"--{param_order[param_idx]}"] = params[param_idx]
 
@@ -101,15 +92,44 @@ def construct_dict(config_dict, cfg_name, app, isHS, isVASim, input_file, anml, 
 
     return d
 
+# All the command attributes that were not initialized through the config and app file are init to None
+def pad_dict(cmd_dict):
 
-def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Dict[str: Any]]:
+    cmd_dict_copy = cmd_dict.copy()
+    for key in single_dict_format:
+        if key not in cmd_dict_copy:
+            cmd_dict_copy[key] = None
+
+    return cmd_dict_copy
+
+
+'''
+Given a config dict, app dict and a specific app and config entry generate a list of commands
+as dictionaries in a list
+'''
+def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Dict[str, Any]]:
 
     list_of_dicts = []
 
+    output_name = ""
+    list_of_list = []
+    param_order = [] # names of the properties appended
     for tup in config['exp_parameters'][config_name]:
+
+        if(len(tup) >= 2 and tup[0] == "app"):
+            if(app_name not in tup[1]):
+                return {}
+
+        if(len(tup) >= 2 and tup[0] == "excludedApp"):
+            if (app_name in tup[1]):
+                return {}
+
         if(len(tup) >= 2 and tup[0] == "output-name"):
             output_name = tup[1]
-            break
+
+        if not (len(tup) >= 3 and tup[2] == 'nocombination'):
+            param_order.append(tup[0])
+            list_of_list.append(tup[1])
 
     isHS = False
     isVASim = False
@@ -118,33 +138,19 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
     elif "vasim" in config_name:
         isVASim = True
     
-    for tup in config['exp_parameters'][config_name]:
-        if(len(tup) >= 2 and tup[0] == "app"):
-            if(app_name not in tup[1]):
-                return {}
-
-        if(len(tup) >= 2 and tup[0] == "excludedApp"):
-            if (app_name in tup[1]):
-                return {}
-            
+    # Fetching the input file, anml file and quick validation file paths from the application file
     input_file = ""
     anml_file = ""
     quick_validation = ""
-    list_of_list = []
-    param_order = []
     for a in apps_dict['apps']:
-        if apps_dict['apps'][a]['name'] == app_name:
+        if a['name'] == app_name:
 
-            input_file = os.path.join(apps_dict['root'], apps_dict['apps'][a]['input'])
+            input_file = os.path.join(apps_dict['root'], a['input'])
             if (isHS):
-                anml_file = os.path.join(apps_dict['root'], apps_dict['apps'][a]['hs'])
+                anml_file = os.path.join(apps_dict['root'], a['hs'])
             else:
                 anml_file = os.path.join(apps_dict['root'], apps_dict['apps'][a]['automata'])
-            quick_validation = apps_dict['apps'][a]['quick_validation']
-
-            if not (len(tup) >= 3 and tup[2] == 'nocombination'):
-                param_order.append(tup[0])
-                list_of_list.append(tup[1])
+            quick_validation = a['quick_validation']
 
     if "error" in anml_file:
         return {}
@@ -162,18 +168,27 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
             combin, 
             quick_validation)
 
-        list_of_dicts.append(cmd_dict)
+        padded_cmd_dict = pad_dict(cmd_dict)
+        # sorting according to keys to keep the same order
+        keys = list(padded_cmd_dict.keys())
+        sorted_keys = keys.sort()
+        sd = {}
+        for sk in sorted_keys:
+            sd[sk] = padded_cmd_dict[sk]
+        list_of_dicts.append(sd)
     
     return list_of_dicts
 
 
-def gen_dict_list(app_file: str, config_file: str) -> List[Dict[str: Any]]:
+# Generates a list of dictionaries given an app and config file
+def gen_dict_list(app_file: str, config_file: str) -> List[Dict[str, Any]]:
 
     result = []
 
     apps = open(app_file,'r')
-    app_dict = eval(apps.read())
     config = open(config_file,'r')
+
+    app_dict = eval(apps.read())
     config_dict = eval(config.read())
 
     app_names = get_app_names(app_dict)
@@ -183,3 +198,40 @@ def gen_dict_list(app_file: str, config_file: str) -> List[Dict[str: Any]]:
             result.extend(app_dicts)
 
     return result
+
+
+if __name__ == 'main':
+
+    app_file = "./app_spec_ngap_new_quickvalidation_part1"
+    config_file = "./exec_config_ngap_groups_design_NAP"
+
+    app_file_2 = "./app_spec_ngap_new_quickvalidation_part1"
+    config_file_2 = "./exec_config_ngap_groups_design_NAP"
+
+    app_file_3 = "./app_spec_ngap_new_quickvalidation_part1"
+    config_file_3 = "./exec_config_ngap_groups_design_NAP"
+
+    dict_list_1 = gen_dict_list(app_file, config_file)
+    dict_list_2 = gen_dict_list(app_file_2, config_file_2)
+    dict_list_3 = gen_dict_list(app_file_3, config_file_3)
+    lists = [dict_list_1, dict_list_2, dict_list_3]
+
+    keys = dict_list_1[0].keys()
+
+    for idx in range(len(lists)):
+        fp = open(f"../list_of_dicts/part{idx+1}.csv", 'w')
+        writer = csv.DictWriter(fp, fieldnames=keys)
+        writer.writeheader()
+        for d in lists[idx]:
+            writer.writerow(d)
+        fp.close()
+
+    # part2_file = open("../list_of_dicts/part2.csv", 'w')
+    # for p2d in dict_list_2:
+    #     pass
+    # part2_file.close()
+
+    # part3_file = open("../list_of_dicts/part3.csv", 'w')
+    # for p3d in dict_list_3:
+    #     pass
+    # part3_file.close()
