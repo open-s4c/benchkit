@@ -40,6 +40,7 @@ single_dict_format = {
    "--adaptive-aas": None,
    "--try-adaptive-aas": None,
    "--compress-prec-table": None,
+   "--output-file": None,
 }
 
 
@@ -113,7 +114,7 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
 
     output_name = ""
     list_of_list = []
-    param_order = [] # names of the properties appended
+    param_order = [] # names of the options
     for tup in config['exp_parameters'][config_name]:
 
         if(len(tup) >= 2 and tup[0] == "app"):
@@ -149,13 +150,14 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
             if (isHS):
                 anml_file = os.path.join(apps_dict['root'], a['hs'])
             else:
-                anml_file = os.path.join(apps_dict['root'], apps_dict['apps'][a]['automata'])
+                anml_file = os.path.join(apps_dict['root'], a['automata'])
             quick_validation = a['quick_validation']
 
     if "error" in anml_file:
         return {}
 
-    for combin in itertools.product(list_of_list):
+    # the star operator unpacks the list according to how many arguments the function takes
+    for combin in itertools.product(*list_of_list):
         cmd_dict = construct_dict(
             config, 
             config_name, 
@@ -168,10 +170,12 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
             combin, 
             quick_validation)
 
+        cmd_dict["--output-file"] = output_name
         padded_cmd_dict = pad_dict(cmd_dict)
         # sorting according to keys to keep the same order
-        keys = list(padded_cmd_dict.keys())
-        sorted_keys = keys.sort()
+        sorted_keys = []
+        for k in padded_cmd_dict.keys(): sorted_keys.append(k)
+        sorted_keys.sort()
         sd = {}
         for sk in sorted_keys:
             sd[sk] = padded_cmd_dict[sk]
@@ -191,6 +195,8 @@ def gen_dict_list(app_file: str, config_file: str) -> List[Dict[str, Any]]:
     app_dict = eval(apps.read())
     config_dict = eval(config.read())
 
+    # breakpoint()
+
     app_names = get_app_names(app_dict)
     for app in app_names:
         for cfg in config_dict["exp_parameters"]:
@@ -200,31 +206,34 @@ def gen_dict_list(app_file: str, config_file: str) -> List[Dict[str, Any]]:
     return result
 
 
-if __name__ == 'main':
+# if __name__ == 'main':
 
-    app_file = "./app_spec_ngap_new_quickvalidation_part1"
-    config_file = "./exec_config_ngap_groups_design_NAP"
+app_file = "./app_spec_ngap_new_quickvalidation_part1"
+config_file = "./exec_config_ngap_groups_design_NAP"
 
-    app_file_2 = "./app_spec_ngap_new_quickvalidation_part1"
-    config_file_2 = "./exec_config_ngap_groups_design_NAP"
+app_file_2 = "./app_spec_ngap_new_quickvalidation_part1"
+config_file_2 = "./exec_config_ngap_groups_design_NAP"
 
-    app_file_3 = "./app_spec_ngap_new_quickvalidation_part1"
-    config_file_3 = "./exec_config_ngap_groups_design_NAP"
+app_file_3 = "./app_spec_ngap_new_quickvalidation_part1"
+config_file_3 = "./exec_config_ngap_groups_design_NAP"
 
-    dict_list_1 = gen_dict_list(app_file, config_file)
-    dict_list_2 = gen_dict_list(app_file_2, config_file_2)
-    dict_list_3 = gen_dict_list(app_file_3, config_file_3)
-    lists = [dict_list_1, dict_list_2, dict_list_3]
+dict_list_1 = gen_dict_list(app_file, config_file)
+dict_list_2 = gen_dict_list(app_file_2, config_file_2)
+dict_list_3 = gen_dict_list(app_file_3, config_file_3)
 
-    keys = dict_list_1[0].keys()
+# breakpoint()
 
-    for idx in range(len(lists)):
-        fp = open(f"../list_of_dicts/part{idx+1}.csv", 'w')
-        writer = csv.DictWriter(fp, fieldnames=keys)
-        writer.writeheader()
-        for d in lists[idx]:
-            writer.writerow(d)
-        fp.close()
+lists = [dict_list_1, dict_list_2, dict_list_3]
+
+keys = dict_list_1[0].keys()
+
+for idx in range(len(lists)):
+    fp = open(f"../list_of_dicts/part{idx+1}.csv", 'w')
+    writer = csv.DictWriter(fp, fieldnames=keys)
+    writer.writeheader()
+    for d in lists[idx]:
+        writer.writerow(d)
+    fp.close()
 
     # part2_file = open("../list_of_dicts/part2.csv", 'w')
     # for p2d in dict_list_2:
