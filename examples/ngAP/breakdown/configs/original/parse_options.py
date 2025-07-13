@@ -2,49 +2,86 @@
 
 # dictonary for one command
 single_dict_format = {
-   "--algorithm": None,
-   "--block-size": None,
-   "--max-nfa-size": None,
-   "--report-off": None,
-   "--report-filename": None,
-   "--result-capacity": None,
-   "--input-start-pos": None,
-   "--input-len": None,
-   "--input": None,
-   "--automata": None,
-   "--split-entire-inputstream-to-chunk-size": None,
-   "--only-exec-cc-with-state-id": None,
-   "--only-exec-ccid": None,
-   "--duplicate-input-stream": None,
-   "--quick-validation": None,
-   "--unique-frequency": None,
-   "--padding": None,
-   "--app-name": None,
-   "--use-uvm": None,
-   "--quit-degree": None,
-   "--remove-degree": None,
-   "--add-aan-start": None,
-   "--add-aas-interval": None,
-   "--unique": None,
-   "--active-threshold": None,
-   "--validation": None,
-   "--use-soa": None,
-   "--precompute-cutoff": None,
-   "--precompute-depth": None,
-   "--data-buffer-fetch-size": None,
-   "--motivate-worklist-length": None,
-   "--num-state-per-group": None,
-   "--group-num": None,
-   "--tuning": None,
-   "--pc-use-uvm": None,
-   "--adaptive-aas": None,
-   "--try-adaptive-aas": None,
-   "--compress-prec-table": None,
-   "--output-file": None,
+   "algorithm": None,
+   "block_size": None,
+   "max_nfa_size": None,
+   "report_off": None,
+   "report_filename": None,
+   "result_capacity": None,
+   "input_start_pos": None,
+   "input_len": None,
+   "split_entire_inputstream_to_chunk_size": None,
+   "only_exec_cc_with_state_id": None,
+   "only_exec_ccid": None,
+   "duplicate_input_stream": None,
+   "quick_validation": None,
+   "unique_frequency": None,
+   "padding": None,
+   "app_name": None,
+   "use_uvm": None,
+   "quit_degree": None,
+   "remove_degree": None,
+   "add_aan_start": None,
+   "add_aas_interval": None,
+   "unique": None,
+   "active_threshold": None,
+   "validation": None,
+   "use_soa": None,
+   "precompute_cutoff": None,
+   "precompute_depth": None,
+   "data_buffer_fetch_size": None,
+   "motivate_worklist_length": None,
+   "num_state_per_group": None,
+   "group_num": None,
+   "tuning": None,
+   "pc_use_uvm": None,
+   "adaptive_aas": None,
+   "try_adaptive_aas": None,
+   "compress_prec_table": None,
+   "output_file": None,
+   "no_name_provided": None,
+   "algortithm": None,
+   "input": None,
 }
 
 
-from typing import Any, Dict, List
+possible_vars = {
+    "input_start_pos": None,
+    "report_off": None,
+    "split_entire_inputstream_to_chunk_size": None,
+    "compress_prec_table": None,
+    "data_buffer_fetch_size": None,
+    "quit_degree": None,
+    "result_capacity": None,
+    "use_soa": None,
+    "max_nfa_size": None,
+    "use_uvm": None,
+    "unique_frequency": None,
+    "input_len": None,
+    "precompute_cutoff": None,
+    "precompute_depth": None,
+    "algorithm": None,
+    "group_num": None,
+    "add_aas_interval": None,
+    "remove_degree": None,
+    "add_aan_start": None,
+    "active_threshold": None,
+    "duplicate_input_stream": None,
+    "unique": None,
+    "pc_use_uvm": None,
+    "input": None,
+    "automata": None,
+    "isHS": None,
+    "isVASim": None,
+    "app_name": None,
+    "validation": None,
+    "no_name_provided": None,
+    "quick_validation": None,
+    "enable_validation": None
+}
+
+
+from typing import Any, Dict, List, Set
 import itertools
 import os
 import csv
@@ -58,38 +95,34 @@ def get_app_names(apps_dict: Dict) -> List[str]:
     return app_names
 
 
+def extract_all_variables(full_config: Dict) -> Set[str]:
+
+    variables = set({})
+
+    for config in full_config['exp_parameters']:
+        for tuple in full_config['exp_parameters'][config]:
+
+            if not (len(tuple) >= 3 and tuple[2] == 'nocombination'):
+                var = tuple[0]
+                var_underscored = var.replace("-","_")
+                variables.add(var_underscored)
+
+    return variables
+
+
 
 def construct_dict(config_dict, cfg_name, app, isHS, isVASim, input_file, anml, param_order, params, quick_validation = False) -> Dict[str, Any]:
     assert(cfg_name in config_dict['exp_parameters'])
 
     d = {}
-    if isHS:
-        for param_idx in range(len(param_order)):
-            d[param_order[param_idx]] = params[param_idx]
-
-        d['--no-name-provided'] = []
-        d['--no-name-provided'].append(anml)
-        d['--no-name-provided'].append(input_file)
-        d['-v'] = quick_validation
-
-    elif isVASim:
-        for param_idx in range(len(param_order)):
-            d[param_order[param_idx]] = params[param_idx]
-
-        d['--no-name-provided'] = []
-        d['--no-name-provided'].append(anml)
-        d['--no-name-provided'].append(input_file)
-
-    else:
-        d["-a"] = anml
-        d["-i"] = input_file
-        d["--app-name"] = app
-
-        for param_idx in range(len(param_order)):
-            d[f"--{param_order[param_idx]}"] = params[param_idx]
-
-        # cmd_str_template += "--quick-validation=%s " % quick_validation
-        d["--quick-validation"] = quick_validation
+    d["automata"] = anml
+    d["input"] = input_file
+    d["app_name"] = app
+    d["quick_validation"] = quick_validation
+    for param_idx in range(len(param_order)):
+        d[param_order[param_idx]] = params[param_idx]
+    d["isHS"] = isHS
+    d["isVASim"] = isVASim
 
     return d
 
@@ -125,7 +158,7 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
             if (app_name in tup[1]):
                 return {}
 
-        if(len(tup) >= 2 and tup[0] == "output-name"):
+        if(len(tup) >= 2 and tup[0] == "output_name"):
             output_name = tup[1]
 
         if not (len(tup) >= 3 and tup[2] == 'nocombination'):
@@ -143,6 +176,7 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
     input_file = ""
     anml_file = ""
     quick_validation = ""
+    enable_validation = False
     for a in apps_dict['apps']:
         if a['name'] == app_name:
 
@@ -152,6 +186,9 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
             else:
                 anml_file = os.path.join(apps_dict['root'], a['automata'])
             quick_validation = a['quick_validation']
+
+            if "validation" in a:
+                enable_validation = True
 
     if "error" in anml_file:
         return {}
@@ -170,7 +207,8 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
             combin, 
             quick_validation)
 
-        cmd_dict["--output-file"] = output_name
+        cmd_dict["output_file"] = output_name
+        cmd_dict["enable_validation"] = enable_validation
         padded_cmd_dict = pad_dict(cmd_dict)
         # sorting according to keys to keep the same order
         sorted_keys = []
@@ -195,7 +233,6 @@ def gen_dict_list(app_file: str, config_file: str) -> List[Dict[str, Any]]:
     app_dict = eval(apps.read())
     config_dict = eval(config.read())
 
-    # breakpoint()
 
     app_names = get_app_names(app_dict)
     for app in app_names:
@@ -208,32 +245,63 @@ def gen_dict_list(app_file: str, config_file: str) -> List[Dict[str, Any]]:
 
 # if __name__ == 'main':
 
-app_file = "./app_spec_ngap_new_quickvalidation_part1"
-config_file = "./exec_config_ngap_groups_design_NAP"
+def write_variables_to_file():
 
-app_file_2 = "./app_spec_ngap_new_quickvalidation_part1"
-config_file_2 = "./exec_config_ngap_groups_design_NAP"
+    app_file = "./app_spec_ngap_new_quickvalidation_part1"
+    config_file = "./exec_config_ngap_groups_design_NAP"
+    apps = open(app_file,'r')
+    config = open(config_file,'r')
+    app_dict = eval(apps.read())
+    config_dict = eval(config.read())
+    set1 = extract_all_variables(config_dict)
+    apps.close()
+    config.close()
 
-app_file_3 = "./app_spec_ngap_new_quickvalidation_part1"
-config_file_3 = "./exec_config_ngap_groups_design_NAP"
+    app_file_2 = "./app_spec_ngap_new_quickvalidation_part1"
+    config_file_2 = "./exec_config_ngap_groups_design_NAP"
+    apps = open(app_file_2,'r')
+    config = open(config_file_2,'r')
+    app_dict = eval(apps.read())
+    config_dict = eval(config.read())
+    set2 = extract_all_variables(config_dict)
+    apps.close()
+    config.close()
 
-dict_list_1 = gen_dict_list(app_file, config_file)
-dict_list_2 = gen_dict_list(app_file_2, config_file_2)
-dict_list_3 = gen_dict_list(app_file_3, config_file_3)
+    app_file_3 = "./app_spec_ngap_new_quickvalidation_part1"
+    config_file_3 = "./exec_config_ngap_groups_design_NAP"
+    apps = open(app_file_3,'r')
+    config = open(config_file_3,'r')
+    app_dict = eval(apps.read())
+    config_dict = eval(config.read())
+    set3 = extract_all_variables(config_dict)
+    apps.close()
+    config.close()
 
-# breakpoint()
+    union_set = set1 | set2 | set3
+    fp = open("./variables.txt", 'w')
+    for var in union_set:
+        fp.write(f"{var},\n")
 
-lists = [dict_list_1, dict_list_2, dict_list_3]
-
-keys = dict_list_1[0].keys()
-
-for idx in range(len(lists)):
-    fp = open(f"../list_of_dicts/part{idx+1}.csv", 'w')
-    writer = csv.DictWriter(fp, fieldnames=keys)
-    writer.writeheader()
-    for d in lists[idx]:
-        writer.writerow(d)
     fp.close()
+
+# dict_list_1 = gen_dict_list(app_file, config_file)
+# dict_list_2 = gen_dict_list(app_file_2, config_file_2)
+# dict_list_3 = gen_dict_list(app_file_3, config_file_3)
+
+
+# # breakpoint()
+
+# lists = [dict_list_1, dict_list_2, dict_list_3]
+
+# keys = dict_list_1[0].keys()
+
+# for idx in range(len(lists)):
+#     fp = open(f"../list_of_dicts/part{idx+1}.csv", 'w')
+#     writer = csv.DictWriter(fp, fieldnames=keys)
+#     writer.writeheader()
+#     for d in lists[idx]:
+#         writer.writerow(d)
+#     fp.close()
 
     # part2_file = open("../list_of_dicts/part2.csv", 'w')
     # for p2d in dict_list_2:
@@ -244,3 +312,4 @@ for idx in range(len(lists)):
     # for p3d in dict_list_3:
     #     pass
     # part3_file.close()
+

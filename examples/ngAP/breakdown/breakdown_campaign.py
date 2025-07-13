@@ -11,27 +11,31 @@ from typing import Any, Dict, Iterable, List, Optional
 from benchkit.utils.dir import get_curdir, parentdir
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
-from benchkit.campaign import CampaignCartesianProduct, Constants
+from benchkit.campaign import CampaignIterateVariables, Constants
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import CpuOrder, PathType
+from benchkit.commandwrappers.ncu import NcuWrap, CommandWrapper
 
+from parse_options import gen_dict_list
+
+options = ['--active-threshold', '--adaptive-aas', '--add-aan-start', '--add-aas-interval', '--algorithm', '--app-name', '--block-size', '--compress-prec-table', '--data-buffer-fetch-size', '--duplicate-input-stream', '--group-num', '--input-len', '--input-start-pos', '--max-nfa-size', '--motivate-worklist-length', '--num-state-per-group', '--only-exec-cc-with-state-id', '--only-exec-ccid', '--output-file', '--padding', '--pc-use-uvm', '--precompute-cutoff', '--precompute-depth', '--quick-validation', '--quit-degree', '--remove-degree', '--report-filename', '--report-off', '--result-capacity', '--split-entire-inputstream-to-chunk-size', '--try-adaptive-aas', '--tuning', '--unique', '--unique-frequency', '--use-soa', '--use-uvm', '--validation', '-a', '-i', "--output-file", "--no-name-provided"]
 
 class BreakdownBench(Benchmark):
     """Benchmark object for LevelDB benchmark."""
 
     def __init__(
         self,
-        app_name: str,
-        input_file: Optional[PathType],
-        mnrl_file: Optional[PathType],
-        anml_file: Optional[PathType],
-        hs_file: Optional[PathType],
-        quick_validation: Optional[int],
-        exclude_apps: Optional[List],
-        short_name: Optional[str] = None,
+        # app_name: str,
+        # input_file: Optional[PathType],
+        # mnrl_file: Optional[PathType],
+        # anml_file: Optional[PathType],
+        # hs_file: Optional[PathType],
+        # quick_validation: Optional[int],
+        # exclude_apps: Optional[List],
+        # short_name: Optional[str] = None,
         src_path: Optional[PathType] = None,
         build_path: Optional[PathType] = None,
         command_wrappers: Iterable[CommandWrapper] = (),
@@ -67,39 +71,39 @@ class BreakdownBench(Benchmark):
         else:
             self._build_dir = build_path
 
-        self.app_name = app_name
-        self.input_file = input_file
-        self.mnrl_file = mnrl_file
-        self.anml_file = anml_file
-        self.hs_file = hs_file
-        self.quick_validation = quick_validation
-        self.exclude_apps = exclude_apps
-        self.short_name = short_name
+        # self.app_name = app_name
+        # self.input_file = input_file
+        # self.mnrl_file = mnrl_file
+        # self.anml_file = anml_file
+        # self.hs_file = hs_file
+        # self.quick_validation = quick_validation
+        # self.exclude_apps = exclude_apps
+        # self.short_name = short_name
 
-        if self.app_name in self.exclude_apps:
-            raise ValueError(
-                f"Cannot create a benchmark object for this app - this app is excluded: {self.app_name}"
-            )
+        # if self.app_name in self.exclude_apps:
+        #     raise ValueError(
+        #         f"Cannot create a benchmark object for this app - this app is excluded: {self.app_name}"
+        #     )
 
-        if self.input_file is not None and not self.platform.comm.isfile(self.input_file):
-            raise ValueError(
-                f"Invalid input stream file: {self.input_file}"
-            )
+        # if self.input_file is not None and not self.platform.comm.isfile(self.input_file):
+        #     raise ValueError(
+        #         f"Invalid input stream file: {self.input_file}"
+        #     )
 
-        if self.mnrl_file is not None and not self.platform.comm.isfile(self.mnrl_file):
-            raise ValueError(
-                f"Invalid mnrl file: {self.mnrl_file}"
-            )
+        # if self.mnrl_file is not None and not self.platform.comm.isfile(self.mnrl_file):
+        #     raise ValueError(
+        #         f"Invalid mnrl file: {self.mnrl_file}"
+        #     )
 
-        if self.anml_file is not None and not self.platform.comm.isfile(self.anml_file):
-            raise ValueError(
-                f"Invalid anml file: {self.anml_file}"
-            )
+        # if self.anml_file is not None and not self.platform.comm.isfile(self.anml_file):
+        #     raise ValueError(
+        #         f"Invalid anml file: {self.anml_file}"
+        #     )
 
-        if self.hs_file is not None and not self.platform.comm.isfile(self.hs_file):
-            raise ValueError(
-                f"Invalid hs file: {self.hs_file}"
-            )
+        # if self.hs_file is not None and not self.platform.comm.isfile(self.hs_file):
+        #     raise ValueError(
+        #         f"Invalid hs file: {self.hs_file}"
+        #     )
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -112,33 +116,36 @@ class BreakdownBench(Benchmark):
     @staticmethod
     def get_run_var_names() -> List[str]:
         return [
-            "excluded_apps",
-            "app",
-            "algorithm",
-            "output_name",
             "input_start_pos",
-            "input_len",
-            "split_to_chunk_size",
-            "group_num",
-            "duplicate_input_stream",
-            "unique",
-            "unique_frequency",
-            "use_soa",
-            "result_capacity",
-            "use_uvm",
+            "report_off",
+            "split_entire_inputstream_to_chunk_size",
+            "compress_prec_table",
             "data_buffer_fetch_size",
-            "add_aan_start",
-            "add_aas_interval",
-            "active_threshold",
+            "quit_degree",
+            "result_capacity",
+            "use_soa",
+            "max_nfa_size",
+            "use_uvm",
+            "unique_frequency",
+            "input_len",
             "precompute_cutoff",
             "precompute_depth",
-            "compress_prec_table",
-            "pc_use_uvm",
-            "report_off",
+            "algorithm",
+            "group_num",
+            "add_aas_interval",
             "remove_degree",
-            "quit_degree",
-            "max_nfa_size"
-        ]
+            "add_aan_start",
+            "active_threshold",
+            "duplicate_input_stream",
+            "unique",
+            "pc_use_uvm",
+            "input",
+            "isHS",
+            "isVASim",
+            "app_name",
+            "validation",
+            "no_name_provided",
+            "quick_validation"]
 
     @staticmethod
     def get_tilt_var_names() -> List[str]:
@@ -192,38 +199,42 @@ class BreakdownBench(Benchmark):
 
         return result_dict
 
+    # TODO probably mention ngAP here
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + []
 
     def build_tilt(self, **kwargs) -> None:
         self.tilt.build_single_lock(**kwargs)
 
-    def prebuild_bench(self, **_kwargs) -> None:
-        build_dir = self._build_dir
-        self.platform.comm.makedirs(path=build_dir, exist_ok=True)
+    def prebuild_bench(self, **_kwargs):
+        pass
 
-        must_debug = self.must_debug()
-        cmake_build_type = "Debug" if must_debug else "Release"
+    # def prebuild_bench(self, **_kwargs) -> None:
+    #     build_dir = self._build_dir
+    #     self.platform.comm.makedirs(path=build_dir, exist_ok=True)
 
-        self.platform.comm.shell(
-            command=f"cmake -DCMAKE_BUILD_TYPE={cmake_build_type} {self._bench_src_path}",
-            current_dir=build_dir,
-            output_is_log=True,
-        )
-        self.platform.comm.shell(
-            command=f"make{self._parallel_make_str()} db_bench",
-            current_dir=build_dir,
-            output_is_log=True,
-        )
-        if not self.platform.comm.isdir(self._tmpdb_dir):
-            self.platform.comm.makedirs(path=self._tmpdb_dir, exist_ok=True)
-            db_init_command = [
-                "./db_bench",
-                "--threads=1",
-                "--benchmarks=fillseq",
-                f"--db={self._tmpdb_dir}",
-            ]
-            self.platform.comm.shell(command=db_init_command, current_dir=build_dir)
+    #     must_debug = self.must_debug()
+    #     cmake_build_type = "Debug" if must_debug else "Release"
+
+    #     self.platform.comm.shell(
+    #         command=f"cmake -DCMAKE_BUILD_TYPE={cmake_build_type} {self._bench_src_path}",
+    #         current_dir=build_dir,
+    #         output_is_log=True,
+    #     )
+    #     self.platform.comm.shell(
+    #         command=f"make{self._parallel_make_str()} db_bench",
+    #         current_dir=build_dir,
+    #         output_is_log=True,
+    #     )
+    #     if not self.platform.comm.isdir(self._tmpdb_dir):
+    #         self.platform.comm.makedirs(path=self._tmpdb_dir, exist_ok=True)
+    #         db_init_command = [
+    #             "./db_bench",
+    #             "--threads=1",
+    #             "--benchmarks=fillseq",
+    #             f"--db={self._tmpdb_dir}",
+    #         ]
+    #         self.platform.comm.shell(command=db_init_command, current_dir=build_dir)
 
     def build_bench(
         self,
@@ -247,48 +258,52 @@ class BreakdownBench(Benchmark):
     """
 
     def single_run(  # pylint: disable=arguments-differ
-        excluded_apps,
-        app,
-        algorithm,
-        output_name,
         input_start_pos,
-        input_len,
-        split_to_chunk_size,
-        group_num,
-        duplicate_input_stream,
-        unique,
-        unique_frequency,
-        use_soa,
-        result_capacity,
-        use_uvm,
+        report_off,
+        split_entire_inputstream_to_chunk_size,
+        compress_prec_table,
         data_buffer_fetch_size,
-        add_aan_start,
-        add_aas_interval,
-        active_threshold,
+        quit_degree,
+        result_capacity,
+        use_soa,
+        max_nfa_size,
+        use_uvm,
+        unique_frequency,
+        input_len,
         precompute_cutoff,
         precompute_depth,
-        compress_prec_table,
-        pc_use_uvm,
-        report_off,
+        algorithm,
+        group_num,
+        add_aas_interval,
         remove_degree,
-        quit_degree,
-        max_nfa_size,
-        self,
+        add_aan_start,
+        active_threshold,
+        duplicate_input_stream,
+        unique,
+        pc_use_uvm,
+        input,
+        automata,
+        isHS,
+        isVASim,
+        app_name,
+        quick_validation,
+        enable_validation,
+        output_file,
         **kwargs,
     ) -> str:
 
         command = [
             "ngap",
             "-a",
-            f"{self.anml_file}",
+            f"{automata}",
             "-i",
-            f"{self.input_file}"]
+            f"{input}",
+            f"--app-name={app_name}"]
 
-        if app is not None: command.extend([f"--app-name={app}"])
         if algorithm is not None: command.extend([f"--algorithm={algorithm}"])
         if input_start_pos is not None: command.extend([f"--input-start-pos={input_start_pos}"])
         if input_len is not None: command.extend([f"--input-len={input_len}"])
-        if split_to_chunk_size is not None: command.extend([f"--split-entire-inputstream-to-chunk-size={split_to_chunk_size}"])
+        if split_entire_inputstream_to_chunk_size is not None: command.extend([f"--split-entire-inputstream-to-chunk-size={split_to_chunk_size}"])
         if group_num is not None: command.extend([f"--input-len={input_len}"])
         if duplicate_input_stream is not None: command.extend([f"--input-len={input_len}"])
         if unique is not None: command.extend([f"--unique={unique}"])
@@ -309,35 +324,51 @@ class BreakdownBench(Benchmark):
         if quit_degree: command.extend([f"--quit_degree={quit_degree}"]) 
         if max_nfa_size: command.extend([f"--max_nfa_size={max_nfa_size}"]) 
 
+        if isHS:
+            command.extend(["--support"])
+            if quick_validation is not None:
+                command.extend([f"-v {quick_validation}"])
+        elif isVASim:
+            command.extend(["-t"])
+        else:
+            command.extend([f"--validation={enable_validation}"])
+            if quick_validation is not None:
+                command.extend([f"--quick-validation={quick_validation}"])
+
+
         environment = self._preload_env(
-            excluded_apps = excluded_apps,                    
-            app = app,
-            algorithm = algorithm,
-            output_name = output_name,
-            input_start_pos = input_start_pos,                  
-            input_len = input_len,
-            split_to_chunk_size = split_to_chunk_size,
-            group_num = group_num,
-            duplicate_input_stream = duplicate_input_stream,
-            unique = unique,
-            unique_frequency = unique_frequency,
-            use_soa = use_soa,
-            result_capacity = result_capacity,
-            use_uvm = use_uvm,
-            data_buffer_fetch_size = data_buffer_fetch_size,
-            add_aan_start = add_aan_start,
-            add_aas_interval = add_aas_interval,
-            active_threshold = active_threshold,
-            precompute_cutoff = precompute_cutoff,
-            precompute_depth = precompute_depth,
-            compress_prec_table = compress_prec_table,
-            pc_use_uvm = pc_use_uvm,
-            report_off = report_off,
-            remove_degree = remove_degree,
-            quit_degree = quit_degree,                      
-            max_nfa_size = max_nfa_size,     
-            kwargs**,
-        )
+            input_start_pos,
+            report_off,
+            split_entire_inputstream_to_chunk_size,
+            compress_prec_table,
+            data_buffer_fetch_size,
+            quit_degree,
+            result_capacity,
+            use_soa,
+            max_nfa_size,
+            use_uvm,
+            unique_frequency,
+            input_len,
+            precompute_cutoff,
+            precompute_depth,
+            algorithm,
+            group_num,
+            add_aas_interval,
+            remove_degree,
+            add_aan_start,
+            active_threshold,
+            duplicate_input_stream,
+            unique,
+            pc_use_uvm,
+            input,
+            automata,
+            isHS,
+            isVASim,
+            app_name,
+            quick_validation,
+            enable_validation,
+            output_file,
+            kwargs**)
 
 
         if bench_name in ["readrandom", "readmissing", "readhot", "seekrandom"]:
@@ -393,77 +424,67 @@ class BreakdownBench(Benchmark):
         return result_dict
 
 
-def leveldb_campaign(
-    name: str = "leveldb_campaign",
-    benchmark: Optional[LevelDBBench] = None,
-    bench_name: Iterable[str] = ("readrandom",),
-    src_dir: Optional[PathType] = None,
-    build_dir: Optional[str] = None,
-    results_dir: Optional[PathType] = None,
-    command_wrappers: Iterable[CommandWrapper] = (),
-    command_attachments: Iterable[CommandAttachment] = (),
-    shared_libs: Iterable[SharedLib] = (),
-    pre_run_hooks: Iterable[PreRunHook] = (),
-    post_run_hooks: Iterable[PostRunHook] = (),
-    platform: Platform | None = None,
+def ngap_breakdown_campaign(
+    benchmark: Benchmark,
+    variables: Dict[str, Iterable[Any]],
+    name: str = None,
     nb_runs: int = 1,
-    benchmark_duration_seconds: int = 5,
-    locks: Iterable[str] = (),
-    cpu_order: Iterable[CpuOrder] = (),
-    master_thread_core: Iterable[int | None] = (),
-    use_lse: Iterable[bool] = (),
-    atomics: Iterable[str] = (),
-    nb_threads: Iterable[int] = (1,),
-    num: Iterable[int] = (1000000,),
-    freshdb_foreach_run: Iterable[bool] = (False,),
+    constants: Constants = None,
     debug: bool = False,
     gdb: bool = False,
     enable_data_dir: bool = False,
     continuing: bool = False,
-    constants: Constants = None,
-    pretty: Optional[Dict[str, str]] = None,
-) -> CampaignCartesianProduct:
-    """Return a cartesian product campaign configured for the LevelDB benchmark."""
-    variables = {
-        "lock": locks,
-        "cpu_order": cpu_order,
-        "master_thread_core": master_thread_core,
-        "use_lse": use_lse,
-        "atomics": atomics,
-        "nb_threads": nb_threads,
-        "bench_name": bench_name,
-        "freshdb_foreach_run": freshdb_foreach_run,
-        "num": num,
-    }
-    if pretty is not None:
-        pretty = {"lock": pretty}
-
-    if src_dir is None:
-        pass  # TODO try some search heuristics
-
-    if benchmark is None:
-        benchmark = LevelDBBench(
-            src_dir=src_dir,
-            command_wrappers=command_wrappers,
-            command_attachments=command_attachments,
-            shared_libs=shared_libs,
-            pre_run_hooks=pre_run_hooks,
-            post_run_hooks=post_run_hooks,
-            platform=platform,
-            build_dir=build_dir,
-        )
-
-    return CampaignCartesianProduct(
-        name=name,
-        benchmark=benchmark,
-        nb_runs=nb_runs,
-        variables=variables,
-        constants=constants,
-        debug=debug,
-        gdb=gdb,
-        enable_data_dir=enable_data_dir,
-        continuing=continuing,
-        benchmark_duration_seconds=benchmark_duration_seconds,
-        results_dir=results_dir,
-        pretty=pretty,
+    benchmark_duration_seconds: Optional[int] = None,
+    results_dir: Optional[PathType] = None,
+) -> CampaignIterateVariables:
+    
+    return CampaignIterateVariables(
+        name = name,
+        benchmark = benchmark,
+        nb_runs = nb_runs,
+        variables = variables,
+        constants = constants,
+        debug = debug,
+        gdb = gdb,
+        enable_data_dir = enable_data_dir,
+        continuing = continuing,
+        benchmark_duration_seconds = benchmark_duration_seconds,
+        results_dir = results_dir
     )
+
+
+def main():
+
+    ncu_wrapper = NcuWrap(set="full")
+    benchmark = BreakdownBench(
+        command_attachments=ncu_wrapper,
+        post_run_hooks=[ncu_wrapper.post_run_hook_update_results])
+
+    # parse the config and app files
+    app_file = "./app_spec_ngap_new_quickvalidation_part1"
+    config_file = "./exec_config_ngap_groups_design_NAP"
+    vars_part1 = gen_dict_list(app_file, config_file)
+    part1_campaign = ngap_breakdown_campaign(
+        name = "Part1_Breakdown", 
+        variables=vars_part1,
+        benchmark=benchmark)
+
+    app_file_2 = "./app_spec_ngap_new_quickvalidation_part1"
+    config_file_2 = "./exec_config_ngap_groups_design_NAP"
+    vars_part2 = gen_dict_list(app_file_2, config_file_2)
+    part2_campaign = ngap_breakdown_campaign(
+        name = "Part2_Breakdown", 
+        variables=vars_part2,
+        benchmark=benchmark)
+
+    app_file_3 = "./app_spec_ngap_new_quickvalidation_part1"
+    config_file_3 = "./exec_config_ngap_groups_design_NAP"
+    vars_part3 = gen_dict_list(app_file_3, config_file_3)
+    part3_campaign = ngap_breakdown_campaign(
+        name = "Part3_Breakdown", 
+        variables=vars_part3,
+        benchmark=benchmark)
+
+
+if __name__ == '__main__':
+    pass
