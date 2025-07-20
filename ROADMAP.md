@@ -157,6 +157,20 @@ future.
   - Commands for querying the state of a running benchmark, such as progress,
     current iteration, or system resource usage.
 
+- [in progress] overhaul of commands (shelling out). Main idea is to have the
+  "declaration level" and the "execution level":
+    c = Command("sleep", "3")
+    c.run()
+
+- Solve the problem with sudo password prompts. The best way is probably to
+  explitly expose when functions/benchmarks/APIs require the sudo access by
+  requiring an input "prompter" argument:
+    sudo_prompt = SudoPrompter()
+    sudo_prompt.now()
+    enable_non_sudo_perf(comm_layer=platform.comm, prompt=sudo_prompt)
+  Then we can force the prompt to cache the sudo password (.now()), and log all
+  the sudo requests and corresponding commands (SudoPrompter(log=True)).
+
 
 ## Non-functional changes
 
