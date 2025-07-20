@@ -47,11 +47,13 @@ class Campaign:
         gdb: bool,
         enable_data_dir: bool,
         continuing: bool,
+        symlink_latest: bool = False,
     ):
         self._check_parameters_integrity()
 
         self._enable_data_dir = enable_data_dir
         self._continuing = continuing
+        self._symlink_latest = symlink_latest
 
         params: Dict[str, Any] = self.parameters
 
@@ -187,8 +189,28 @@ class Campaign:
         # Workaround to trunc this global file, before logging refactoring TODO
         self._init_cmd_file()
 
-        csv_output_dir = os.path.dirname(self.csv_output_abs_path())
+        csv_output_path = self.csv_output_abs_path()
+        csv_output_dir = os.path.dirname(csv_output_path)
         os.makedirs(csv_output_dir, exist_ok=True)
+
+        base_data_dir = self.base_data_dir()
+        if self._symlink_latest and base_data_dir:
+            symlink = str(csv_output_path).rsplit("_", 3)[0]
+            base_data_dir = pathlib.Path(base_data_dir)
+            symlink_path = pathlib.Path(symlink + "_latest")
+            if symlink_path.exists(follow_symlinks=False):
+                os.remove(symlink_path)
+            os.symlink(base_data_dir, symlink_path, True)
+            # Create a `results.csv` symlink inside of the data directory
+            # that links to the to the results CSV file.
+            abs_data_dir_result_path = base_data_dir / "results.csv"
+            os.symlink(csv_output_path, abs_data_dir_result_path)
+        elif self._symlink_latest:
+            symlink = str(csv_output_path).rsplit("_", 3)[0]
+            symlink_path = pathlib.Path(symlink + "_latest.csv")
+            if symlink_path.exists(follow_symlinks=False):
+                os.remove(symlink_path)
+            os.symlink(csv_output_path, symlink_path, False)
 
         self._benchmark.check_dependencies()
         self._benchmark.run(
@@ -454,6 +476,7 @@ class CampaignTemplate(Campaign):
         benchmark_duration_seconds: Optional[int] = None,
         results_dir: Optional[PathType] = None,
         pretty: Pretty | None = None,
+        symlink_latest: bool = False,
     ):
         csv_filename = self.csv_file(
             campaign_name="benchmark",
@@ -503,7 +526,11 @@ class CampaignTemplate(Campaign):
             self.parameters["pretty"] = pretty
 
         super().__init__(
-            debug=debug, gdb=gdb, enable_data_dir=enable_data_dir, continuing=continuing
+            debug=debug,
+            gdb=gdb,
+            enable_data_dir=enable_data_dir,
+            continuing=continuing,
+            symlink_latest=symlink_latest,
         )
 
 
@@ -527,6 +554,7 @@ class CampaignIterateVariables(CampaignTemplate):
         benchmark_duration_seconds: Optional[int] = None,
         results_dir: Optional[PathType] = None,
         pretty: Pretty | None = None,
+        symlink_latest: bool = False,
     ):
         super().__init__(
             name=name,
@@ -541,6 +569,7 @@ class CampaignIterateVariables(CampaignTemplate):
             benchmark_duration_seconds=benchmark_duration_seconds,
             results_dir=results_dir,
             pretty=pretty,
+            symlink_latest=symlink_latest,
         )
 
 
@@ -566,6 +595,7 @@ class CampaignCartesianProduct(CampaignTemplate):
         results_dir: Optional[PathType] = None,
         pretty: Pretty | None = None,
         filter_func: Optional[Callable[[Dict[str, Any]], bool]] = None,
+        symlink_latest: bool = False,
     ):
         records_gen = cartesian_product(variables)
 
@@ -585,4 +615,5 @@ class CampaignCartesianProduct(CampaignTemplate):
             benchmark_duration_seconds=benchmark_duration_seconds,
             results_dir=results_dir,
             pretty=pretty,
+            symlink_latest=symlink_latest,
         )
