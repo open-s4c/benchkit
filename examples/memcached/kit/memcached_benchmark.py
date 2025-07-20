@@ -6,8 +6,8 @@ See https://memcached.org/
 """
 
 import pathlib
-import time
 import sys
+import time
 from typing import Any, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
@@ -182,7 +182,7 @@ class MemcachedBench(Benchmark):
             f"-l {server_ip}",
             f"-p {server_port}",
             f"-t {nb_threads}",
-            f"-P memcached.pid",
+            "-P memcached.pid",
             "-d",  # Run as daemon
         ]
 
@@ -236,7 +236,7 @@ class MemcachedBench(Benchmark):
         )
 
         self.server_platform.comm.shell("pkill memcached")
-        time.sleep(2) # It can take some time to free the port after pkill
+        time.sleep(2)  # It can take some time to free the port after pkill
 
         return output
 

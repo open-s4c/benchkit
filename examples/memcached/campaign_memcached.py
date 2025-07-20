@@ -9,8 +9,8 @@ Example of campaign script for Memcached benchmark.
 from kit.memcached_benchmark import memcached_campaign
 
 from benchkit.campaign import CampaignSuite
-from benchkit.utils.dir import get_curdir
 from benchkit.platforms import get_current_platform
+from benchkit.utils.dir import get_curdir
 
 
 def main() -> None:
@@ -21,12 +21,14 @@ def main() -> None:
     memtier_benchmark_platform = get_current_platform()
     memcached_platform = get_current_platform()
 
-    campaign = memcached_campaign(nb_threads=[2, 4, 5, 10],
-                                  nb_runs=5,
-                                  client_src_dir=memtier_benchmark_src_dir,
-                                  server_src_dir=memcached_src_dir,
-                                  server_platform=memtier_benchmark_platform,
-                                  client_platform=memcached_platform)
+    campaign = memcached_campaign(
+        nb_threads=[2, 4, 5, 10],
+        nb_runs=5,
+        client_src_dir=memtier_benchmark_src_dir,
+        server_src_dir=memcached_src_dir,
+        server_platform=memtier_benchmark_platform,
+        client_platform=memcached_platform,
+    )
 
     campaigns = [campaign]
     suite = CampaignSuite(campaigns=campaigns)
