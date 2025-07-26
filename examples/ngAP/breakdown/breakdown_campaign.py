@@ -11,7 +11,7 @@ from typing import Any, Dict, Iterable, List, Optional
 from benchkit.utils.dir import get_curdir, parentdir
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
-from benchkit.campaign import CampaignIterateVariables, Constants
+from benchkit.campaign import CampaignIterateVariables, Constants, CampaignSuite
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
@@ -19,7 +19,8 @@ from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import CpuOrder, PathType
 from benchkit.commandwrappers.ncu import NcuWrap, CommandWrapper
 
-from parse_options import gen_dict_list
+# from examples.ngAP.breakdown.configs.original.parse_options import gen_dict_list
+from configs.original.parse_options import gen_dict_list
 
 options = ['--active-threshold', '--adaptive-aas', '--add-aan-start', '--add-aas-interval', '--algorithm', '--app-name', '--block-size', '--compress-prec-table', '--data-buffer-fetch-size', '--duplicate-input-stream', '--group-num', '--input-len', '--input-start-pos', '--max-nfa-size', '--motivate-worklist-length', '--num-state-per-group', '--only-exec-cc-with-state-id', '--only-exec-ccid', '--output-file', '--padding', '--pc-use-uvm', '--precompute-cutoff', '--precompute-depth', '--quick-validation', '--quit-degree', '--remove-degree', '--report-filename', '--report-off', '--result-capacity', '--split-entire-inputstream-to-chunk-size', '--try-adaptive-aas', '--tuning', '--unique', '--unique-frequency', '--use-soa', '--use-uvm', '--validation', '-a', '-i', "--output-file", "--no-name-provided"]
 
@@ -258,6 +259,7 @@ class BreakdownBench(Benchmark):
     """
 
     def single_run(  # pylint: disable=arguments-differ
+        self,
         input_start_pos,
         report_off,
         split_entire_inputstream_to_chunk_size,
@@ -303,26 +305,28 @@ class BreakdownBench(Benchmark):
         if algorithm is not None: command.extend([f"--algorithm={algorithm}"])
         if input_start_pos is not None: command.extend([f"--input-start-pos={input_start_pos}"])
         if input_len is not None: command.extend([f"--input-len={input_len}"])
-        if split_entire_inputstream_to_chunk_size is not None: command.extend([f"--split-entire-inputstream-to-chunk-size={split_to_chunk_size}"])
+        if split_entire_inputstream_to_chunk_size is not None:
+            command.extend([f"--split-entire-inputstream-to-chunk-size={split_entire_inputstream_to_chunk_size}"])
         if group_num is not None: command.extend([f"--input-len={input_len}"])
-        if duplicate_input_stream is not None: command.extend([f"--input-len={input_len}"])
+        if duplicate_input_stream is not None:
+            command.extend([f"--duplicate-input-stream={duplicate_input_stream}"])
         if unique is not None: command.extend([f"--unique={unique}"])
         if unique_frequency is not None: command.extend([f"--unique-frequency={unique_frequency}"])
-        if use_soa is not None: command.extend([f"--use_soa={use_soa}"])
-        if result_capacity is not None: command.extend([f"--result_capacity={result_capacity}"])
-        if use_uvm is not None: command.extend([f"--use_uvm={use_uvm}"])
-        if data_buffer_fetch_size: command.extend([f"--data_buffer_fetch_size={data_buffer_fetch_size}"]) 
-        if add_aan_start: command.extend([f"--add_aan_start={add_aan_start}"]) 
-        if add_aas_interval: command.extend([f"--add_aas_interval={add_aas_interval}"]) 
-        if active_threshold: command.extend([f"--active_threshold={active_threshold}"]) 
-        if precompute_cutoff: command.extend([f"--precompute_cutoff={precompute_cutoff}"]) 
-        if precompute_depth: command.extend([f"--precompute_depth={precompute_depth}"]) 
-        if compress_prec_table: command.extend([f"--compress_prec_table={compress_prec_table}"]) 
-        if pc_use_uvm: command.extend([f"--pc_use_uvm={pc_use_uvm}"]) 
-        if report_off: command.extend([f"--report_off={report_off}"]) 
-        if remove_degree: command.extend([f"--remove_degree={remove_degree}"]) 
-        if quit_degree: command.extend([f"--quit_degree={quit_degree}"]) 
-        if max_nfa_size: command.extend([f"--max_nfa_size={max_nfa_size}"]) 
+        if use_soa is not None: command.extend([f"--use-soa={use_soa}"])
+        if result_capacity is not None: command.extend([f"--result-capacity={result_capacity}"])
+        if use_uvm is not None: command.extend([f"--use-uvm={use_uvm}"])
+        if data_buffer_fetch_size: command.extend([f"--data-buffer-fetch-size={data_buffer_fetch_size}"]) 
+        if add_aan_start: command.extend([f"--add-aan-start={add_aan_start}"]) 
+        if add_aas_interval: command.extend([f"--add-aas-interval={add_aas_interval}"]) 
+        if active_threshold: command.extend([f"--active-threshold={active_threshold}"]) 
+        if precompute_cutoff: command.extend([f"--precompute-cutoff={precompute_cutoff}"]) 
+        if precompute_depth: command.extend([f"--precompute-depth={precompute_depth}"]) 
+        if compress_prec_table: command.extend([f"--compress-prec-table={compress_prec_table}"]) 
+        if pc_use_uvm: command.extend([f"--pc-use-uvm={pc_use_uvm}"]) 
+        if report_off: command.extend([f"--report-off={report_off}"]) 
+        if remove_degree: command.extend([f"--remove-degree={remove_degree}"]) 
+        if quit_degree: command.extend([f"--quit-degree={quit_degree}"]) 
+        if max_nfa_size: command.extend([f"--max-nfa-size={max_nfa_size}"]) 
 
         if isHS:
             command.extend(["--support"])
@@ -367,45 +371,17 @@ class BreakdownBench(Benchmark):
             app_name,
             quick_validation,
             enable_validation,
-            output_file,
-            kwargs**)
+            output_file)
 
-
-        if bench_name in ["readrandom", "readmissing", "readhot", "seekrandom"]:
-            duration_num = f"--duration={benchmark_duration_seconds}"
-        else:
-            duration_num = f"--num={num // nb_threads}"
-
-        if bench_name in [
-            "fillseq",
-            "fillrandom",
-            "fillsync",
-            "fill100K",
-        ]:
-            use_existing_db = False
-        else:
-            use_existing_db = True
-
-        run_command = [
-            "./db_bench",
-            f"--threads={nb_threads}",
-            f"--benchmarks={bench_name}",
-            f'--use_existing_db={"1" if use_existing_db else "0"}',
-            f"--db={self._tmpdb_dir}",
-            duration_num,
-        ]
-        wrapped_run_command, wrapped_environment = self._wrap_command(
-            run_command=run_command,
+        wrapped_command, wrapped_environment = self._wrap_command(
+            run_command=command,
             environment=environment,
-            cpu_order=cpu_order,
-            master_thread_core=master_thread_core,
-            nb_threads=nb_threads,
             **kwargs,
         )
 
         output = self.run_bench_command(
-            run_command=run_command,
-            wrapped_run_command=wrapped_run_command,
+            run_command=command,
+            wrapped_run_command=wrapped_command,
             current_dir=self._build_dir,
             environment=environment,
             wrapped_environment=wrapped_environment,
@@ -457,6 +433,8 @@ def main():
 
     ncu_wrapper = NcuWrap(set="full")
     benchmark = BreakdownBench(
+        # src_path="./src/",
+        # build_path="./build/",
         command_attachments=ncu_wrapper,
         post_run_hooks=[ncu_wrapper.post_run_hook_update_results])
 
@@ -464,7 +442,7 @@ def main():
     app_file = "./app_spec_ngap_new_quickvalidation_part1"
     config_file = "./exec_config_ngap_groups_design_NAP"
     vars_part1 = gen_dict_list(app_file, config_file)
-    part1_campaign = ngap_breakdown_campaign(
+    part_1_campaign = ngap_breakdown_campaign(
         name = "Part1_Breakdown", 
         variables=vars_part1,
         benchmark=benchmark)
@@ -472,7 +450,7 @@ def main():
     app_file_2 = "./app_spec_ngap_new_quickvalidation_part1"
     config_file_2 = "./exec_config_ngap_groups_design_NAP"
     vars_part2 = gen_dict_list(app_file_2, config_file_2)
-    part2_campaign = ngap_breakdown_campaign(
+    part_2_campaign = ngap_breakdown_campaign(
         name = "Part2_Breakdown", 
         variables=vars_part2,
         benchmark=benchmark)
@@ -480,11 +458,14 @@ def main():
     app_file_3 = "./app_spec_ngap_new_quickvalidation_part1"
     config_file_3 = "./exec_config_ngap_groups_design_NAP"
     vars_part3 = gen_dict_list(app_file_3, config_file_3)
-    part3_campaign = ngap_breakdown_campaign(
+    part_3_campaign = ngap_breakdown_campaign(
         name = "Part3_Breakdown", 
         variables=vars_part3,
         benchmark=benchmark)
 
+    campaign_suite = CampaignSuite(campaigns=[part_1_campaign, part_2_campaign, part_3_campaign])
+    campaign_suite.print_durations()
+    campaign_suite.run_suite()
 
 if __name__ == '__main__':
     pass
