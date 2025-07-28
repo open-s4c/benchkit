@@ -1,83 +1,49 @@
 # generates the list of dicitonaries for the campaign from the config and app files
 
 # dictonary for one command
-single_dict_format = {
-   "algorithm": None,
-   "block_size": None,
-   "max_nfa_size": None,
-   "report_off": None,
-   "report_filename": None,
-   "result_capacity": None,
-   "input_start_pos": None,
-   "input_len": None,
-   "split_entire_inputstream_to_chunk_size": None,
-   "only_exec_cc_with_state_id": None,
-   "only_exec_ccid": None,
-   "duplicate_input_stream": None,
-   "quick_validation": None,
-   "unique_frequency": None,
-   "padding": None,
-   "app_name": None,
-   "use_uvm": None,
-   "quit_degree": None,
-   "remove_degree": None,
-   "add_aan_start": None,
-   "add_aas_interval": None,
-   "unique": None,
-   "active_threshold": None,
-   "validation": None,
-   "use_soa": None,
-   "precompute_cutoff": None,
-   "precompute_depth": None,
-   "data_buffer_fetch_size": None,
-   "motivate_worklist_length": None,
-   "num_state_per_group": None,
-   "group_num": None,
-   "tuning": None,
-   "pc_use_uvm": None,
-   "adaptive_aas": None,
-   "try_adaptive_aas": None,
-   "compress_prec_table": None,
-   "output_file": None,
-   "no_name_provided": None,
-   "algortithm": None,
-   "input": None,
-}
-
 
 possible_vars = {
-    "input_start_pos": None,
-    "report_off": None,
-    "split_entire_inputstream_to_chunk_size": None,
-    "compress_prec_table": None,
-    "data_buffer_fetch_size": None,
-    "quit_degree": None,
-    "result_capacity": None,
-    "use_soa": None,
-    "max_nfa_size": None,
-    "use_uvm": None,
-    "unique_frequency": None,
-    "input_len": None,
-    "precompute_cutoff": None,
-    "precompute_depth": None,
-    "algorithm": None,
-    "group_num": None,
-    "add_aas_interval": None,
-    "remove_degree": None,
-    "add_aan_start": None,
-    "active_threshold": None,
-    "duplicate_input_stream": None,
-    "unique": None,
-    "pc_use_uvm": None,
-    "input": None,
-    "automata": None,
-    "isHS": None,
-    "isVASim": None,
-    "app_name": None,
-    "validation": None,
-    "no_name_provided": None,
-    "quick_validation": None,
-    "enable_validation": None
+    'algorithm': None,
+    'block_size': None,
+    'max_nfa_size': None,
+    'report_off': None,
+    'report_filename': None,
+    'result_capacity': None,
+    'input_start_pos': None,
+    'input_len': None,
+    'input': None,
+    'automata': None,
+    'split_entire_inputstream_to_chunk_size': None,
+    'only_exec_cc_with_state_id': None, 
+    'only_exec_ccid': None,
+    'duplicate_input_stream': None,
+    'quick_validation': None,
+    'unique_frequency': None,
+    'padding': None,                                 
+    'app_name': None,
+    'use_uvm': None,
+    'quit_degree': None,
+    'remove_degree': None,
+    'add_aan_start': None,
+    'add_aas_interval': None,
+    'unique': None,
+    'active_threshold': None,
+    'validation': None,
+    'use_soa': None,
+    'precompute_cutoff': None,
+    'precompute_depth': None,
+    'data_buffer_fetch_size': None,
+    'motivate_worklist_length': None,
+    'num_state_per_group': None,                     
+    'group_num': None,
+    'tuning': None,
+    'pc_use_uvm': None,
+    'adaptive_aas': None,
+    'try_adaptive_aas': None,
+    'compress_prec_table': None,
+    'output_file': None,
+    'isHS': None,
+    'isVASim': None
 }
 
 
@@ -115,14 +81,15 @@ def construct_dict(config_dict, cfg_name, app, isHS, isVASim, input_file, anml, 
     assert(cfg_name in config_dict['exp_parameters'])
 
     d = {}
-    d["automata"] = anml
-    d["input"] = input_file
-    d["app_name"] = app
-    d["quick_validation"] = quick_validation
+    d['automata'] = anml
+    d['input'] = input_file
+    d['app_name'] = app
+    d['quick_validation'] = quick_validation
     for param_idx in range(len(param_order)):
-        d[param_order[param_idx]] = params[param_idx]
-    d["isHS"] = isHS
-    d["isVASim"] = isVASim
+        param_name = param_order[param_idx].replace('-','_')
+        d[param_name] = params[param_idx]
+    d['isHS'] = isHS
+    d['isVASim'] = isVASim
 
     return d
 
@@ -130,7 +97,7 @@ def construct_dict(config_dict, cfg_name, app, isHS, isVASim, input_file, anml, 
 def pad_dict(cmd_dict):
 
     cmd_dict_copy = cmd_dict.copy()
-    for key in single_dict_format:
+    for key in possible_vars:
         if key not in cmd_dict_copy:
             cmd_dict_copy[key] = None
 
@@ -207,8 +174,8 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
             combin, 
             quick_validation)
 
-        cmd_dict["output_file"] = output_name
-        cmd_dict["enable_validation"] = enable_validation
+        cmd_dict['output_file'] = output_name
+        cmd_dict['validation'] = enable_validation
         padded_cmd_dict = pad_dict(cmd_dict)
         # sorting according to keys to keep the same order
         sorted_keys = []

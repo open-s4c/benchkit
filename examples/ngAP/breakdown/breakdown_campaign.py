@@ -18,9 +18,10 @@ from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import CpuOrder, PathType
 from benchkit.commandwrappers.ncu import NcuWrap, CommandWrapper
+from benchkit.platforms import get_current_platform
 
 # from examples.ngAP.breakdown.configs.original.parse_options import gen_dict_list
-from configs.original.parse_options import gen_dict_list
+from configs.original.parse_options import gen_dict_list, possible_vars
 
 options = ['--active-threshold', '--adaptive-aas', '--add-aan-start', '--add-aas-interval', '--algorithm', '--app-name', '--block-size', '--compress-prec-table', '--data-buffer-fetch-size', '--duplicate-input-stream', '--group-num', '--input-len', '--input-start-pos', '--max-nfa-size', '--motivate-worklist-length', '--num-state-per-group', '--only-exec-cc-with-state-id', '--only-exec-ccid', '--output-file', '--padding', '--pc-use-uvm', '--precompute-cutoff', '--precompute-depth', '--quick-validation', '--quit-degree', '--remove-degree', '--report-filename', '--report-off', '--result-capacity', '--split-entire-inputstream-to-chunk-size', '--try-adaptive-aas', '--tuning', '--unique', '--unique-frequency', '--use-soa', '--use-uvm', '--validation', '-a', '-i', "--output-file", "--no-name-provided"]
 
@@ -67,44 +68,10 @@ class BreakdownBench(Benchmark):
                 )
             self._bench_src_path = bench_src_path
 
-        if build_path is None:
-            self._build_dir = parentdir(path=self._bench_src_path, levels=1) / "build"
-        else:
+        if build_path is not None:
             self._build_dir = build_path
-
-        # self.app_name = app_name
-        # self.input_file = input_file
-        # self.mnrl_file = mnrl_file
-        # self.anml_file = anml_file
-        # self.hs_file = hs_file
-        # self.quick_validation = quick_validation
-        # self.exclude_apps = exclude_apps
-        # self.short_name = short_name
-
-        # if self.app_name in self.exclude_apps:
-        #     raise ValueError(
-        #         f"Cannot create a benchmark object for this app - this app is excluded: {self.app_name}"
-        #     )
-
-        # if self.input_file is not None and not self.platform.comm.isfile(self.input_file):
-        #     raise ValueError(
-        #         f"Invalid input stream file: {self.input_file}"
-        #     )
-
-        # if self.mnrl_file is not None and not self.platform.comm.isfile(self.mnrl_file):
-        #     raise ValueError(
-        #         f"Invalid mnrl file: {self.mnrl_file}"
-        #     )
-
-        # if self.anml_file is not None and not self.platform.comm.isfile(self.anml_file):
-        #     raise ValueError(
-        #         f"Invalid anml file: {self.anml_file}"
-        #     )
-
-        # if self.hs_file is not None and not self.platform.comm.isfile(self.hs_file):
-        #     raise ValueError(
-        #         f"Invalid hs file: {self.hs_file}"
-        #     )
+        else:
+            self._build_dir = parentdir(path=campaign_script_path, levels=1) / "build"
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -117,36 +84,47 @@ class BreakdownBench(Benchmark):
     @staticmethod
     def get_run_var_names() -> List[str]:
         return [
-            "input_start_pos",
-            "report_off",
-            "split_entire_inputstream_to_chunk_size",
-            "compress_prec_table",
-            "data_buffer_fetch_size",
-            "quit_degree",
-            "result_capacity",
-            "use_soa",
-            "max_nfa_size",
-            "use_uvm",
-            "unique_frequency",
-            "input_len",
-            "precompute_cutoff",
-            "precompute_depth",
-            "algorithm",
-            "group_num",
-            "add_aas_interval",
-            "remove_degree",
-            "add_aan_start",
-            "active_threshold",
-            "duplicate_input_stream",
-            "unique",
-            "pc_use_uvm",
-            "input",
-            "isHS",
-            "isVASim",
-            "app_name",
-            "validation",
-            "no_name_provided",
-            "quick_validation"]
+            'active_threshold', 
+            'adaptive_aas', 
+            'add_aan_start', 
+            'add_aas_interval', 
+            'algorithm', 
+            'app_name', 
+            'automata', 
+            'block_size', 
+            'compress_prec_table', 
+            'data_buffer_fetch_size', 
+            'duplicate_input_stream', 
+            'group_num', 
+            'input', 
+            'input_len', 
+            'input_start_pos', 
+            'isHS', 
+            'isVASim', 
+            'max_nfa_size', 
+            'motivate_worklist_length', 
+            'num_state_per_group', 
+            'only_exec_cc_with_state_id', 
+            'only_exec_ccid', 
+            'output_file', 
+            'padding', 
+            'pc_use_uvm', 
+            'precompute_cutoff', 
+            'precompute_depth', 
+            'quick_validation', 
+            'quit_degree', 
+            'remove_degree', 
+            'report_filename', 
+            'report_off', 
+            'result_capacity', 
+            'split_entire_inputstream_to_chunk_size', 
+            'try_adaptive_aas', 
+            'tuning', 
+            'unique', 
+            'unique_frequency', 
+            'use_soa', 
+            'use_uvm', 
+            'validation']
 
     @staticmethod
     def get_tilt_var_names() -> List[str]:
@@ -260,46 +238,54 @@ class BreakdownBench(Benchmark):
 
     def single_run(  # pylint: disable=arguments-differ
         self,
-        input_start_pos,
-        report_off,
-        split_entire_inputstream_to_chunk_size,
-        compress_prec_table,
-        data_buffer_fetch_size,
-        quit_degree,
-        result_capacity,
-        use_soa,
-        max_nfa_size,
-        use_uvm,
-        unique_frequency,
-        input_len,
-        precompute_cutoff,
-        precompute_depth,
-        algorithm,
-        group_num,
-        add_aas_interval,
-        remove_degree,
-        add_aan_start,
-        active_threshold,
-        duplicate_input_stream,
-        unique,
-        pc_use_uvm,
-        input,
-        automata,
-        isHS,
-        isVASim,
-        app_name,
-        quick_validation,
-        enable_validation,
-        output_file,
+        active_threshold, 
+        adaptive_aas, 
+        add_aan_start, 
+        add_aas_interval, 
+        algorithm, 
+        app_name, 
+        automata, 
+        block_size, 
+        compress_prec_table, 
+        data_buffer_fetch_size, 
+        duplicate_input_stream, 
+        group_num, 
+        input, 
+        input_len, 
+        input_start_pos, 
+        isHS, 
+        isVASim, 
+        max_nfa_size, 
+        motivate_worklist_length, 
+        num_state_per_group, 
+        only_exec_cc_with_state_id, 
+        only_exec_ccid, 
+        output_file, 
+        padding, 
+        pc_use_uvm, 
+        precompute_cutoff, 
+        precompute_depth, 
+        quick_validation, 
+        quit_degree, 
+        remove_degree, 
+        report_filename, 
+        report_off, 
+        result_capacity, 
+        split_entire_inputstream_to_chunk_size, 
+        try_adaptive_aas, 
+        tuning, 
+        unique, 
+        unique_frequency, 
+        use_soa, 
+        use_uvm, 
+        validation,
         **kwargs,
     ) -> str:
 
         command = [
             "ngap",
-            "-a",
-            f"{automata}",
-            "-i",
-            f"{input}",
+            f"--automata={automata}",
+            f"--input={input}",
             f"--app-name={app_name}"]
 
         if algorithm is not None: command.extend([f"--algorithm={algorithm}"])
@@ -315,18 +301,30 @@ class BreakdownBench(Benchmark):
         if use_soa is not None: command.extend([f"--use-soa={use_soa}"])
         if result_capacity is not None: command.extend([f"--result-capacity={result_capacity}"])
         if use_uvm is not None: command.extend([f"--use-uvm={use_uvm}"])
-        if data_buffer_fetch_size: command.extend([f"--data-buffer-fetch-size={data_buffer_fetch_size}"]) 
-        if add_aan_start: command.extend([f"--add-aan-start={add_aan_start}"]) 
-        if add_aas_interval: command.extend([f"--add-aas-interval={add_aas_interval}"]) 
-        if active_threshold: command.extend([f"--active-threshold={active_threshold}"]) 
-        if precompute_cutoff: command.extend([f"--precompute-cutoff={precompute_cutoff}"]) 
-        if precompute_depth: command.extend([f"--precompute-depth={precompute_depth}"]) 
-        if compress_prec_table: command.extend([f"--compress-prec-table={compress_prec_table}"]) 
-        if pc_use_uvm: command.extend([f"--pc-use-uvm={pc_use_uvm}"]) 
-        if report_off: command.extend([f"--report-off={report_off}"]) 
-        if remove_degree: command.extend([f"--remove-degree={remove_degree}"]) 
-        if quit_degree: command.extend([f"--quit-degree={quit_degree}"]) 
-        if max_nfa_size: command.extend([f"--max-nfa-size={max_nfa_size}"]) 
+        if data_buffer_fetch_size is not None: command.extend([f"--data-buffer-fetch-size={data_buffer_fetch_size}"]) 
+        if add_aan_start is not None: command.extend([f"--add-aan-start={add_aan_start}"]) 
+        if add_aas_interval is not None: command.extend([f"--add-aas-interval={add_aas_interval}"]) 
+        if active_threshold is not None: command.extend([f"--active-threshold={active_threshold}"]) 
+        if precompute_cutoff is not None: command.extend([f"--precompute-cutoff={precompute_cutoff}"]) 
+        if precompute_depth is not None: command.extend([f"--precompute-depth={precompute_depth}"]) 
+        if compress_prec_table is not None: command.extend([f"--compress-prec-table={compress_prec_table}"]) 
+        if pc_use_uvm is not None: command.extend([f"--pc-use-uvm={pc_use_uvm}"]) 
+        if report_off is not None: command.extend([f"--report-off={report_off}"]) 
+        if remove_degree is not None: command.extend([f"--remove-degree={remove_degree}"]) 
+        if quit_degree is not None: command.extend([f"--quit-degree={quit_degree}"]) 
+        if max_nfa_size is not None: command.extend([f"--max-nfa-size={max_nfa_size}"]) 
+
+        if adaptive_aas is not None: command.extend([f"--adaptive-aas={adaptive_aas}"])
+        if block_size is not None: command.extend([f"--block-size={block_size}"])
+        if motivate_worklist_length is not None: command.extend([f"--motivate-worklist-length={motivate_worklist_length}"])
+        if num_state_per_group is not None: command.extend([f"--num-state-per-group={num_state_per_group}"])
+        if only_exec_cc_with_state_id is not None: command.extend([f"--only-exec-cc-with-state-id={only_exec_cc_with_state_id}"])
+        if only_exec_ccid is not None: command.extend([f"--only-exec-ccid={only_exec_ccid}"])
+        if output_file is not None: command.extend([f"--output-file={output_file}"])
+        if padding is not None: command.extend([f"--padding={padding}"])
+        if report_filename is not None: command.extend([f"--report-filename={report_filename}"])
+        if try_adaptive_aas is not None: command.extend([f"--try-adaptive-aas={try_adaptive_aas}"])
+        if tuning is not None: command.extend([f"--tuning={tuning}"])
 
         if isHS:
             command.extend(["--support"])
@@ -335,43 +333,54 @@ class BreakdownBench(Benchmark):
         elif isVASim:
             command.extend(["-t"])
         else:
-            command.extend([f"--validation={enable_validation}"])
+            command.extend([f"--validation={validation}"])
             if quick_validation is not None:
                 command.extend([f"--quick-validation={quick_validation}"])
 
 
         environment = self._preload_env(
-            input_start_pos,
-            report_off,
-            split_entire_inputstream_to_chunk_size,
-            compress_prec_table,
-            data_buffer_fetch_size,
-            quit_degree,
-            result_capacity,
-            use_soa,
-            max_nfa_size,
-            use_uvm,
-            unique_frequency,
-            input_len,
-            precompute_cutoff,
-            precompute_depth,
-            algorithm,
-            group_num,
-            add_aas_interval,
-            remove_degree,
-            add_aan_start,
-            active_threshold,
-            duplicate_input_stream,
-            unique,
-            pc_use_uvm,
-            input,
-            automata,
-            isHS,
-            isVASim,
-            app_name,
-            quick_validation,
-            enable_validation,
-            output_file)
+            active_threshold, 
+            adaptive_aas, 
+            add_aan_start, 
+            add_aas_interval, 
+            algorithm, 
+            app_name, 
+            automata, 
+            block_size, 
+            compress_prec_table, 
+            data_buffer_fetch_size, 
+            duplicate_input_stream, 
+            group_num, 
+            input, 
+            input_len, 
+            input_start_pos, 
+            isHS, 
+            isVASim, 
+            max_nfa_size, 
+            motivate_worklist_length, 
+            num_state_per_group, 
+            only_exec_cc_with_state_id, 
+            only_exec_ccid, 
+            output_file, 
+            padding, 
+            pc_use_uvm, 
+            precompute_cutoff, 
+            precompute_depth, 
+            quick_validation, 
+            quit_degree, 
+            remove_degree, 
+            report_filename, 
+            report_off, 
+            result_capacity, 
+            split_entire_inputstream_to_chunk_size, 
+            try_adaptive_aas, 
+            tuning, 
+            unique, 
+            unique_frequency, 
+            use_soa, 
+            use_uvm, 
+            validation,
+            **kwargs)
 
         wrapped_command, wrapped_environment = self._wrap_command(
             run_command=command,
@@ -379,14 +388,18 @@ class BreakdownBench(Benchmark):
             **kwargs,
         )
 
-        output = self.run_bench_command(
-            run_command=command,
-            wrapped_run_command=wrapped_command,
-            current_dir=self._build_dir,
-            environment=environment,
-            wrapped_environment=wrapped_environment,
-            print_output=False,
-        )
+        output = None
+        # output = self.run_bench_command(
+        #     run_command=command,
+        #     wrapped_run_command=wrapped_command,
+        #     current_dir=self._build_dir,
+        #     environment=environment,
+        #     wrapped_environment=wrapped_environment,
+        #     print_output=False,
+        # )
+
+        print(wrapped_command)
+
         return output
 
     def parse_output_to_results(  # pylint: disable=arguments-differ
@@ -400,9 +413,18 @@ class BreakdownBench(Benchmark):
         return result_dict
 
 
+def check_dicts(list_of_dicts):
+    for d in list_of_dicts:
+        for key in possible_vars:
+            if key not in d:
+                return False
+
+    return True
+
+
 def ngap_breakdown_campaign(
-    benchmark: Benchmark,
-    variables: Dict[str, Iterable[Any]],
+    app_file: str,
+    config_file: str,
     name: str = None,
     nb_runs: int = 1,
     constants: Constants = None,
@@ -413,12 +435,20 @@ def ngap_breakdown_campaign(
     benchmark_duration_seconds: Optional[int] = None,
     results_dir: Optional[PathType] = None,
 ) -> CampaignIterateVariables:
+
+    ncu_wrapper = NcuWrap(user_set="full")
+    benchmark = BreakdownBench(
+        command_wrappers=[ncu_wrapper],
+        post_run_hooks=[ncu_wrapper.post_run_hook_update_results])
+
+    vars = gen_dict_list(app_file, config_file)
+    assert(check_dicts(vars))
     
     return CampaignIterateVariables(
         name = name,
         benchmark = benchmark,
         nb_runs = nb_runs,
-        variables = variables,
+        variables = vars,
         constants = constants,
         debug = debug,
         gdb = gdb,
@@ -429,43 +459,37 @@ def ngap_breakdown_campaign(
     )
 
 
+
+
 def main():
 
-    ncu_wrapper = NcuWrap(set="full")
-    benchmark = BreakdownBench(
-        # src_path="./src/",
-        # build_path="./build/",
-        command_attachments=ncu_wrapper,
-        post_run_hooks=[ncu_wrapper.post_run_hook_update_results])
-
     # parse the config and app files
-    app_file = "./app_spec_ngap_new_quickvalidation_part1"
-    config_file = "./exec_config_ngap_groups_design_NAP"
-    vars_part1 = gen_dict_list(app_file, config_file)
+    app_file = "./configs/original/app_spec_ngap_new_quickvalidation_part1"
+    config_file = "./configs/original/exec_config_ngap_groups_design_NAP"
     part_1_campaign = ngap_breakdown_campaign(
-        name = "Part1_Breakdown", 
-        variables=vars_part1,
-        benchmark=benchmark)
+        app_file=app_file,
+        config_file=config_file,
+        name = "Part1_Breakdown")
 
-    app_file_2 = "./app_spec_ngap_new_quickvalidation_part1"
-    config_file_2 = "./exec_config_ngap_groups_design_NAP"
-    vars_part2 = gen_dict_list(app_file_2, config_file_2)
+
+    app_file_2 = "./configs/original/app_spec_ngap_new_quickvalidation_part1"
+    config_file_2 = "./configs/original/exec_config_ngap_groups_design_NAP"
     part_2_campaign = ngap_breakdown_campaign(
-        name = "Part2_Breakdown", 
-        variables=vars_part2,
-        benchmark=benchmark)
+        app_file=app_file_2,
+        config_file=config_file_2,
+        name = "Part2_Breakdown")
 
-    app_file_3 = "./app_spec_ngap_new_quickvalidation_part1"
-    config_file_3 = "./exec_config_ngap_groups_design_NAP"
-    vars_part3 = gen_dict_list(app_file_3, config_file_3)
+
+    app_file_3 = "./configs/original/app_spec_ngap_new_quickvalidation_part1"
+    config_file_3 = "./configs/original/exec_config_ngap_groups_design_NAP"
     part_3_campaign = ngap_breakdown_campaign(
-        name = "Part3_Breakdown", 
-        variables=vars_part3,
-        benchmark=benchmark)
+        app_file=app_file_3,
+        config_file=config_file_3,
+        name = "Part3_Breakdown")
 
     campaign_suite = CampaignSuite(campaigns=[part_1_campaign, part_2_campaign, part_3_campaign])
     campaign_suite.print_durations()
     campaign_suite.run_suite()
 
 if __name__ == '__main__':
-    pass
+    main()
