@@ -112,7 +112,7 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
 
     list_of_dicts = []
 
-    output_name = ""
+    output_name = None
     list_of_list = []
     param_order = [] # names of the options
     for tup in config['exp_parameters'][config_name]:

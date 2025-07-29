@@ -204,6 +204,7 @@ class NcuWrap(CommandWrapper):
             if self._user_args is not None:
                 options.extend(self._user_args)
 
+        if record_data_dir is None: record_data_dir = ''
         ncu_report_file_path = os.path.join(record_data_dir, self._report_file_name)
 
         cmd_prefix = (
