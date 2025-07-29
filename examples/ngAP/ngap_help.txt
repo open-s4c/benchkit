@@ -1,0 +1,75 @@
+Command: ./ngap -h 
+usage:
+  ngap  options
+
+where options are:
+  -?, -h, --help                            display usage information
+  --algorithm, -g <algorithm>                the algorithm to test 
+  --block-size <blocksize>                  the block size in the CUDA kernel
+  --max-nfa-size <max nfa size>             any NFA with larger than the
+                                            specified max NFA size will be
+                                            filtered out. 
+  --report-off <true/false>                 record reporting states
+  --report-filename <report_file_name>      the file name to store the
+                                            reports
+  --result-capacity <output_capacity>       specify the array capacity
+                                            storing reports on GPU
+  --input-start-pos <start_pos>             Input starting position
+  --input-len <input_len>                   specify the length of an input
+  --input, -i <input_filename>              the input stream file path
+  --automata, -a <nfa_filename>             the automata file path.
+                                            (currently support anml file
+  --split-entire-inputstream-to-chunk-      Split the entire input stream to
+  size <split_chunk_size>                   equal chunks, and treat them as
+                                            different input streams
+  --only-exec-cc-with-state-id              For debug purpose, only execute
+  <select_cc_by_state>                      one CC with the specified state
+                                            name. 
+  --only-exec-ccid <only_exec_cc>           For debug purpose, only execute
+                                            the specified CC 
+  --duplicate-input-stream                  duplicate the input stream
+  <duplicate_input_stream>
+  --quick-validation <reporting number>     reference reporting number for
+                                            quick validation
+  --unique-frequency <unique frequency>     frequency for unique in the
+                                            iteration
+  --padding                                 padding input stream such that
+  <padding_input_stream_to_base>            the length of input stream can
+                                            divide the padding factor. 
+  --app-name <app_name>                     app name
+  --use-uvm <true/false>                    use uvm to store result.
+  --quit-degree <true/false>                quit if the degree of NFA > 4
+  --remove-degree <true/false>              remove the NFA if its degree > 4
+  --add-aan-start <start number>            the number of iteration to added
+                                            always active state before
+                                            execution
+  --add-aas-interval <interval number>      the number of iteration to added
+                                            always active state during
+                                            execution
+  --unique <true/false>                     unique during execution
+  --active-threshold <active-threshold>     the active thread number to
+                                            enable work privatization
+  --validation <true/false>                 enable validation
+  --use-soa <true/false>                    change the data layout of NFA
+                                            topology
+  --precompute-cutoff <precompute-          the threshold for table load
+  cutoff>                                   balance
+  --precompute-depth <precompute-depth>     the prefix length for the
+                                            memiozation table
+  --data-buffer-fetch-size <data-buffer-    the number of states taken from
+  fetch-size>                               the buffer in each iteration
+  --motivate-worklist-length <true/         record worklist length
+  false>
+  --num-state-per-group                     number of state per group.
+  <num_state_per_group>
+  --group-num <group_num>                   the group number for CCs
+  --tuning <true/false>                     enable tuning
+  --pc-use-uvm <true/false>                 use uvm to store memiozation
+                                            tables
+  --adaptive-aas <true/false>               use adaptive strategy for
+                                            interval number
+  --try-adaptive-aas <true/false>           retry when adaptive strategy
+                                            failed
+  --compress-prec-table <true/false>        compress memiozation tables
+read input stream from file = 
+ Error: no such input file.
