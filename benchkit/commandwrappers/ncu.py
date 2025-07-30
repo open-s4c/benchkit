@@ -226,12 +226,12 @@ class NcuWrap(CommandWrapper):
     ) -> RecordResult:
 
         # "https://pythonhow.com/how/check-if-a-string-is-a-float/"
-        # def is_float(word):
-        #     try:
-        #         float(word)
-        #         return True
-        #     except ValueError:
-        #         return False
+        def is_float(word):
+            try:
+                float(word)
+                return True
+            except ValueError:
+                return False
 
         metric_dict = {}
         for rnge_idx in range(len(profile_context)):
@@ -241,12 +241,14 @@ class NcuWrap(CommandWrapper):
                 # output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"] = {}
                 for metric in (action):
                     # handling of string parameters needs to be discussed - better to analyse ncu report file instead
-                    if type(action[metric].value()) is str:
+                    try:
+                        val = float(action[metric].value())
+                        if metric not in metric_dict:
+                            metric_dict[f"{rnge_idx}_{metric}"] = val
+                        else:
+                            metric_dict[f"{rnge_idx}_{metric}"] += val
+                    except (ValueError, TypeError):
                         continue
-                    if metric not in metric_dict:
-                        metric_dict[f"{rnge_idx}_{metric}"] = action[metric].value()
-                    else:
-                        metric_dict[f"{rnge_idx}_{metric}"] += action[metric].value()
 
             num_actions = len(rnge)
             for key in metric_dict:
