@@ -4,8 +4,9 @@ All source files taken from https://github.com/NVIDIA/cuda-samples/tree/master/S
 
 ## Running the Benchmark
 ```
-$ ./configure.sh
+$ python3 -m venv venv
 $ source venv/bin/activate
+$ pip install -r requirements.txt
 $ python3 gpu_jpeg_encoder_campaign.py
 ```
 

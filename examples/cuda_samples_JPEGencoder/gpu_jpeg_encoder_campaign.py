@@ -241,10 +241,9 @@ def main():
     campaign_suite.run_suite()
 
     # campaign_suite.generate_graph(
-    #     plot_name="barplot",
-    #     title=f"Add vector on GPU ({nb_runs} runs)",
-    #     y="kernel_compute_seconds",
-    #     x="block_size",
+    #     plot_name="lineplot",
+    #     x="quality",
+    #     y="time"
     # )
 
 
