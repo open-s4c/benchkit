@@ -25,7 +25,7 @@ from benchkit.shell.shellasync import AsyncProcess, SplitCommand
 from benchkit.utils.types import Environment, PathType
 
 """
-! ADD ncu_report TO PYTHONPATH ENV VARIABLE
+! ADD ncu_report TO PYTHONPATH ENV VARIABLE - usually in /opt/nvidia/nsight-compute/20xy.z.w/extras/python
 ! MAKE SURE THAT YOU SETUP NCU SUDOLESS
 """
 
