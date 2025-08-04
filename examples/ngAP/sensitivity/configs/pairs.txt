@@ -1,0 +1,13 @@
+apps_part1 - sota_oneinput
+apps_part1 - sota_runahead_oneinput
+apps_part1 - sota_default_oneinput
+apps_part1 - sota_best_oneinput
+
+apps_part2 - sota_runahead_oneinput
+apps_part2 - sota_default_oneinput
+apps_part2 - sota_best_oneinput
+
+apps_part3 - sota_4degree_oneinput
+apps_part3 - sota_runahead_4degree_oneinput
+apps_part3 - sota_default_4degree_oneinput
+apps_part3 - sota_best_4degree_oneinput
