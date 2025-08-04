@@ -57,21 +57,24 @@ class BreakdownBench(Benchmark):
         if platform is not None:
             self.platform = platform
 
-        if src_path is not None:
-            self._bench_src_path = src_path
-        else:
-            campaign_script_path = get_curdir(__file__)
-            bench_src_path = parentdir(path=campaign_script_path, levels=1) / "src"
-            if not self.platform.comm.isdir(bench_src_path):
-                raise ValueError(
-                    f"Invalid ngAP source path: {bench_src_path}\n"
-                )
-            self._bench_src_path = bench_src_path
+        self._bench_src_path = "/ngAP"
+        self._build_dir = self.bench_src_path + "/code/build"
 
-        if build_path is not None:
-            self._build_dir = build_path
-        else:
-            self._build_dir = parentdir(path=campaign_script_path, levels=1) / "build"
+        # if src_path is not None:
+        #     self._bench_src_path = src_path
+        # else:
+        #     campaign_script_path = get_curdir(__file__)
+        #     bench_src_path = parentdir(path=campaign_script_path, levels=1) / "src"
+        #     if not self.platform.comm.isdir(bench_src_path):
+        #         raise ValueError(
+        #             f"Invalid ngAP source path: {bench_src_path}\n"
+        #         )
+        #     self._bench_src_path = bench_src_path
+
+        # if build_path is not None:
+        #     self._build_dir = build_path
+        # else:
+        #     self._build_dir = parentdir(path=campaign_script_path, levels=1) / "build"
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -293,7 +296,7 @@ class BreakdownBench(Benchmark):
         if input_len is not None: command.extend([f"--input-len={input_len}"])
         if split_entire_inputstream_to_chunk_size is not None:
             command.extend([f"--split-entire-inputstream-to-chunk-size={split_entire_inputstream_to_chunk_size}"])
-        if group_num is not None: command.extend([f"--input-len={input_len}"])
+        if group_num is not None: command.extend([f"--group-num={group_num}"])
         if duplicate_input_stream is not None:
             command.extend([f"--duplicate-input-stream={duplicate_input_stream}"])
         if unique is not None: command.extend([f"--unique={unique}"])
