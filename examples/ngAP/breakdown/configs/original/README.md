@@ -1,1 +1,0 @@
-#### Config and App files taken from [https://github.com/getianao/ngAP/tree/master/code/scripts/configs]
