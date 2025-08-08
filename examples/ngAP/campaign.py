@@ -107,7 +107,60 @@ class NgapBench(Benchmark):
         lines = output.splitlines()
         for line_idx in range(len(lines)):
             line = lines[line_idx]
-            if "Result" in line:
+
+            if line.startswith("read input steam from file = "):
+                is_file = line.split(" = ")[1]
+                result_dict["input_stream"] = is_file
+
+            if line.startswith("load automata from file = "):
+                at_file = line.split(" = ")[1]
+                result_dict["automata_file"] = at_file
+
+            if line.startswith("input_stream_size = "):
+                is_size = line.split(" = ")[1]
+                result_dict["input_stream_size"] = is_size
+
+            # NFA info
+            if "total_state_number" in line:
+                val = line.split(" = ")[1]
+                result_dict["total state numb"] = val
+            if "start_state_number" in line: 
+                val = line.split(" = ")[1]
+                result_dict["start state numb"] = val
+            if "always_active_state_number" in line:
+                val = line.split(" = ")[1]
+                result_dict["aa state num"] = val
+            if "report_state_number" in line:
+                val = line.split(" = ")[1]
+                result_dict["report state num"] = val
+            if "total_cc_number" in line:
+                val = line.split(" = ")[1]
+                result_dict["total cc num"] = val
+            if "cc_256_number" in line:
+                val = line.split(" = ")[1]
+                result_dict["cc 256 num"] = val
+            if "max_cc_size" in line:
+                val = line.split(" = ")[1]
+                result_dict["max cc size"] = val
+            if "average_cc_size" in line:
+                val = line.split(" = ")[1]
+                result_dict["avg cc size"] = val
+
+            # Input steam info
+            if "input_start_pos" in line:
+                val = line.split(" = ")[1]
+                result_dict["input start pos"] = val
+            if "input_length" in line:
+                val = line.split(" = ")[1]
+                result_dict["input length"] = val
+            if "split_entire_inputstream_to_chunk_size" in line:
+                val = line.split(" = ")[1]
+                result_dict["chunk size"] = val
+            if "dup_input_stream" in line:
+                val = line.split(" = ")[1]
+                result_dict["duplicate"] = val
+
+            if "Result " in line:
                 result_line = lines[line_idx+1]
                 result_values = result_line.split()
                 result_values_stripped = [v.strip(',') for v in result_values]
