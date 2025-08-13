@@ -2,27 +2,25 @@
 # SPDX-License-Identifier: MIT
 
 import collections
-import matplotlib.pyplot as plt
-import numpy
-
-from benchkit.benchmark import WriteRecordFileFunction
-from benchkit.campaign import Benchmark
-from benchkit.dependencies.packages import PackageDependency
-from benchkit.lwchart import _generate_chart_from_df, generate_chart_from_single_csv
-from benchkit.shell.shell import shell_out
-from benchkit.utils.dir import get_curdir
-from benchkit.shell.shellasync import AsyncProcess
-from benchkit.campaign import CampaignCartesianProduct
-from benchkit.utils.types import PathType
-from benchkit.hooks.stressNg import StressNgPreHook, StressNgPostHook
-
 import json
 import math
-import re
 import pathlib
-from typing import Any, Dict, List, Optional
-import seaborn
+import re
+from typing import Any, Dict, List
+
+import matplotlib.pyplot as plt
+import numpy
 import pandas
+import seaborn
+
+from benchkit.campaign import Benchmark, CampaignCartesianProduct
+from benchkit.dependencies.packages import PackageDependency
+from benchkit.hooks.stressNg import StressNgPostHook, StressNgPreHook
+from benchkit.lwchart import _generate_chart_from_df
+from benchkit.shell.shell import shell_out
+from benchkit.shell.shellasync import AsyncProcess
+from benchkit.utils.dir import get_curdir
+from benchkit.utils.types import PathType
 
 _bench_src_path = get_curdir(__file__)
 
@@ -35,12 +33,14 @@ class CyclictestBenchhmark(Benchmark):
         percentile=0.95,
     ) -> None:
         """
-        Creates a benchmark to measure the latency using `cyclictest` when running `stress-ng` as a stressor.
+        Creates a benchmark to measure the latency using `cyclictest` when running `stress-ng` as a
+        stressor.
 
         Args:
             duration (number):
                 How long the benchmark should run.
-                The actual experiment will take longer, since `stress-ng` runs for the given duration, but takes a while afterwards to tear down everything.
+                The actual experiment will take longer, since `stress-ng` runs for the given
+                duration, but takes a while afterwards to tear down everything.
             buckets (int):
                 The amount of buckets that should be displayed on the graph.
                 Default is `42`.
@@ -138,9 +138,10 @@ class CyclictestBenchhmark(Benchmark):
                 "latency": key_seq_values[2::3],
             }
         )
-        # Get the min, max and mean latencies for each thread to be returned as the final result.
-        # All the values are stored separately in a JSON file to keep the CSV file readable, and because you cannot know beforehand how high the latencies will go,
-        # meaning that the CSV headers can't be decided beforehand, and would have to differ between runs.
+        # Get the min, max, and mean latencies for each thread to be returned as the final result.
+        # All values are also stored separately in a JSON file to keep the CSV output readable.
+        # Since the maximum possible latency is unknown beforehand, the CSV headers cannot be
+        # predetermined and would otherwise vary between runs.
         complete_output = res.copy()
         for thread, row in df.groupby("thread").mean().iterrows():
             res[f"thread{thread}_mean"] = row["latency"]
@@ -192,10 +193,13 @@ class CyclictestBenchhmark(Benchmark):
         return res
 
     def acquire_sudo_pre_run_hook(self, **_kwargs):
-        # Used to acquire super user privileges before starting the benchmark
-        # This is necessary because the `cyclictest`, which is used inside of the `single_run` function, requires `sudo`,
-        # but `stress_ng`, which is run before `cyclictest` in a hook, does not.
-        # To ensure that you have root priviliges before starting `stress_ng`, `sudo` is ran first, before `stress_ng`.
+        """
+        Acquire sudo privileges before running the benchmark.
+
+        Runs ``sudo true`` to warm the sudo credential cache so that
+        later commands (e.g., ``cyclictest``) can run without prompting
+        for a password.
+        """
         shell_out(["sudo", "true"])
 
     def finalResults(self) -> pandas.DataFrame:
@@ -203,8 +207,10 @@ class CyclictestBenchhmark(Benchmark):
         Get the final panda dataframes, which combines all of the results.
 
         Returns:
-            (DataFrame, DataFrame): A dataframe detailing, for each run, how many times a latency in a given bin occured, and a dataframe detailing the same,
-                but only including the data for the percentile provided in the init function.
+            (DataFrame, DataFrame):
+                A dataframe detailing, for each run, how many times a latency in a given bin
+                occured, and a dataframe detailing the same, but only including the data for the
+                percentile provided in the init function.
         """
         res = None
         resPercentile = None
