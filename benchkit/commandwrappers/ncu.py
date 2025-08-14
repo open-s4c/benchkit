@@ -273,7 +273,11 @@ class NcuWrap(CommandWrapper):
         # for each action in a given range specify the metric and the metric value and add it to the dict
 
         ncu_report_file_path = os.path.join(record_data_dir, f"{self._report_file_name}.ncu-rep")
-        profile_context = ncu_report.load_report(ncu_report_file_path)
+        try:
+            profile_context = ncu_report.load_report(ncu_report_file_path)
+        except FileNotFoundError:
+            return {}
+
         output_dict = self._process_ncu_context(profile_context)
 
         return output_dict
