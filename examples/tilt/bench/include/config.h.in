@@ -1,0 +1,13 @@
+/*
+ * Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ */
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define NB_THREADS @NB_THREADS@
+
+#define RUN_DURATION_SECONDS @RUN_DURATION_SECONDS@
+
+#endif /* CONFIG_H */
