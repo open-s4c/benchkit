@@ -9,6 +9,8 @@ from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import PathType
 from benchkit.commandwrappers.ncu import NcuWrap, CommandWrapper
+from benchkit.platforms import get_current_platform
+
 
 from parse_options import gen_dict_list, possible_vars
 import subprocess
@@ -109,6 +111,10 @@ class NgapBench(Benchmark):
         lines = output.splitlines()
         for line_idx in range(len(lines)):
             line = lines[line_idx]
+
+            # ncu output
+            if line.startswith("==PROF=="):
+                continue
 
             if line.startswith("read input steam from file = "):
                 is_file = line.split(" = ")[1]
@@ -343,7 +349,7 @@ class NgapBench(Benchmark):
                 current_dir=self._build_dir,
                 environment=environment,
                 wrapped_environment=wrapped_environment,
-                print_output=False,
+                print_output=True,
                 timeout=3600,
                 ignore_any_error_code=True)
             return output
@@ -404,16 +410,18 @@ def ngap_campaign(
     enable_data_dir: bool = False,
     continuing: bool = False,
     benchmark_duration_seconds: Optional[int] = None,
-    results_dir: Optional[PathType] = None,
+    # results_dir: Optional[PathType] = None,
 ) -> CampaignIterateVariables:
 
+    platform = get_current_platform()
     # ncu_wrapper = NcuWrap(user_set="full")
 
-    # ncu_wrapper = NcuWrap(metrics=metric_list)
-    # benchmark = NgapBench(
-    #     command_wrappers=[ncu_wrapper],
-    #     post_run_hooks=[ncu_wrapper.post_run_hook_update_results])
-    benchmark = NgapBench()
+    ncu_wrapper = NcuWrap(metrics=metric_list,force_overwrite=True)
+    benchmark = NgapBench(
+        command_wrappers=[ncu_wrapper],
+        post_run_hooks=[ncu_wrapper.post_run_hook_update_results],
+        platform=platform)
+    # benchmark = NgapBench(platform=platform)
 
     vars = gen_dict_list(app_file, config_file)
     assert(check_dicts(vars))
@@ -432,7 +440,7 @@ def ngap_campaign(
         enable_data_dir = enable_data_dir,
         continuing = continuing,
         benchmark_duration_seconds = benchmark_duration_seconds,
-        results_dir = results_dir
+        # results_dir = results_dir
     )
 
 
@@ -509,7 +517,8 @@ def main():
     for app, config in breakdown_configs:
         breakdown_campaigns.append(ngap_campaign(app_file=app,
                                                  config_file=config,
-                                                 name_prefix="breakdown"))
+                                                 name_prefix="breakdown",
+                                                 enable_data_dir=True))
 
     campaign_suite = CampaignSuite(campaigns=breakdown_campaigns)
     campaign_suite.print_durations()
