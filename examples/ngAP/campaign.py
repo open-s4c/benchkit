@@ -11,6 +11,8 @@ from benchkit.utils.types import PathType
 from benchkit.commandwrappers.ncu import NcuWrap, CommandWrapper
 
 from parse_options import gen_dict_list, possible_vars
+import subprocess
+
 
 class NgapBench(Benchmark):
     def __init__(
@@ -334,23 +336,49 @@ class NgapBench(Benchmark):
             **kwargs,
         )
 
-        output = self.run_bench_command(
-            run_command=command,
-            wrapped_run_command=wrapped_command,
-            current_dir=self._build_dir,
-            environment=environment,
-            wrapped_environment=wrapped_environment,
-            print_output=False,
-        )
+        try:
+            output = self.run_bench_command(
+                run_command=command,
+                wrapped_run_command=wrapped_command,
+                current_dir=self._build_dir,
+                environment=environment,
+                wrapped_environment=wrapped_environment,
+                print_output=False,
+                timeout=3600,
+                ignore_any_error_code=True)
+            return output
+        except subprocess.TimeoutExpired:
+            return ""
+        
 
-        return output
 
     def parse_output_to_results(  # pylint: disable=arguments-differ
         self,
-        command_output: str,
+        command_output: str | None,
         run_variables: Dict[str, Any],
         **_kwargs,
     ) -> Dict[str, Any]:
+
+        if command_output is "":
+            # output_dict = possible_vars.copy()
+            # output_dict["input_stream"] = None
+            # output_dict["automata_file"] = None
+            # output_dict["input_stream_size"] = None
+            # output_dict["total state numb"] = None
+            # output_dict["start state numb"] = None
+            # output_dict["aa state num"] = None
+            # output_dict["report state num"] = None
+            # output_dict["total cc num"] = None
+            # output_dict["cc 256 num"] = None
+            # output_dict["max cc size"] = None
+            # output_dict["avg cc size"] = None
+            # output_dict["input start pos"] = None
+            # output_dict["input length"] = None
+            # output_dict["chunk size"] = None
+            # output_dict["duplicate"] = None
+            # output_dict[f"time"] = None
+            # output_dict[f"throughput"] = None
+            return {}
 
         result_dict = self._parse_results(command_output, run_variables)
         return result_dict
@@ -368,7 +396,7 @@ def check_dicts(list_of_dicts):
 def ngap_campaign(
     app_file: str,
     config_file: str,
-    name: str = None,
+    name_prefix: str = None,
     nb_runs: int = 1,
     constants: Constants = None,
     debug: bool = False,
@@ -379,16 +407,22 @@ def ngap_campaign(
     results_dir: Optional[PathType] = None,
 ) -> CampaignIterateVariables:
 
-    ncu_wrapper = NcuWrap(user_set="full")
-    benchmark = NgapBench(
-        command_wrappers=[ncu_wrapper],
-        post_run_hooks=[ncu_wrapper.post_run_hook_update_results])
+    # ncu_wrapper = NcuWrap(user_set="full")
+
+    # ncu_wrapper = NcuWrap(metrics=metric_list)
+    # benchmark = NgapBench(
+    #     command_wrappers=[ncu_wrapper],
+    #     post_run_hooks=[ncu_wrapper.post_run_hook_update_results])
+    benchmark = NgapBench()
 
     vars = gen_dict_list(app_file, config_file)
     assert(check_dicts(vars))
+
+    part = app_file.split("_")[-1]
+    con = config_file.split("./configs/exec_config_ngap_groups_")[1]
     
     return CampaignIterateVariables(
-        name = name,
+        name = f"{name_prefix}_{part}_{con}",
         benchmark = benchmark,
         nb_runs = nb_runs,
         variables = vars,
@@ -405,8 +439,8 @@ def ngap_campaign(
 def get_breakdown_configs():
     return [
         ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_design_NAP"),
-        ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_design_NAP"),
-        ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_design_NAP_4degree")
+        ("./configs/app_spec_ngap_new_quickvalidation_part2","./configs/exec_config_ngap_groups_design_NAP"),
+        ("./configs/app_spec_ngap_new_quickvalidation_part3","./configs/exec_config_ngap_groups_design_NAP_4degree")
     ]
 
 def get_sensitivity_configs():
@@ -430,34 +464,69 @@ def get_sensitivity_configs():
     ]
 
 
+metric_list = [
+    # "group:memory__first_level_cache_table",
+    # "sass__inst_executed_global_loads",
+    # "sass__inst_executed_global_stores",
+    # of bytes written to L2 for global atomics
+    # "l1tex__m_l1tex2xbar_write_bytes_mem_global_op_atom",
+    # of bytes read from L2 into L1TEX M-Stage for global atomics
+    # "l1tex__m_xbar2l1tex_read_bytes_mem_global_op_atom",
+    # of bytes requested for global atomics
+    # "l1tex__t_bytes_pipe_lsu_mem_global_op_atom",
+    # of bytes requested that missed for global atomics
+    # "l1tex__t_bytes_pipe_lsu_mem_global_op_atom_lookup_miss",
+    #    SM throughput assuming ideal load balancing across SMSPs
+    # "sm__throughput.avg.pct_of_peak_sustained_active",
+    # proportion of warps per cycle, waiting for sibling warps at a CTA
+    # "smsp__warp_issue_stalled_barrier_per_warp_active.pct",
+    # proportion of warps per cycle, waiting on a memory barrier
+    # "smsp__warp_issue_stalled_membar_per_warp_active.pct",
+    # cumulative # of warps in flight
+    # "sm__warps_active.avg.pct_of_peak_sustained_active",
+    # "sm__maximum_warps_per_active_cycle_pct",
+    # of cycles where local/global/shared writeback interface was active
+    # "l1tex__lsu_writeback_active.avg.pct_of_peak_sustained_active",
+    # of sector hits per sector
+    "l1tex__t_sector_hit_rate",  # L1/TEX hit rate
+    # proportion of L2 sector lookups that hit
+    "lts__t_sector_hit_rate", # L2 hit rate
+    # average # of active threads per instruction executed
+    "smsp__thread_inst_executed_per_inst_executed",
+    # of bytes accessed in DRAM
+    # "dram__bytes",
+    # # of bytes read from DRAM                            
+    "dram__bytes_read",
+    # # of bytes written to DRAM
+    "dram__bytes_write",
+]
 
 def main():
 
     # Breakdown Benchmarks
-
     breakdown_configs = get_breakdown_configs()
     breakdown_campaigns = []
     for app, config in breakdown_configs:
         breakdown_campaigns.append(ngap_campaign(app_file=app,
                                                  config_file=config,
-                                                 name=f"Breakdown_{app}_{config}"))
+                                                 name_prefix="breakdown"))
 
     campaign_suite = CampaignSuite(campaigns=breakdown_campaigns)
     campaign_suite.print_durations()
     campaign_suite.run_suite()
 
+
     # Sensitivity Benchmarks
+    # sensitivity_configs = get_sensitivity_configs()
+    # sensitivity_campaigns = []
+    # for app, config in sensitivity_configs:
+    #     sensitivity_campaigns.append(ngap_campaign(app_file=app,
+    #                                                config_file=config,
+    #                                                name_prefix="sensitivity"))
 
-    sensitivity_configs = get_sensitivity_configs()
-    sensitivity_campaigns = []
-    for app, config in sensitivity_configs:
-        sensitivity_campaigns.append(ngap_campaign(app_file=app,
-                                                 config_file=config,
-                                                 name=f"Sensitivity_{app}_{config}"))
-
-    campaign_suite = CampaignSuite(campaigns=sensitivity_campaigns)
-    campaign_suite.print_durations()
-    campaign_suite.run_suite()
+    # campaign_suite = CampaignSuite(campaigns=sensitivity_campaigns)
+    # campaign_suite.print_durations()
+    # campaign_suite.run_suite()
 
 if __name__ == '__main__':
     main()
