@@ -289,18 +289,22 @@ class NcuWrap(CommandWrapper):
 
             # turn the filtered content into a pandas dataframe
             content_io = StringIO(content)
-            df = pd.read_csv(content_io)
+            try:
+                df = pd.read_csv(content_io)
 
-            names = df['Metric Name'].to_list()
-            units = df['Metric Unit'].to_list()
-            values = df['Metric Value'].to_list()
+                names = df['Metric Name'].to_list()
+                units = df['Metric Unit'].to_list()
+                values = df['Metric Value'].to_list()
 
-            output_dict = {}
-            for i in range(len(names)):
-                name = str(names[i]) + str(units[i])
-                output_dict[name] = values[i]
+                output_dict = {}
+                for i in range(len(names)):
+                    name = str(names[i]) + str(units[i])
+                    output_dict[name] = values[i]
 
-            return output_dict
+                return output_dict
+            except (pd.errors.EmptyDataError, pd.errors.DataError, pd.errors.AbstractMethodError):
+                return {}
+
         except FileNotFoundError:
             return {}
 
