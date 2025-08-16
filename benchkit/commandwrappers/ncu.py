@@ -23,6 +23,8 @@ from benchkit.platforms import Platform, get_current_platform
 from benchkit.shell.shell import shell_interactive, shell_out
 from benchkit.shell.shellasync import AsyncProcess, SplitCommand
 from benchkit.utils.types import Environment, PathType
+import pandas as pd
+from io import StringIO
 
 """
 ! ADD ncu_report TO PYTHONPATH ENV VARIABLE
@@ -92,7 +94,8 @@ class NcuWrap(CommandWrapper):
 
     def __init__(
         self,
-        report_file_name: PathType = "ncu_profile_report",
+        report_file_name: PathType = "ncu_out",
+        report_or_log: bool = False,
         ncu_path: Optional[PathType] = None,
         config_path: Optional[PathType] = None,
         force_overwrite: bool = False,
@@ -107,8 +110,10 @@ class NcuWrap(CommandWrapper):
         remove_absent_sections: bool = True,
         metrics: Optional[List[Metric]] = None,
         remove_absent_metrics: bool = True,
-        user_args: List[str] = None):
+        user_args: List[str] = None,
+        csv: bool = False):
 
+        self._report_or_log = report_or_log
         self._config_path = config_path
         self._report_file_name = report_file_name
         self._force_overwrite = force_overwrite
@@ -119,6 +124,7 @@ class NcuWrap(CommandWrapper):
         self._target_kernels = target_kernels
         self._launch_count = launch_count
         self._user_args = user_args
+        self._csv = csv
 
         self._ncu_bin = _find_ncu_bin(ncu_path)
 
@@ -172,6 +178,9 @@ class NcuWrap(CommandWrapper):
             if self._force_overwrite:
                 options.append("-f")
 
+            if self._csv:
+                options.append("--csv")
+
             if self._enable_nvtx:
                 options.append("--nvtx")
 
@@ -205,12 +214,17 @@ class NcuWrap(CommandWrapper):
                 options.extend(self._user_args)
 
         ncu_report_file_path = os.path.join(record_data_dir, self._report_file_name)
+        option = "-o"
+
+        if self._report_or_log:
+            option = "--log-file"
+            ncu_report_file_path = ncu_report_file_path + ".csv"
 
         cmd_prefix = (
             ["ncu"]
             + options
             + [
-                "-o",
+                option,
                 f"{ncu_report_file_path}"
             ] 
             + cmd_prefix
@@ -259,6 +273,36 @@ class NcuWrap(CommandWrapper):
         return metric_dict
 
 
+    def _process_log_file(self, file_path: str) -> RecordResult:
+        # read the file contents and remove any lines that start with "=="
+        try:
+            fp = open(file_path, "r")
+            lines = fp.readlines()
+            content = ""
+            for line in lines:
+                if line.startswith("=="):
+                    continue
+
+                content += line
+
+            # turn the filtered content into a pandas dataframe
+            content_io = StringIO(content)
+            df = pd.read_csv(content_io)
+
+            names = df['Metric Name'].to_list()
+            units = df['Metric Unit'].to_list()
+            values = df['Metric Value'].to_list()
+
+            output_dict = {}
+            for i in range(len(names)):
+                name = str(names[i]) + str(units[i])
+                output_dict[name] = values[i]
+
+            return output_dict
+        except FileNotFoundError:
+            return {}
+
+
     def post_run_hook_update_results(
         self,
         experiment_results_lines: List[RecordResult],
@@ -272,11 +316,24 @@ class NcuWrap(CommandWrapper):
         # iterate over the ranges
         # for each action in a given range specify the metric and the metric value and add it to the dict
 
-        ncu_report_file_path = os.path.join(record_data_dir, f"{self._report_file_name}.ncu-rep")
-        profile_context = ncu_report.load_report(ncu_report_file_path)
-        output_dict = self._process_ncu_context(profile_context)
+        ncu_out_file_path = os.path.join(record_data_dir, f"{self._report_file_name}")
+        output_dict = {}
+        if not self._report_or_log: # we saved a report file and not a csv log
+            ncu_out_file_path = ncu_out_file_path + ".ncu-rep"
+
+            try:
+                profile_context = ncu_report.load_report(ncu_out_file_path)
+            except FileNotFoundError:
+                return {}
+
+            output_dict = self._process_ncu_context(profile_context)
+            return output_dict
+        else:
+            ncu_out_file_path = ncu_out_file_path + ".csv"
+            output_dict = self._process_log_file(ncu_out_file_path)
 
         return output_dict
+
 
 
     def _get_all_metrics(self, raw_output):
