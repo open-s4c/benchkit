@@ -16,6 +16,8 @@ from benchkit.sharedlibs import SharedLib
 from benchkit.utils.dir import get_curdir, parentdir
 from benchkit.platforms import get_current_platform
 
+ncu_wrapper = NcuWrap(user_set="full")
+
 MA_WIDTHS = [32,64,128,256,512]
 MA_HEIGHTS = [32,64,128,256,512]
 MB_HEIGHTS = [32,64,128,256,512]

@@ -27,8 +27,9 @@ import pandas as pd
 from io import StringIO
 
 """
-! ADD ncu_report TO PYTHONPATH ENV VARIABLE
+! ADD ncu_report TO PYTHONPATH ENV VARIABLE - usually in /opt/nvidia/nsight-compute/20xy.z.w/extras/python
 ! MAKE SURE THAT YOU SETUP NCU SUDOLESS
+export PYTHONPATH="${PYTHONPATH}:/opt/nvidia/nsight-compute/2022.4.1/extras/python"
 """
 
 Metric = str
@@ -213,6 +214,7 @@ class NcuWrap(CommandWrapper):
             if self._user_args is not None:
                 options.extend(self._user_args)
 
+        if record_data_dir is None: record_data_dir = ''
         ncu_report_file_path = os.path.join(record_data_dir, self._report_file_name)
         option = "-o"
 
@@ -333,7 +335,6 @@ class NcuWrap(CommandWrapper):
             output_dict = self._process_log_file(ncu_out_file_path)
 
         return output_dict
-
 
 
     def _get_all_metrics(self, raw_output):

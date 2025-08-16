@@ -16,7 +16,7 @@ from benchkit.sharedlibs import SharedLib
 from benchkit.utils.dir import get_curdir, parentdir
 from benchkit.platforms import get_current_platform
 
-ncu_wrapper = NcuWrap(metrics=["smsp__sass_l1tex_tags_mem_global"])
+ncu_wrapper = NcuWrap(metrics=["smsp__sass_l1tex_tags_mem_global"], csv=True, report_or_log=True)
 
 # MA_WIDTHS = [32,64,128,256,512]
 # MA_HEIGHTS = [32,64,128,256,512]
