@@ -161,7 +161,7 @@ def _generate_chart_from_df(
         for ax, bench in zip(axes, bench_names):
             bench_df = df[df["bench_name"] == bench]
             speedup_data = _get_speedup_data(bench_df)
-            print("DEBUG:", speedup_data)
+            speedup_data = dict(sorted(speedup_data.items()))
 
             ind = np.arange(len(speedup_data))
             bottom = np.zeros(len(speedup_data))
@@ -369,8 +369,7 @@ def generate_chart_from_multiple_csvs(
     )
 
 
-def generate_chart_from_multiple_csvs_and_jsons(
-    csv_pathnames: List[PathType],
+def generate_chart_from_multiple_jsons(
     json_pathnames: List[List[PathType]],
     plot_name: str | List[str],
     output_dir: PathType = "/tmp/figs",
@@ -381,11 +380,9 @@ def generate_chart_from_multiple_csvs_and_jsons(
     **kwargs,
 ) -> None:
     """
-    Generate a chart from data contained in multiple CSV files and JSON files.
+    Generate a chart from data contained in multiple JSON files.
 
     Args:
-        csv_pathnames (List[PathType]):
-            list of paths to the CSV files.
         json_pathnames (List[List[PathType]]):
             list of list of paths to the JSON files.
         plot_name (str | List[str]):
@@ -409,27 +406,10 @@ def generate_chart_from_multiple_csvs_and_jsons(
         _print_warning()
         return
 
-    csv_dataframe = get_global_dataframe(csv_pathnames=csv_pathnames, nan_replace=nan_replace)
-
-    csv_useful_columns = ["gc", "duration", "lock"]
-    csv_non_useful_columns = ["rep"]
-
-    csv_grouping_columns = [
-        col
-        for col in csv_dataframe.columns
-        if col not in csv_useful_columns + csv_non_useful_columns
-    ]
-    csv_dataframe = csv_dataframe.groupby(csv_grouping_columns, as_index=False)[
-        csv_useful_columns
-    ].mean()
-
     json_dataframe = get_global_dataframe_from_jsons(json_pathnames=json_pathnames)
-    json_dataframe = json_dataframe.drop(csv_useful_columns + csv_non_useful_columns, axis=1)
-
-    global_dataframe = pd.merge(csv_dataframe, json_dataframe, on=csv_grouping_columns, how="outer")
 
     _generate_chart_from_df(
-        df=global_dataframe,
+        df=json_dataframe,
         process_dataframe=process_dataframe,
         plot_name=plot_name,
         output_dir=output_dir,
@@ -482,10 +462,17 @@ def _process_jsons(
 ) -> Dict[str, floating[Any]]:
     data = [_process_json(p) for p in json_paths]
 
-    data_without_context_switches = {k: v for k, v in data[0].items() if k != "context-switches"}
-    context_switches = [d["context-switches"] for d in data]
-    data_without_context_switches["context-switches"] = mean(context_switches)
-    return data_without_context_switches
+    # TODO: The processing of json's is currently tightly linked with the processing needed for speedup stacks.
+    # This will need to be refactored in order to process arbitrary json.
+    data_columns = ['duration', 'gc', 'lock', 'context-switches']
+    information_columns = ['experiment_name', 'benchmark_name', 'hostname', 'architecture', 'bench_name', 'size', 'nb_threads']
+
+    information_data = {k: v for k, v in data[0].items() if k in information_columns}
+
+    for key in data_columns:
+        information_data[key] = mean([float(d[key]) for d in data])
+
+    return information_data
 
 
 def get_global_dataframe_from_jsons(

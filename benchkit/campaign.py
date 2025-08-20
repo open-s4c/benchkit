@@ -21,7 +21,7 @@ from benchkit.benchmark import Benchmark
 from benchkit.lwchart import (
     DataframeProcessor,
     generate_chart_from_multiple_csvs,
-    generate_chart_from_multiple_csvs_and_jsons,
+    generate_chart_from_multiple_jsons,
     generate_chart_from_single_csv,
     generate_global_csv_file,
     identical_dataframe,
@@ -429,8 +429,7 @@ class CampaignSuite:
 
         if use_json:
             json_files = self.get_json_files(campaign_paths[0])
-            generate_chart_from_multiple_csvs_and_jsons(
-                csv_pathnames=self.result_csv_paths,
+            generate_chart_from_multiple_jsons(
                 json_pathnames=json_files,
                 plot_name=plot_name,
                 output_dir=suite_path,

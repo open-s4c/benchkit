@@ -62,6 +62,17 @@ sudo update-alternatives --config javac # select javac 11
 . ./venv/bin/activate
 ```
 
+## Optional Step: Make sure that the shell does not lose sudo credentials (only do this on a trusted device)
+
+```bash 
+# enter password once
+sudo -v
+
+# keep sudo alive in background; save PID so we can kill it on shell exit
+( while true; do sudo -v; sleep 60; done ) & KEEPALIVE_PID=$!
+trap 'kill $KEEPALIVE_PID 2>/dev/null' EXIT
+```
+
 ## Run campaign
 
 ```bash
