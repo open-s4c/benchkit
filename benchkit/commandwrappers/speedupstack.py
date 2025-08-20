@@ -1,14 +1,14 @@
 # Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+from benchkit.commandwrappers.javaperf import JavaPerfReportWrap, JavaPerfStatWrap
 from benchkit.commandwrappers.jvmxlog import JVMXlogWrap
-from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap
 from benchkit.platforms import get_current_platform
 
 
 class SpeedupStackWrapper:
     def __init__(self) -> None:
-        self.perfstatwrap = PerfStatWrap(
+        self.perfstatwrap = JavaPerfStatWrap(
             perf_path=None,
             events=[
                 # "cache-misses",
@@ -16,7 +16,6 @@ class SpeedupStackWrapper:
                 # "sched:sched_switch"
             ],
             use_json=False,
-            wrap_command=False,
             separator=";",
             quiet=False,
             remove_absent_event=False,
@@ -24,14 +23,11 @@ class SpeedupStackWrapper:
 
         self.jvmxlogwrap = JVMXlogWrap()
 
-        self.perfreportwrap = PerfReportWrap(
-            wrap_command=False,
+        self.perfreportwrap = JavaPerfReportWrap(
             perf_record_options=["-e", "syscalls:sys_enter_futex,syscalls:sys_exit_futex"],
             perf_report_options=[],
             report_file=True,
             report_interactive=False,
-            script=True,
-            use_jvm=True,
         )
 
     def command_wrappers(self):
@@ -44,7 +40,6 @@ class SpeedupStackWrapper:
                         process=process,
                         record_data_dir=record_data_dir,
                         poll_ms=100,
-                        use_jvm=True,
                     ),
                     lambda process, record_data_dir: self.perfreportwrap.attach_every_thread(
                         platform=get_current_platform(),
