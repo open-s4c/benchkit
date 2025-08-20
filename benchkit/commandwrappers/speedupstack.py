@@ -8,7 +8,7 @@ from benchkit.platforms import get_current_platform
 
 class SpeedupStackWrapper:
     def __init__(self) -> None:
-        self.perfstatwrap = JavaPerfStatWrap(
+        self.javaperfstatwrap = JavaPerfStatWrap(
             perf_path=None,
             events=[
                 # "cache-misses",
@@ -23,7 +23,7 @@ class SpeedupStackWrapper:
 
         self.jvmxlogwrap = JVMXlogWrap()
 
-        self.perfreportwrap = JavaPerfReportWrap(
+        self.javaperfreportwrap = JavaPerfReportWrap(
             perf_record_options=["-e", "syscalls:sys_enter_futex,syscalls:sys_exit_futex"],
             perf_report_options=[],
             report_file=True,
@@ -35,13 +35,13 @@ class SpeedupStackWrapper:
 
     def command_attachments(self):
         return [
-                    lambda process, record_data_dir: self.perfstatwrap.attach_every_thread(
+                    lambda process, record_data_dir: self.javaperfstatwrap.attach_every_thread(
                         platform=get_current_platform(),
                         process=process,
                         record_data_dir=record_data_dir,
                         poll_ms=100,
                     ),
-                    lambda process, record_data_dir: self.perfreportwrap.attach_every_thread(
+                    lambda process, record_data_dir: self.javaperfreportwrap.attach_every_thread(
                         platform=get_current_platform(),
                         process=process,
                         record_data_dir=record_data_dir,
@@ -50,7 +50,7 @@ class SpeedupStackWrapper:
 
     def post_run_hooks(self):
         return [
-            self.perfstatwrap.post_run_hook_update_results,
+            self.javaperfstatwrap.post_run_hook_update_results,
             self.jvmxlogwrap.post_run_hook_update_results,
-            self.perfreportwrap.post_run_hook_report,
+            self.javaperfreportwrap.post_run_hook_report,
         ]

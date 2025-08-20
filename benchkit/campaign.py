@@ -402,6 +402,7 @@ class CampaignSuite:
         self,
         plot_name: str | List[str],
         process_dataframe: DataframeProcessor = identical_dataframe,
+        use_json = False,
         **kwargs,
     ) -> None:
         """Generate a global graph for all the campaigns in the suite.
@@ -426,7 +427,7 @@ class CampaignSuite:
             else:
                 suite_path = parentdir(suite_path_tentative)
 
-        if plot_name == "speedup-stack":
+        if use_json:
             json_files = self.get_json_files(campaign_paths[0])
             generate_chart_from_multiple_csvs_and_jsons(
                 csv_pathnames=self.result_csv_paths,

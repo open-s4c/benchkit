@@ -161,6 +161,7 @@ def _generate_chart_from_df(
         for ax, bench in zip(axes, bench_names):
             bench_df = df[df["bench_name"] == bench]
             speedup_data = _get_speedup_data(bench_df)
+            print("DEBUG:", speedup_data)
 
             ind = np.arange(len(speedup_data))
             bottom = np.zeros(len(speedup_data))
