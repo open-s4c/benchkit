@@ -527,7 +527,7 @@ class Sysbench(Benchmark):
         # number of threads to build the db, not to execute the benchmark!
         nb_threads = min(10, self.platform.nb_active_cpus())
         # TODO warning, does not support cpuisol
-        numactl = ["numactl", "--all", "-C", f"0-{nb_threads-1}"]  # TODO
+        numactl = ["numactl", "--all", "-C", f"0-{nb_threads - 1}"]  # TODO
 
         # start build of database according to Sysbench
         sysbench_cmd = [

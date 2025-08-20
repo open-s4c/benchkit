@@ -8,7 +8,7 @@ from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRun
 from benchkit.campaign import CampaignCartesianProduct, Constants
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
-from benchkit.platforms import Platform, get_current_platform
+from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import PathType
 
