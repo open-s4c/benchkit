@@ -54,7 +54,7 @@ def main() -> None:
             # "zxing",
             # "h2o", # Not supported due missing data
         ],
-        nb_runs=1,
+        nb_runs=3,
         benchmark_duration_seconds=3,
         nb_threads=[1, 2, 4, 8],
         command_wrappers=speedupstackwrapper.command_wrappers(),
