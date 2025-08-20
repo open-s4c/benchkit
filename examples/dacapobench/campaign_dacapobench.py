@@ -81,6 +81,7 @@ def main() -> None:
     # Generate a speedup stacks
     suite.generate_graph(
         plot_name="speedup-stack",
+        use_json=True
     )
 
 
