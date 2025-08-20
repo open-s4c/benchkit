@@ -35,18 +35,18 @@ class SpeedupStackWrapper:
 
     def command_attachments(self):
         return [
-                    lambda process, record_data_dir: self.javaperfstatwrap.attach_every_thread(
-                        platform=get_current_platform(),
-                        process=process,
-                        record_data_dir=record_data_dir,
-                        poll_ms=100,
-                    ),
-                    lambda process, record_data_dir: self.javaperfreportwrap.attach_every_thread(
-                        platform=get_current_platform(),
-                        process=process,
-                        record_data_dir=record_data_dir,
-                    ),
-                ]
+            lambda process, record_data_dir: self.javaperfstatwrap.attach_every_thread(
+                platform=get_current_platform(),
+                process=process,
+                record_data_dir=record_data_dir,
+                poll_ms=100,
+            ),
+            lambda process, record_data_dir: self.javaperfreportwrap.attach_every_thread(
+                platform=get_current_platform(),
+                process=process,
+                record_data_dir=record_data_dir,
+            ),
+        ]
 
     def post_run_hooks(self):
         return [

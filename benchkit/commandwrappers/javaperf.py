@@ -7,27 +7,20 @@ when executing the wrapped command. Wrappers can execute "perf record" and "perf
 This wrapper is used when using perf on the JVM
 """
 
-import csv
-import json
-import os
-import os.path
 import pathlib
 import re
-import subprocess
 import sys
 import time
-from functools import cache
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
-from benchkit.commandwrappers import CommandWrapper, PackageDependency
 from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap
-from benchkit.communication import CommunicationLayer
 from benchkit.helpers.linux import ps, sysctl
-from benchkit.platforms import Platform, get_current_platform
+from benchkit.platforms import Platform
 from benchkit.shell.shell import shell_interactive, shell_out
 from benchkit.shell.shellasync import AsyncProcess, SplitCommand
-from benchkit.utils.types import Environment, PathType
+from benchkit.utils.types import PathType
+
 
 def _perf_command_prefix(
     perf_bin: PathType,
@@ -48,6 +41,7 @@ def _perf_command_prefix(
         file=sys.stderr,
     )
     return ["sudo", perf_bin]
+
 
 def _is_jvm_thread(thread_name: str) -> bool:
     name = thread_name.strip()
@@ -71,13 +65,11 @@ def _is_jvm_thread(thread_name: str) -> bool:
 
     return False
 
+
 class JavaPerfStatWrap(PerfStatWrap):
     """Command wrapper for the `perf stat` utility."""
 
-    def __init__(
-        self,
-        **kwargs
-    ):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def attach_every_thread(
@@ -221,10 +213,7 @@ class JavaPerfStatWrap(PerfStatWrap):
 class JavaPerfReportWrap(PerfReportWrap):
     """Command wrapper for the `perf record`/`perf report` utility."""
 
-    def __init__(
-        self,
-        **kwargs
-    ):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def attach_every_thread(

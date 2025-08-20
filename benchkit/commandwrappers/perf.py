@@ -556,10 +556,6 @@ class PerfStatWrap(CommandWrapper):
         self,
         perf_stat_pathname: PathType,
     ) -> RecordResult:
-        perf_version_output = shell_out(
-            "perf --version", print_output=False
-        )  # TODO: Cache this result
-        perf_version = perf_version_output.split(" ")[2].strip()
 
         counter_rows = self._parse_csv(  # TODO adapt for json
             perf_stat_pathname=perf_stat_pathname,
@@ -583,7 +579,7 @@ class PerfStatWrap(CommandWrapper):
             counter_value = counter_row["counter_value"]
             unit = counter_row["counter_unit"]
             run_time = counter_row["run_time"]
-            coverage = counter_row["percentage_counter_cover"] 
+            coverage = counter_row["percentage_counter_cover"]
 
             output_dict[f"perf-stat/pid{pid}/{event_name}"] = counter_value
             output_dict[f"perf-stat/pid{pid}/{event_name}.unit"] = unit

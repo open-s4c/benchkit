@@ -38,4 +38,4 @@ cl.enqueue_copy(queue, h_b, d_b)
 queue.finish()
 stop_time = time.time()
 
-print(f"kernel_time: {elapsed}\nduration: {(stop_time - start_time)*1000.0}")
+print(f"kernel_time: {elapsed}\nduration: {(stop_time - start_time) * 1000.0}")

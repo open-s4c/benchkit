@@ -402,7 +402,7 @@ class CampaignSuite:
         self,
         plot_name: str | List[str],
         process_dataframe: DataframeProcessor = identical_dataframe,
-        use_json = False,
+        use_json=False,
         **kwargs,
     ) -> None:
         """Generate a global graph for all the campaigns in the suite.
