@@ -595,7 +595,7 @@ class PerfStatWrap(CommandWrapper):
     # TODO: Look into different version of perf. This might not be needed.
     # Furthermore, this is only tested on my machine
     def _get_perf_field(self, perf_counter_row: dict, field: str, perf_version: str):
-        if perf_version == "6.8.12":
+        if perf_version == "6.8.12" or perf_version == "6.17.rc2.gb19a97d57c15":
             match field:
                 case "event_name":
                     return perf_counter_row["event"]
@@ -875,7 +875,7 @@ class PerfReportWrap(CommandWrapper):
             if not allowed_threads.match(splits[0]):
                 continue
 
-            if len(splits) == 17:
+            if len(splits) == 17 or len(splits) == 8:
                 timestamp = float(splits[3][:-1])
                 thread_id = int(splits[1])
                 wait_start[thread_id] = timestamp

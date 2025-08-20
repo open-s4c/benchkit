@@ -10,9 +10,9 @@ from benchmark_dacapobench import dacapobench_campaign
 
 from benchkit.campaign import CampaignSuite
 from benchkit.commandwrappers.perf import enable_non_sudo_perf
+from benchkit.commandwrappers.speedupstack import SpeedupStackWrapper
 from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import caller_dir
-from examples.dacapobench.speedupstackwrapper import SpeedupStackWrapper
 
 
 def main() -> None:
@@ -54,13 +54,14 @@ def main() -> None:
             # "zxing",
             # "h2o", # Not supported due missing data
         ],
-        nb_runs=3,
+        nb_runs=1,
         benchmark_duration_seconds=3,
-        nb_threads=[1, 2, 4],
+        nb_threads=[1, 2, 4, 8],
         command_wrappers=speedupstackwrapper.command_wrappers(),
+        command_attachments=speedupstackwrapper.command_attachments(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
         enable_data_dir=True,
-        clean_in_between_different_benchmarks=True,
+        clean_in_between_different_benchmarks=False,
     )
 
     # Define the campaign suite and run the benchmarks in the suite

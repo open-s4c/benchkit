@@ -24,7 +24,7 @@ class CommandWrapper:
     """Base class for command wrappers."""
 
     def __init__(self) -> None:
-        self.wrap_command = True
+        pass
 
     def dependencies(self) -> List[PackageDependency]:
         """Dependencies of the command wrapper.
@@ -73,9 +73,6 @@ class CommandWrapper:
             Tuple[SplitCommand, EnvironmentVariables]: the wrapped command and its wrapped
                                                        environment.
         """
-        if not self.wrap_command:
-            return command, environment
-
         wrapped_command = self.command_prefix(**kwargs) + list(command)
         wrapped_environment = environment if environment is not None else {}
         wrapped_environment = self.updated_environment(environment=wrapped_environment)
