@@ -261,20 +261,7 @@ def dacapobench_campaign(
         benchmark = DacapobenchBench(
             src_dir=src_dir,
             command_wrappers=command_wrappers,
-            command_attachments=[
-                lambda process, record_data_dir: command_wrappers[0].attach_every_thread(
-                    platform=get_current_platform(),
-                    process=process,
-                    record_data_dir=record_data_dir,
-                    poll_ms=100,
-                    use_jvm=True,
-                ),
-                lambda process, record_data_dir: command_wrappers[2].attach_every_thread(
-                    platform=get_current_platform(),
-                    process=process,
-                    record_data_dir=record_data_dir,
-                ),
-            ],
+            command_attachments=command_attachments,
             shared_libs=shared_libs,
             clean_in_between_different_benchmarks=clean_in_between_different_benchmarks,
             pre_run_hooks=pre_run_hooks,

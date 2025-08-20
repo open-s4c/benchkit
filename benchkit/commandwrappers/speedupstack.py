@@ -3,6 +3,7 @@
 
 from benchkit.commandwrappers.jvmxlog import JVMXlogWrap
 from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap
+from benchkit.platforms import get_current_platform
 
 
 class SpeedupStackWrapper:
@@ -34,7 +35,23 @@ class SpeedupStackWrapper:
         )
 
     def command_wrappers(self):
-        return [self.perfstatwrap, self.jvmxlogwrap, self.perfreportwrap]
+        return [self.jvmxlogwrap]
+
+    def command_attachments(self):
+        return [
+                    lambda process, record_data_dir: self.perfstatwrap.attach_every_thread(
+                        platform=get_current_platform(),
+                        process=process,
+                        record_data_dir=record_data_dir,
+                        poll_ms=100,
+                        use_jvm=True,
+                    ),
+                    lambda process, record_data_dir: self.perfreportwrap.attach_every_thread(
+                        platform=get_current_platform(),
+                        process=process,
+                        record_data_dir=record_data_dir,
+                    ),
+                ]
 
     def post_run_hooks(self):
         return [
