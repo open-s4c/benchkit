@@ -1,0 +1,14 @@
+# Campaign and Benchmark for nvJPEG_encoder
+
+All source files taken from https://github.com/NVIDIA/cuda-samples/tree/master/Samples/4_CUDA_Libraries/nvJPEG_encoder
+
+## Running the Benchmark
+```
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ pip install -r requirements.txt
+$ python3 gpu_jpeg_encoder_campaign.py
+```
+
+"gpu_jpeg_encoder_campaign_ncu.py" is the same campaign including the ncu 
+wrapper.
