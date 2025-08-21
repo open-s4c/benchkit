@@ -26,10 +26,13 @@ from benchkit.utils.types import Environment, PathType
 import pandas as pd
 from io import StringIO
 
+
 """
-! ADD ncu_report TO PYTHONPATH ENV VARIABLE - usually in /opt/nvidia/nsight-compute/20xy.z.w/extras/python
-! MAKE SURE THAT YOU SETUP NCU SUDOLESS
-export PYTHONPATH="${PYTHONPATH}:/opt/nvidia/nsight-compute/2022.4.1/extras/python"
+SETTING UP NCU
+1) Add ncu_report to PYTHONPATH (/opt/nvidia/nsight-compute/20xy.z.w/extras/python)
+   i.e. export PYTHONPATH="${PYTHONPATH}:/opt/nvidia/nsight-compute/2022.4.1/extras/python"
+
+2) Setup NCU sudoless - https://developer.nvidia.com/nvidia-development-tools-solutions-err_nvgpuctrperm-permission-issue-performance-counters
 """
 
 Metric = str
@@ -85,11 +88,18 @@ def _find_ncu_bin(search_path: Optional[PathType]) -> PathType:
 
 
 """
+report_file_name - name of the generated report file ncu
+report_or_log - if False generate an ncu report file (.ncu-rep) otherwise generate a log file
+csv - store log file data in csv format if True
+config_path - get parameters names from a seperate file instead of passing them as a function
+
+Consult the NCU docks for all the command line options:
+https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html#command-line-options
+
 target_process_filter - only accepts strings denoting regular expressions TODO expand to lists of names
 target_kernels - only accepts strings denoting regular expressions TODO expand to lists of names
 section - only accepts strings denoting regular expressions
-
-app_only - target_processes command-line option
+remove_absent_sections/metrics - If the specified section/metric is not correct just remove it and run ncu with sections/meteics that are correct
 """
 class NcuWrap(CommandWrapper):
 
@@ -236,6 +246,7 @@ class NcuWrap(CommandWrapper):
 
     
     # method for returing a dictionary from a loaded profile context
+    # https://docs.nvidia.com/nsight-compute/PythonReportInterface/index.html
     def _process_ncu_context(
         self,
         profile_context
