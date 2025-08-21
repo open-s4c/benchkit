@@ -416,7 +416,7 @@ def ngap_campaign(
     platform = get_current_platform()
     # ncu_wrapper = NcuWrap(user_set="full")
 
-    ncu_wrapper = NcuWrap(metrics=metric_list,force_overwrite=True)
+    ncu_wrapper = NcuWrap(metrics=metric_list,force_overwrite=True,report_or_log=True,csv=True)
     benchmark = NgapBench(
         command_wrappers=[ncu_wrapper],
         post_run_hooks=[ncu_wrapper.post_run_hook_update_results],

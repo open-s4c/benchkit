@@ -125,7 +125,7 @@ def gen_cmd_dicts(config, apps_dict, app_name: str, config_name: str) -> List[Di
             if (app_name in tup[1]):
                 return {}
 
-        if(len(tup) >= 2 and tup[0] == "output_name"):
+        if(len(tup) >= 2 and tup[0] == "output-name"):
             output_name = tup[1]
 
         if not (len(tup) >= 3 and tup[2] == 'nocombination'):
