@@ -1,8 +1,0 @@
-APPS="app_spec_ngap_new_quickvalidation_part1" 
-CONFIGS="exec_config_ngap_groups_design_NAP"
-
-APPS="app_spec_ngap_new_quickvalidation_part2" \
-CONFIGS="exec_config_ngap_groups_design_NAP" \
-
-APPS="app_spec_ngap_new_quickvalidation_part3" \
-CONFIGS="exec_config_ngap_groups_design_NAP_4degree" \
