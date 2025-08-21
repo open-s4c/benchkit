@@ -1,6 +1,7 @@
 # Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+import os
 import pathlib
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -73,7 +74,6 @@ class DacapobenchBench(Benchmark):
         self._bench_src_path = bench_src_path
         self.ignore_perf_csv = True
         self.clean_in_between_different_benchmarks = clean_in_between_different_benchmarks
-        self.previous_bench_name = None
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -136,23 +136,34 @@ class DacapobenchBench(Benchmark):
                 f"The supported bench names are: {supported_bench_names}."
             )
 
-        if (
-            self.clean_in_between_different_benchmarks
-            and self.previous_bench_name is not bench_name
-        ):
+        benchmark_cache_file = "benchmark_cache.txt"
+
+        try:
+            with open(benchmark_cache_file, "r", encoding="utf-8") as f:
+                cached_benchmark = f.read()
+        except FileNotFoundError:
+            cached_benchmark = ""
+
+        should_clean = (self.clean_in_between_different_benchmarks and cached_benchmark != bench_name)
+
+        if should_clean:
             self.platform.comm.shell(
                 command="ant clean",
                 current_dir=self._bench_src_path,
                 output_is_log=True,
             )
+            if os.path.exists(benchmark_cache_file):
+                os.remove(benchmark_cache_file)
+            cached_benchmark = ""
 
-        self.platform.comm.shell(
-            command=f"ant {bench_name}",
-            current_dir=self._bench_src_path,
-            output_is_log=True,
-        )
-
-        self.previous_bench_name = bench_name
+        if cached_benchmark != bench_name:
+            self.platform.comm.shell(
+                command=f"ant {bench_name}",
+                current_dir=self._bench_src_path,
+                output_is_log=True,
+            )
+            with open(benchmark_cache_file, "w", encoding="utf-8") as f:
+                f.write(bench_name)  # no newline added
 
     def clean_bench(self) -> None:
         pass
