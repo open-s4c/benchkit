@@ -72,7 +72,6 @@ class DacapobenchBench(Benchmark):
                 "src_dir argument can be defined manually."
             )
         self._bench_src_path = bench_src_path
-        self.ignore_perf_csv = True
         self.clean_in_between_different_benchmarks = clean_in_between_different_benchmarks
 
     @property
