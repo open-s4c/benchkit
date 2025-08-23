@@ -76,6 +76,7 @@ def main() -> None:
         y="duration",
         col="bench_name",
         kind="bar",
+        use_json=True
     )
 
     # Generate a speedup stacks
