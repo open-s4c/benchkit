@@ -12,6 +12,7 @@ import re
 import sys
 import time
 from typing import Any, Dict, List, Optional
+from threading import Thread
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap
@@ -50,8 +51,16 @@ class JavaPerfStatWrap(PerfStatWrap):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.attachment_thread:Optional[Thread] = None
 
     def attach_every_thread(
+            self,
+            **kwargs
+            ):
+        self.attachment_thread = Thread(target=self.attach_every_thread_worker, kwargs=kwargs)
+        self.attachment_thread.start()
+
+    def attach_every_thread_worker(
         self,
         process: AsyncProcess,
         platform: Platform,
@@ -94,6 +103,19 @@ class JavaPerfStatWrap(PerfStatWrap):
             except AsyncProcess.AsyncProcessError:
                 pass
         self._every_thread_cleanup(record_data_dir=record_data_dir)
+
+
+    def post_run_hook_update_results(
+        self,
+        **kwargs
+    ) -> RecordResult:
+        """
+        Post run hook to generate extension to record results dict with the captured perf values.
+        """
+        assert self.attachment_thread is not None
+
+        self.attachment_thread.join()
+        return super().post_run_hook_update_results(**kwargs)
 
     # TODO: Look into different version of perf. This might not be needed.
     # Remove this fix when #231 is merged.
@@ -196,6 +218,13 @@ class JavaPerfReportWrap(PerfReportWrap):
         super().__init__(**kwargs)
 
     def attach_every_thread(
+            self,
+            **kwargs
+            ):
+        self.attachment_thread = Thread(target=self.attach_every_thread_worker, kwargs=kwargs)
+        self.attachment_thread.start()
+
+    def attach_every_thread_worker(
         self,
         process: AsyncProcess,
         platform: Platform,
@@ -236,6 +265,9 @@ class JavaPerfReportWrap(PerfReportWrap):
                                                              directory.
         """
         assert experiment_results_lines and record_data_dir
+        assert self.attachment_thread is not None
+
+        self.attachment_thread.join()
 
         perf_data_pathname = self.latest_perf_path
         self._chown(pathname=perf_data_pathname)
