@@ -78,11 +78,8 @@ class OpenHarmonyDeviceConnector:
     def binary() -> str:
         # Note: on wsl it's also hdc.exe, by default hdc seems to be mostly windows only?
         # TODO: change this in the future if there is a linux hdc.
-        if (os.name == "nt"):
-            return "hdc.exe"
-        else:
-            return "hdc"
-        #return "hdc"
+        bin_name = "hdc" + (".exe" if os.name == "nt" else "")
+        return bin_name
 
     @staticmethod
     def dependencies() -> List[Dependency]:
@@ -153,7 +150,7 @@ class OpenHarmonyDeviceConnector:
         dir_args = ["cd", f"{current_dir}", "&&"] if current_dir is not None else []
         command_args = dir_args + get_args(command)
         hdc_command = []
-        if (self.identifier == ""):
+        if self.identifier == "":
             hdc_command = [f"{self.binary()}", "shell"] + command_args
         else:
             hdc_command = [f"{self.binary()}", "-t", f"{self.identifier}", "shell"] + command_args
@@ -202,7 +199,7 @@ class OpenHarmonyDeviceConnector:
             remote_path (PathType): path where to push the file on the device.
         """
         command = []
-        if (self.identifier == ""):
+        if self.identifier == "":
             command = [
                 f"{self.binary()}",
                 "file",
@@ -220,7 +217,11 @@ class OpenHarmonyDeviceConnector:
                 f"{local_path}",
                 f"{remote_path}",
             ]
-        self._host_shell_out(command=command, print_input= True, print_output=True)
+        self._host_shell_out(
+            command=command,
+            print_input=True,
+            print_output=True,
+        )
 
     def pull(
         self,
