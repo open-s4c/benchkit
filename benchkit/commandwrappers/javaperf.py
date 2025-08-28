@@ -320,8 +320,7 @@ class JavaPerfReportWrap(PerfReportWrap):
                 if key_to_remove:
                     del wait_start[key_to_remove]
 
-        mean = sum(total_wait_time_per_thread.values()) / len(total_wait_time_per_thread)
-        return mean
+        return 0 if len(total_wait_time_per_thread) == 0 else sum(total_wait_time_per_thread.values()) / len(total_wait_time_per_thread)
 
     def _perf_script_command(self, perf_data_pathname: PathType) -> SplitCommand:
         command = [
