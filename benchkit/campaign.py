@@ -481,7 +481,7 @@ class CampaignSuite:
                     full_path = os.path.join(dirpath, fname)
                     json_paths.append(full_path)
 
-        groups:Dict[str,List[PathType]] = defaultdict(list)
+        groups: Dict[str, List[PathType]] = defaultdict(list)
         for json_path in json_paths:
             leaf_dir = os.path.dirname(json_path)
             parent_dir = os.path.dirname(leaf_dir)

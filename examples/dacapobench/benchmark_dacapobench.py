@@ -143,7 +143,7 @@ class DacapobenchBench(Benchmark):
         except FileNotFoundError:
             cached_benchmark = ""
 
-        should_clean = (self.clean_in_between_different_benchmarks and cached_benchmark != bench_name)
+        should_clean = self.clean_in_between_different_benchmarks and cached_benchmark != bench_name
 
         if should_clean:
             self.platform.comm.shell(

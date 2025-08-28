@@ -462,10 +462,19 @@ def _process_jsons(
 ) -> Dict[str, floating[Any]]:
     data = [_process_json(p) for p in json_paths]
 
-    # TODO: The processing of json's is currently tightly linked with the processing needed for speedup stacks.
+    # TODO: The processing of json's is currently tightly linked with the
+    # processing needed for speedup stacks.
     # This will need to be refactored in order to process arbitrary json.
-    data_columns = ['duration', 'gc', 'lock', 'context-switches']
-    information_columns = ['experiment_name', 'benchmark_name', 'hostname', 'architecture', 'bench_name', 'size', 'nb_threads']
+    data_columns = ["duration", "gc", "lock", "context-switches"]
+    information_columns = [
+        "experiment_name",
+        "benchmark_name",
+        "hostname",
+        "architecture",
+        "bench_name",
+        "size",
+        "nb_threads",
+    ]
 
     information_data = {k: v for k, v in data[0].items() if k in information_columns}
 

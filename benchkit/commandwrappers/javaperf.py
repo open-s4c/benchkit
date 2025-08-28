@@ -9,19 +9,22 @@ This wrapper is used when using perf on the JVM
 
 import pathlib
 import re
-import sys
 import time
-from typing import Any, Dict, List, Optional
 from threading import Thread
+from typing import Dict, List, Optional
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
-from benchkit.commandwrappers.perf import PerfReportWrap, PerfStatWrap
-from benchkit.helpers.linux import ps, sysctl
+from benchkit.commandwrappers.perf import (
+    PerfReportWrap,
+    PerfStatWrap,
+    _perf_command_prefix,
+)
+from benchkit.helpers.linux import ps
 from benchkit.platforms import Platform
 from benchkit.shell.shell import shell_interactive, shell_out
 from benchkit.shell.shellasync import AsyncProcess, SplitCommand
 from benchkit.utils.types import PathType
-from benchkit.commandwrappers.perf import _perf_command_prefix
+
 
 def _is_jvm_thread(thread_name: str) -> bool:
     name = thread_name.strip()
@@ -51,12 +54,9 @@ class JavaPerfStatWrap(PerfStatWrap):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.attachment_thread:Optional[Thread] = None
+        self.attachment_thread: Optional[Thread] = None
 
-    def attach_every_thread(
-            self,
-            **kwargs
-            ):
+    def attach_every_thread(self, **kwargs):
         self.attachment_thread = Thread(target=self.attach_every_thread_worker, kwargs=kwargs)
         self.attachment_thread.start()
 
@@ -104,11 +104,7 @@ class JavaPerfStatWrap(PerfStatWrap):
                 pass
         self._every_thread_cleanup(record_data_dir=record_data_dir)
 
-
-    def post_run_hook_update_results(
-        self,
-        **kwargs
-    ) -> RecordResult:
+    def post_run_hook_update_results(self, **kwargs) -> RecordResult:
         """
         Post run hook to generate extension to record results dict with the captured perf values.
         """
@@ -217,10 +213,7 @@ class JavaPerfReportWrap(PerfReportWrap):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def attach_every_thread(
-            self,
-            **kwargs
-            ):
+    def attach_every_thread(self, **kwargs):
         self.attachment_thread = Thread(target=self.attach_every_thread_worker, kwargs=kwargs)
         self.attachment_thread.start()
 
@@ -292,11 +285,12 @@ class JavaPerfReportWrap(PerfReportWrap):
         output: str,
     ) -> float:
 
-
-        allowed_threads:re.Pattern[str] = re.compile(r"^(?:java|pool-\d+-thread-\d+)$", re.IGNORECASE)
-        wait_start:Dict[int,float] = {}
-        total_wait_time:float = 0.0
-        total_wait_time_per_thread:Dict[int,float] = {}
+        allowed_threads: re.Pattern[str] = re.compile(
+            r"^(?:java|pool-\d+-thread-\d+)$", re.IGNORECASE
+        )
+        wait_start: Dict[int, float] = {}
+        total_wait_time: float = 0.0
+        total_wait_time_per_thread: Dict[int, float] = {}
 
         for line in output.splitlines():
             splits = line.split()
@@ -331,7 +325,11 @@ class JavaPerfReportWrap(PerfReportWrap):
                 if key_to_remove:
                     del wait_start[key_to_remove]
 
-        return 0 if len(total_wait_time_per_thread) == 0 else sum(total_wait_time_per_thread.values()) / len(total_wait_time_per_thread)
+        return (
+            0
+            if len(total_wait_time_per_thread) == 0
+            else sum(total_wait_time_per_thread.values()) / len(total_wait_time_per_thread)
+        )
 
     def _perf_script_command(self, perf_data_pathname: PathType) -> SplitCommand:
         command = [
