@@ -58,6 +58,7 @@ def get_threads_of_process_with_names(pid: int) -> List[Tuple[str, int]]:
         f"ps -T -p {pid}",
         print_input=False,
         print_output=False,
+        ignore_any_error_code=True
     )
 
     tids = []
