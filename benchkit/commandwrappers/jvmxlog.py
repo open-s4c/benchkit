@@ -66,7 +66,7 @@ class JVMXlogWrap(CommandWrapper):
 
         jvmxlog_pathname = os.path.join(record_data_dir, "jvmxlog.log")
 
-        total_gc_time = 0
+        total_gc_time:float = 0
         with open(jvmxlog_pathname) as file:
             for line in file:
                 splits = line.split(" ")

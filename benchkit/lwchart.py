@@ -128,13 +128,13 @@ def _generate_chart_from_df(
             data=df,
             **args,
         )
-        chart.fig.suptitle(title)
+        chart.figure.suptitle(title)
 
         if process_chart is not None:
             process_chart(chart=chart)
 
-        chart.fig.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
-        fig = chart.fig
+        chart.figure.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
+        fig = chart.figure
     elif "speedup-stack" == plot_name:
         bench_names = df["bench_name"].unique()
         n_benches = len(bench_names)
@@ -231,7 +231,7 @@ def _generate_chart_from_df(
 
 def _get_speedup_data(
     df: DataFrame,
-) -> Dict[str, float]:
+) -> Dict[str, Dict[str, Any]]:
     single_threaded_duration = df[df["nb_threads"] == 1]["duration"].values[0]
     single_threaded_gc = df[df["nb_threads"] == 1]["gc"].values[0]
     multithreaded_df = df[df["nb_threads"] != 1]

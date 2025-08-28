@@ -20,28 +20,7 @@ from benchkit.platforms import Platform
 from benchkit.shell.shell import shell_interactive, shell_out
 from benchkit.shell.shellasync import AsyncProcess, SplitCommand
 from benchkit.utils.types import PathType
-
-
-def _perf_command_prefix(
-    perf_bin: PathType,
-    platform: Platform,
-) -> SplitCommand:
-    kernel_perf_event_paranoid = sysctl.get_kernel_perf_event_paranoid(comm_layer=platform.comm)
-    if -1 == kernel_perf_event_paranoid:
-        return [perf_bin]
-
-    print(
-        (
-            '[WARNING] perf tool will be run using "sudo". '
-            "To avoid this, enable perf in userspace with the following command:\n"
-            "  sudo sysctl -w kernel.perf_event_paranoid=-1  # transient\n"
-            '  echo "kernel.perf_event_paranoid=-1" | sudo tee -a /etc/sysctl.conf  '
-            "# permanent across reboots"
-        ),
-        file=sys.stderr,
-    )
-    return ["sudo", perf_bin]
-
+from benchkit.commandwrappers.perf import _perf_command_prefix
 
 def _is_jvm_thread(thread_name: str) -> bool:
     name = thread_name.strip()
@@ -247,7 +226,7 @@ class JavaPerfReportWrap(PerfReportWrap):
         experiment_results_lines: List[RecordResult],
         record_data_dir: PathType,
         write_record_file_fun: WriteRecordFileFunction,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> None:
         """Post run hook to generate extension of result dict holding the results of perf report.
 
         Args:
@@ -281,11 +260,11 @@ class JavaPerfReportWrap(PerfReportWrap):
         output: str,
     ) -> float:
 
-        allowed_threads = re.compile(r"^(?:java|pool-\d+-thread-\d+)$", re.IGNORECASE)
 
-        wait_start = {}
-        total_wait_time = 0.0
-        total_wait_time_per_thread = {}
+        allowed_threads:re.Pattern[str] = re.compile(r"^(?:java|pool-\d+-thread-\d+)$", re.IGNORECASE)
+        wait_start:Dict[int,float] = {}
+        total_wait_time:float = 0.0
+        total_wait_time_per_thread:Dict[int,float] = {}
 
         for line in output.splitlines():
             splits = line.split()
@@ -303,9 +282,9 @@ class JavaPerfReportWrap(PerfReportWrap):
                 key_to_remove = None
 
                 # Find the corresponding futex enter event for this thread
-                for key in wait_start.keys():
+                for key, start_time in wait_start.items():
                     if key == thread_id:  # Match on thread ID
-                        start_time = wait_start[key]
+                        # start_time = wait_start[key]
                         wait_time = (timestamp - start_time) * 1000
                         total_wait_time += wait_time
                         key_to_remove = key  # Mark key for deletion

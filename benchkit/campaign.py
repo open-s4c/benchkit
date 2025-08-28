@@ -475,13 +475,13 @@ class CampaignSuite:
         **kwargs,
     ) -> List[List[PathType]]:
         json_paths = []
-        for dirpath, dirnames, filenames in os.walk(campaign_path):
+        for dirpath, _, filenames in os.walk(campaign_path):
             for fname in filenames:
                 if fname.lower().endswith(".json"):
                     full_path = os.path.join(dirpath, fname)
                     json_paths.append(full_path)
 
-        groups = defaultdict(list)
+        groups:Dict[str,List[PathType]] = defaultdict(list)
         for json_path in json_paths:
             leaf_dir = os.path.dirname(json_path)
             parent_dir = os.path.dirname(leaf_dir)
