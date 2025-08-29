@@ -55,10 +55,7 @@ def get_threads_of_process_with_names(pid: int) -> List[Tuple[str, int]]:
         List[Tuple[str, int]]: list of tupples of TIDs and PIDs of the given process.
     """
     ps_output = shell_out(
-        f"ps -T -p {pid}",
-        print_input=False,
-        print_output=False,
-        ignore_any_error_code=True
+        f"ps -T -p {pid}", print_input=False, print_output=False, ignore_any_error_code=True
     )
 
     tids = []
