@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 """
 Command wrapper for the `perf` Linux utility which allows to capture performance monitoring values
