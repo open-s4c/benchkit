@@ -14,12 +14,14 @@ import os.path
 import pathlib
 import shutil
 import sys
+from collections import defaultdict
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark
 from benchkit.lwchart import (
     DataframeProcessor,
     generate_chart_from_multiple_csvs,
+    generate_chart_from_multiple_jsons,
     generate_chart_from_single_csv,
     generate_global_csv_file,
     identical_dataframe,
@@ -400,6 +402,7 @@ class CampaignSuite:
         self,
         plot_name: str | List[str],
         process_dataframe: DataframeProcessor = identical_dataframe,
+        use_json=False,
         **kwargs,
     ) -> None:
         """Generate a global graph for all the campaigns in the suite.
@@ -424,13 +427,23 @@ class CampaignSuite:
             else:
                 suite_path = parentdir(suite_path_tentative)
 
-        generate_chart_from_multiple_csvs(
-            csv_pathnames=self.result_csv_paths,
-            plot_name=plot_name,
-            output_dir=suite_path,
-            process_dataframe=process_dataframe,
-            **kwargs,
-        )
+        if use_json:
+            json_files = self.get_json_files(campaign_paths)
+            generate_chart_from_multiple_jsons(
+                json_pathnames=json_files,
+                plot_name=plot_name,
+                output_dir=suite_path,
+                process_dataframe=process_dataframe,
+                **kwargs,
+            )
+        else:
+            generate_chart_from_multiple_csvs(
+                csv_pathnames=self.result_csv_paths,
+                plot_name=plot_name,
+                output_dir=suite_path,
+                process_dataframe=process_dataframe,
+                **kwargs,
+            )
 
     def generate_graphs(
         self,
@@ -455,6 +468,27 @@ class CampaignSuite:
             csv_pathnames=self.result_csv_paths,
             output_dir=output_dir,
         )
+
+    def get_json_files(
+        self,
+        campaign_paths: List[PathType],
+        **kwargs,
+    ) -> List[List[PathType]]:
+        json_paths = []
+        for campaign_path in campaign_paths:
+            for dirpath, _, filenames in os.walk(campaign_path):
+                for fname in filenames:
+                    if fname.lower().endswith(".json"):
+                        full_path = os.path.join(dirpath, fname)
+                        json_paths.append(full_path)
+
+        groups: Dict[str, List[PathType]] = defaultdict(list)
+        for json_path in json_paths:
+            leaf_dir = os.path.dirname(json_path)
+            parent_dir = os.path.dirname(leaf_dir)
+            groups[parent_dir].append(json_path)
+
+        return [groups[parent] for parent in groups]
 
 
 class CampaignTemplate(Campaign):

@@ -145,7 +145,7 @@ def main() -> None:
         enable_data_dir=True,
         continuing=False,
         benchmark_duration_seconds=xp_duration,
-        pretty={"frequency": {f: f"{f//(10**6)} MHz" for f in frequencies}},
+        pretty={"frequency": {f: f"{f // (10**6)} MHz" for f in frequencies}},
     )
 
     campaign.run()
