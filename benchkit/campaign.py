@@ -428,7 +428,7 @@ class CampaignSuite:
                 suite_path = parentdir(suite_path_tentative)
 
         if use_json:
-            json_files = self.get_json_files(campaign_paths[0])
+            json_files = self.get_json_files(campaign_paths)
             generate_chart_from_multiple_jsons(
                 json_pathnames=json_files,
                 plot_name=plot_name,
@@ -471,15 +471,16 @@ class CampaignSuite:
 
     def get_json_files(
         self,
-        campaign_path: PathType,
+        campaign_paths: List[PathType],
         **kwargs,
     ) -> List[List[PathType]]:
         json_paths = []
-        for dirpath, _, filenames in os.walk(campaign_path):
-            for fname in filenames:
-                if fname.lower().endswith(".json"):
-                    full_path = os.path.join(dirpath, fname)
-                    json_paths.append(full_path)
+        for campaign_path in campaign_paths:
+            for dirpath, _, filenames in os.walk(campaign_path):
+                for fname in filenames:
+                    if fname.lower().endswith(".json"):
+                        full_path = os.path.join(dirpath, fname)
+                        json_paths.append(full_path)
 
         groups: Dict[str, List[PathType]] = defaultdict(list)
         for json_path in json_paths:
