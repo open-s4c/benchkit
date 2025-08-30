@@ -297,12 +297,12 @@ class JavaPerfReportWrap(PerfReportWrap):
             if not allowed_threads.match(splits[0]):
                 continue
 
-            if len(splits) == 17 or len(splits) == 8:
+            if "syscalls:sys_enter_futex" in line:
                 timestamp = float(splits[3][:-1])
                 thread_id = int(splits[1])
                 wait_start[thread_id] = timestamp
 
-            elif len(splits) == 6:
+            if "syscalls:sys_exit_futex" in line:
                 timestamp = float(splits[3][:-1])
                 thread_id = int(splits[1])
                 key_to_remove = None
