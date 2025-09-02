@@ -1,8 +1,7 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from pythainer.builders import DockerBuilder
-from pythainer.examples.builders import get_user_builder
+from pythainer.examples.builders import get_user_builder, rust_builder
 from pythainer.runners import ConcreteDockerRunner, DockerRunner
 
 from benchkit.communication.docker import DockerCommLayer
@@ -14,10 +13,6 @@ def get_local_docker_platform(docker_runner: ConcreteDockerRunner) -> Platform:
     docker_comm = DockerCommLayer(docker_runner=docker_runner)
     platform = Platform(comm_layer=docker_comm)
     return platform
-
-
-def install_rust(builder: DockerBuilder) -> None:
-    builder.run("curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y")
 
 
 def get_rust_docker_runner(host_dir: PathType) -> ConcreteDockerRunner:
@@ -32,7 +27,7 @@ def get_rust_docker_runner(host_dir: PathType) -> ConcreteDockerRunner:
 
     builder.user()
     builder.workdir(path=guest_ws_dir)
-    install_rust(builder=builder)
+    builder |= rust_builder()
     builder.space()
 
     builder.build()
