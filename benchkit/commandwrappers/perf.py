@@ -15,7 +15,7 @@ import subprocess
 import sys
 import time
 from functools import cache
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.commandwrappers import CommandWrapper, PackageDependency
@@ -415,10 +415,14 @@ class PerfStatWrap(CommandWrapper):
                         stdout_path=record_data_dir / f"perf-stat-out-tid{tid}.txt",
                         stderr_path=record_data_dir / f"perf-stat-err-tid{tid}.txt",
                     )
+
             time.sleep(poll_ms / 1000)
 
         for current_process in tids2perf_cmd.values():
-            current_process.wait()
+            try:
+                current_process.wait()
+            except AsyncProcess.AsyncProcessError:
+                pass
         self._every_thread_cleanup(record_data_dir=record_data_dir)
 
     def post_run_hook_update_results(
@@ -451,6 +455,8 @@ class PerfStatWrap(CommandWrapper):
         for perf_stat_pathname in perf_stat_pathnames:
             if not os.path.exists(perf_stat_pathname):
                 continue
+            if "err-tid" in perf_stat_pathname:
+                continue
             if "val-tid" in perf_stat_pathname:
                 output_dict |= self._results_per_thread(perf_stat_pathname=perf_stat_pathname)
             else:
@@ -463,7 +469,7 @@ class PerfStatWrap(CommandWrapper):
         perf_stat_pathname: PathType,
         events: List[str],
         field_names: List[str],
-    ) -> List[str]:
+    ) -> Optional[List[str]]:
         # For reasons beyond my understanding, perf stat returns a CSV file format that contains
         # optional fields without giving you the header of the file. To combat this, we try to
         # align the fields that are guaranteed to be given (given in field_names)
@@ -477,7 +483,9 @@ class PerfStatWrap(CommandWrapper):
                 lambda row: not row.strip().startswith("#") and row.strip() != "",
                 perf_stat_file,
             )
-            row = next(first_line_filter)
+            row = next(first_line_filter, None)
+            if row is None:
+                return None
             fields = row.split(self._separator)
 
             event_idxes = [fields.index(event) for event in events if event in fields]
@@ -527,6 +535,9 @@ class PerfStatWrap(CommandWrapper):
             field_names=field_names,
         )
 
+        if field_names is None:
+            return []
+
         with open(perf_stat_pathname, "r") as perf_stat_file:
             comments_filtered_file = filter(
                 lambda row: not row.strip().startswith("#"),
@@ -545,6 +556,7 @@ class PerfStatWrap(CommandWrapper):
         self,
         perf_stat_pathname: PathType,
     ) -> RecordResult:
+
         counter_rows = self._parse_csv(  # TODO adapt for json
             perf_stat_pathname=perf_stat_pathname,
             field_names=["taskname-pid"] + self._perf_stat_csv_field_names,
@@ -588,6 +600,8 @@ class PerfStatWrap(CommandWrapper):
         output_dict = {}
         for counter_row in counter_rows:
             event_name = counter_row["event"]
+            if event_name is None:
+                continue
             if event_name.endswith("/"):
                 event_name = event_name[:-1]
             counter_value = counter_row["counter-value"]
@@ -705,12 +719,38 @@ class PerfReportWrap(CommandWrapper):
 
         return cmd_prefix
 
+    def attach_every_thread(
+        self,
+        process: AsyncProcess,
+        platform: Platform,
+        record_data_dir: pathlib.Path,
+    ):
+        """Command attachment that will attach to every thread of the wrapped process.
+
+        Args:
+            process (AsyncProcess): the process to attach perf-stat to.
+            platform (Platform): the platform where the process is running.
+            record_data_dir (pathlib.Path): the path to the record data directory of the benchmark.
+            poll_ms (int, optional): the period at which to poll the process to detect newly created
+                                     threads. Defaults to 10.
+        """
+        perf_prefix = _perf_command_prefix(perf_bin=self._perf_bin, platform=platform)
+        prefix = (
+            ["sudo"] + perf_prefix + ["record"] + self.perf_record_options + ["--inherit", "-p"]
+        )
+
+        perf_data_pathname = record_data_dir / f"perf-record-val-pid{process.pid}.data"
+        self.latest_perf_path = perf_data_pathname
+
+        cmd = prefix + [f"{process.pid}", "--output", f"{perf_data_pathname}"]
+        self.platform.comm.shell(command=cmd)
+
     def post_run_hook_report(
         self,
         experiment_results_lines: List[RecordResult],
         record_data_dir: PathType,
         write_record_file_fun: WriteRecordFileFunction,
-    ) -> None:
+    ) -> Optional[Dict[str, Any]]:
         """Post run hook to generate extension of result dict holding the results of perf report.
 
         Args:
@@ -730,6 +770,7 @@ class PerfReportWrap(CommandWrapper):
         if self._report_file:
             file_command = command + ([] if self._stdio else ["--stdio"])
             output = shell_out(file_command, print_output=False)
+
             write_record_file_fun(file_content=output.strip(), filename="perf.report")
 
         if self._report_interactive:
