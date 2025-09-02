@@ -1070,6 +1070,7 @@ class Benchmark:
                 build_variables=build_variables,
                 record_data_dir=temp_record_data_dir,
                 other_variables=other_variables,
+                write_record_file_fun=wrdr,
                 **run_variables,
             )
 
