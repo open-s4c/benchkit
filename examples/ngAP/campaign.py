@@ -451,25 +451,25 @@ def get_breakdown_configs():
         ("./configs/app_spec_ngap_new_quickvalidation_part3","./configs/exec_config_ngap_groups_design_NAP_4degree")
     ]
 
-def get_sensitivity_configs():
-    return [
-        ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_design_sota_oneinput"),
-        ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_best_oneinput"),
-        ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_design_sota_runahead_oneinput"),
-        ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_nap_default_oneinput"),
+# def get_sensitivity_configs():
+#     return [
+#         ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_design_sota_oneinput"),
+#         ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_best_oneinput"),
+#         ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_design_sota_runahead_oneinput"),
+#         ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_nap_default_oneinput"),
 
-        ("./configs/app_spec_ngap_new_quickvalidation_part2","./configs/exec_config_ngap_groups_best_oneinput"),
-        ("./configs/app_spec_ngap_new_quickvalidation_part2","./configs/exec_config_ngap_groups_design_sota_runahead_oneinput"),
-        ("./configs/app_spec_ngap_new_quickvalidation_part2","./configs/exec_config_ngap_groups_nap_default_oneinput"),
+#         ("./configs/app_spec_ngap_new_quickvalidation_part2","./configs/exec_config_ngap_groups_best_oneinput"),
+#         ("./configs/app_spec_ngap_new_quickvalidation_part2","./configs/exec_config_ngap_groups_design_sota_runahead_oneinput"),
+#         ("./configs/app_spec_ngap_new_quickvalidation_part2","./configs/exec_config_ngap_groups_nap_default_oneinput"),
 
-        ("./configs/app_spec_ngap_new_quickvalidation_part3","./configs/exec_config_ngap_groups_best_4degree_oneinput"),
-        ("./configs/app_spec_ngap_new_quickvalidation_part3","./configs/exec_config_ngap_groups_design_sota_4degree_oneinput"),
-        ("./configs/app_spec_ngap_new_quickvalidation_part3","./configs/exec_config_ngap_groups_nap_default_4degree_oneinput"),
-        ("./configs/app_spec_ngap_new_quickvalidation_part3","./configs/exec_config_ngap_groups_design_sota_runahead_4degree_oneinput"),
+#         ("./configs/app_spec_ngap_new_quickvalidation_part3","./configs/exec_config_ngap_groups_best_4degree_oneinput"),
+#         ("./configs/app_spec_ngap_new_quickvalidation_part3","./configs/exec_config_ngap_groups_design_sota_4degree_oneinput"),
+#         ("./configs/app_spec_ngap_new_quickvalidation_part3","./configs/exec_config_ngap_groups_nap_default_4degree_oneinput"),
+#         ("./configs/app_spec_ngap_new_quickvalidation_part3","./configs/exec_config_ngap_groups_design_sota_runahead_4degree_oneinput"),
 
-        ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_design_cpu_oneinput"),
-        ("./configs/app_spec_ngap_new_quickvalidation_part2","./configs/exec_config_ngap_groups_design_cpu_oneinput"),
-    ]
+#         ("./configs/app_spec_ngap_new_quickvalidation_part1","./configs/exec_config_ngap_groups_design_cpu_oneinput"),
+#         ("./configs/app_spec_ngap_new_quickvalidation_part2","./configs/exec_config_ngap_groups_design_cpu_oneinput"),
+#     ]
 
 
 metric_list = [
