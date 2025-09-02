@@ -13,10 +13,14 @@ Otherwise, the generation is skipped (with a warning).
 
 import datetime
 import importlib.util
+import json
 import os
 import pathlib
 import sys
-from typing import Any, List, Protocol
+from typing import Any, Dict, List, Protocol
+
+import numpy as np
+from numpy import floating, mean
 
 from benchkit.utils.misc import get_benchkit_temp_folder_str
 from benchkit.utils.types import PathType
@@ -119,7 +123,66 @@ def _generate_chart_from_df(
         title = args["title"]
         del args["title"]
 
-    if "catplot" != plot_name:
+    if "catplot" == plot_name:
+        chart = sns.catplot(
+            data=df,
+            **args,
+        )
+        chart.figure.suptitle(title)
+
+        if process_chart is not None:
+            process_chart(chart=chart)
+
+        chart.figure.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
+        fig = chart.figure
+    elif "speedup-stack" == plot_name:
+        bench_names = df["bench_name"].unique()
+        n_benches = len(bench_names)
+
+        sns.set_theme()
+        fig, axes = plt.subplots(nrows=1, ncols=n_benches, figsize=(5 * n_benches, 8), sharey=True)
+
+        fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=18, y=0.98)
+
+        if n_benches == 1:
+            axes = [axes]
+
+        colors = sns.color_palette("pastel")
+
+        factors = ["measured", "gc", "sync", "lock", "other"]
+        labels = [
+            "Measured",
+            "Garbage Collection",
+            "Synchronization Activities",
+            "Lock Contention",
+            "Other Overheads",
+        ]
+
+        for ax, bench in zip(axes, bench_names):
+            bench_df = df[df["bench_name"] == bench]
+            speedup_data = _get_speedup_data(bench_df)
+            speedup_data = dict(sorted(speedup_data.items()))
+
+            ind = np.arange(len(speedup_data))
+            bottom = np.zeros(len(speedup_data))
+
+            for factor, label, color in zip(factors, labels, colors):
+                vals = [d[factor] for d in speedup_data.values()]
+                ax.bar(ind, vals, bottom=bottom, label=label, color=color)
+                bottom += vals
+
+            ax.set_title(bench)
+            ax.set_xlabel("Number of Threads")
+            ax.set_xticks(ind)
+            ax.set_xticklabels([str(k) for k in speedup_data.keys()])
+            if ax is axes[0]:
+                ax.set_ylabel("Speedup")
+            ax.legend(loc="upper left")
+
+        # plt.title(title + ": " + ", ".join(bench_names))
+        plt.tight_layout()
+        plt.show()
+    else:
         fig = plt.figure(dpi=150)
         chart = fig.add_subplot()
 
@@ -143,18 +206,6 @@ def _generate_chart_from_df(
             process_chart(chart=chart)
 
         fig.tight_layout()
-    else:
-        chart = sns.catplot(
-            data=df,
-            **args,
-        )
-        chart.fig.suptitle(title)
-
-        if process_chart is not None:
-            process_chart(chart=chart)
-
-        chart.fig.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
-        fig = chart.fig
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -176,6 +227,34 @@ def _generate_chart_from_df(
 
     plt.show()
     plt.close()
+
+
+def _get_speedup_data(
+    df: DataFrame,
+) -> Dict[str, Dict[str, Any]]:
+    single_threaded_duration = df[df["nb_threads"] == 1]["duration"].values[0]
+    single_threaded_gc = df[df["nb_threads"] == 1]["gc"].values[0]
+    multithreaded_df = df[df["nb_threads"] != 1]
+    data = {}
+
+    for _, row in multithreaded_df.iterrows():
+        perfect_speedup_duration = single_threaded_duration / row["nb_threads"]
+
+        measured_component = perfect_speedup_duration / row["duration"]
+        gc_component = ((row["nb_threads"] * row["gc"]) - single_threaded_gc) / row["duration"]
+        sync_component = (row["context-switches"] / 1000) / row["duration"]
+        lock_component = row["lock"] / row["duration"]
+
+        other_component = 1 - measured_component - gc_component - sync_component - lock_component
+
+        data[row["nb_threads"]] = {
+            "measured": measured_component * row["nb_threads"],
+            "gc": gc_component * row["nb_threads"],
+            "sync": sync_component * row["nb_threads"],
+            "lock": lock_component * row["nb_threads"],
+            "other": other_component * row["nb_threads"],
+        }
+    return data
 
 
 def _read_csv(
@@ -290,6 +369,56 @@ def generate_chart_from_multiple_csvs(
     )
 
 
+def generate_chart_from_multiple_jsons(
+    json_pathnames: List[List[PathType]],
+    plot_name: str | List[str],
+    output_dir: PathType = "/tmp/figs",
+    xlabel: str | None = None,
+    ylabel: str | None = None,
+    nan_replace: bool = True,
+    process_dataframe: DataframeProcessor = identical_dataframe,
+    **kwargs,
+) -> None:
+    """
+    Generate a chart from data contained in multiple JSON files.
+
+    Args:
+        json_pathnames (List[List[PathType]]):
+            list of list of paths to the JSON files.
+        plot_name (str | List[str]):
+            name of the (Seaborn) plot to generate.
+        output_dir (PathType, optional):
+            path to the directory where to output the chart.
+            Defaults to "/tmp/figs".
+        xlabel (str | None, optional):
+            label of the x-axis.
+            Defaults to None.
+        ylabel (str | None, optional):
+            label of the y-axis. Defaults to None.
+        nan_replace (bool, optional):
+            whether to fill NaN values to replace None, empty strings, etc.
+            when parsing the dataset.
+        process_dataframe (DataframeProcessor, optional):
+            function to process the dataframe to apply a transformation before plotting.
+            Defaults to identical_dataframe.
+    """
+    if not _LIBRARIES_ENABLED:
+        _print_warning()
+        return
+
+    json_dataframe = get_global_dataframe_from_jsons(json_pathnames=json_pathnames)
+
+    _generate_chart_from_df(
+        df=json_dataframe,
+        process_dataframe=process_dataframe,
+        plot_name=plot_name,
+        output_dir=output_dir,
+        xlabel=xlabel,
+        ylabel=ylabel,
+        **kwargs,
+    )
+
+
 def get_global_dataframe(
     csv_pathnames: List[PathType],
     nan_replace: bool = True,
@@ -304,6 +433,66 @@ def get_global_dataframe(
         if (df := _read_csv(csv_pathname=p, nan_replace=nan_replace)) is not None
     ]
     result = pd.concat(dataframes)
+    return result
+
+
+def _process_json(
+    json_path: PathType,
+) -> Dict[str, int]:
+    with open(json_path, "r") as f:
+        data = json.load(f)
+
+        output = {}
+        total_context_switches = 0
+
+        for entry in data:
+            for k, v in entry.items():
+                # Count context-switch events
+                if k.endswith("/context-switches"):
+                    total_context_switches += int(v)
+                elif "context-switches" not in k:
+                    output[k] = v
+
+        output["context-switches"] = total_context_switches
+        return output
+
+
+def _process_jsons(
+    json_paths: List[PathType],
+) -> Dict[str, floating[Any]]:
+    data = [_process_json(p) for p in json_paths]
+
+    # TODO: The processing of json's is currently tightly linked with the
+    # processing needed for speedup stacks.
+    # This will need to be refactored in order to process arbitrary json.
+    data_columns = ["duration", "gc", "lock", "context-switches"]
+    information_columns = [
+        "experiment_name",
+        "benchmark_name",
+        "hostname",
+        "architecture",
+        "bench_name",
+        "size",
+        "nb_threads",
+    ]
+
+    information_data = {k: v for k, v in data[0].items() if k in information_columns}
+
+    for key in data_columns:
+        information_data[key] = mean([float(d[key]) for d in data])
+
+    return information_data
+
+
+def get_global_dataframe_from_jsons(
+    json_pathnames: List[List[PathType]],
+) -> DataFrame:
+    if not _LIBRARIES_ENABLED:
+        _print_warning()
+        return
+
+    dataframes = [_process_jsons(ps) for ps in json_pathnames]
+    result = pd.DataFrame(dataframes)
     return result
 
 
