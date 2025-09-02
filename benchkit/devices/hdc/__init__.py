@@ -78,8 +78,8 @@ class OpenHarmonyDeviceConnector:
     def binary() -> str:
         # Note: on wsl it's also hdc.exe, by default hdc seems to be mostly windows only?
         # TODO: change this in the future if there is a linux hdc.
-        # return "hdc.exe" if "Windows" == os_system() else "hdc"
-        return "hdc.exe"
+        bin_name = "hdc" + (".exe" if os.name == "nt" else "")
+        return bin_name
 
     @staticmethod
     def dependencies() -> List[Dependency]:
@@ -149,9 +149,11 @@ class OpenHarmonyDeviceConnector:
     ) -> str:
         dir_args = ["cd", f"{current_dir}", "&&"] if current_dir is not None else []
         command_args = dir_args + get_args(command)
-
-        hdc_command = [f"{self.binary()}", "-t", f"{self.identifier}", "shell"] + command_args
-
+        hdc_command = []
+        if self.identifier == "":
+            hdc_command = [f"{self.binary()}", "shell"] + command_args
+        else:
+            hdc_command = [f"{self.binary()}", "-t", f"{self.identifier}", "shell"] + command_args
         output = shell_out(
             command=hdc_command,
             print_output=False,
@@ -196,16 +198,30 @@ class OpenHarmonyDeviceConnector:
             local_path (PathType): path on the host where the file is.
             remote_path (PathType): path where to push the file on the device.
         """
-        command = [
-            f"{self.binary()}",
-            "-t",
-            f"{self.identifier}",
-            "file",
-            "send",
-            f"{local_path}",
-            f"{remote_path}",
-        ]
-        self._host_shell_out(command=command)
+        command = []
+        if self.identifier == "":
+            command = [
+                f"{self.binary()}",
+                "file",
+                "send",
+                f"{local_path}",
+                f"{remote_path}",
+            ]
+        else:
+            command = [
+                f"{self.binary()}",
+                "-t",
+                f"{self.identifier}",
+                "file",
+                "send",
+                f"{local_path}",
+                f"{remote_path}",
+            ]
+        self._host_shell_out(
+            command=command,
+            print_input=True,
+            print_output=True,
+        )
 
     def pull(
         self,
