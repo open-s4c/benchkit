@@ -56,6 +56,9 @@ class JavaPerfStatWrap(PerfStatWrap):
         super().__init__(**kwargs)
         self.attachment_thread: Optional[Thread] = None
 
+        perf_version_output = shell_out(command=f"{self._perf_bin} --version", print_output=False)
+        self._perf_version = perf_version_output.split(" ")[2].strip()
+
     def attach_every_thread(self, **kwargs):
         self.attachment_thread = Thread(target=self.attach_every_thread_worker, kwargs=kwargs)
         self.attachment_thread.start()
@@ -137,11 +140,6 @@ class JavaPerfStatWrap(PerfStatWrap):
         self,
         perf_stat_pathname: PathType,
     ) -> RecordResult:
-        perf_version_output = shell_out(
-            "perf --version", print_output=False
-        )  # TODO: Cache this result
-        perf_version = perf_version_output.split(" ")[2].strip()
-
         counter_rows = self._parse_csv(  # TODO adapt for json
             perf_stat_pathname=perf_stat_pathname,
             field_names=["taskname-pid"] + self._perf_stat_csv_field_names,
@@ -157,6 +155,7 @@ class JavaPerfStatWrap(PerfStatWrap):
             taskname_pid = counter_row["taskname-pid"]
             _, pid = taskname_pid.rsplit("-", maxsplit=1)
             assert filename_tid == int(pid)
+            perf_version = self._perf_version
 
             # event_name = counter_row["event_name"]
             event_name = self._get_perf_field(counter_row, "event_name", perf_version)
