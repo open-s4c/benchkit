@@ -117,8 +117,15 @@ class DacapobenchBench(Benchmark):
 
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
+            PackageDependency("openjdk-11-jdk"),
+            PackageDependency("openjdk-8-jdk"),
             PackageDependency("build-essential"),
             PackageDependency("cmake"),
+            PackageDependency("cvs"),
+            PackageDependency("subversion"),
+            PackageDependency("ant"),
+            PackageDependency("nodejs"),
+            PackageDependency("npm"),
         ]
 
     def prebuild_bench(self, **_kwargs) -> None:
