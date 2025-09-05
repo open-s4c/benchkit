@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Iterable
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
-from benchkit.commandwrappers.ncu import NcuWrap, CommandWrapper
+from benchkit.commandwrappers.ncu2 import NcuWrap, CommandWrapper
 from benchkit.platforms import Platform
 from benchkit.utils.types import PathType
 from benchkit.sharedlibs import SharedLib

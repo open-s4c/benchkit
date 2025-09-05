@@ -8,7 +8,7 @@ from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import PathType
-from benchkit.commandwrappers.ncu import NcuWrap, CommandWrapper
+from benchkit.commandwrappers.ncu2 import NcuWrap, CommandWrapper
 from benchkit.platforms import get_current_platform
 
 
