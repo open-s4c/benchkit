@@ -9,6 +9,7 @@ import getpass
 import os
 import socket
 import sys
+from time import perf_counter_ns
 from typing import Any, Dict
 
 CSV_SEPARATOR = ";"
@@ -60,21 +61,62 @@ def dict_union(
 
 class TimeMeasure:
     """
-    Context manager to enable measurement of the time in its scope.
+    Monotonic, high-resolution timing context manager.
+    Usage:
+        with TimeMeasure() as tm:
+            do_work()
+        print(tm.seconds, tm.milliseconds, tm.microseconds)
+        print(tm.as_unit('ms'))
     """
 
+    __slots__ = ("_t0", "_t1", "duration_ns", "start_time")
+
     def __init__(self):
-        self.duration_seconds = 0
-        self.start_time = 0
-        self.end_time = 0
+        self._t0 = 0
+        self._t1 = 0
+        self.duration_ns = 0  # int, nanoseconds
+        self.start_time = datetime.datetime(1970, 1, 1)
 
     def __enter__(self):
         self.start_time = datetime.datetime.now(tz=datetime.timezone.utc)
+        self._t0 = perf_counter_ns()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.end_time = datetime.datetime.now(tz=datetime.timezone.utc)
-        self.duration_seconds = (self.end_time - self.start_time).total_seconds()
+        self._t1 = perf_counter_ns()
+        self.duration_ns = self._t1 - self._t0
+
+    @property
+    def seconds(self) -> float:
+        return self.duration_ns / 1_000_000_000
+
+    @property
+    def milliseconds(self) -> float:
+        return self.duration_ns / 1_000_000
+
+    @property
+    def microseconds(self) -> float:
+        return self.duration_ns / 1_000
+
+    @property
+    def duration_seconds(self):
+        return self.seconds
+
+    # Generic accessor
+    def as_unit(self, unit: str = "s") -> float:
+        unit = unit.lower()
+        if unit in ("s", "sec", "secs", "second", "seconds"):
+            return self.seconds
+        if unit in ("ms", "millisecond", "milliseconds"):
+            return self.milliseconds
+        if unit in ("us", "µs", "microsecond", "microseconds"):
+            return self.microseconds
+        if unit in ("ns", "nanosecond", "nanoseconds"):
+            return float(self.duration_ns)
+        raise ValueError(f"Unknown unit: {unit}")
+
+    def __repr__(self):
+        return f"<TimeMeasure {self.milliseconds:.3f} ms>"
 
 
 def get_user_name() -> str:
@@ -94,3 +136,8 @@ if __name__ == "__main__":
     with TimeMeasure() as my_time:
         time.sleep(0.5)
     print(my_time.duration_seconds)
+
+    with TimeMeasure() as tm:
+        time.sleep(0.5)
+    print(tm.seconds, tm.milliseconds, tm.microseconds)
+    print(tm.as_unit("ms"))
