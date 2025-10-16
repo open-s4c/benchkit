@@ -62,6 +62,7 @@ def main() -> None:
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
         enable_data_dir=True,
         clean_in_between_different_benchmarks=False,
+        symlink_latest=True,
     )
 
     # Define the campaign suite and run the benchmarks in the suite

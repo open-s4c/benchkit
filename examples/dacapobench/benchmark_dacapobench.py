@@ -252,6 +252,7 @@ def dacapobench_campaign(
     continuing: bool = False,
     constants: Constants = None,
     pretty: Optional[Dict[str, str]] = None,
+    symlink_latest: bool = False,
 ) -> CampaignCartesianProduct:
     """Return a cartesian product campaign configured for the dacapobench benchmark."""
     variables = {
@@ -299,4 +300,5 @@ def dacapobench_campaign(
         benchmark_duration_seconds=benchmark_duration_seconds,
         results_dir=results_dir,
         pretty=pretty,
+        symlink_latest=symlink_latest,
     )
