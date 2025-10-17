@@ -67,7 +67,6 @@ class HeaterSeqBench(Benchmark):
     def get_run_var_names() -> List[str]:
         return [
             "cpu",
-            "frequency",
         ]
 
     @staticmethod
@@ -118,14 +117,10 @@ class HeaterSeqBench(Benchmark):
         self,
         benchmark_duration_seconds: int,
         cpu: int = 1,
-        frequency: int = 600000,
         **kwargs,
     ) -> str:
         # initialize CPUPower
         cpu_power = CPUPower()
-        # set freq & govnor
-        cpu_power.set_governor(governor="userspace")
-        cpu_power.set_frequency(frequency_mhz=(frequency / 1000000), cpus=[cpu])
 
         run_command = [
             "./heater",
