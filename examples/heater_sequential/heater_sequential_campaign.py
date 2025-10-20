@@ -10,7 +10,6 @@ from heater_sequential import HeaterSeqBench
 from benchkit.benchmark import CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite, Constants
 from benchkit.commandwrappers import CommandWrapper
-from benchkit.helpers.linux.predictable.cpupower import CPUPower
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.dir import get_curdir
@@ -18,7 +17,7 @@ from benchkit.utils.types import PathType
 
 
 def heater_seq_campaign(
-    name: str = "leveldb_campaign",
+    name: str = "sequential_heater_campaign",
     benchmark: Optional[HeaterSeqBench] = None,
     src_dir: Optional[PathType] = None,
     build_dir: Optional[str] = None,
@@ -39,7 +38,7 @@ def heater_seq_campaign(
     constants: Constants = None,
     pretty: Optional[Dict[str, str]] = None,
 ) -> CampaignCartesianProduct:
-    """Return a cartesian product campaign configured for the LevelDB benchmark."""
+    """Return a cartesian product campaign configured for the Sequential Heater benchmark."""
     variables = {
         "cpu": cpu,
     }
@@ -78,21 +77,15 @@ def heater_seq_campaign(
 def main() -> None:
     """Main function of the campaign script."""
 
-    # to get the frequencies
-    cpuPower = CPUPower()
-
     # Where is the benchmark code located
-    leveldb_src_dir = (get_curdir(__file__) / "").resolve()
+    src_dir = (get_curdir(__file__) / "").resolve()
 
-    # print(cpuPower.get_frequency_values(range(0, os.cpu_count())))
-
-    # Define the campaign, associated with the LevelDB benchmark
+    # Define the campaign
     campaign = heater_seq_campaign(
-        src_dir=leveldb_src_dir,
+        src_dir=src_dir,
         nb_runs=3,
         benchmark_duration_seconds=3,
         cpu=range(0, os.cpu_count()),
-        # frequency=cpuPower.get_frequency_values(range(0, os.cpu_count())),
     )
 
     # Define the campaign suite and run the benchmarks in the suite
