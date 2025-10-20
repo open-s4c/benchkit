@@ -84,7 +84,7 @@ def main() -> None:
     # Where is the benchmark code located
     leveldb_src_dir = (get_curdir(__file__) / "").resolve()
 
-    #print(cpuPower.get_frequency_values(range(0, os.cpu_count())))
+    # print(cpuPower.get_frequency_values(range(0, os.cpu_count())))
 
     # Define the campaign, associated with the LevelDB benchmark
     campaign = heater_seq_campaign(
@@ -92,7 +92,7 @@ def main() -> None:
         nb_runs=3,
         benchmark_duration_seconds=3,
         cpu=range(0, os.cpu_count()),
-        #frequency=cpuPower.get_frequency_values(range(0, os.cpu_count())),
+        # frequency=cpuPower.get_frequency_values(range(0, os.cpu_count())),
     )
 
     # Define the campaign suite and run the benchmarks in the suite
