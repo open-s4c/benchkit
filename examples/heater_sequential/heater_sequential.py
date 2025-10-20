@@ -8,7 +8,6 @@ from typing import Any, Dict, Iterable, List
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
-from benchkit.helpers.linux.predictable.cpupower import CPUPower
 from benchkit.platforms import Platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import PathType
@@ -119,8 +118,6 @@ class HeaterSeqBench(Benchmark):
         cpu: int = 1,
         **kwargs,
     ) -> str:
-        # initialize CPUPower
-        cpu_power = CPUPower()
 
         run_command = [
             "./heater",
