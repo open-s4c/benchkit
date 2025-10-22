@@ -193,7 +193,10 @@ class LevelDBBench(Benchmark):
         `readreverse` and `readsequential` benchmarks have a very short duration.
         As such, consider increasing the size of `num` for those.
         """
-        if bench_name in ["readrandom", "readmissing", "readhot", "seekrandom"]:
+        if (
+            bench_name in ["readrandom", "readmissing", "readhot", "seekrandom"]
+            and benchmark_duration_seconds != 0
+        ):
             duration_num = f"--duration={benchmark_duration_seconds}"
         else:
             duration_num = f"--num={num // nb_threads}"
