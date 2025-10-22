@@ -124,7 +124,7 @@ class LevelDBBench(Benchmark):
         cmake_build_type = "Debug" if must_debug else "Release"
 
         self.platform.comm.shell(
-            command=f"cmake -DCMAKE_BUILD_TYPE={cmake_build_type} {self._bench_src_path} -DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+            command=f"cmake -DCMAKE_BUILD_TYPE={cmake_build_type} {self._bench_src_path}",
             current_dir=build_dir,
             output_is_log=True,
         )
@@ -193,7 +193,10 @@ class LevelDBBench(Benchmark):
         `readreverse` and `readsequential` benchmarks have a very short duration.
         As such, consider increasing the size of `num` for those.
         """
-        if bench_name in ["readrandom", "readmissing", "readhot", "seekrandom"] and benchmark_duration_seconds != 0:
+        if (
+            bench_name in ["readrandom", "readmissing", "readhot", "seekrandom"]
+            and benchmark_duration_seconds != 0
+        ):
             duration_num = f"--duration={benchmark_duration_seconds}"
         else:
             duration_num = f"--num={num // nb_threads}"
