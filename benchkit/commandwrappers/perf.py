@@ -112,7 +112,7 @@ def _validate_record_data_dir(record_data_dir: PathType) -> None:
 def _get_available_events(
     perf_bin: PathType,
 ) -> Tuple[List[str], Dict[str, Dict[str, str]]]:
-    
+
     raw_output = shell_out(
         command=f"{perf_bin} list --no-desc",
         print_input=False,
