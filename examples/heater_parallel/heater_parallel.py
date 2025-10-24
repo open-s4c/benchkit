@@ -87,7 +87,7 @@ class HeaterParBench(Benchmark):
         return result_dict
 
     def dependencies(self) -> List[PackageDependency]:
-        return super().dependencies() + [PackageDependency("gcc"), PackageDependency("numactl")]
+        return super().dependencies() + [PackageDependency("gcc"), PackageDependency("libnuma-dev")]
 
     def build_tilt(self, **kwargs) -> None:
         self.tilt.build_single_lock(**kwargs)

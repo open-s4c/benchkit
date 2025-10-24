@@ -108,17 +108,13 @@ def main() -> None:
         value_col: str = "ops",
         agg: Union[str, Callable] = "median",
         cores: Optional[int] = None,
-        drop_outliers: bool = True,
+        drop_outliers: bool = False,
         outlier_threshold: int = 10,
         fill_value: float = np.nan,
     ) -> np.ndarray:
         """
-        Build a square (N x N) matrix M where M[i, j] is the aggregated value (e.g. median ops)
-        for the (core1=i, core2=j) pair. Missing pairs become fill_value.
-
-        - agg can be 'mean', 'median', 'max', 'min' or a callable.
-        - If drop_outliers=True, rows with value_col <= outlier_threshold are removed.
-        - `cores` lets you force a matrix size; otherwise uses max core i+1 seen in the data.
+        Build a square (N x N) matrix M where M[i, j] is the aggregated value
+        for the (core1=i, core2=j) pair.
         """
         x = df.copy()
 
@@ -146,14 +142,14 @@ def main() -> None:
 
     def plot_core_heatmap(
         matrix: np.ndarray,
-        title: str = "Heatmap of Core Combinations (aggregated ops)",
+        title: str = "Heatmap of Core Combinations",
         annotate: bool = False,
         fmt: str = ".0f",
         invert_y: bool = True,
         output_image_path: str | None = None,
     ):
         """
-        Plot a heatmap from a 2D numpy array. Optionally save to file.
+        Plot a heatmap from a 2D numpy array.
         """
         plt.figure(figsize=(9, 7))
         ax = sns.heatmap(matrix, annot=annotate, fmt=fmt, cbar=True, linewidths=0)
@@ -166,11 +162,9 @@ def main() -> None:
             plt.savefig(output_image_path, bbox_inches="tight", dpi=200)
         plt.show()
 
-    # Build matrix with median ops per (core1, core2), drop the dummy '4' rows
+    # Build matrix with median ops per (core1, core2)
     M = df_to_heatmap_matrix(df, value_col="ops", agg="median", drop_outliers=False)
-
-    # if base_data_dir is already a Path:
-    out = out = Path.cwd() / "heatmap_median_ops.png"
+    out = out = Path.cwd() / f"heatmap_{hostname()}.pdf"
 
     plot_core_heatmap(
         M, title=f"Heatmap of core combinations on {hostname()}", output_image_path=out
