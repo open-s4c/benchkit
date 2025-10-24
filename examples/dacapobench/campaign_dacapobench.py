@@ -61,7 +61,11 @@ def main() -> None:
         command_attachments=speedupstackwrapper.command_attachments(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
         enable_data_dir=True,
+        # Makes sure not to clear the deps between benchmarks.
+        # This decreases compile time while increasing space requirements.
         clean_in_between_different_benchmarks=False,
+        # Makes sure that the latest results are symlinked to a consistent folder.
+        symlink_latest=True,
     )
 
     # Define the campaign suite and run the benchmarks in the suite
