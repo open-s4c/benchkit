@@ -70,8 +70,11 @@ class LsCpu:
         """
         Return the number of sockets (or packages).
 
+        If the socket value cannot be parsed as an integer (e.g. on some
+        platforms like Raspberry Pi 5), a default value of 1 is returned.
+
         Returns:
-            int: the number of sockets (or packages).
+            int: the number of sockets (or packages) or 1 if not specified.
         """
 
         result = self.get("Socket(s):").strip()
