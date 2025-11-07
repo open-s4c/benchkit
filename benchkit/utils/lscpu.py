@@ -76,13 +76,11 @@ class LsCpu:
         Returns:
             int: the number of sockets (or packages) or 1 if not specified.
         """
-
         result = self.get("Socket(s):").strip()
-        try:
-            return int(result)
-        except ValueError:
-            print(f"[WARNING] Invalid socket value '{result}', defaulting to 1")
+        if not result.isdigit():
+            print(f"[WARNING] Invalid socket value '{result}' in lscpu, defaulting to 1")
             return 1
+        return int(result)
 
     def l1d_cache(self) -> int:
         """
