@@ -76,5 +76,10 @@ git submodule update --init --recursive
 git apply ../../libbpf-tools-fix-compile.patch
 cd libbpf-tools/
 make -j
+sudo setcap cap_sys_resource,cap_sys_admin+eip ./klockstat
 cd ../../..
+```
+
+```
+./campaign_rocksdb_speedup_stacks.py
 ```
