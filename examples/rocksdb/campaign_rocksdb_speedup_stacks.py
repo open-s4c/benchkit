@@ -8,9 +8,7 @@ Example of campaign script for RocksDB benchmark.
 from rocksdb import rocksdb_campaign
 
 from benchkit.campaign import CampaignSuite
-from benchkit.commandwrappers.perf import enable_non_sudo_perf
 from benchkit.commandwrappers.speedupstack import SpeedupStackWrapper
-from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import get_curdir
 
 

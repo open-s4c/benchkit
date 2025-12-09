@@ -144,11 +144,12 @@ class Klockstat:
         klockstat_out_file = os.path.join(record_data_dir, self.out_file_name)
         klockstat_err_file = os.path.join(record_data_dir, self.err_file_name)
 
-        # if the error file is not empty print the content of the error file and return an empty dictionary
+        # if the error file is not empty print the content of the error file
+        # and return an empty dictionary
         if os.stat(klockstat_err_file).st_size != 0:
             with open(klockstat_err_file) as err_file:
-                for l in err_file.readlines():
-                    print(l)
+                for line in err_file.readlines():
+                    print(line)
                 return {}
 
         # This dictionary will hold all the aggregated values for each lock
@@ -222,8 +223,9 @@ class Klockstat:
                         }
                     )
 
-            # Post run hooks must return a dictionary where each key at the top level corresponds to some information to be kept.
-            # The current per-lock dictionary does not adhere to this structure.
+            # Post run hooks must return a dictionary where each key at the top level corresponds
+            # to some information to be kept. The current per-lock dictionary
+            # does not adhere to this structure.
 
             avg_wait = sum(d["total_wait"] for d in per_lock_dict.values())
             avg_hold = sum(d["total_hold"] for d in per_lock_dict.values())
