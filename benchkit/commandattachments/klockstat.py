@@ -86,6 +86,9 @@ class Klockstat(LibbpfTools):
         self.out_file_name = "klockstat.out"
         self.err_file_name = "klockstat.err"
 
+        self.out_file_name = "klockstat.out"
+        self.err_file_name = "klockstat.err"
+
     def attachment(
         self,
         process,
