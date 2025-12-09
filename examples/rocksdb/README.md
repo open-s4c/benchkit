@@ -30,6 +30,14 @@ cd examples/rocksdb/
 
 ## Speedup stacks
 
+To run the speedup stack example, you need the following dependencies.
+
+- LLVM 3.7.1 or newer, compiled with BPF support (default=on)
+- Clang, built from the same tree as LLVM
+- cmake (>=3.1), gcc (>=4.7), flex, bison
+- LuaJIT, if you want Lua support
+- Optional tools used in some examples: arping, netperf, and iperf
+
 ```
 # For Focal (20.04.1 LTS)
 sudo apt install -y zip bison build-essential cmake flex git libedit-dev \
@@ -67,6 +75,7 @@ sudo apt-get -y install zip bison build-essential cmake flex git libedit-dev \
   liblzma-dev arping netperf iperf
 ```
 
+Cloning and compiling the libbpf-tools dependencies.
 ```
 cd deps/
 git clone git@github.com:iovisor/bcc.git
@@ -80,6 +89,7 @@ sudo setcap cap_sys_resource,cap_sys_admin+eip ./klockstat
 cd ../../..
 ```
 
+Running the speedup stack campaign.
 ```
 ./campaign_rocksdb_speedup_stacks.py
 ```
