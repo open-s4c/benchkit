@@ -9,7 +9,7 @@ class SpeedupStackWrapper:
     def __init__(self, libbpf_tools_dir: PathType) -> None:
         self._libbpf_tools_dir = libbpf_tools_dir
 
-        self._klockstat = Klockstat(libbpf_tools_dir, pid=123)
+        self._klockstat = Klockstat(libbpf_tools_dir)
 
     def command_wrappers(self):
         return []
