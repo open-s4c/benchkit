@@ -233,11 +233,11 @@ class Klockstat:
             count_hold = sum(d["count_wait"] for d in per_lock_dict.values())
             return_dict = {
                 "klockstat_total_wait_ns": avg_wait,
-                "klockstat_avg_wait_ns": avg_wait / count_wait,
-                "klockstat_max_wait_ns": max(d["max_wait"] for d in per_lock_dict.values()),
+                "klockstat_avg_wait_ns": (avg_wait / count_wait) if count_wait != 0 else 0,
+                "klockstat_max_wait_ns": max(list(d["max_wait"] for d in per_lock_dict.values()) + [0]),
                 "klokstat_total_hold_ns": avg_hold,
-                "klockstat_avg_hold_ns": avg_hold / count_hold,
-                "klockstat_max_hold_ns": max(d["max_hold"] for d in per_lock_dict.values()),
+                "klockstat_avg_hold_ns": (avg_hold / count_hold) if count_hold != 0 else 0,
+                "klockstat_max_hold_ns": max(list(d["max_hold"] for d in per_lock_dict.values()) + [0]),
             }
 
             return return_dict
