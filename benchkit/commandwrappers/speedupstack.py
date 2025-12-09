@@ -8,6 +8,7 @@ from benchkit.commandattachments.klockstat import Klockstat
 from benchkit.commandattachments.signal import Signal
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
+from benchkit.commandattachments.signal import SigSpec, Signal
 from benchkit.utils.types import PathType
 
 
