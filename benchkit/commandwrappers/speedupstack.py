@@ -21,6 +21,9 @@ class SpeedupStackWrapper(CommandWrapper):
         self._sigstop = Signal(signal=SigSpec.SIGSTOP)
         self._sigcont = Signal(signal=SigSpec.SIGCONT)
 
+        self._sigstop = Signal(signal=SigSpec.SIGSTOP)
+        self._sigcont = Signal(signal=SigSpec.SIGCONT)
+
     def command_wrappers(self):
         return []
 
