@@ -13,16 +13,15 @@ from benchkit.utils.types import PathType
 
 
 class Klockstat:
-
     """
     Klockstat is an libbpf-tools util that monitors locks.
     NOTE: the klockstat utility requires added capabilities so that it
           can run with root privileges without sudo.
-        
+
     Arguments:
         libbpf_tools_dir: the directory that points to the libbpf tools
-        pid: Filter by process ID 
-        tid: Filter by thread ID 
+        pid: Filter by process ID
+        tid: Filter by thread ID
         caller_string_prefix: Filter by caller string prefix
         lock_ksys_name_filter: Filter by specific ksym lock name
         max_nr_locks_or_threads: Number of locks or threads to print
@@ -32,7 +31,7 @@ class Klockstat:
         interval: Print interval
         print_per_thread: Print per-thread stats
         reset_stats_each_interval: Reset stats each interval
-        print_time_stamp: Print timestamp 
+        print_time_stamp: Print timestamp
     """
 
     def __init__(
@@ -43,14 +42,13 @@ class Klockstat:
         caller_string_prefix: str = "",
         lock_ksys_name_filter: str = "",
         max_nr_locks_or_threads: int = -1,
-        max_nr_stack_entries: int = -1, 
+        max_nr_stack_entries: int = -1,
         sort_by_field: str = "",
         duration: int = -1,
         interval: int = -1,
         print_per_thread: bool = False,
-        reset_stats_each_interval: bool = False, 
+        reset_stats_each_interval: bool = False,
         print_time_stamp: bool = False,
-
         platform: Platform = None,
     ) -> None:
 
@@ -165,12 +163,13 @@ class Klockstat:
                 raise ValueError(f"can't parse time value: {s}")
             val = float(m.group(1))
             unit = m.group(2).lower()
-            return val * {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9, "m" : 1e9 * 60, "h": 1e9 * 3600}[unit]
+            return (
+                val
+                * {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9, "m": 1e9 * 60, "h": 1e9 * 3600}[unit]
+            )
 
         current_table = "wait"
-        row_re = re.compile(
-            r"(\S+)\s+(\S+\s+\S+)\s+(\d+)\s+(\S+\s+\S+)\s+(\S+\s+\S+)"
-        )
+        row_re = re.compile(r"(\S+)\s+(\S+\s+\S+)\s+(\d+)\s+(\S+\s+\S+)\s+(\S+\s+\S+)")
 
         with open(klockstat_out_file) as out_file:
             for line in out_file.readlines():
@@ -196,24 +195,33 @@ class Klockstat:
                     parsed_max = parse_time_to_ns(m.group(4))
                     parsed_total = parse_time_to_ns(m.group(5))
 
-                    old_values = per_lock_dict.setdefault(caller, {
-                        "avg_wait": 0,
-                        "count_wait": 0, 
-                        "max_wait": 0,
-                        "total_wait": 0,
-                        "avg_hold": 0,
-                        "count_hold": 0, 
-                        "max_hold": 0,
-                        "total_hold": 0,
-                        })
+                    old_values = per_lock_dict.setdefault(
+                        caller,
+                        {
+                            "avg_wait": 0,
+                            "count_wait": 0,
+                            "max_wait": 0,
+                            "total_wait": 0,
+                            "avg_hold": 0,
+                            "count_hold": 0,
+                            "max_hold": 0,
+                            "total_hold": 0,
+                        },
+                    )
 
-                    per_lock_dict[caller].update({
-                        avg_key: (old_values[avg_key] * old_values[count_key] + parsed_avg * parsed_count) / (old_values[count_key] + parsed_count),
-                        count_key: old_values[count_key] + parsed_count,
-                        max_key: max(old_values[max_key], parsed_max),
-                        total_key: old_values[total_key] + parsed_total,
-                        })
-            
+                    per_lock_dict[caller].update(
+                        {
+                            avg_key: (
+                                old_values[avg_key] * old_values[count_key]
+                                + parsed_avg * parsed_count
+                            )
+                            / (old_values[count_key] + parsed_count),
+                            count_key: old_values[count_key] + parsed_count,
+                            max_key: max(old_values[max_key], parsed_max),
+                            total_key: old_values[total_key] + parsed_total,
+                        }
+                    )
+
             # Post run hooks must return a dictionary where each key at the top level corresponds to some information to be kept.
             # The current per-lock dictionary does not adhere to this structure.
 
@@ -222,12 +230,12 @@ class Klockstat:
             count_wait = sum(d["count_wait"] for d in per_lock_dict.values())
             count_hold = sum(d["count_wait"] for d in per_lock_dict.values())
             return_dict = {
-                    "klockstat_total_wait_ns": avg_wait,
-                    "klockstat_avg_wait_ns": avg_wait / count_wait,
-                    "klockstat_max_wait_ns": max(d["max_wait"] for d in per_lock_dict.values()),
-                    "klokstat_total_hold_ns": avg_hold,
-                    "klockstat_avg_hold_ns": avg_hold / count_hold,
-                    "klockstat_max_hold_ns": max(d["max_hold"] for d in per_lock_dict.values()),
-                    }
+                "klockstat_total_wait_ns": avg_wait,
+                "klockstat_avg_wait_ns": avg_wait / count_wait,
+                "klockstat_max_wait_ns": max(d["max_wait"] for d in per_lock_dict.values()),
+                "klokstat_total_hold_ns": avg_hold,
+                "klockstat_avg_hold_ns": avg_hold / count_hold,
+                "klockstat_max_hold_ns": max(d["max_hold"] for d in per_lock_dict.values()),
+            }
 
             return return_dict

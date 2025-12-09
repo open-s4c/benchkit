@@ -9,9 +9,9 @@ from rocksdb import rocksdb_campaign
 
 from benchkit.campaign import CampaignSuite
 from benchkit.commandwrappers.perf import enable_non_sudo_perf
+from benchkit.commandwrappers.speedupstack import SpeedupStackWrapper
 from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import get_curdir
-from benchkit.commandwrappers.speedupstack import SpeedupStackWrapper
 
 
 def main() -> None:
@@ -64,6 +64,7 @@ def main() -> None:
     # )
 
     # print(libbpf_tools_dir)
+
 
 if __name__ == "__main__":
     main()

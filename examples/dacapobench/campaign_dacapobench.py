@@ -9,8 +9,8 @@ Minimal example to run benchmarks from dacapobench.
 from benchmark_dacapobench import dacapobench_campaign
 
 from benchkit.campaign import CampaignSuite
-from benchkit.commandwrappers.perf import enable_non_sudo_perf
 from benchkit.commandwrappers.javaspeedupstack import JavaSpeedupStackWrapper
+from benchkit.commandwrappers.perf import enable_non_sudo_perf
 from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import caller_dir
 
