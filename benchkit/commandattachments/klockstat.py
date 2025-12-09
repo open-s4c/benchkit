@@ -12,6 +12,7 @@ Documentation of the underlying tool:
 """
 
 import os
+import time
 import pathlib
 import re
 import time
