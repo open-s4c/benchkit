@@ -1,13 +1,14 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+import os
 import pathlib
-from threading import Thread
+import re
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.platforms import Platform, get_current_platform
-from benchkit.shell.shellasync import AsyncProcess, shell_async
+from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
 
 
@@ -19,7 +20,19 @@ class Klockstat:
           can run with root privileges without sudo.
         
     Arguments:
-        sort_by_field: acq_[max|total|count] or hld_[max|total|count]
+        libbpf_tools_dir: the directory that points to the libbpf tools
+        pid: Filter by process ID 
+        tid: Filter by thread ID 
+        caller_string_prefix: Filter by caller string prefix
+        lock_ksys_name_filter: Filter by specific ksym lock name
+        max_nr_locks_or_threads: Number of locks or threads to print
+        max_nr_stack_entries: Number of stack entries to print per lock
+        sort_by_field: Sort by field, values like -> acq_[max|total|count] or hld_[max|total|count]
+        duration: Duration to trace
+        interval: Print interval
+        print_per_thread: Print per-thread stats
+        reset_stats_each_interval: Reset stats each interval
+        print_time_stamp: Print timestamp 
     """
 
     def __init__(
@@ -60,6 +73,9 @@ class Klockstat:
 
         self.process = (None,)
         self.platform = platform if platform is not None else get_current_platform()
+
+        self.out_file_name = "klockstat.out"
+        self.err_file_name = "klockstat.err"
 
     def attachment(
         self,
@@ -113,8 +129,8 @@ class Klockstat:
         self._process = AsyncProcess(
             platform=self.platform,
             arguments=command,
-            stdout_path=rdd / "klockstat.out",
-            stderr_path=rdd / "klockstat.err",
+            stdout_path=rdd / self.out_file_name,
+            stderr_path=rdd / self.err_file_name,
             current_dir=rdd,
         )
 
@@ -123,8 +139,95 @@ class Klockstat:
         experiment_results_lines: List[RecordResult],
         record_data_dir: PathType,
         write_record_file_fun: WriteRecordFileFunction,
-    ) -> None:
-        print("waiting #################################################: " )
+    ) -> RecordResult:
         self._process.send_signal(2, self._process.pid)
         self._process.wait()
-        print("done #################################################: ")
+
+        klockstat_out_file = os.path.join(record_data_dir, self.out_file_name)
+        klockstat_err_file = os.path.join(record_data_dir, self.err_file_name)
+
+        # if the error file is not empty print the content of the error file and return an empty dictionary
+        if os.stat(klockstat_err_file).st_size != 0:
+            with open(klockstat_err_file) as err_file:
+                for l in err_file.readlines():
+                    print(l)
+                return {}
+
+        # This dictionary will hold all the aggregated values for each lock
+        per_lock_dict = {}
+
+        time_regex = re.compile(r"^\s*(\d+\.?\d*)\s*(ns|us|ms|s|m|h)\s*$", re.IGNORECASE)
+
+        def parse_time_to_ns(s: str) -> float:
+            """Parse strings like '1.6 us', '800 ns', '2.3 ms' -> nanoseconds (float)."""
+            m = time_regex.match(s.rstrip())
+            if not m:
+                raise ValueError(f"can't parse time value: {s}")
+            val = float(m.group(1))
+            unit = m.group(2).lower()
+            return val * {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9, "m" : 1e9 * 60, "h": 1e9 * 3600}[unit]
+
+        current_table = "wait"
+        row_re = re.compile(
+            r"(\S+)\s+(\S+\s+\S+)\s+(\d+)\s+(\S+\s+\S+)\s+(\S+\s+\S+)"
+        )
+
+        with open(klockstat_out_file) as out_file:
+            for line in out_file.readlines():
+                line = line.rstrip()
+
+                if "Avg Wait" in line:
+                    current_table = "wait"
+                    continue
+                if "Avg Hold" in line:
+                    current_table = "hold"
+                    continue
+
+                m = row_re.search(line)
+                if m:
+                    caller = m.group(1)
+                    avg_key = "avg_" + current_table
+                    count_key = "count_" + current_table
+                    max_key = "max_" + current_table
+                    total_key = "total_" + current_table
+
+                    parsed_avg = parse_time_to_ns(m.group(2))
+                    parsed_count = int(m.group(3))
+                    parsed_max = parse_time_to_ns(m.group(4))
+                    parsed_total = parse_time_to_ns(m.group(5))
+
+                    old_values = per_lock_dict.setdefault(caller, {
+                        "avg_wait": 0,
+                        "count_wait": 0, 
+                        "max_wait": 0,
+                        "total_wait": 0,
+                        "avg_hold": 0,
+                        "count_hold": 0, 
+                        "max_hold": 0,
+                        "total_hold": 0,
+                        })
+
+                    per_lock_dict[caller].update({
+                        avg_key: (old_values[avg_key] * old_values[count_key] + parsed_avg * parsed_count) / (old_values[count_key] + parsed_count),
+                        count_key: old_values[count_key] + parsed_count,
+                        max_key: max(old_values[max_key], parsed_max),
+                        total_key: old_values[total_key] + parsed_total,
+                        })
+            
+            # Post run hooks must return a dictionary where each key at the top level corresponds to some information to be kept.
+            # The current per-lock dictionary does not adhere to this structure.
+
+            avg_wait = sum(d["total_wait"] for d in per_lock_dict.values())
+            avg_hold = sum(d["total_hold"] for d in per_lock_dict.values())
+            count_wait = sum(d["count_wait"] for d in per_lock_dict.values())
+            count_hold = sum(d["count_wait"] for d in per_lock_dict.values())
+            return_dict = {
+                    "klockstat_total_wait_ns": avg_wait,
+                    "klockstat_avg_wait_ns": avg_wait / count_wait,
+                    "klockstat_max_wait_ns": max(d["max_wait"] for d in per_lock_dict.values()),
+                    "klokstat_total_hold_ns": avg_hold,
+                    "klockstat_avg_hold_ns": avg_hold / count_hold,
+                    "klockstat_max_hold_ns": max(d["max_hold"] for d in per_lock_dict.values()),
+                    }
+
+            return return_dict

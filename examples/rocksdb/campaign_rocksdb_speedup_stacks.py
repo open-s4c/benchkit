@@ -25,7 +25,7 @@ def main() -> None:
     campaign = rocksdb_campaign(
         src_dir=rocksdb_src_dir,
         bench_name=["readrandom"],
-        nb_runs=1,
+        nb_runs=5,
         benchmark_duration_seconds=3,
         nb_threads=[2, 4, 8],
         command_wrappers=speedupstackwrapper.command_wrappers(),
@@ -44,6 +44,13 @@ def main() -> None:
         plot_name="lineplot",
         x="nb_threads",
         y="throughput",
+        hue="bench_name",
+    )
+
+    suite.generate_graph(
+        plot_name="lineplot",
+        x="nb_threads",
+        y="klockstat_total_wait_ns",
         hue="bench_name",
     )
 
