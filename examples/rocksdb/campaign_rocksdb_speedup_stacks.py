@@ -17,9 +17,6 @@ from benchkit.commandwrappers.speedupstack import SpeedupStackWrapper
 def main() -> None:
     """Main function of the campaign script."""
 
-    platform = get_current_platform()
-    enable_non_sudo_perf(comm_layer=platform.comm)
-
     rocksdb_src_dir = (get_curdir(__file__) / "deps/rocksdb/").resolve()
     libbpf_tools_dir = (get_curdir(__file__) / "deps/bcc/libbpf-tools/").resolve()
 
@@ -35,6 +32,7 @@ def main() -> None:
         command_attachments=speedupstackwrapper.command_attachments(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
         enable_data_dir=True,
+        symlink_latest=True,
     )
 
     campaigns = [campaign]
