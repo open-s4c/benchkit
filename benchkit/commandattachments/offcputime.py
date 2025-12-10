@@ -237,7 +237,7 @@ class Offcputime:
 
         number_of_pids = len(per_pid_dict.keys())
         return_dict = {
-            "total_offcputime_micro_s": (
+            "avg_offcputime_micro_s": (
                 (sum(d["total_off_time_micro_s"] for d in per_pid_dict.values()) / number_of_pids)
                 if number_of_pids != 0
                 else 0
