@@ -184,7 +184,7 @@ class Offcputime:
                         # I have not encountered a benchmark yet that has
                         # different names for these PIDs.
                         # If the new name would be different than the old one,
-                        # I am not sure if we could simply add the total of CPU time.
+                        # I am not sure if we could simply add the total off-CPU time.
 
                     per_pid_dict[pid].update(
                         {
@@ -197,14 +197,14 @@ class Offcputime:
         # __import__('pprint').pprint(per_pid_dict)
         """
             example output: It seems that the off-CPU time can be quite disproportionate
-            depending on the threats. We'll need to properly look into how to use this data.
+            depending on the threads. We'll need to properly look into how to use this data.
             Currently I will just do an average of all the off-CPU times, but this disregards
             the variation in the data.
 
             I will note that the average off-cpu time decreases with the number of threads.
-            This might be due to the fact that the benchmark spawns a fixed number of threads
-            for the database and that while using more threads these fixed number of threads
-            are actually utilized.
+            This might be due to the fact that the database spawns a fixed number of threads
+            for the database and that while using more threads for the benchmark these fixed
+            number of threads are actually utilized.
 
             {190480: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 3023392},
              190483: {'name': 'rocksdb:rocksdb)', 'total_off_time_micro_s': 3028397},
