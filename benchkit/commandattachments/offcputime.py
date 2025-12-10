@@ -20,6 +20,7 @@ from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.commandattachments.libbpftools import LibbpfTools
+
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
@@ -200,9 +201,9 @@ class Offcputime(LibbpfTools):
             the variation in the data.
 
             I will note that the average off-cpu time decreases with the number of threads.
-            This might be due to the fact that the database spawns a fixed number of threads
-            for the database and that while using more threads for the benchmark these fixed
-            number of threads are actually utilized.
+            This might be due to the fact that the benchmark spawns a fixed number of threads
+            for the database and that while using more threads these fixed number of threads
+            are actually utilized.
 
             {190480: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 3023392},
              190483: {'name': 'rocksdb:rocksdb)', 'total_off_time_micro_s': 3028397},
