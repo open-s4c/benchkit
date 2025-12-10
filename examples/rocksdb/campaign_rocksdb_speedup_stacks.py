@@ -59,6 +59,13 @@ def main() -> None:
         hue="bench_name",
     )
 
+    suite.generate_graph(
+        plot_name="lineplot",
+        x="nb_threads",
+        y="llcstat_total_nr_misses",
+        hue="bench_name",
+    )
+
 
 if __name__ == "__main__":
     main()

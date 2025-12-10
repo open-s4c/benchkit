@@ -32,6 +32,18 @@ index bf3b3abe..f2396d9b 100644
  
  	for (i = 0; i < env.iterations && !exiting; i++) {
  		sleep(env.interval);
+diff --git a/libbpf-tools/llcstat.c b/libbpf-tools/llcstat.c
+index 5b53f50d..ad53fb5c 100644
+--- a/libbpf-tools/llcstat.c
++++ b/libbpf-tools/llcstat.c
+@@ -241,6 +241,7 @@ int main(int argc, char **argv)
+ 		goto cleanup;
+ 
+ 	printf("Running for %ld seconds or Hit Ctrl-C to end.\n", env.duration);
++  fflush(stdout);
+ 
+ 	signal(SIGINT, sig_handler);
+ 
 diff --git a/libbpf-tools/offcputime.c b/libbpf-tools/offcputime.c
 index 776468b6..351ce2f6 100644
 --- a/libbpf-tools/offcputime.c

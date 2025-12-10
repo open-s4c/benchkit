@@ -187,7 +187,6 @@ class Offcputime(LibbpfTools):
 
                     per_pid_dict[pid].update(
                         {
-                            "name": name,
                             "total_off_time_micro_s": old_values["total_off_time_micro_s"]
                             + delta_micro_s,
                         }

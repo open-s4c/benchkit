@@ -48,6 +48,7 @@ cd libbpf-tools/
 make -j
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./klockstat
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./offcputime
+sudo setcap cap_sys_resource,cap_sys_admin+eip ./llcstat
 cd ../../..
 ```
 
@@ -84,6 +85,7 @@ cd libbpf-tools/
 make -j
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./klockstat
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./offcputime
+sudo setcap cap_sys_resource,cap_sys_admin+eip ./llcstat
 kill %1
 cd ../../..
 ./campaign_rocksdb_speedup_stacks.py
