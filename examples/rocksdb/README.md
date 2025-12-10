@@ -47,6 +47,7 @@ git apply ../../libbpf-tools-fix-compile.patch
 cd libbpf-tools/
 make -j
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./klockstat
+sudo setcap cap_sys_resource,cap_sys_admin+eip ./offcputime
 cd ../../..
 ```
 

@@ -12,11 +12,11 @@ Documentation of the underlying tool:
 """
 
 import os
-import time
 import pathlib
 import re
 import time
 from os.path import exists
+import time
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
