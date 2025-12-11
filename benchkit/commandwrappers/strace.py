@@ -151,8 +151,8 @@ class StraceWrap(CommandWrapper):
                     syscall_name = m.group(6)
 
                     per_syscall_dict[syscall_name] = {
-                        "percentage_time": float(m.group(1)),
-                        "time_s": float(m.group(2)),
+                        "percentage_time": float(m.group(1).replace(',', '.')),
+                        "time_s": float(m.group(2).replace(',', '.')),
                         "micro_s_per_call": int(m.group(3)),
                         "nr_calls": int(m.group(4)),
                         "nr_errors": int(m.group(5) if m.group(5) else 0),
