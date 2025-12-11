@@ -49,6 +49,7 @@ make -j
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./klockstat
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./offcputime
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./llcstat
+sudo setcap cap_sys_ptrace+ep /usr/bin/strace
 cd ../../..
 ```
 
@@ -86,8 +87,15 @@ make -j
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./klockstat
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./offcputime
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./llcstat
+sudo setcap cap_sys_ptrace+ep /usr/bin/strace
 kill %1
 cd ../../..
 ./campaign_rocksdb_speedup_stacks.py
 ```
 
+
+Cleanup of capabilities
+
+```
+sudo setcap -r /usr/bin/strace
+```

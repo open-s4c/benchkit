@@ -25,10 +25,10 @@ class SpeedupStackWrapper(CommandWrapper):
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)
 
-        self._strace_wrapper = StraceWrap(summary=False, summary_only=True)
+        self._strace = StraceWrap(pid=True, summary=False, summary_only=True)
 
     def command_wrappers(self):
-        return [self._strace_wrapper]
+        return []
 
     def command_attachments(self):
         return [
@@ -36,6 +36,7 @@ class SpeedupStackWrapper(CommandWrapper):
             self._klockstat.attachment,
             self._offcputime.attachment,
             self._llcstat.attachment,
+            self._strace.attachment,
             self._sigcont.attachment,
         ]
 
@@ -44,6 +45,7 @@ class SpeedupStackWrapper(CommandWrapper):
             self._klockstat.post_run_hook,
             self._offcputime.post_run_hook,
             self._llcstat.post_run_hook,
+            self._strace.post_run_hook,
         ]
 
     def dependencies(self) -> List[PackageDependency]:
