@@ -6,7 +6,6 @@ command and output them into a file.
 """
 
 import os
-from os.path import exists
 import pathlib
 import re
 import time
@@ -120,11 +119,11 @@ class StraceWrap(CommandWrapper):
         # Wait until the clock stat has at least outputted something in the out file,
         # or the error file, in order to know that it has attached.
         while True:
-            if ((os.path.getsize(rdd / self.out_file_name) > 0) or
-                (os.path.getsize(rdd / self.err_file_name) > 0)):
+            if (os.path.getsize(rdd / self.out_file_name) > 0) or (
+                os.path.getsize(rdd / self.err_file_name) > 0
+            ):
                 break
             time.sleep(0.05)
-
 
     def post_run_hook(
         self,
@@ -151,12 +150,12 @@ class StraceWrap(CommandWrapper):
                     syscall_name = m.group(6)
 
                     per_syscall_dict[syscall_name] = {
-                        "percentage_time": float(m.group(1).replace(',', '.')),
-                        "time_s": float(m.group(2).replace(',', '.')),
+                        "percentage_time": float(m.group(1).replace(",", ".")),
+                        "time_s": float(m.group(2).replace(",", ".")),
                         "micro_s_per_call": int(m.group(3)),
                         "nr_calls": int(m.group(4)),
                         "nr_errors": int(m.group(5) if m.group(5) else 0),
-                            }
+                    }
 
         # __import__('pprint').pprint(per_syscall_dict)
 
