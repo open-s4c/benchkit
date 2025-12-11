@@ -9,9 +9,8 @@ from benchkit.commandattachments.llcstat import Llcstat
 from benchkit.commandattachments.offcputime import Offcputime
 from benchkit.commandattachments.signal import Signal
 from benchkit.commandwrappers import CommandWrapper
+from benchkit.commandwrappers.strace import StraceWrap
 from benchkit.dependencies.packages import PackageDependency
-from benchkit.commandattachments.llcstat import Llcstat
-from benchkit.commandattachments.offcputime import Offcputime
 from benchkit.utils.types import PathType
 
 
@@ -26,8 +25,10 @@ class SpeedupStackWrapper(CommandWrapper):
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)
 
+        self._strace_wrapper = StraceWrap(summary=False, summary_only=True)
+
     def command_wrappers(self):
-        return []
+        return [self._strace_wrapper]
 
     def command_attachments(self):
         return [
