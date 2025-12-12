@@ -318,14 +318,14 @@ class Klockstat:
             PackageDependency("python3"),
         ]
 
-        deps_dict["21.10"] = [
+        deps_dict["21.10"] = default_deps + [
             PackageDependency("libllvm12"),
             PackageDependency("llvm-12-dev"),
             PackageDependency("libclang-12-dev"),
             PackageDependency("python3"),
         ]
 
-        deps_dict["23.04"] = [
+        deps_dict["23.04"] = default_deps + [
             PackageDependency("libllvm15"),
             PackageDependency("llvm-15-dev"),
             PackageDependency("libclang-15-dev"),
@@ -334,7 +334,7 @@ class Klockstat:
             PackageDependency("libpolly-15-dev"),
         ]
 
-        deps_dict["23.10"] = [
+        deps_dict["23.10"] = default_deps + [
             PackageDependency("libllvm16"),
             PackageDependency("llvm-16-dev"),
             PackageDependency("libclang-16-dev"),
@@ -343,7 +343,7 @@ class Klockstat:
             PackageDependency("libpolly-16-dev"),
         ]
 
-        deps_dict["24.04"] = [
+        deps_dict["24.04"] = default_deps + [
             PackageDependency("libllvm18"),
             PackageDependency("llvm-18-dev"),
             PackageDependency("libclang-18-dev"),
