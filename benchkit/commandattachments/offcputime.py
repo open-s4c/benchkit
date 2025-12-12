@@ -15,6 +15,7 @@ import os
 import pathlib
 import re
 import time
+from os.path import exists
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
