@@ -12,13 +12,15 @@ Documentation of the underlying tool:
 """
 
 import os
-from os.path import exists
 import pathlib
 import re
+from os.path import exists
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
+from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform, get_current_platform
+from benchkit.shell.shell import shell_out
 from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
 
@@ -244,10 +246,119 @@ class Klockstat:
             return_dict = {
                 "klockstat_total_wait_ns": avg_wait,
                 "klockstat_avg_wait_ns": (avg_wait / count_wait) if count_wait != 0 else 0,
-                "klockstat_max_wait_ns": max(list(d["max_wait"] for d in per_lock_dict.values()) + [0]),
+                "klockstat_max_wait_ns": max(
+                    list(d["max_wait"] for d in per_lock_dict.values()) + [0]
+                ),
                 "klokstat_total_hold_ns": avg_hold,
                 "klockstat_avg_hold_ns": (avg_hold / count_hold) if count_hold != 0 else 0,
-                "klockstat_max_hold_ns": max(list(d["max_hold"] for d in per_lock_dict.values()) + [0]),
+                "klockstat_max_hold_ns": max(
+                    list(d["max_hold"] for d in per_lock_dict.values()) + [0]
+                ),
             }
 
             return return_dict
+
+    def dependencies(self) -> List[PackageDependency]:
+        """Dependencies of the command wrapper.
+
+        Returns:
+            List[PackageDependency]: list of dependencies.
+        """
+
+        distribution_name_re = re.compile(r"^NAME=\"(\S+)\"$")
+        distribution_version_re = re.compile(r"^VERSION_ID=\"(\d+.\d+)\"$")
+
+        out = shell_out("cat /etc/os-release", print_input=False, print_output=False)
+
+        name = ""
+        version = ""
+        for line in out.split("\n"):
+            name_match = distribution_name_re.search(line)
+            version_match = distribution_version_re.search(line)
+
+            if name_match:
+                name = name_match.group(1)
+            if version_match:
+                version = version_match.group(1)
+
+        if name != "Ubuntu":
+            print(f"Klockstat: unkown dependencies for {name}")
+            return []
+
+        default_deps = [
+            PackageDependency("zip"),
+            PackageDependency("bison"),
+            PackageDependency("build-essential"),
+            PackageDependency("cmake"),
+            PackageDependency("flex"),
+            PackageDependency("git"),
+            PackageDependency("libedit-dev"),
+            PackageDependency("zlib1g-dev"),
+            PackageDependency("libelf-dev"),
+            PackageDependency("liblzma-dev"),
+            PackageDependency("python3-setuptools"),
+            PackageDependency("libfl-dev"),
+            PackageDependency("arping"),
+            PackageDependency("netperf"),
+            PackageDependency("iperf"),
+        ]
+
+        deps_dict: dict[str, List[PackageDependency]] = {}
+        deps_dict["20.04.1"] = default_deps + [
+            PackageDependency("libllvm12"),
+            PackageDependency("llvm-12-dev"),
+            PackageDependency("libclang-12-dev"),
+            PackageDependency("python"),
+        ]
+
+        deps_dict["21.04"] = default_deps + [
+            PackageDependency("libllvm12"),
+            PackageDependency("llvm-12-dev"),
+            PackageDependency("libclang-12-dev"),
+            PackageDependency("python3"),
+        ]
+
+        deps_dict["21.10"] = [
+            PackageDependency("libllvm12"),
+            PackageDependency("llvm-12-dev"),
+            PackageDependency("libclang-12-dev"),
+            PackageDependency("python3"),
+        ]
+
+        deps_dict["23.04"] = [
+            PackageDependency("libllvm15"),
+            PackageDependency("llvm-15-dev"),
+            PackageDependency("libclang-15-dev"),
+            PackageDependency("python3"),
+            PackageDependency("libdebuginfod-dev"),
+            PackageDependency("libpolly-15-dev"),
+        ]
+
+        deps_dict["23.10"] = [
+            PackageDependency("libllvm16"),
+            PackageDependency("llvm-16-dev"),
+            PackageDependency("libclang-16-dev"),
+            PackageDependency("python3"),
+            PackageDependency("libdebuginfod-dev"),
+            PackageDependency("libpolly-16-dev"),
+        ]
+
+        deps_dict["24.04"] = [
+            PackageDependency("libllvm18"),
+            PackageDependency("llvm-18-dev"),
+            PackageDependency("libclang-18-dev"),
+            PackageDependency("python3"),
+            PackageDependency("libdebuginfod-dev"),
+            PackageDependency("libpolly-18-dev"),
+        ]
+
+        return deps_dict.get(
+            version,
+            default_deps
+            + [
+                PackageDependency("libllvm3.7"),
+                PackageDependency("llvm-3.7-dev"),
+                PackageDependency("libclang-3.7-dev"),
+                PackageDependency("python"),
+            ],
+        )
