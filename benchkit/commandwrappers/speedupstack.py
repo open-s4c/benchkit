@@ -9,7 +9,6 @@ from benchkit.commandattachments.offcputime import Offcputime
 from benchkit.commandattachments.signal import Signal
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
-from benchkit.commandattachments.signal import SigSpec, Signal
 from benchkit.utils.types import PathType
 
 
@@ -22,9 +21,6 @@ class SpeedupStackWrapper(CommandWrapper):
 
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)
-
-        self._sigstop = Signal(signal=SigSpec.SIGSTOP)
-        self._sigcont = Signal(signal=SigSpec.SIGCONT)
 
     def command_wrappers(self):
         return []
