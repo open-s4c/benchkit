@@ -1,10 +1,21 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+"""
+This module implements an attachment that will output the off-CPU time of the monitoring process.
+An example use case of this attachment is to monitor the load imbalance of the benchmark.
+
+The documentation for the Python binding of this tool can be found here.
+I will note that we are not using the Python binding
+but the core information still remains relevant.
+    https://man.docs.euro-linux.com/EL%209/bcc-tools/bcc-offcputime.8.en.html
+"""
+
 import os
 import pathlib
 import re
 import time
+from os.path import exists
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
@@ -21,8 +32,8 @@ class Offcputime:
 
     Arguments:
         libbpf_tools_dir: the directory that points to the libbpf tools
-        pid: Trace these PIDs only, comma-separated list (TODO: support list of pids?)
-        tid: Trace these TIDs only, comma-separated list (TODO: support list of tids?)
+        pid: Trace these PIDs only (True = trace the current process)
+        tid: Trace these TIDs only (the given tid is used for tracing)
         kernel_threads_only: Kernel threads only (no user threads)
         user_threads_only: User threads only (no kernel threads)
         min_block_time: the amount of time in microseconds over which we store traces
@@ -41,7 +52,7 @@ class Offcputime:
         self,
         libbpf_tools_dir: PathType,
         pid: bool = True,
-        tid: int = -1,
+        tid: int = -1,  # TODO: support list of tids?
         kernel_threads_only: bool = False,
         user_threads_only: bool = False,
         min_block_time: int = -1,
@@ -52,8 +63,8 @@ class Offcputime:
         platform: Platform = None,
     ) -> None:
 
-        if libbpf_tools_dir == "":
-            raise ValueError("The provided libbpf_tools_dir is empty")
+        if not exists(libbpf_tools_dir):
+            raise ValueError("The provided libbpf_tools_dir does not exist")
 
         self._libbpf_tools_dir = libbpf_tools_dir
         self._pid = pid
@@ -81,7 +92,6 @@ class Offcputime:
 
         lib_path = pathlib.Path(self._libbpf_tools_dir).as_posix()
 
-        # command = ["sudo", lib_path + "/offcputime"]
         command = [lib_path + "/offcputime"]
 
         if self._pid:
@@ -173,19 +183,6 @@ class Offcputime:
                         },
                     )
 
-                    if old_values["name"] != name:
-                        raise ValueError(
-                            "The name of the old value was "
-                            + old_values["name"]
-                            + " but the new name is "
-                            + name
-                        )
-                        # TODO: I'm unsure if this check is necessary.
-                        # I have not encountered a benchmark yet that has
-                        # different names for these PIDs.
-                        # If the new name would be different than the old one,
-                        # I am not sure if we could simply add the total off-CPU time.
-
                     per_pid_dict[pid].update(
                         {
                             "name": name,
@@ -194,8 +191,8 @@ class Offcputime:
                         }
                     )
 
-        # __import__('pprint').pprint(per_pid_dict)
         """
+            __import__('pprint').pprint(per_pid_dict)
             example output: It seems that the off-CPU time can be quite disproportionate
             depending on the threads. We'll need to properly look into how to use this data.
             Currently I will just do an average of all the off-CPU times, but this disregards
