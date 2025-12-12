@@ -30,8 +30,8 @@ class Klockstat:
 
     Arguments:
         libbpf_tools_dir: the directory that points to the libbpf tools
-        pid: Filter by process ID
-        tid: Filter by thread ID
+        pid: Filter by process ID (True = use the process PID)
+        tid: Filter by thread ID (the given tid is used for filtering)
         caller_string_prefix: Filter by caller string prefix
         lock_ksys_name_filter: Filter by specific ksym lock name
         max_nr_locks_or_threads: Number of locks or threads to print
