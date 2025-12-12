@@ -18,7 +18,6 @@ from benchkit.platforms import get_current_platform
 from benchkit.platforms.generic import Platform
 from benchkit.utils.types import PathType
 
-
 class Signal:
     """
     This attachment sends a signal to the currently running benchmark
