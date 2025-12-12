@@ -95,7 +95,6 @@ class Klockstat:
 
         lib_path = pathlib.Path(self._libbpf_tools_dir).as_posix()
 
-        # command = ["sudo", lib_path + "/klockstat"]
         command = [lib_path + "/klockstat"]
 
         if self._pid:

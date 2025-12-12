@@ -52,17 +52,5 @@ def main() -> None:
         hue="bench_name",
     )
 
-    # suite.generate_graph(
-    #     plot_name="catplot",
-    #     x="nb_threads",
-    #     y="duration",
-    #     # col="bench_name",
-    #     kind="bar",
-    #     use_json=True,
-    # )
-
-    # print(libbpf_tools_dir)
-
-
 if __name__ == "__main__":
     main()
