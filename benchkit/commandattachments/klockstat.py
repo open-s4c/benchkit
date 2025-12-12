@@ -1,6 +1,16 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+"""
+Klockstat is an attachment that will monitor the kernel locking events of the monitored process.
+The collected data includes lock waiting times, which indicate how long the process waits for
+a lock to become available, and lock hold time.
+These are the actual times that processes have the locks.
+
+Documentation of the underlying tool:
+    https://man.docs.euro-linux.com/EL%209/bcc-tools/bcc-klockstat.8.en.html
+"""
+
 import os
 import pathlib
 import re
@@ -199,7 +209,7 @@ class Klockstat:
                     old_values = per_lock_dict.setdefault(
                         caller,
                         {
-                            "avg_wait": 0,
+                            "avg_wait": 0,d you add a module level doc,
                             "count_wait": 0,
                             "max_wait": 0,
                             "total_wait": 0,
