@@ -12,6 +12,7 @@ Documentation of the underlying tool:
 """
 
 import os
+from os.path import exists
 import pathlib
 import re
 import time
@@ -224,7 +225,7 @@ class Klockstat(LibbpfTools):
                     old_values = per_lock_dict.setdefault(
                         caller,
                         {
-                            "avg_wait": 0,d you add a module level doc,
+                            "avg_wait": 0,
                             "count_wait": 0,
                             "max_wait": 0,
                             "total_wait": 0,
