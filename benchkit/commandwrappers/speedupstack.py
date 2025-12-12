@@ -23,9 +23,7 @@ class SpeedupStackWrapper(CommandWrapper):
         return []
 
     def command_attachments(self):
-        return [self._sigstop.attachment,
-                self._klockstat.attachment,
-                self._sigcont.attachment]
+        return [self._sigstop.attachment, self._klockstat.attachment, self._sigcont.attachment]
 
     def post_run_hooks(self):
         return [self._klockstat.post_run_hook]
