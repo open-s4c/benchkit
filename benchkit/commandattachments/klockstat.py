@@ -222,7 +222,7 @@ class Klockstat(LibbpfTools):
                     old_values = per_lock_dict.setdefault(
                         caller,
                         {
-                            "avg_wait": 0,
+                            "avg_wait": 0,d you add a module level doc,
                             "count_wait": 0,
                             "max_wait": 0,
                             "total_wait": 0,
