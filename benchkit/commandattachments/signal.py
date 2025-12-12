@@ -1,6 +1,18 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+"""
+This module defines an attachment that can send signals to the monitored process.
+SigSpec It defines all the types of signals that are supported.
+
+A typical use case involves chaining attachments. The first attachment signals the monitored
+process to stop, allowing other attachments to complete their tasks. 
+The final attachment then sends a continue signal to start the benchmark.
+
+Documentation of the types of signals can be found here:
+    https://www.man7.org/linux/man-pages/man7/signal.7.html
+"""
+
 import os
 from typing import List
 
