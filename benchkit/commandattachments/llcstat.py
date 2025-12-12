@@ -1,6 +1,14 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+"""
+This module defines an attachment that monitors the number of last layer cache misses
+and number of references.
+
+The documentation for the Python binding can be found here.
+    https://man.docs.euro-linux.com/EL%209/bcc-tools/bcc-llcstat.8.en.html
+"""
+
 import os
 import pathlib
 import re
@@ -53,7 +61,6 @@ class Llcstat:
 
         lib_path = pathlib.Path(self._libbpf_tools_dir).as_posix()
 
-        # command = ["sudo", lib_path + "/llcstat"]
         command = [lib_path + "/llcstat", "-t"]
 
         if self._sample_period > 0:
