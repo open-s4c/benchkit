@@ -12,7 +12,6 @@ Documentation of the underlying tool:
 """
 
 import os
-from os.path import exists
 import pathlib
 import re
 from os.path import exists
