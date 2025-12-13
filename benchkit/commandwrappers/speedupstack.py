@@ -43,5 +43,6 @@ class SpeedupStackWrapper(CommandWrapper):
         """
         deps = []
         deps.extend(self._klockstat.dependencies())
+        deps.extend(self._offcputime.dependencies())
 
         return deps

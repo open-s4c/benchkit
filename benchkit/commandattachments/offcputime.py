@@ -19,12 +19,13 @@ from os.path import exists
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
+from benchkit.commandattachments.libbpftools import LibbpfTools
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
 
 
-class Offcputime:
+class Offcputime(LibbpfTools):
     """
     Offcputime is an libbpf-tools util that monitors off CPU time.
     NOTE: the offcputime utility requires added capabilities so that it
