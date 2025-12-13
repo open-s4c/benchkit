@@ -256,4 +256,3 @@ class Klockstat(LibbpfTools):
             }
 
             return return_dict
-
