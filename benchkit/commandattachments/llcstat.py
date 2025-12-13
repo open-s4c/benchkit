@@ -19,9 +19,10 @@ from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
+from benchkit.commandattachments.libbpftools import LibbpfTools
 
 
-class Llcstat:
+class Llcstat(LibbpfTools):
     """
     Llcstat is an libbpf-tools util that monitors cache references and misses.
     NOTE: the llcstat utility requires added capabilities so that it
