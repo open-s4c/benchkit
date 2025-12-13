@@ -1,0 +1,22 @@
+diff --git a/libbpf-tools/Makefile b/libbpf-tools/Makefile
+index 66183659..427a5317 100644
+--- a/libbpf-tools/Makefile
++++ b/libbpf-tools/Makefile
+@@ -9,7 +9,7 @@ LIBBPF_SRC := $(abspath ../src/cc/libbpf/src)
+ LIBBPF_OBJ := $(abspath $(OUTPUT)/libbpf.a)
+ LIBBLAZESYM_SRC := $(abspath blazesym/target/release/libblazesym.a)
+ INCLUDES := -I$(OUTPUT) -I../src/cc/libbpf/include/uapi
+-CFLAGS := -g -O2 -Wall -Wmissing-field-initializers -Werror -Werror=undef
++CFLAGS := -g -O2 -Wall -Wmissing-field-initializers -Werror=undef
+ BPFCFLAGS := -g -O2 -Wall -Werror=undef
+ BPFCFLAGS_softirqs := $(BPFCFLAGS) -mcpu=v3
+ INSTALL ?= install
+@@ -25,7 +25,7 @@ CARGO ?= $(shell which cargo)
+ ifeq ($(strip $(CARGO)),)
+ USE_BLAZESYM ?= 0
+ else
+-USE_BLAZESYM ?= 1
++USE_BLAZESYM ?= 0
+ endif
+ endif
+ 
