@@ -3,7 +3,6 @@
 
 """
 This module defines an attachment that can send signals to the monitored process.
-SigSpec defines all the types of signals that are supported.
 
 A typical use case involves chaining attachments. The first attachment signals the monitored
 process to stop, allowing other attachments to complete their tasks.
