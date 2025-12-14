@@ -14,9 +14,7 @@ Documentation of the types of signals can be found here:
 
 import os
 import signal
-from typing import List
 
-from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.utils.types import PathType
 
 
@@ -40,11 +38,3 @@ class Signal:
         record_data_dir: PathType,
     ) -> None:
         os.kill(process.pid, self._signal_type)
-
-    def post_run_hook(
-        self,
-        experiment_results_lines: List[RecordResult],
-        record_data_dir: PathType,
-        write_record_file_fun: WriteRecordFileFunction,
-    ) -> None:
-        pass
