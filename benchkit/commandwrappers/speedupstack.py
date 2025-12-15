@@ -1,13 +1,13 @@
 # Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from signal import SIGSTOP, SIGCONT
+from signal import SIGCONT, SIGSTOP
 from typing import List
 
 from benchkit.commandattachments.klockstat import Klockstat
+from benchkit.commandattachments.signal import Signal
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
-from benchkit.commandattachments.signal import Signal
 from benchkit.utils.types import PathType
 
 
