@@ -144,7 +144,7 @@ class Klockstat(LibbpfTools):
             current_dir=rdd,
         )
 
-        # Wait until the clock stat has at least outputted something in the out file,
+        # Wait until klockstat has at least outputted something in the out file,
         # or the error file, in order to know that it has attached the eBPF.
         for _ in range(100):
             if (self.platform.comm.file_size(rdd / self.out_file_name) > 0) or (
