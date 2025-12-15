@@ -152,6 +152,8 @@ class Klockstat(LibbpfTools):
             ):
                 break
             time.sleep(0.05)
+        else:
+            raise TimeoutError("Klockstat attachment was not able to attach")
 
     def post_run_hook(
         self,
