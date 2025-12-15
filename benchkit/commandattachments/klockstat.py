@@ -12,9 +12,9 @@ Documentation of the underlying tool:
 """
 
 import os
-import time
 import pathlib
 import re
+import time
 from os.path import exists
 from typing import List
 
@@ -144,10 +144,12 @@ class Klockstat(LibbpfTools):
             current_dir=rdd,
         )
 
-        # Wait until the clock stat has at least outputted something in the out file, or the error file, 
+        # Wait until the clock stat has at least outputted something in the out file, or the error file,
         # in order to know that it has attached the eBPF.
         while True:
-            if (os.path.getsize(rdd / self.out_file_name) > 0) or (os.path.getsize(rdd / self.err_file_name) > 0):
+            if (self.platform.comm.file_size(rdd / self.out_file_name) > 0) or (
+                self.platform.comm.file_size(rdd / self.err_file_name) > 0
+            ):
                 break
             time.sleep(0.05)
 

@@ -293,6 +293,20 @@ class CommunicationLayer:
         """
         raise NotImplementedError()
 
+    def file_size(
+        self,
+        path: PathType,
+    ) -> int:
+        """Gets the size of the given file on target host.
+
+        Args:
+            path (PathType): path of the file on the target host.
+
+        Returns:
+            int: size of the file.
+        """
+        raise NotImplementedError()
+
     def write_content_to_file(
         self,
         content: str,
@@ -665,6 +679,12 @@ class LocalCommLayer(CommunicationLayer):
             file_content = file.read()
         return file_content
 
+    def file_size(
+        self,
+        path: PathType,
+    ) -> int:
+        return os.path.getsize(path)
+
     def write_content_to_file(
         self,
         content: str,
@@ -901,6 +921,22 @@ class SSHCommLayer(CommunicationLayer):
             print_input=False,
             print_output=False,
         )
+
+    def file_size(
+        self,
+        path: PathType,
+    ) -> int:
+        ret = self.shell(
+            command=f"stat -c '%s' '{path}'",
+            print_input=False,
+            print_output=False,
+            ignore_any_error_code=True,
+        )
+
+        try:
+            return int(ret)
+        except ValueError:
+            raise FileNotFoundError(path)
 
     def write_content_to_file(
         self,
