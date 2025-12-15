@@ -6,7 +6,7 @@ This module implements an attachment that will output the off-CPU time of the mo
 An example use case of this attachment is to monitor the load imbalance of the benchmark.
 
 The documentation for the Python binding of this tool can be found here.
-I will note that we are not using the Python binding
+Note that we are not using the Python binding
 but the core information still remains relevant.
     https://man.docs.euro-linux.com/EL%209/bcc-tools/bcc-offcputime.8.en.html
 """
