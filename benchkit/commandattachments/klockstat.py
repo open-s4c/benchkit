@@ -163,8 +163,9 @@ class Klockstat(LibbpfTools):
         self._process.send_signal(2, self._process.pid)
         self._process.wait()
 
-        klockstat_out_file = os.path.join(record_data_dir, self.out_file_name)
-        klockstat_err_file = os.path.join(record_data_dir, self.err_file_name)
+        rdd = pathlib.Path(record_data_dir)
+        klockstat_out_file = rdd / self.out_file_name
+        klockstat_err_file = rdd / self.err_file_name
 
         # if the error file is not empty print the content of the error file
         # and return an empty dictionary
