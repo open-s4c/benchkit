@@ -40,13 +40,13 @@ class Llcstat(LibbpfTools):
         platform: Platform = None,
     ) -> None:
 
-        if libbpf_tools_dir == "":
-            raise ValueError("The provided libbpf_tools_dir is empty")
+        self.platform = platform if platform is not None else get_current_platform()
+
+        if not self.platform.comm.path_exists(libbpf_tools_dir):
+            raise ValueError("The provided libbpf_tools_dir does not exist")
 
         self._libbpf_tools_dir = libbpf_tools_dir
         self._sample_period = sample_period
-
-        self.platform = platform if platform is not None else get_current_platform()
 
         self.out_file_name = "llcstat.out"
         self.err_file_name = "llcstat.err"
@@ -76,14 +76,16 @@ class Llcstat(LibbpfTools):
             current_dir=rdd,
         )
 
-        # Wait until the clock stat has at least outputted something in the out file,
+        # Wait until llcstat has at least outputted something in the out file,
         # or the error file, in order to know that it has attached the eBPF.
-        while True:
-            if (os.path.getsize(rdd / self.out_file_name) > 0) or (
-                os.path.getsize(rdd / self.err_file_name) > 0
+        for _ in range(100):
+            if (self.platform.comm.file_size(rdd / self.out_file_name) > 0) or (
+                self.platform.comm.file_size(rdd / self.err_file_name) > 0
             ):
                 break
             time.sleep(0.05)
+        else:
+            raise TimeoutError("Llcstat attachment was not able to attach")
 
     def post_run_hook(
         self,
@@ -94,8 +96,9 @@ class Llcstat(LibbpfTools):
         self._process.send_signal(2, self._process.pid)
         self._process.wait()
 
-        llcstat_out_file = os.path.join(record_data_dir, self.out_file_name)
-        llcstat_err_file = os.path.join(record_data_dir, self.err_file_name)
+        rdd = pathlib.Path(record_data_dir)
+        llcstat_out_file = rdd / self.out_file_name
+        llcstat_err_file = rdd / self.err_file_name
 
         # if the error file is not empty print the content of the error file
         # and return an empty dictionary
@@ -121,7 +124,7 @@ class Llcstat(LibbpfTools):
                     if line_pid == self._pid:
                         tid = int(m.group(2))
                         name = m.group(3)
-                        # cpu = int(m.group(4))
+                        # cpu = int(m.group(4)) # TODO: Can the cpu_id be used?
                         nr_references = int(m.group(5))
                         nr_misses = int(m.group(6))
                         hit_percentage = float(m.group(7))
