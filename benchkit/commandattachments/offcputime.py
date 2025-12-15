@@ -64,7 +64,9 @@ class Offcputime(LibbpfTools):
         platform: Platform = None,
     ) -> None:
 
-        if not exists(libbpf_tools_dir):
+        self.platform = platform if platform is not None else get_current_platform()
+
+        if not self.platform.comm.path_exists(libbpf_tools_dir):
             raise ValueError("The provided libbpf_tools_dir does not exist")
 
         self._libbpf_tools_dir = libbpf_tools_dir
@@ -77,9 +79,6 @@ class Offcputime(LibbpfTools):
         self._perf_max_stack_depth = perf_max_stack_depth
         self._stack_storage_size = stack_storage_size
         self._state = state
-
-        self.process = (None,)
-        self.platform = platform if platform is not None else get_current_platform()
 
         self.out_file_name = "offcputime.out"
         self.err_file_name = "offcputime.err"
@@ -148,7 +147,6 @@ class Offcputime(LibbpfTools):
         record_data_dir: PathType,
         write_record_file_fun: WriteRecordFileFunction,
     ) -> RecordResult:
-        pass
         self._process.send_signal(2, self._process.pid)
         self._process.wait()
 

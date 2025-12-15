@@ -65,7 +65,9 @@ class Klockstat(LibbpfTools):
         platform: Platform = None,
     ) -> None:
 
-        if not exists(libbpf_tools_dir):
+        self.platform = platform if platform is not None else get_current_platform()
+
+        if not self.platform.comm.path_exists(libbpf_tools_dir):
             raise ValueError("The provided libbpf_tools_dir does not exist")
 
         self._libbpf_tools_dir = libbpf_tools_dir
@@ -81,9 +83,6 @@ class Klockstat(LibbpfTools):
         self._print_per_thread = print_per_thread
         self._reset_stats_each_interval = reset_stats_each_interval
         self._print_time_stamp = print_time_stamp
-
-        self.process = (None,)
-        self.platform = platform if platform is not None else get_current_platform()
 
         self.out_file_name = "klockstat.out"
         self.err_file_name = "klockstat.err"
