@@ -140,7 +140,7 @@ class Offcputime(LibbpfTools):
                 break
             time.sleep(0.05)
         else:
-            raise TimeoutError("Klockstat attachment was not able to attach")
+            raise TimeoutError("Offcputime attachment was not able to attach")
 
     def post_run_hook(
         self,
