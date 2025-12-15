@@ -15,7 +15,6 @@ import os
 import pathlib
 import re
 import time
-from os.path import exists
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
@@ -27,7 +26,7 @@ from benchkit.utils.types import PathType
 
 class Offcputime(LibbpfTools):
     """
-    Offcputime is an libbpf-tools util that monitors off CPU time.
+    Offcputime is a libbpf-tools util that monitors off CPU time.
     NOTE: the offcputime utility requires added capabilities so that it
           can run with root privileges without sudo.
 

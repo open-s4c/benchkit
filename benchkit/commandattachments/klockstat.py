@@ -15,7 +15,6 @@ import os
 import pathlib
 import re
 import time
-from os.path import exists
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
@@ -27,7 +26,7 @@ from benchkit.utils.types import PathType
 
 class Klockstat(LibbpfTools):
     """
-    Klockstat is an libbpf-tools util that monitors locks.
+    Klockstat is a libbpf-tools util that monitors locks.
     NOTE: the klockstat utility requires added capabilities so that it
           can run with root privileges without sudo.
 
