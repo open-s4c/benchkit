@@ -5,6 +5,7 @@ from signal import SIGCONT, SIGSTOP
 from typing import List
 
 from benchkit.commandattachments.klockstat import Klockstat
+from benchkit.commandattachments.offcputime import Offcputime
 from benchkit.commandattachments.signal import Signal
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
@@ -16,6 +17,7 @@ class SpeedupStackWrapper(CommandWrapper):
         self._libbpf_tools_dir = libbpf_tools_dir
 
         self._klockstat = Klockstat(libbpf_tools_dir)
+        self._offcputime = Offcputime(libbpf_tools_dir)
 
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)
@@ -24,10 +26,15 @@ class SpeedupStackWrapper(CommandWrapper):
         return []
 
     def command_attachments(self):
-        return [self._sigstop.attachment, self._klockstat.attachment, self._sigcont.attachment]
+        return [
+            self._sigstop.attachment,
+            self._klockstat.attachment,
+            self._offcputime.attachment,
+            self._sigcont.attachment,
+        ]
 
     def post_run_hooks(self):
-        return [self._klockstat.post_run_hook]
+        return [self._klockstat.post_run_hook, self._offcputime.post_run_hook]
 
     def dependencies(self) -> List[PackageDependency]:
         """Dependencies of the command wrapper.
@@ -37,5 +44,6 @@ class SpeedupStackWrapper(CommandWrapper):
         """
         deps = []
         deps.extend(self._klockstat.dependencies())
+        deps.extend(self._offcputime.dependencies())
 
         return deps

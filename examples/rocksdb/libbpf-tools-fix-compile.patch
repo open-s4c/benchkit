@@ -32,3 +32,41 @@ index bf3b3abe..f2396d9b 100644
  
  	for (i = 0; i < env.iterations && !exiting; i++) {
  		sleep(env.interval);
+diff --git a/libbpf-tools/offcputime.c b/libbpf-tools/offcputime.c
+index 776468b6..351ce2f6 100644
+--- a/libbpf-tools/offcputime.c
++++ b/libbpf-tools/offcputime.c
+@@ -224,6 +224,7 @@ static void print_map(struct ksyms *ksyms, struct syms_cache *syms_cache,
+ 			goto cleanup;
+ 		}
+ 		lookup_key = next_key;
++    goto skip_ustack;
+ 		if (val.delta == 0)
+ 			continue;
+ 		if (bpf_map_lookup_elem(sfd, &next_key.kern_stack_id, ip) != 0) {
+@@ -282,8 +283,7 @@ print_ustack:
+ 		}
+ 
+ skip_ustack:
+-		printf("    %-16s %s (%d)\n", "-", val.comm, next_key.pid);
+-		printf("        %lld\n\n", val.delta);
++		printf("(%s) %d %lld\n",val.comm, next_key.pid, val.delta);
+ 	}
+ 
+ cleanup:
+@@ -319,10 +319,11 @@ static void print_headers()
+ 	if (!print_header_threads())
+ 		printf(" all threads");
+ 
+-	if (env.duration < 99999999)
+-		printf(" for %d secs.\n", env.duration);
+-	else
+-		printf("... Hit Ctrl-C to end.\n");
++	if (env.duration < 99999999) printf(" for %d secs.\n", env.duration);
++	else printf("... Hit Ctrl-C to end.\n");
++
++  printf("Name PID Delta\n");
++  fflush(stdout);
+ }
+ 
+ int main(int argc, char **argv)

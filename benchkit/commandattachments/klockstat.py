@@ -15,7 +15,6 @@ import os
 import pathlib
 import re
 import time
-from os.path import exists
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
@@ -27,7 +26,7 @@ from benchkit.utils.types import PathType
 
 class Klockstat(LibbpfTools):
     """
-    Klockstat is an libbpf-tools util that monitors locks.
+    Klockstat is a libbpf-tools util that monitors locks.
     NOTE: the klockstat utility requires added capabilities so that it
           can run with root privileges without sudo.
 
@@ -65,7 +64,9 @@ class Klockstat(LibbpfTools):
         platform: Platform = None,
     ) -> None:
 
-        if not exists(libbpf_tools_dir):
+        self.platform = platform if platform is not None else get_current_platform()
+
+        if not self.platform.comm.path_exists(libbpf_tools_dir):
             raise ValueError("The provided libbpf_tools_dir does not exist")
 
         self._libbpf_tools_dir = libbpf_tools_dir
@@ -81,9 +82,6 @@ class Klockstat(LibbpfTools):
         self._print_per_thread = print_per_thread
         self._reset_stats_each_interval = reset_stats_each_interval
         self._print_time_stamp = print_time_stamp
-
-        self.process = (None,)
-        self.platform = platform if platform is not None else get_current_platform()
 
         self.out_file_name = "klockstat.out"
         self.err_file_name = "klockstat.err"
@@ -164,8 +162,9 @@ class Klockstat(LibbpfTools):
         self._process.send_signal(2, self._process.pid)
         self._process.wait()
 
-        klockstat_out_file = os.path.join(record_data_dir, self.out_file_name)
-        klockstat_err_file = os.path.join(record_data_dir, self.err_file_name)
+        rdd = pathlib.Path(record_data_dir)
+        klockstat_out_file = rdd / self.out_file_name
+        klockstat_err_file = rdd / self.err_file_name
 
         # if the error file is not empty print the content of the error file
         # and return an empty dictionary
