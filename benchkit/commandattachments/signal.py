@@ -12,9 +12,10 @@ Documentation of the types of signals can be found here:
     https://www.man7.org/linux/man-pages/man7/signal.7.html
 """
 
-import os
 import signal
 
+from benchkit.platforms import get_current_platform
+from benchkit.platforms.generic import Platform
 from benchkit.utils.types import PathType
 
 
@@ -29,12 +30,14 @@ class Signal:
     def __init__(
         self,
         signal_type: signal.Signals,
+        platform: Platform = None,
     ) -> None:
         self._signal_type = signal_type
+        self.platform = platform if platform is not None else get_current_platform()
 
     def attachment(
         self,
         process,
         record_data_dir: PathType,
     ) -> None:
-        os.kill(process.pid, self._signal_type)
+        self.platform.comm.signal(process.pid, self._signal_type)

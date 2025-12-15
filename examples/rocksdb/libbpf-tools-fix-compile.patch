@@ -20,3 +20,15 @@ index 66183659..427a5317 100644
  endif
  endif
  
+diff --git a/libbpf-tools/klockstat.c b/libbpf-tools/klockstat.c
+index bf3b3abe..f2396d9b 100644
+--- a/libbpf-tools/klockstat.c
++++ b/libbpf-tools/klockstat.c
+@@ -1031,6 +1031,7 @@ int main(int argc, char **argv)
+ 	}
+ 
+ 	printf("Tracing mutex/sem lock events...  Hit Ctrl-C to end\n");
++	fflush(stdout);
+ 
+ 	for (i = 0; i < env.iterations && !exiting; i++) {
+ 		sleep(env.interval);
