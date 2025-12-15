@@ -166,7 +166,7 @@ class Offcputime(LibbpfTools):
         # This dictionary will hold all the aggregated values for each pid
         per_pid_dict = {}
 
-        row_re = re.compile(r"^\((\S+\))\s+(\d+)\s+(\d+)$")
+        row_re = re.compile(r"^\((\S+)\)\s+(\d+)\s+(\d+)$")
 
         with open(offcputime_out_file) as out_file:
             for line in out_file.readlines():
@@ -207,33 +207,33 @@ class Offcputime(LibbpfTools):
             for the database and that while using more threads for the benchmark these fixed
             number of threads are actually utilized.
 
-            {190480: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 3023392},
-             190483: {'name': 'rocksdb:rocksdb)', 'total_off_time_micro_s': 3028397},
-             190484: {'name': 'rocksdb:rocksdb)', 'total_off_time_micro_s': 3028454},
-             190485: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 429},
-             190486: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 478},
-             190487: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 315},
-             190488: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 206},
-             190489: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 207},
-             190490: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 159},
-             190491: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 93},
-             190492: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 44},
-             190493: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 13},
-             190494: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 19},
-             190495: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 39},
-             190496: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 22},
-             190497: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 11},
-             190498: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 0},
-             190499: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 0},
-             190500: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 3007160},
-             190501: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 220624},
-             190502: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 203646},
-             190503: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 217495},
-             190504: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 226506},
-             190505: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 204218},
-             190506: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 212574},
-             190507: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 205372},
-             190508: {'name': 'db_benchdb_benc)', 'total_off_time_micro_s': 188601}}
+            {190480: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 3023392},
+             190483: {'name': 'rocksdb:rocksdb', 'total_off_time_micro_s': 3028397},
+             190484: {'name': 'rocksdb:rocksdb', 'total_off_time_micro_s': 3028454},
+             190485: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 429},
+             190486: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 478},
+             190487: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 315},
+             190488: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 206},
+             190489: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 207},
+             190490: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 159},
+             190491: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 93},
+             190492: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 44},
+             190493: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 13},
+             190494: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 19},
+             190495: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 39},
+             190496: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 22},
+             190497: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 11},
+             190498: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 0},
+             190499: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 0},
+             190500: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 3007160},
+             190501: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 220624},
+             190502: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 203646},
+             190503: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 217495},
+             190504: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 226506},
+             190505: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 204218},
+             190506: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 212574},
+             190507: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 205372},
+             190508: {'name': 'db_benchdb_benc', 'total_off_time_micro_s': 188601}}
         """
 
         number_of_pids = len(per_pid_dict.keys())
