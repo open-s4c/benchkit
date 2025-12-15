@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
 """
@@ -133,7 +133,6 @@ class Llcstat(LibbpfTools):
                             tid,
                             {
                                 "name": name,
-                                # "cpu": 0,
                                 "nr_references": 0,
                                 "nr_misses": 0,
                                 "hit_percentage": 0,
