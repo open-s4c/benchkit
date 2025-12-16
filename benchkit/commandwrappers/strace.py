@@ -3,6 +3,9 @@
 """
 Command wrapper for the `strace` utility that allows to trace all system calls used in the wrapped
 command and output them into a file.
+
+Additionally, this wrapper also provides an attachment that can be used
+to monitor a running process by PID.
 """
 
 import os
@@ -21,7 +24,18 @@ from benchkit.utils.types import PathType
 
 
 class StraceWrap(CommandWrapper):
-    """Command wrapper for the `strace` utility."""
+    """
+    Command wrapper for the `strace` utility.
+    NOTE: the strace utility requires added capabilities when using it as an attachment
+    so that it can run with root privileges without sudo.
+
+    Arguments:
+        pid: Filter by process ID (True = use the process PID)
+        summary: Like summary_only, but also print the regular output
+        summary_only: Count time, calls, and errors for each syscall and report summary
+        trace_forks: Follow forks
+        output_separately: Follow forks with output into separate files
+    """
 
     def __init__(
         self,
@@ -88,13 +102,12 @@ class StraceWrap(CommandWrapper):
 
     def attachment(
         self,
-        process,
+        process: AsyncProcess,
         record_data_dir: PathType,
     ) -> None:
         rdd = pathlib.Path(record_data_dir)
-        strace_output_pathname = os.path.join(record_data_dir, self._output_file_name)
 
-        command = ["strace", "-o", strace_output_pathname]
+        command = ["strace", "-o", rdd / self._output_file_name]
 
         if self._pid:
             command.extend(["-p", str(process.pid)])
@@ -116,7 +129,7 @@ class StraceWrap(CommandWrapper):
             current_dir=rdd,
         )
 
-        # Wait until the clock stat has at least outputted something in the out file,
+        # Wait until strace has at least outputted something in the out file,
         # or the error file, in order to know that it has attached.
         while True:
             if (os.path.getsize(rdd / self.out_file_name) > 0) or (
@@ -156,8 +169,6 @@ class StraceWrap(CommandWrapper):
                         "nr_calls": int(m.group(4)),
                         "nr_errors": int(m.group(5) if m.group(5) else 0),
                     }
-
-        # __import__('pprint').pprint(per_syscall_dict)
 
         # Post run hooks must return a dictionary where each key at the top level corresponds
         # to some information to be kept. The current per-syscall dictionary

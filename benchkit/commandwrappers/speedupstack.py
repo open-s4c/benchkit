@@ -21,11 +21,10 @@ class SpeedupStackWrapper(CommandWrapper):
         self._klockstat = Klockstat(libbpf_tools_dir)
         self._offcputime = Offcputime(libbpf_tools_dir)
         self._llcstat = Llcstat(libbpf_tools_dir)
+        self._strace = StraceWrap(pid=True, summary=False, summary_only=True)
 
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)
-
-        self._strace = StraceWrap(pid=True, summary=False, summary_only=True)
 
     def command_wrappers(self):
         return []
