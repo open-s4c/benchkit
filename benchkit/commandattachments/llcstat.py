@@ -53,7 +53,7 @@ class Llcstat(LibbpfTools):
 
     def attachment(
         self,
-        process,
+        process: AsyncProcess,
         record_data_dir: PathType,
     ) -> None:
         self._pid = process.pid

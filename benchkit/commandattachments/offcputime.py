@@ -84,7 +84,7 @@ class Offcputime(LibbpfTools):
 
     def attachment(
         self,
-        process,
+        process: AsyncProcess,
         record_data_dir: PathType,
     ) -> None:
         rdd = pathlib.Path(record_data_dir)
