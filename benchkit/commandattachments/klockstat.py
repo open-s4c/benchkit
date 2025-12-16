@@ -88,7 +88,7 @@ class Klockstat(LibbpfTools):
 
     def attachment(
         self,
-        process,
+        process: AsyncProcess,
         record_data_dir: PathType,
     ) -> None:
         rdd = pathlib.Path(record_data_dir)
@@ -249,18 +249,18 @@ class Klockstat(LibbpfTools):
             # to some information to be kept. The current per-lock dictionary
             # does not adhere to this structure.
 
-            avg_wait = sum(d["total_wait"] for d in per_lock_dict.values())
-            avg_hold = sum(d["total_hold"] for d in per_lock_dict.values())
+            total_wait = sum(d["total_wait"] for d in per_lock_dict.values())
+            total_hold = sum(d["total_hold"] for d in per_lock_dict.values())
             count_wait = sum(d["count_wait"] for d in per_lock_dict.values())
             count_hold = sum(d["count_wait"] for d in per_lock_dict.values())
             return_dict = {
-                "klockstat_total_wait_ns": avg_wait,
-                "klockstat_avg_wait_ns": (avg_wait / count_wait) if count_wait != 0 else 0,
+                "klockstat_total_wait_ns": total_wait,
+                "klockstat_avg_wait_ns": (total_wait / count_wait) if count_wait != 0 else 0,
                 "klockstat_max_wait_ns": max(
                     list(d["max_wait"] for d in per_lock_dict.values()) + [0]
                 ),
-                "klokstat_total_hold_ns": avg_hold,
-                "klockstat_avg_hold_ns": (avg_hold / count_hold) if count_hold != 0 else 0,
+                "klokstat_total_hold_ns": total_hold,
+                "klockstat_avg_hold_ns": (total_hold / count_hold) if count_hold != 0 else 0,
                 "klockstat_max_hold_ns": max(
                     list(d["max_hold"] for d in per_lock_dict.values()) + [0]
                 ),
