@@ -11,10 +11,10 @@ to monitor a running process by PID.
 import os
 import pathlib
 import re
-import time
 from typing import List, Optional
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
+from benchkit.commandattachments import wait_for_output
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import get_current_platform
@@ -131,14 +131,7 @@ class StraceWrap(CommandWrapper):
 
         # Wait until strace has at least outputted something in the out file,
         # or the error file, in order to know that it has attached.
-        for _ in range(100):
-            if (self.platform.comm.file_size(rdd / self.out_file_name) > 0) or (
-                self.platform.comm.file_size(rdd / self.err_file_name) > 0
-            ):
-                break
-            time.sleep(0.05)
-        else:
-            raise TimeoutError("Strace attachment was not able to attach")
+        wait_for_output([rdd / self.out_file_name, rdd / self.err_file_name], self.platform)
 
     def post_run_hook(
         self,
