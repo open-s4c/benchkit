@@ -39,6 +39,7 @@ def main() -> None:
     suite.run_suite()
 
     suite.generate_graph(
+        title="Throughput",
         plot_name="lineplot",
         x="nb_threads",
         y="throughput",
@@ -46,6 +47,7 @@ def main() -> None:
     )
 
     suite.generate_graph(
+        title="Klockstat",
         plot_name="lineplot",
         x="nb_threads",
         y="klockstat_total_wait_ns",
@@ -53,6 +55,7 @@ def main() -> None:
     )
 
     suite.generate_graph(
+        title="Offcputime",
         plot_name="lineplot",
         x="nb_threads",
         y="offcputime_avg_micro_s",
@@ -60,9 +63,18 @@ def main() -> None:
     )
 
     suite.generate_graph(
+        title="Llcstat",
         plot_name="lineplot",
         x="nb_threads",
         y="llcstat_total_nr_misses",
+        hue="bench_name",
+    )
+
+    suite.generate_graph(
+        title="Strace",
+        plot_name="lineplot",
+        x="nb_threads",
+        y="strace_total_time_s",
         hue="bench_name",
     )
 

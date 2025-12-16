@@ -12,10 +12,10 @@ The documentation for the Python binding can be found here.
 import os
 import pathlib
 import re
-import time
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
+from benchkit.commandattachments import wait_for_output
 from benchkit.commandattachments.libbpftools import LibbpfTools
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.shell.shellasync import AsyncProcess
@@ -78,14 +78,7 @@ class Llcstat(LibbpfTools):
 
         # Wait until llcstat has at least outputted something in the out file,
         # or the error file, in order to know that it has attached the eBPF.
-        for _ in range(100):
-            if (self.platform.comm.file_size(rdd / self.out_file_name) > 0) or (
-                self.platform.comm.file_size(rdd / self.err_file_name) > 0
-            ):
-                break
-            time.sleep(0.05)
-        else:
-            raise TimeoutError("Llcstat attachment was not able to attach")
+        wait_for_output([rdd / self.out_file_name, rdd / self.err_file_name], self.platform)
 
     def post_run_hook(
         self,
