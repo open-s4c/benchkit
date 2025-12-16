@@ -131,12 +131,14 @@ class StraceWrap(CommandWrapper):
 
         # Wait until strace has at least outputted something in the out file,
         # or the error file, in order to know that it has attached.
-        while True:
-            if (os.path.getsize(rdd / self.out_file_name) > 0) or (
-                os.path.getsize(rdd / self.err_file_name) > 0
+        for _ in range(100):
+            if (self.platform.comm.file_size(rdd / self.out_file_name) > 0) or (
+                self.platform.comm.file_size(rdd / self.err_file_name) > 0
             ):
                 break
             time.sleep(0.05)
+        else:
+            raise TimeoutError("Strace attachment was not able to attach")
 
     def post_run_hook(
         self,

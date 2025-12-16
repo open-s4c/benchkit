@@ -15,12 +15,10 @@ import os
 import pathlib
 import re
 import time
-from os.path import exists
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.commandattachments.libbpftools import LibbpfTools
-
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
