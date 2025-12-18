@@ -54,6 +54,7 @@ future.
     - used in Huawei OSDI'24 paper
     - ref: https://lmbench.sourceforge.net/why_lmbench.html
 [ ] https://github.com/eembc/coremark
+[ ] https://sites.google.com/view/parvecbenchmarksuite/ of Magnus
 
 ## Functional changes
 
@@ -171,6 +172,16 @@ future.
   Then we can force the prompt to cache the sudo password (.now()), and log all
   the sudo requests and corresponding commands (SudoPrompter(log=True)).
 
+- Refactor logging
+
+- Save stdout, stderr of command in the record hierarchy and put additional
+  information in the record:
+  - The json file with the record, detailing input, output and perf values
+  - The output of cmake & make (stdout & stderr)
+  - The output of stdout of the run command
+  - The output of stderr of the run command
+
+
 
 ## Non-functional changes
 
@@ -223,6 +234,9 @@ future.
 
 - Refactor shell_out function:
   they became too complex over time. A cleanup would be handy.
+
+- perf with python?
+  https://www.phoronix.com/news/Linux-6.18-Perf-Tools
 
 ## Documentation
 
