@@ -87,13 +87,13 @@ class KyotoCabinetBench(Benchmark):
 
     def __init__(
         self,
-        src_dir: PathType | None = None,
-        command_wrappers: Iterable[CommandWrapper] = (),
-        command_attachments: Iterable[CommandAttachment] = (),
-        shared_libs: Iterable[SharedLib] = (),
-        pre_run_hooks: Iterable[PreRunHook] = (),
-        post_run_hooks: Iterable[PostRunHook] = (),
+        command_wrappers: Iterable[CommandWrapper],
+        command_attachments: Iterable[CommandAttachment],
+        shared_libs: Iterable[SharedLib],
+        pre_run_hooks: Iterable[PreRunHook],
+        post_run_hooks: Iterable[PostRunHook],
         platform: Platform | None = None,
+        src_dir: PathType | None = None,
     ):
         super().__init__(
             command_wrappers=command_wrappers,
