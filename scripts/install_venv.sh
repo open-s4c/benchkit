@@ -35,15 +35,16 @@ ${pip_exec} install --upgrade setuptools
 ${pip_exec} install --upgrade wheel
 
 ${pip_exec} install --upgrade \
-    "black<=24.10.0" \
-    "black[d]<=24.10.0" \
-    "black[jupyter]<=24.10.0" \
+    "black<=25.12.0" \
+    "black[d]<=25.12.0" \
+    "black[jupyter]<=25.12.0" \
     "docopt<=0.6.2" \
-    "flake8<=7.1.1" \
-    "isort<=5.13.2" \
-    "libtmux<=0.40.0" \
-    "pycodestyle<=2.12.1" \
-    "pylint<=3.3.2"
+    "flake8<=7.3.0" \
+    "isort<=7.0.0" \
+    "libtmux<=0.53.0" \
+    "mypy<=1.19.1" \
+    "pycodestyle<=2.14.0" \
+    "pylint<=4.0.4"
 
 requirement_file="requirements.txt"
 if [ -e "${requirement_file}" ]

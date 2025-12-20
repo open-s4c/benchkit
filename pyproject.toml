@@ -58,6 +58,7 @@ exclude = '''
 
 [tool.isort]
 profile = "black"
+line_length = 100
 skip = [
     "tutorials/leveldb-bench/deps/",
     "plotbench/venv"
