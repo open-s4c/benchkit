@@ -14,7 +14,7 @@ jobs:
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip3 install "pylint<=3.3.2" "black<=24.10.0" "flake8<=7.1.1"
+        pip3 install "pylint<=4.0.4" "black<=25.12.0" "flake8<=7.3.0" "isort<=7.0.0" "flake8<=7.3.0"
     - name: Show versions of tools
       run: pip3 freeze
 #    - name: Analysing the code with pylint
