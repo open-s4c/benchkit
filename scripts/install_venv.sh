@@ -44,7 +44,8 @@ ${pip_exec} install --upgrade \
     "libtmux<=0.53.0" \
     "mypy<=1.19.1" \
     "pycodestyle<=2.14.0" \
-    "pylint<=4.0.4"
+    "pylint<=4.0.4" \
+    "rich<=14.2.0"
 
 requirement_file="requirements.txt"
 if [ -e "${requirement_file}" ]
