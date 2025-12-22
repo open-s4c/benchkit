@@ -181,7 +181,16 @@ future.
   - The output of stdout of the run command
   - The output of stderr of the run command
 
-
+- Failure-tolerant campaign execution & selective reruns:
+  allow benchmark campaigns to continue executing even if individual data
+  points fail. A failed build or run command should mark the corresponding
+  record as failed, without aborting the whole campaign.
+  Failed points should be clearly reported in the final summary, together
+  with the failure reason (command, exit status, stderr, etc.).
+  It should be possible to retry execution a limited number of times
+  (configurable), and to selectively rerun only the failed points in a
+  subsequent invocation, avoiding recomputation of successful results.
+  This is especially important for long-running or overnight campaigns.
 
 ## Non-functional changes
 
