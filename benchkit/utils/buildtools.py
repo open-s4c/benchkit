@@ -54,10 +54,10 @@ def git_clone(
     if not comm.isdir(dest):
         if not comm.isdir(parent_dir):
             comm.makedirs(path=parent_dir, exist_ok=True)
-        ctx.exec(argv=["git", "clone", url, dest], cwd=parent_dir)
+        ctx.exec(argv=["git", "clone", f"{url}", f"{dest}"], cwd=parent_dir)
 
     if commit:
-        ctx.exec(argv=["git", "checkout", commit], cwd=dest)
+        ctx.exec(argv=["git", "checkout", f"{commit}"], cwd=dest)
 
     return dest
 
