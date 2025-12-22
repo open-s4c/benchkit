@@ -1,5 +1,6 @@
 # Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
+
 """
 Example usage of the RocksDB benchmark with the new benchkit protocol.
 
@@ -34,7 +35,10 @@ def main() -> None:
     bench: Benchmark = RocksDBBench()
     validate_benchmark(bench=bench)
 
-    fc = FetchContext.from_args(fetch_args={"parent_dir": Path("/tmp/g"), "commit": "v10.7.5"})
+    this_dir = Path(__file__).parent.resolve()
+    deps_dir = this_dir / "deps"
+
+    fc = FetchContext.from_args(fetch_args={"parent_dir": deps_dir, "commit": "v10.7.5"})
     fr = bench.fetch(ctx=fc, **fc.fetch_args)
 
     bc = BuildContext.from_fetch(ctx=fc, fetch_result=fr, build_args={})
@@ -50,7 +54,7 @@ def main() -> None:
     pprint(result)
 
     # Alternative (less plumbing):
-    fc = FetchContext.from_args(fetch_args={"parent_dir": Path("/tmp/g"), "commit": "v10.7.5"})
+    fc = FetchContext.from_args(fetch_args={"parent_dir": deps_dir, "commit": "v10.7.5"})
     fr = fc.call(bench.fetch)
 
     bc = BuildContext.from_fetch(ctx=fc, fetch_result=fr, build_args={})
