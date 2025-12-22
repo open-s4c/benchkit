@@ -13,7 +13,7 @@ def main() -> None:
     bench = RocksDBBench()
     platform = get_current_platform()
     args = {
-        "parent_dir": Path("/tmp/g"),
+        "parent_dir": Path("~/.benchkit/benches").expanduser().resolve(),
         "commit": "v10.7.5",
         "bench_name": "readrandom",
         "nb_threads": 7,
