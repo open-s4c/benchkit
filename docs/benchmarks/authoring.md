@@ -142,7 +142,9 @@ You can run a benchmark without the engine for debugging or testing.
 ```python
 bench = RocksDBBench()
 
-fc = FetchContext.from_args(fetch_args={"parent_dir": Path("/tmp/g"), "commit": "v10.7.5"})
+bench_dir = Path("~/.benchkit/benches").expanduser().resolve()
+
+fc = FetchContext.from_args(fetch_args={"parent_dir": bench_dir, "commit": "v10.7.5"})
 fr = fc.call(bench.fetch)
 
 bc = BuildContext.from_fetch(ctx=fc, fetch_result=fr, build_args={})
@@ -188,9 +190,11 @@ Example with explicit calls:
 ```python
 bench = RocksDBBench()
 
+bench_dir = Path("~/.benchkit/benches").expanduser().resolve()
+
 # Fetch
 fc = FetchContext.from_args(
-    fetch_args={"parent_dir": Path("/tmp/g"), "commit": "v10.7.5"}
+    fetch_args={"parent_dir": bench_dir, "commit": "v10.7.5"}
 )
 fr = bench.fetch(ctx=fc, **fc.fetch_args)
 

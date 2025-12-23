@@ -42,6 +42,7 @@ class BaseContext:
     platform: Platform = get_current_platform()
     exec: ExecFn = shell2exec(platform.comm.shell)
     vars: Vars = field(default_factory=dict)
+    default_args: Vars = field(default_factory=dict)
     record_dir: Path | None = None
 
 
@@ -64,6 +65,7 @@ class FetchContext(BaseContext):
         cls,
         fetch_args: Vars,
         vars: Vars | None = None,
+        default_args: Vars | None = None,
         platform: Platform | None = None,
         exec_fn: ExecFn | None = None,
         record_dir: Path | None = None,
@@ -74,6 +76,7 @@ class FetchContext(BaseContext):
         Args:
             fetch_args: Fetch-specific arguments (e.g., url, commit, parent_dir).
             vars: Optional initial benchmark variables (defaults to copy of fetch_args).
+            default_args: Optional default arguments for all benchmark phases.
             platform: Optional platform override (defaults to current platform).
             exec_fn: Optional execution function override.
             record_dir: Optional directory for storing artifacts.
@@ -87,6 +90,7 @@ class FetchContext(BaseContext):
             platform=platform,
             exec=exec_fn,
             vars=vars or dict(fetch_args),
+            default_args=default_args or {},
             record_dir=record_dir,
             fetch_args=fetch_args,
         )
@@ -129,6 +133,7 @@ class BuildContext(BaseContext):
         ctx: FetchContext,
         fetch_result: FetchResult,
         build_args: Vars,
+        default_args: Vars | None = None,
     ) -> "BuildContext":
         """
         Create a BuildContext from a completed fetch phase.
@@ -145,6 +150,7 @@ class BuildContext(BaseContext):
             platform=ctx.platform,
             exec=ctx.exec,
             vars=ctx.vars,
+            default_args=ctx.default_args | (default_args or {}),
             record_dir=ctx.record_dir,
             fetch_args=ctx.fetch_args,
             fetch_result=fetch_result,
@@ -195,6 +201,7 @@ class RunContext(BaseContext):
         ctx: BuildContext,
         build_result: BuildResult,
         run_args: Vars,
+        default_args: Vars | None = None,
         duration_s: int | None = None,
     ) -> "RunContext":
         """
@@ -213,6 +220,7 @@ class RunContext(BaseContext):
             platform=ctx.platform,
             exec=ctx.exec,
             vars=ctx.vars,
+            default_args=ctx.default_args | (default_args or {}),
             record_dir=ctx.record_dir,
             fetch_args=ctx.fetch_args,
             fetch_result=ctx.fetch_result,
@@ -265,6 +273,7 @@ class CollectContext(BaseContext):
         cls,
         ctx: RunContext,
         run_result: RunResult,
+        default_args: Vars | None = None,
     ) -> "CollectContext":
         """
         Create a CollectContext from a completed run phase.
@@ -272,6 +281,7 @@ class CollectContext(BaseContext):
         Args:
             ctx: The RunContext from the previous phase.
             run_result: The result returned by the run phase.
+            default_args: Optional default arguments for all benchmark phases.
 
         Returns:
             A CollectContext instance ready for measurement collection.
@@ -280,6 +290,7 @@ class CollectContext(BaseContext):
             platform=ctx.platform,
             exec=ctx.exec,
             vars=ctx.vars,
+            default_args=ctx.default_args | (default_args or {}),
             record_dir=ctx.record_dir,
             fetch_args=ctx.fetch_args,
             fetch_result=ctx.fetch_result,
