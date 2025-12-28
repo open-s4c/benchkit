@@ -2,55 +2,64 @@
   description = "Minimal flake for benchkit";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
-    flake-utils.url = "github:numtide/flake-utils";
     pythainer.url = "git+https://github.com/EstAK/pythainer.git?ref=nixos";
+    dream2nix.url = "github:nix-community/dream2nix";
   };
 
-  outputs = { self, nixpkgs, flake-utils, pythainer, ... }:
+  outputs = {
+    self,
+    nixpkgs,
+    dream2nix,
+    pythainer
+  }:
+    let
+      eachSystem = nixpkgs.lib.genAttrs [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "x86_64-linux"
+      ];
+    in {
 
-    flake-utils.lib.eachDefaultSystem (system : 
-      let
-  	    pkgs = import nixpkgs {inherit system;};
-	      python = pkgs.python3;
-	      pythonPackages = pkgs.python3Packages;
-        pythainerEnv = pythainer.packages.${system}.pythainerEnv;
- 	      pythonEnv = python.withPackages (ps: with ps; [
-   	      pip
-          matplotlib
-          pandas
-          seaborn
-	        docopt
-          libtmux # this is only required for the tmux extension : make it another lib ?
-          gitpython
-          wget
-        ]);
-        pythainerPackage = pythainer.packages.${system}.pythainer;
-      in
-        {
-	        packages.benchkit = pythonPackages.buildPythonPackage {
-            pname = "pybenchkit";
-  	        version = "0.0.1";
+      packages = eachSystem (system : {
+        default = dream2nix.lib.evalModules {
+          packageSets.nixpkgs = nixpkgs.legacyPackages.${system};
+          packageSets.pythainer = pythainer.packages.${system};
+          modules = [
+            ./default.nix
+            {
+              paths.projectRoot = ./.; 
+              paths.projectRootFile = "flake.nix"; 
+              paths.package = ./.;
 
-            src = ./.;
-	          propagatedBuildInputs = [
-	            pythonEnv
-              pythainerPackage
-            ];
+            }
+          ];
+        };
+      });
 
-            format = "pyproject";
-  	        build-system = [ pythonPackages.hatchling ];
-	        };
-          packages.default = self.packages.${system}.benchkit;
-          devShells.default = pkgs.mkShell {
-            packages = with pkgs; [
-	            self.packages.${system}.benchkit
-              isort
-              black
-              pyright
-              qemu_full
+
+      devShells = eachSystem (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system}; # 
+          benchkit = self.packages.${system}.default;
+          python = benchkit.config.deps.python;
+        in {
+          default = pkgs.mkShell { # 
+            inputsFrom = [benchkit.devShell]; # 
+            packages = [
+
+              benchkit.config.deps.pythainerPackage
+              benchkit.config.deps.qemu_full
+              benchkit.config.deps.tmux
+
+              python.pkgs.python-lsp-ruff
+              python.pkgs.pip
+
+              pkgs.ruff 
+              pkgs.black
             ];
           };
+        });
 
-        }
-    );
+    };
 }
