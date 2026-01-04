@@ -14,11 +14,58 @@ The implementation covers:
 - Parsing performance metrics from db_bench output
 
 Example:
+    >>> from pathlib import Path
     >>> bench = LevelDBBench()
+
+    # ------------------------------------------------------------------
+    # Fetch: clone LevelDB sources
+    # ------------------------------------------------------------------
     >>> fetch_ctx = FetchContext.from_args(
-    ...     fetch_args={"parent_dir": Path("/tmp/src"), "commit": "v10.7.5"}
+    ...     fetch_args={
+    ...         "parent_dir": Path("/tmp/src"),
+    ...         "commit": "v1.17.0",
+    ...     }
     ... )
     >>> fetch_result = bench.fetch(ctx=fetch_ctx, **fetch_ctx.fetch_args)
+
+    # ------------------------------------------------------------------
+    # Build: compile db_bench and prepare the test database
+    # ------------------------------------------------------------------
+    >>> build_ctx = BuildContext.from_fetch(
+    ...     fetch_ctx=fetch_ctx,
+    ...     fetch_result=fetch_result,
+    ... )
+    >>> build_result = bench.build(ctx=build_ctx)
+
+    # ------------------------------------------------------------------
+    # Run: execute a benchmark workload
+    # ------------------------------------------------------------------
+    >>> run_ctx = RunContext.from_build(
+    ...     build_ctx=build_ctx,
+    ...     build_result=build_result,
+    ...     duration_s=1.0,
+    ... )
+    >>> run_result = bench.run(
+    ...     ctx=run_ctx,
+    ...     bench_name="readrandom",
+    ...     nb_threads=4,
+    ... )
+
+    # ------------------------------------------------------------------
+    # Collect: parse performance metrics from db_bench output
+    # ------------------------------------------------------------------
+    >>> collect_ctx = CollectContext.from_run(
+    ...     run_ctx=run_ctx,
+    ...     run_result=run_result,
+    ... )
+    >>> record = bench.collect(
+    ...     ctx=collect_ctx,
+    ...     bench_name="readrandom",
+    ... )
+
+    >>> record["operations/second"]
+    5500
+
 """
 
 import re
