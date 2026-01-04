@@ -76,7 +76,7 @@ def git_clone(
                 )
 
             ctx.exec(
-                argv=["git", "apply", patch],
+                argv=["git", "apply", f"{patch}"],
                 cwd=dest,
             )
 
