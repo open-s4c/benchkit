@@ -67,7 +67,18 @@ def git_clone(
 
     if not exists:
         for patch in patches:
-            ctx.exec(argv=["git", "apply", f"{patch}"], cwd=dest)
+            # Check that the patch exists on the target machine
+            if not comm.isfile(patch):
+                raise FileNotFoundError(
+                    f"Patch file not found on target machine: {patch}. "
+                    "Applying patches currently assumes patches are available "
+                    "locally on the target comm."
+                )
+
+            ctx.exec(
+                argv=["git", "apply", patch],
+                cwd=dest,
+            )
 
     return dest
 
