@@ -69,7 +69,8 @@ from benchkit.core.bktypes import RecordResult
 from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResult
 from benchkit.core.bktypes.contexts import BuildContext, CollectContext, FetchContext, RunContext
 from benchkit.dependencies.packages import PackageDependency
-from benchkit.utils.buildtools import build_dir_from_ctx, git_clone, make
+from benchkit.utils.buildtools import build_dir_from_ctx, make
+from benchkit.utils.fetchtools import git_clone
 
 
 class RocksDBBench:
