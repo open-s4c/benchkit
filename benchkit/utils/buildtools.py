@@ -67,6 +67,7 @@ def git_clone(
 
     if not exists:
         for patch in patches:
+            # TODO: This currently assumes patch files are present on the target machine.
             # Check that the patch exists on the target machine
             if not comm.isfile(patch):
                 raise FileNotFoundError(
