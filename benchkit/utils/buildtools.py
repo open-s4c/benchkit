@@ -11,8 +11,8 @@ This module provides reusable helper functions for typical benchmark build opera
 These utilities reduce code duplication across benchmark implementations and provide
 sensible defaults (e.g., parallel make based on CPU count).
 """
-
 from pathlib import Path
+from typing import Iterable, Optional
 
 from benchkit.core.bktypes.contexts import BaseContext, BuildContext
 
@@ -22,6 +22,7 @@ def git_clone(
     url: str,
     commit: str,
     parent_dir: Path,
+    patches: Iterable[Path] = (),
 ) -> Path:
     """
     Clone a Git repository and optionally check out a specific commit.
@@ -34,6 +35,7 @@ def git_clone(
         url: Git repository URL (e.g., "https://github.com/user/repo.git").
         commit: Commit hash, tag, or branch to check out (empty string = don't checkout).
         parent_dir: Parent directory where the repository will be cloned.
+        patches: Apply all the provided patches (default: ()).
 
     Returns:
         Path to the cloned repository directory.
@@ -44,6 +46,7 @@ def git_clone(
         ...     url="https://github.com/facebook/rocksdb.git",
         ...     commit="v10.7.5",
         ...     parent_dir=Path("/tmp/src"),
+        ...     patches=[Path("/patches/rocksdb.patch")],
         ... )
     """
     platform = ctx.platform
@@ -51,13 +54,31 @@ def git_clone(
     name = url.split("/")[-1].split(".")[0]
     dest = parent_dir / name
 
-    if not comm.isdir(dest):
+    exists = comm.isdir(dest)
+
+    if not exists:
         if not comm.isdir(parent_dir):
             comm.makedirs(path=parent_dir, exist_ok=True)
         ctx.exec(argv=["git", "clone", f"{url}", f"{dest}"], cwd=parent_dir)
 
     if commit:
         ctx.exec(argv=["git", "checkout", f"{commit}"], cwd=dest)
+
+    if not exists:
+        for patch in patches:
+            # TODO: This currently assumes patch files are present on the target machine.
+            # Check that the patch exists on the target machine
+            if not comm.isfile(patch):
+                raise FileNotFoundError(
+                    f"Patch file not found on target machine: {patch}. "
+                    "Applying patches currently assumes patches are available "
+                    "locally on the target comm."
+                )
+
+            ctx.exec(
+                argv=["git", "apply", f"{patch}"],
+                cwd=dest,
+            )
 
     return dest
 
@@ -102,6 +123,58 @@ def make(
     ]
 
     ctx.exec(argv=argv, cwd=src_dir, output_is_log=True)
+
+
+def cmake_build(
+    ctx: BaseContext,
+    build_dir: Path,
+    src_dir: Optional[Path] = None,
+    build_type: str = "Release",
+    target: Optional[str] = None,
+):
+    """
+    Configure (if needed) and build a CMake project.
+
+    - If build_dir/CMakeCache.txt is missing, runs:
+        cmake -S <src_dir> -B <build_dir> -DCMAKE_BUILD_TYPE=<build_type>
+      (requires src_dir)
+    - Then builds:
+        cmake --build <build_dir> -j <N> [--target <target>]
+    """
+    platform = ctx.platform
+    build_dir = Path(build_dir)
+
+    nb_active_cpus = platform.nb_active_cpus()
+    parallel_lst = ["-j", f"{nb_active_cpus}"] if nb_active_cpus > 1 else []
+
+    cmake_cache = build_dir / "CMakeCache.txt"
+    if not platform.comm.isfile(cmake_cache):
+        if src_dir is None:
+            raise ValueError(
+                f"cmake_build: {cmake_cache} missing and src_dir not provided "
+                f"(need src_dir to configure)."
+            )
+
+        platform.comm.makedirs(path=build_dir, exist_ok=True)
+
+        ctx.exec(
+            argv=[
+                "cmake",
+                "-S",
+                str(src_dir),
+                "-B",
+                str(build_dir),
+                f"-DCMAKE_BUILD_TYPE={build_type}",
+            ],
+            cwd=build_dir,
+            output_is_log=True,
+        )
+
+    argv = ["cmake", "--build", str(build_dir), *parallel_lst]
+    if target is not None:
+        argv += ["--target", target]
+
+    ctx.exec(argv=argv, cwd=build_dir, output_is_log=True)
 
 
 def build_dir_from_ctx(ctx: BuildContext) -> Path:
