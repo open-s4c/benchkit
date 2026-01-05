@@ -12,7 +12,7 @@ sensible defaults (e.g., parallel make based on CPU count).
 """
 
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 from benchkit.core.bktypes.contexts import BaseContext, BuildContext
 
