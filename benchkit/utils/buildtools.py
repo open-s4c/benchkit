@@ -4,83 +4,17 @@
 Common build utilities for benchmark implementations.
 
 This module provides reusable helper functions for typical benchmark build operations:
-- git_clone: Clone Git repositories with commit checkout
 - make: Execute make with automatic parallelization
 - build_dir_from_ctx: Generate platform-specific build directory paths
 
 These utilities reduce code duplication across benchmark implementations and provide
 sensible defaults (e.g., parallel make based on CPU count).
 """
+
 from pathlib import Path
 from typing import Iterable, Optional
 
 from benchkit.core.bktypes.contexts import BaseContext, BuildContext
-
-
-def git_clone(
-    ctx: BaseContext,
-    url: str,
-    commit: str,
-    parent_dir: Path,
-    patches: Iterable[Path] = (),
-) -> Path:
-    """
-    Clone a Git repository and optionally check out a specific commit.
-
-    If the repository already exists at the destination, skips cloning but
-    still performs the checkout if a commit is specified.
-
-    Args:
-        ctx: Context providing platform and execution capabilities.
-        url: Git repository URL (e.g., "https://github.com/user/repo.git").
-        commit: Commit hash, tag, or branch to check out (empty string = don't checkout).
-        parent_dir: Parent directory where the repository will be cloned.
-        patches: Apply all the provided patches (default: ()).
-
-    Returns:
-        Path to the cloned repository directory.
-
-    Example:
-        >>> src_dir = git_clone(
-        ...     ctx=fetch_ctx,
-        ...     url="https://github.com/facebook/rocksdb.git",
-        ...     commit="v10.7.5",
-        ...     parent_dir=Path("/tmp/src"),
-        ...     patches=[Path("/patches/rocksdb.patch")],
-        ... )
-    """
-    platform = ctx.platform
-    comm = platform.comm
-    name = url.split("/")[-1].split(".")[0]
-    dest = parent_dir / name
-
-    exists = comm.isdir(dest)
-
-    if not exists:
-        if not comm.isdir(parent_dir):
-            comm.makedirs(path=parent_dir, exist_ok=True)
-        ctx.exec(argv=["git", "clone", f"{url}", f"{dest}"], cwd=parent_dir)
-
-    if commit:
-        ctx.exec(argv=["git", "checkout", f"{commit}"], cwd=dest)
-
-    if not exists:
-        for patch in patches:
-            # TODO: This currently assumes patch files are present on the target machine.
-            # Check that the patch exists on the target machine
-            if not comm.isfile(patch):
-                raise FileNotFoundError(
-                    f"Patch file not found on target machine: {patch}. "
-                    "Applying patches currently assumes patches are available "
-                    "locally on the target comm."
-                )
-
-            ctx.exec(
-                argv=["git", "apply", f"{patch}"],
-                cwd=dest,
-            )
-
-    return dest
 
 
 def make(
