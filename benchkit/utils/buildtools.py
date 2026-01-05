@@ -11,9 +11,8 @@ This module provides reusable helper functions for typical benchmark build opera
 These utilities reduce code duplication across benchmark implementations and provide
 sensible defaults (e.g., parallel make based on CPU count).
 """
-from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
 
 from benchkit.core.bktypes.contexts import BaseContext, BuildContext
 
