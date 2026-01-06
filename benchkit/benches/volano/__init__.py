@@ -70,7 +70,7 @@ from benchkit.core.bktypes import RecordResult
 from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResult
 from benchkit.core.bktypes.contexts import BuildContext, CollectContext, FetchContext, RunContext
 from benchkit.dependencies.packages import PackageDependency
-from benchkit.utils.fetchtools import curl
+from benchkit.utils.fetchtools import curl, sed_edit
 
 
 class VolanoBench:
@@ -126,20 +126,16 @@ class VolanoBench:
             )
 
             # running the self-extracting bootstrap
-            ctx.exec(argv=["java", "volano_benchmark_2_9_0", "-o", "."], cwd=volano_dir)
-
-            # edit the config
-            ctx.exec(
-                argv=["sed", "-i", "s/host=[^ ]*/host=localhost/", "startup.sh"], cwd=volano_dir
-            )
-            ctx.exec(
-                argv=[
-                    "sed",
-                    "-i",
-                    "/# Quit if we cannot find the Java executable file./i java=$(which java)",
-                    "startup.sh",
+            sed_edit(
+                ctx=ctx,
+                base_dir=volano_dir,
+                edits=[
+                    ("s/host=[^ ]*/host=localhost/", Path("startup.sh")),
+                    (
+                        "/# Quit if we cannot find the Java executable file./i java=$(which java)",
+                        Path("startup.sh"),
+                    ),
                 ],
-                cwd=volano_dir,
             )
 
             # add execution permissions
