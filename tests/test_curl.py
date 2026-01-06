@@ -28,7 +28,7 @@ def main() -> None:
         ctx=ctx,
         url="https://www.volano.com/files/volano_benchmark_2_9_0.class",
         parent_dir=deps_dir,
-        name="volano",
+        name="volano_benchmark_2_9_0.class",
     )
 
     bkprint(str(FetchResult(src_dir=volano_dir).src_dir))
