@@ -89,29 +89,29 @@ def curl(
     name: str,
 ) -> Path:
     """
-      Download a remote file using curl.
+    Download a remote file using curl.
 
-      Retrieves a file from the given URL and stores it under the specified
-      parent directory with the provided name. If the destination file already
-      exists, the download is skipped.
+    Retrieves a file from the given URL and stores it under the specified
+    parent directory with the provided name. If the destination file already
+    exists, the download is skipped.
 
-      Args:
-          ctx: Context providing platform and execution capabilities.
-          url: URL of the file to download (e.g., "https://example.com/file.tar.gz").
-          parent_dir: Parent directory where the file will be stored.
-          name: Name of the downloaded file.
+    Args:
+        ctx: Context providing platform and execution capabilities.
+        url: URL of the file to download (e.g., "https://example.com/file.tar.gz").
+        parent_dir: Parent directory where the file will be stored.
+        name: Name of the downloaded file.
 
-      Returns:
-          Path to the downloaded file.
+    Returns:
+        Path to the downloaded file.
 
-      Example:
-          >>> file_path = curl(
-          ...     ctx=fetch_ctx,
-          ...     url="https://www.volano.com/files/volano_benchmark_2_9_0.class",
-          ...     parent_dir=Path("/tmp/benchmarks"),
-          ...     name="volano_benchmark_2_9_0.class",
-          ... )
-      """
+    Example:
+        >>> file_path = curl(
+        ...     ctx=fetch_ctx,
+        ...     url="https://www.volano.com/files/volano_benchmark_2_9_0.class",
+        ...     parent_dir=Path("/tmp/benchmarks"),
+        ...     name="volano_benchmark_2_9_0.class",
+        ... )
+    """
     platform = ctx.platform
     comm = platform.comm
     dest = parent_dir / name
