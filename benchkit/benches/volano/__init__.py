@@ -246,10 +246,7 @@ class VolanoBench:
         result = RunResult(outputs=[exec_out])
         return result
 
-    def collect(
-        self,
-        ctx: CollectContext
-    ) -> RecordResult:
+    def collect(self, ctx: CollectContext) -> RecordResult:
         """
         Parse performance metrics from VolanoMark output.
 
