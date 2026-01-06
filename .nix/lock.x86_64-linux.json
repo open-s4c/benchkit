@@ -45,10 +45,10 @@
       },
       "pathspec": {
         "is_direct": false,
-        "sha256": "a0d503e138a4c123b27490a4f7beda6a01c6f288df0e4a8b79c7eb0dc7b4cc08",
+        "sha256": "8870061f22c58e6d83463cfce9a7dd6eca0512c772c1001fb09ac64091816721",
         "type": "url",
-        "url": "https://files.pythonhosted.org/packages/cc/20/ff623b09d963f88bfde16306a54e12ee5ea43e9b597108672ff3a408aad6/pathspec-0.12.1-py3-none-any.whl",
-        "version": "0.12.1"
+        "url": "https://files.pythonhosted.org/packages/d2/fe/2257c71721aeab6a6e8aa1f00d01f2a20f58547d249a6c8fef5791f559fc/pathspec-1.0.1-py3-none-any.whl",
+        "version": "1.0.1"
       },
       "pluggy": {
         "is_direct": false,

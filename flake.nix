@@ -24,14 +24,13 @@
       packages = eachSystem (system : {
         default = dream2nix.lib.evalModules {
           packageSets.nixpkgs = nixpkgs.legacyPackages.${system};
-          packageSets.pythainer = pythainer.packages.${system};
           modules = [
-            ./default.nix
+            .nix/default.nix
             {
+              paths.lockFile = ".nix/lock.${system}.json";
               paths.projectRoot = ./.; 
               paths.projectRootFile = "flake.nix"; 
               paths.package = ./.;
-
             }
           ];
         };
