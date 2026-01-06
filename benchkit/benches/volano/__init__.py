@@ -96,19 +96,19 @@ class VolanoBench:
         parent_dir: Path,
     ) -> FetchResult:
         """
-        Fetch RocksDB source code from GitHub.
+        Fetch and initialize the VolanoMark benchmark.
 
-        Clones the RocksDB repository and checks out the specified commit/tag/branch.
-        If no commit is specified, uses the default branch (usually main).
+        Downloads the VolanoMark self-extracting Java bootstrap, executes it to
+        unpack the benchmark files, applies minimal configuration fixes, and
+        ensures all required scripts are executable. If the benchmark directory
+        already exists, the fetch step is skipped.
 
         Args:
             ctx: FetchContext providing platform and execution capabilities.
-            parent_dir: Directory where the RocksDB repository will be cloned.
-            commit: Git commit hash, tag, or branch name (e.g., "v10.7.5").
-                   Empty string means use default branch.
+            parent_dir: Directory where the Volano benchmark will be initialized.
 
         Returns:
-            FetchResult containing the path to the cloned repository.
+            FetchResult containing the path to the initialized Volano benchmark directory.
         """
 
         platform = ctx.platform
@@ -248,8 +248,7 @@ class VolanoBench:
 
     def collect(
         self,
-        ctx: CollectContext,
-        bench_name: str,  # unused but kept for API consistency
+        ctx: CollectContext
     ) -> RecordResult:
         """
         Parse performance metrics from VolanoMark output.
@@ -322,7 +321,7 @@ class VolanoBench:
     @staticmethod
     def dependencies() -> list[PackageDependency]:
         """
-        List system package dependencies required to build and run RocksDB.
+        List system package dependencies required to build and run Volano.
 
         Returns:
             List of PackageDependency objects for required system packages.

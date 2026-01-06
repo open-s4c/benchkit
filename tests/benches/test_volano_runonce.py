@@ -36,14 +36,12 @@ def main() -> None:
     result = run_once(
         bench=VolanoBench(),
         args={
-            "parent_dir": benches_dir,
-            "commit": "ac691084fdc5546421a55b25e7653d450e5a25fb",
-            "patches": [
-                Path("../../tutorials/leveldb-bench/patch.diff").resolve(),
-                Path("../../tutorials/leveldb-bench/patch02.diff").resolve(),
-            ],
-            "bench_name": "readrandom",
-            "nb_threads": 3,
+            "start": 1,
+            "rooms": 50,
+            "users": 20,
+            "count": 101,
+            "pause": 0,
+            "host": "localhost",
         },
         duration_s=2,
         record_dir=results_dir,
