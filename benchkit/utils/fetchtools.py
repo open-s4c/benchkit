@@ -6,6 +6,7 @@ Common fetch utilities for benchmark implementations.
 This module provides reusable helper functions for typical benchmark fetch operations:
 - git_clone: Clone Git repositories with commit checkout
 - curl : Download files or fetch remote resources over HTTP(S), FTP, and related protocols
+- sed : Apply in-place text substitutions/patches to files
 
 These utilities reduce code duplication across benchmark implementations and provide
 sensible defaults (e.g., git clone).
@@ -124,3 +125,48 @@ def curl(
         ctx.exec(argv=["curl", "-o", f"{dest}", f"{url}"], cwd=parent_dir)
 
     return dest
+
+
+def sed_edit(
+    ctx: BaseContext,
+    base_dir: Path,
+    edits: Iterable[tuple[str, Path]],
+) -> None:
+    """
+    Apply in-place sed edits to files on the target machine.
+
+    Each edit is applied using `sed -i` without invoking a shell. All target
+    files must already exist on the target machine.
+
+    Args:
+        ctx: Context providing platform and execution capabilities.
+        base_dir: Base directory relative to which target file paths are resolved.
+        edits: Iterable of (sed_expression, relative_file_path) pairs.
+
+    Raises:
+        FileNotFoundError: If any target file does not exist on the target machine.
+
+    Example:
+        >>> sed_edit(
+        ...     ctx=fetch_ctx,
+        ...     base_dir=volano_dir,
+        ...     edits=[
+        ...         ("s/host=[^ ]*/host=localhost/", Path("startup.sh")),
+        ...         ("/# Quit if we cannot find the Java executable file./i java=$(which java)",
+        ...             Path("startup.sh")),
+        ...     ],
+        ... )
+    """
+    platform = ctx.platform
+    comm = platform.comm
+
+    for expr, relpath in edits:
+        target = base_dir / relpath
+
+        if not comm.isfile(target):
+            raise FileNotFoundError(f"sed target file not found on target machine: {target}")
+
+        ctx.exec(
+            argv=["sed", "-i", expr, str(relpath)],
+            cwd=base_dir,
+        )
