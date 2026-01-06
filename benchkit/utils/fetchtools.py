@@ -5,6 +5,7 @@ Common fetch utilities for benchmark implementations.
 
 This module provides reusable helper functions for typical benchmark fetch operations:
 - git_clone: Clone Git repositories with commit checkout
+- curl : Download files or fetch remote resources over HTTP(S), FTP, and related protocols
 
 These utilities reduce code duplication across benchmark implementations and provide
 sensible defaults (e.g., git clone).
@@ -77,5 +78,25 @@ def git_clone(
                 argv=["git", "apply", f"{patch}"],
                 cwd=dest,
             )
+
+    return dest
+
+
+def curl(
+    ctx: BaseContext,
+    url: str,
+    parent_dir: Path,
+    name: str,
+) -> Path:
+    platform = ctx.platform
+    comm = platform.comm
+    dest = parent_dir / name
+
+    exists = comm.isdir(dest)
+
+    if not exists:
+        if not comm.isdir(parent_dir):
+            comm.makedirs(path=parent_dir, exist_ok=True)
+        ctx.exec(argv=["curl", "-o", f"{dest}", f"{url}"], cwd=parent_dir)
 
     return dest
