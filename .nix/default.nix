@@ -13,7 +13,6 @@ in {
     dream2nix.modules.dream2nix.pip
   ];
 
-
   # package dependencies
   deps = { nixpkgs, pythainer, ... } : {
 
@@ -40,7 +39,7 @@ in {
     ];
 
     src = lib.cleanSourceWith {
-      src = lib.cleanSource ./.;
+      src = lib.cleanSource ./..;
       filter = name : type:
         !(builtins.any (x: x) [
           (lib.hasSuffix ".nix" name) # do not package nix files
