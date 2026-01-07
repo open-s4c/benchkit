@@ -7,7 +7,7 @@ This module provides reusable helper functions for typical benchmark fetch opera
 - git_clone: Clone Git repositories with commit checkout
 - curl : Download files or fetch remote resources over HTTP(S), FTP, and related protocols
 - sed : Apply in-place text substitutions/patches to files
-- tar :
+- tar : Extract tar archives (e.g., .tar, .tar.gz, .tgz) on the target machine
 
 These utilities reduce code duplication across benchmark implementations and provide
 sensible defaults (e.g., git clone).
