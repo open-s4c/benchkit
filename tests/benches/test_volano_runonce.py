@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: MIT
 
 import logging
-import subprocess
 import time
 from pathlib import Path
 
@@ -10,6 +9,7 @@ from benchkit.benches.volano import VolanoBench
 from benchkit.core.benchmark import Benchmark
 from benchkit.core.bktypes.contexts import FetchContext
 from benchkit.engine.runonce import run_once
+from benchkit.shell.shellasync import shell_async
 from benchkit.utils.logging import bkpprint, bkprint, configure_logging
 
 
@@ -38,10 +38,12 @@ def main() -> None:
     # Startup the chat server and wait for 5 seconds such that it had the time to startup.
     command = "./startup.sh server loop openjdk"
 
-    process = subprocess.Popen(
-        command,
-        shell=True,
-        cwd=benches_dir / "volano",
+    process = shell_async(
+        command=command,
+        stdout_path=results_dir / "volano_server.out",
+        stderr_path=results_dir / "volano_server.err",
+        platform=fc.platform,
+        current_dir=benches_dir / "volano",
     )
 
     time.sleep(5)
@@ -65,7 +67,19 @@ def main() -> None:
     bkpprint(result)
 
     # Kill the chatserver after the benchmark is done.
-    process.terminate()
+    if process is not None:
+        exitcode = process.premature_exitcode()
+
+        is_running = exitcode is None
+        exited_with_error = exitcode not in (None, 0)
+
+        if exited_with_error:
+            raise ValueError(
+                f"Volano Server exited prematurely with code {exitcode}, please check logs\n"
+            )
+
+        if is_running:
+            process.stop()
 
 
 if __name__ == "__main__":

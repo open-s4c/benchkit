@@ -75,19 +75,13 @@ from benchkit.utils.fetchtools import curl, sed_edit
 
 class VolanoBench:
     """
-    Fetch and initialize the VolanoMark benchmark.
+    Benchmark implementation for Volano bench.
 
-    Downloads the VolanoMark self-extracting Java bootstrap, executes it to
-    unpack the benchmark files, applies minimal configuration fixes, and
-    ensures all required scripts are executable. If the benchmark directory
-    already exists, the fetch step is skipped.
-
-    Args:
-        ctx: FetchContext providing platform and execution capabilities.
-        parent_dir: Directory where the Volano benchmark will be initialized.
-
-    Returns:
-        FetchResult containing the path to the initialized Volano benchmark directory.
+    This class implements all phases of the benchkit protocol:
+    - fetch: curl the source from Volano benchmark
+    - build: Skipped
+    - run: Execute specified volano workload
+    - collect: Parse performance metrics from output
     """
 
     def fetch(
@@ -128,7 +122,7 @@ class VolanoBench:
             # running the self-extracting bootstrap
             ctx.exec(argv=["java", "volano_benchmark_2_9_0", "-o", "."], cwd=volano_dir)
 
-            # running the self-extracting bootstrap
+            # edit the config
             sed_edit(
                 ctx=ctx,
                 base_dir=volano_dir,
