@@ -126,6 +126,9 @@ class VolanoBench:
             )
 
             # running the self-extracting bootstrap
+            ctx.exec(argv=["java", "volano_benchmark_2_9_0", "-o", "."], cwd=volano_dir)
+
+            # running the self-extracting bootstrap
             sed_edit(
                 ctx=ctx,
                 base_dir=volano_dir,

@@ -7,6 +7,8 @@ import time
 from pathlib import Path
 
 from benchkit.benches.volano import VolanoBench
+from benchkit.core.benchmark import Benchmark
+from benchkit.core.bktypes.contexts import FetchContext
 from benchkit.engine.runonce import run_once
 from benchkit.utils.logging import bkpprint, bkprint, configure_logging
 
@@ -19,9 +21,18 @@ def main() -> None:
         file_level=logging.DEBUG,
     )
 
+    bench: Benchmark = VolanoBench()
+
     benchkit_home_dir = Path("~/.benchkit/").expanduser().resolve()
     benches_dir = benchkit_home_dir / "benches"
     results_dir = benchkit_home_dir / "results"
+
+    fc = FetchContext.from_args(
+        fetch_args={
+            "parent_dir": benches_dir,
+        }
+    )
+    bench.fetch(ctx=fc, **fc.fetch_args)
 
     command = "./startup.sh server loop openjdk"
 
@@ -36,6 +47,7 @@ def main() -> None:
     result = run_once(
         bench=VolanoBench(),
         args={
+            "parent_dir": benches_dir,
             "start": 1,
             "rooms": 50,
             "users": 20,
