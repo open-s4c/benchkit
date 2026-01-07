@@ -7,6 +7,7 @@ This module provides reusable helper functions for typical benchmark fetch opera
 - git_clone: Clone Git repositories with commit checkout
 - curl : Download files or fetch remote resources over HTTP(S), FTP, and related protocols
 - sed : Apply in-place text substitutions/patches to files
+- tar : Extract tar archives (e.g., .tar, .tar.gz, .tgz) on the target machine
 
 These utilities reduce code duplication across benchmark implementations and provide
 sensible defaults (e.g., git clone).
@@ -170,3 +171,51 @@ def sed_edit(
             argv=["sed", "-i", expr, str(relpath)],
             cwd=base_dir,
         )
+
+
+def tar_extract(
+    ctx: BaseContext,
+    archive: Path,
+    parent_dir: Path | None = None,
+) -> Path:
+    """
+    Extract a tar archive on the target machine.
+
+    Uses `tar -xf` to extract the given archive. By default, extraction
+    happens in the archive's parent directory.
+
+    Args:
+        ctx: Context providing platform and execution capabilities.
+        archive: Path to the tar archive on the target machine
+                 (e.g., "kyotocabinet-1.2.76.tar.gz").
+        parent_dir: Directory to extract into (default: archive.parent).
+
+    Returns:
+        Path to the directory where the archive was extracted.
+
+    Raises:
+        FileNotFoundError: If the archive does not exist on the target machine.
+
+    Example:
+        >>> src_dir = tar_extract(
+        ...     ctx=fetch_ctx,
+        ...     archive=Path("kyotocabinet-1.2.76.tar.gz"),
+        ... )
+    """
+    platform = ctx.platform
+    comm = platform.comm
+
+    if not comm.isfile(archive):
+        raise FileNotFoundError(f"Tar archive not found on target machine: {archive}")
+
+    extract_dir = parent_dir if parent_dir is not None else archive.parent
+
+    if not comm.isdir(extract_dir):
+        comm.makedirs(path=extract_dir, exist_ok=True)
+
+    ctx.exec(
+        argv=["tar", "-xf", str(archive)],
+        cwd=extract_dir,
+    )
+
+    return extract_dir
