@@ -27,6 +27,7 @@ def main() -> None:
     benches_dir = benchkit_home_dir / "benches"
     results_dir = benchkit_home_dir / "results"
 
+    # Explicityly call the fetch of the benchmark to make sure the ./startup.sh script is present.
     fc = FetchContext.from_args(
         fetch_args={
             "parent_dir": benches_dir,
@@ -34,6 +35,7 @@ def main() -> None:
     )
     bench.fetch(ctx=fc, **fc.fetch_args)
 
+    # Startup the chat server and wait for 5 seconds such that it had the time to startup.
     command = "./startup.sh server loop openjdk"
 
     process = subprocess.Popen(
@@ -62,6 +64,7 @@ def main() -> None:
     bkprint("Benchmark result:")
     bkpprint(result)
 
+    # Kill the chatserver after the benchmark is done.
     process.terminate()
 
 
