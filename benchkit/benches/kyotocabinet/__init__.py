@@ -1,44 +1,49 @@
-# Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
+# Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 """
-LevelDB benchmark implementation for benchkit.
+KyotoCabinet benchmark implementation for benchkit.
 
-This module implements the benchkit protocol for LevelDB's db_bench benchmark tool.
-LevelDB is an embedded key-value store optimized for fast storage, commonly used
-for benchmarking storage and database performance.
+This module implements the benchkit protocol for KyotoCabinet's bundled
+`benchmark` program. KyotoCabinet is an embedded key-value store designed
+for high-performance storage and retrieval, and is commonly used to study
+the behavior of in-memory and on-disk data structures under concurrent load.
 
 The implementation covers:
-- Fetching LevelDB source from GitHub
-- Building db_bench and preparing a test database
-- Running various LevelDB benchmarks (readrandom, fillseq, etc.)
-- Parsing performance metrics from db_bench output
+- Fetching a specific KyotoCabinet release via a source tarball
+- Applying local patches to the extracted source tree
+- Building the KyotoCabinet library and benchmark binary using autotools
+- Running duration-based benchmark workloads with a configurable thread count
+- Parsing aggregate performance metrics from the benchmark output
+
+The benchmark output is expected to contain a summary line of the form:
+
+    Summary: total_ops=<N>
+
+from which total operation counts and throughput are derived.
 
 Example:
     >>> from pathlib import Path
-    >>> bench = LevelDBBench()
-
+    >>> bench = KyotoCabinetBench()
     # ------------------------------------------------------------------
-    # Fetch: clone LevelDB sources
+    # Fetch: download and extract KyotoCabinet sources
     # ------------------------------------------------------------------
     >>> fetch_ctx = FetchContext.from_args(
     ...     fetch_args={
     ...         "parent_dir": Path("/tmp/src"),
-    ...         "commit": "v1.17.0",
+    ...         "patches": [],
     ...     }
     ... )
     >>> fetch_result = bench.fetch(ctx=fetch_ctx, **fetch_ctx.fetch_args)
-
     # ------------------------------------------------------------------
-    # Build: compile db_bench and prepare the test database
+    # Build: configure and compile the benchmark binary
     # ------------------------------------------------------------------
     >>> build_ctx = BuildContext.from_fetch(
     ...     fetch_ctx=fetch_ctx,
     ...     fetch_result=fetch_result,
     ... )
     >>> build_result = bench.build(ctx=build_ctx)
-
     # ------------------------------------------------------------------
-    # Run: execute a benchmark workload
+    # Run: execute the benchmark for a fixed duration
     # ------------------------------------------------------------------
     >>> run_ctx = RunContext.from_build(
     ...     build_ctx=build_ctx,
@@ -47,26 +52,20 @@ Example:
     ... )
     >>> run_result = bench.run(
     ...     ctx=run_ctx,
-    ...     bench_name="readrandom",
     ...     nb_threads=4,
     ... )
-
     # ------------------------------------------------------------------
-    # Collect: parse performance metrics from db_bench output
+    # Collect: extract performance metrics from benchmark output
     # ------------------------------------------------------------------
     >>> collect_ctx = CollectContext.from_run(
     ...     run_ctx=run_ctx,
     ...     run_result=run_result,
     ... )
-    >>> record = bench.collect(
-    ...     ctx=collect_ctx,
-    ...     bench_name="readrandom",
-    ... )
-
+    >>> record = bench.collect(ctx=collect_ctx)
     >>> record["operations/second"]
-    5500
-
+    5000
 """
+
 
 import re
 from pathlib import Path
@@ -82,13 +81,13 @@ from benchkit.utils.fetchtools import curl, git_apply_patches, tar_extract
 
 class KyotoCabinetBench:
     """
-    Benchmark implementation for LevelDB's db_bench tool.
+    Benchmark implementation for KyotoCabinet's benchmark tool.
 
     This class implements all phases of the benchkit protocol:
-    - fetch: Clone LevelDB from GitHub
-    - build: Compile db_bench and create test database
-    - run: Execute specified db_bench workload
-    - collect: Parse performance metrics from output
+    - fetch: Download and extract a KyotoCabinet release tarball and apply patches
+    - build: Configure and compile the KyotoCabinet library and benchmark binary
+    - run: Execute the benchmark workload for a fixed duration and thread count
+    - collect: Parse aggregate performance metrics from the benchmark output
     """
 
     def fetch(
@@ -311,7 +310,7 @@ class KyotoCabinetBench:
     @staticmethod
     def dependencies() -> list[PackageDependency]:
         """
-        List system package dependencies required to build and run LevelDB.
+        List system package dependencies required to build and run Kyoto Cabinet benchmark.
 
         Returns:
             List of PackageDependency objects for required system packages.
