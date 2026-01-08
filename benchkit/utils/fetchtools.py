@@ -5,6 +5,8 @@ Common fetch utilities for benchmark implementations.
 
 This module provides reusable helper functions for typical benchmark fetch operations:
 - git_clone: Clone Git repositories with commit checkout
+- git_init: Initialize Git repositories with commit checkout
+- git_apply_patches: Apply patches to Git repositories
 - curl : Download files or fetch remote resources over HTTP(S), FTP, and related protocols
 - sed : Apply in-place text substitutions/patches to files
 - tar : Extract tar archives (e.g., .tar, .tar.gz, .tgz) on the target machine
@@ -66,22 +68,89 @@ def git_clone(
         ctx.exec(argv=["git", "checkout", f"{commit}"], cwd=dest)
 
     if not exists:
-        for patch in patches:
-            # TODO: This currently assumes patch files are present on the target machine.
-            # Check that the patch exists on the target machine
-            if not comm.isfile(patch):
-                raise FileNotFoundError(
-                    f"Patch file not found on target machine: {patch}. "
-                    "Applying patches currently assumes patches are available "
-                    "locally on the target comm."
-                )
-
-            ctx.exec(
-                argv=["git", "apply", f"{patch}"],
-                cwd=dest,
-            )
+        if not exists and patches:
+            git_apply_patches(ctx=ctx, repo_dir=dest, patches=patches)
 
     return dest
+
+
+def git_init(
+    ctx: BaseContext,
+    repo_dir: Path,
+    initial_branch: str | None = None,
+) -> Path:
+    """
+    Initialize a Git repository on the target machine.
+
+    Creates the repository directory if it does not exist and runs
+    `git init` inside it. Optionally sets the initial branch name.
+
+    Args:
+        ctx: Context providing platform and execution capabilities.
+        repo_dir: Path where the Git repository should be initialized.
+        initial_branch: Optional initial branch name
+                        (e.g., "main", "master").
+
+    Returns:
+        Path to the initialized Git repository directory.
+
+    Example:
+        >>> repo_dir = git_init(
+        ...     ctx=fetch_ctx,
+        ...     repo_dir=Path("/tmp/myrepo"),
+        ...     initial_branch="main",
+        ... )
+    """
+    platform = ctx.platform
+    comm = platform.comm
+
+    if not comm.isdir(repo_dir):
+        comm.makedirs(path=repo_dir, exist_ok=True)
+
+    argv = ["git", "init"]
+    if initial_branch:
+        argv.extend(["--initial-branch", initial_branch])
+
+    ctx.exec(
+        argv=argv,
+        cwd=repo_dir,
+    )
+
+    return repo_dir
+
+
+def git_apply_patches(
+    ctx: BaseContext,
+    repo_dir: Path,
+    patches: Iterable[Path] = (),
+) -> None:
+    """
+    Apply Git patches to a repository on the target machine.
+
+    Args:
+        ctx: Context providing platform and execution capabilities.
+        repo_dir: Path to the git repository where patches should be applied.
+        patches: Iterable of patch file paths to apply.
+
+    Raises:
+        FileNotFoundError: If a patch file does not exist on the target machine.
+    """
+    platform = ctx.platform
+    comm = platform.comm
+
+    for patch in patches:
+        # TODO: This currently assumes patch files are present on the target machine.
+        if not comm.isfile(patch):
+            raise FileNotFoundError(
+                f"Patch file not found on target machine: {patch}. "
+                "Applying patches currently assumes patches are available "
+                "locally on the target comm."
+            )
+
+        ctx.exec(
+            argv=["git", "apply", str(patch)],
+            cwd=repo_dir,
+        )
 
 
 def curl(
