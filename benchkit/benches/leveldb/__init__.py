@@ -109,6 +109,7 @@ class LevelDBBench:
             parent_dir: Directory where the LevelDB repository will be cloned.
             commit: Git commit hash, tag, or branch name (e.g., "v10.7.5").
                    Empty string means use default branch.
+            patches: Iterable of patch files to apply to the source, in order.
 
         Returns:
             FetchResult containing the path to the cloned repository.
