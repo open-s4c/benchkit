@@ -185,7 +185,7 @@ class KyotoCabinetBench:
             make(
                 ctx=ctx,
                 src_dir=src_dir,
-                targets=[""],
+                targets=[],
                 options={},
             )
             make(
