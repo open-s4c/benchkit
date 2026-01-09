@@ -161,7 +161,8 @@ class KyotoCabinetBench:
             - the `benchmark` binary is available for the run phase
 
         The build step is idempotent: if the benchmark binary already exists,
-        no recompilation is performed.
+        no recompilation is performed, as no build parameters are currently varied.
+
 
         Args:
             ctx: BuildContext providing platform access, fetch results, and
