@@ -95,7 +95,7 @@ class WillitscaleBench:
         self,
         ctx: FetchContext,
         parent_dir: Path,
-        commit: str,
+        commit: str = "",
     ) -> FetchResult:
         """
         Fetch the Will-it-scale benchmark source code.
