@@ -8,33 +8,12 @@
         "url": "https://files.pythonhosted.org/packages/a2/55/8f8cab2afd404cf578136ef2cc5dfb50baa1761b68c9da1fb1e4eed343c9/docopt-0.6.2.tar.gz",
         "version": "0.6.2"
       },
-      "gitdb": {
-        "is_direct": false,
-        "sha256": "67073e15955400952c6565cc3e707c554a4eea2e428946f7a4c162fab9bd9bcf",
-        "type": "url",
-        "url": "https://files.pythonhosted.org/packages/a0/61/5c78b91c3143ed5c14207f463aecfc8f9dbb5092fb2869baf37c273b2705/gitdb-4.0.12-py3-none-any.whl",
-        "version": "4.0.12"
-      },
-      "gitpython": {
-        "is_direct": false,
-        "sha256": "8908cb2e02fb3b93b7eb0f2827125cb699869470432cc885f019b8fd0fccff77",
-        "type": "url",
-        "url": "https://files.pythonhosted.org/packages/01/61/d4b89fec821f72385526e1b9d9a3a0385dda4a72b206d28049e2c7cd39b8/gitpython-3.1.45-py3-none-any.whl",
-        "version": "3.1.45"
-      },
       "hatchling": {
         "is_direct": false,
         "sha256": "dc48722b68b3f4bbfa3ff618ca07cdea6750e7d03481289ffa8be1521d18a961",
         "type": "url",
         "url": "https://files.pythonhosted.org/packages/0d/a5/48cb7efb8b4718b1a4c0c331e3364a3a33f614ff0d6afd2b93ee883d3c47/hatchling-1.28.0-py3-none-any.whl",
         "version": "1.28.0"
-      },
-      "libtmux": {
-        "is_direct": false,
-        "sha256": "024b7ae6a12aae55358e8feb914c8632b3ab9bd61c0987c53559643c6a58ee4f",
-        "type": "url",
-        "url": "https://files.pythonhosted.org/packages/0e/d0/2e8bc5caa639ebb9f8801ba0be7070a28d48d8ed60e2a428d40f71fb88b8/libtmux-0.53.0-py3-none-any.whl",
-        "version": "0.53.0"
       },
       "packaging": {
         "is_direct": false,
@@ -45,10 +24,10 @@
       },
       "pathspec": {
         "is_direct": false,
-        "sha256": "8870061f22c58e6d83463cfce9a7dd6eca0512c772c1001fb09ac64091816721",
+        "sha256": "1373719036e64a2b9de3b8ddd9e30afb082a915619f07265ed76d9ae507800ae",
         "type": "url",
-        "url": "https://files.pythonhosted.org/packages/d2/fe/2257c71721aeab6a6e8aa1f00d01f2a20f58547d249a6c8fef5791f559fc/pathspec-1.0.1-py3-none-any.whl",
-        "version": "1.0.1"
+        "url": "https://files.pythonhosted.org/packages/05/bb/39e6768529454cc2b57e1e2fa0a0a18ff64397a16303270e215a3e03285f/pathspec-1.0.0-py3-none-any.whl",
+        "version": "1.0.0"
       },
       "pluggy": {
         "is_direct": false,
@@ -57,52 +36,29 @@
         "url": "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl",
         "version": "1.6.0"
       },
-      "smmap": {
-        "is_direct": false,
-        "sha256": "b30115f0def7d7531d22a0fb6502488d879e75b260a9db4d0819cfb25403af5e",
-        "type": "url",
-        "url": "https://files.pythonhosted.org/packages/04/be/d09147ad1ec7934636ad912901c5fd7667e1c858e19d355237db0d0cd5e4/smmap-5.0.2-py3-none-any.whl",
-        "version": "5.0.2"
-      },
       "trove-classifiers": {
         "is_direct": false,
         "sha256": "a8206978ede95937b9959c3aff3eb258bbf7b07dff391ddd4ea7e61f316635ab",
         "type": "url",
         "url": "https://files.pythonhosted.org/packages/4f/7e/bc19996fa86cad8801e8ffe6f1bba5836ca0160df76d0410d27432193712/trove_classifiers-2025.12.1.14-py3-none-any.whl",
         "version": "2025.12.1.14"
-      },
-      "wget": {
-        "is_direct": false,
-        "sha256": "35e630eca2aa50ce998b9b1a127bb26b30dfee573702782aa982f875e3f16061",
-        "type": "url",
-        "url": "https://files.pythonhosted.org/packages/47/6a/62e288da7bcda82b935ff0c6cfe542970f04e29c756b0e147251b2fb251f/wget-3.2.zip",
-        "version": "3.2"
       }
     },
     "targets": {
       "default": {
         "docopt": [],
-        "gitdb": [
-          "smmap"
-        ],
-        "gitpython": [
-          "gitdb"
-        ],
         "hatchling": [
           "packaging",
           "pathspec",
           "pluggy",
           "trove-classifiers"
         ],
-        "libtmux": [],
         "packaging": [],
         "pathspec": [],
         "pluggy": [],
-        "smmap": [],
-        "trove-classifiers": [],
-        "wget": []
+        "trove-classifiers": []
       }
     }
   },
-  "invalidationHash": "ba58f927a3f65ce3a4c35daefda89ffed9543c0455fa498a1415e78b9798abb7"
+  "invalidationHash": "d9ba953fb67f6a64d7d7c0fb36be292c3e84ee70bf54ebc1810bcd82c02c7146"
 }

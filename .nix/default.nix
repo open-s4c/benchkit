@@ -62,7 +62,6 @@ in {
     requirementsList =
       pyproject.build-system.requires or [] 
       ++  pyproject.project.dependencies or [];
-    requirementsFiles = ["requirements.txt"];
     flattenDependencies = true;
 
     # this is required as the pypi version of docopt makes the build fail
