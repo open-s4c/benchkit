@@ -1048,18 +1048,22 @@ class SSHCommLayer(CommunicationLayer):
 
 
 class StatusAware(ABC):
+    """
+    Abstract class for communication layers that are aware of their connection status.
+    """
+
     @abstractmethod
-    def is_open(self):
+    def is_open(self) -> bool:
         pass
 
     @abstractmethod
-    def start_comm(self):
+    def start_comm(self) -> None:
         pass
 
     @abstractmethod
-    def checked_close_comm(self):
+    def checked_close_comm(self) -> None:
         pass
 
     @abstractmethod
-    def _unchecked_close_comm(self):
+    def _unchecked_close_comm(self) -> None:
         pass
