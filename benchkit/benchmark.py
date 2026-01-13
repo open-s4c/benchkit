@@ -11,7 +11,7 @@ import os
 import pathlib
 from multiprocessing import Barrier
 from subprocess import CalledProcessError
-from typing import IO, Any, Dict, Iterable, List, Optional, Protocol, Tuple
+from typing import IO, Any, Dict, Iterable, List, Optional, Protocol, Tuple, Type
 
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies import check_dependencies
@@ -96,6 +96,46 @@ class CommandAttachment(Protocol):
     ) -> None: ...
 
 
+class PathEncoder(json.JSONEncoder):
+    """
+    JSONEncoder extension to support pathlib.Path serialization.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, pathlib.Path):
+            return str(obj)
+        return super().default(obj)
+
+
+class MultipleJsonEncoders:
+    """
+    Combine multiple JSON encoders
+    Source - https://stackoverflow.com/a
+    Posted by tsorn
+    Retrieved 2026-01-13, License - CC BY-SA 4.0
+    """
+
+    def __init__(self, encoders: list[Type[json.JSONEncoder]]) -> None:
+        self.encoders = encoders
+        self.args = ()
+        self.kwargs = {}
+
+    def default(self, obj):
+        for encoder in self.encoders:
+            try:
+                return encoder(*self.args, **self.kwargs).default(obj)
+            except TypeError:
+                pass
+        raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
+    def __call__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+        enc = json.JSONEncoder(*args, **kwargs)
+        enc.default = self.default
+        return enc
+
+
 class Benchmark:
     """
     Represent a single benchmark to be run, exploring the parameter space of the associated
@@ -110,6 +150,7 @@ class Benchmark:
         shared_libs: Iterable[SharedLib],
         pre_run_hooks: Iterable[PreRunHook],
         post_run_hooks: Iterable[PostRunHook],
+        encoders: list[Type[json.JSONEncoder]] = [PathEncoder],
     ) -> None:
         self._command_wrappers = command_wrappers
         self._command_attachments = list(command_attachments)
@@ -138,6 +179,7 @@ class Benchmark:
         self._debug = False
         self._gdb = False
         self._flamegraph_path: Optional[PathType] = None
+        self._encoders: MultipleJsonEncoders = MultipleJsonEncoders(encoders=encoders)
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -1092,7 +1134,12 @@ class Benchmark:
                         xrline.update(hook_dict)
 
             wrdr(
-                file_content=json.dumps(experiment_results_lines, indent=4).strip() + "\n",
+                file_content=json.dumps(
+                    experiment_results_lines,
+                    indent=4,
+                    cls=self._encoders,
+                ).strip()
+                + "\n",
                 filename="experiment_results.json",
             )
 
