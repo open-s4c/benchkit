@@ -17,6 +17,7 @@ from functools import lru_cache
 from pathlib import Path
 from shutil import which
 from typing import Dict, Iterable, List, Optional
+from abc import ABC, abstractmethod
 
 from benchkit.communication.utils import command_with_env, remote_shell_command
 from benchkit.shell.shell import pipe_shell_out, shell_out
@@ -1044,3 +1045,21 @@ class SSHCommLayer(CommunicationLayer):
         )
         list_hosts = [line.strip() for line in output.splitlines()]
         return list_hosts
+
+
+class StatusAware(ABC):
+    @abstractmethod
+    def is_open(self):
+        pass
+
+    @abstractmethod
+    def start_comm(self):
+        pass
+
+    @abstractmethod
+    def checked_close_comm(self):
+        pass
+
+    @abstractmethod
+    def _unchecked_close_comm(self):
+        pass
