@@ -13,11 +13,11 @@ import getpass
 import os
 import os.path
 import subprocess
+from abc import ABC, abstractmethod
 from functools import lru_cache
 from pathlib import Path
 from shutil import which
 from typing import Dict, Iterable, List, Optional
-from abc import ABC, abstractmethod
 
 from benchkit.communication.utils import command_with_env, remote_shell_command
 from benchkit.shell.shell import pipe_shell_out, shell_out

@@ -3,13 +3,13 @@
 
 from __future__ import annotations
 
-import select
 import os
+import select
 import subprocess
 from typing import List
 
 from benchkit.communication import CommunicationLayer, StatusAware
-from benchkit.utils.types import PathType, Command
+from benchkit.utils.types import Command, PathType
 
 CHUNK_SIZE: int = 1024
 
@@ -25,12 +25,12 @@ class PtyCommLayer(CommunicationLayer, StatusAware):
     ) -> None:
         self._port: PathType = port
         self._fd: int | None = None
-        self._ps1: str = "" # only for shells : make it optional ?
+        self._ps1: str = ""  # only for shells : make it optional ?
 
         super().__init__()
 
     def listen(self, timeout: float = 1.0) -> bytearray:
-        # NOTE move to linux terminal? 
+        # NOTE move to linux terminal?
         if not self.is_open():
             raise PTYException("The port is not open : cannot listen")
 
@@ -50,17 +50,13 @@ class PtyCommLayer(CommunicationLayer, StatusAware):
     def start_comm(self):
         self._fd = os.open(self._port, os.O_RDWR | os.O_NOCTTY)
         _: bytearray = self.listen(timeout=0.5)  # consuming the boot log
-        self._ps1 = self.shell(
-            command="", print_input=False, print_output=False
-        )  # calibration
+        self._ps1 = self.shell(command="", print_input=False, print_output=False)  # calibration
 
     def checked_close_comm(self):
         if self.is_open():
             os.close(self._fd)
         else:
-            raise PTYException(
-                "The comm layer was manually closed or something else smh"
-            )
+            raise PTYException("The comm layer was manually closed or something else smh")
 
     def _unchecked_close_comm(self):
         os.close(self._fd)
@@ -176,9 +172,7 @@ class PtyCommLayer(CommunicationLayer, StatusAware):
         ):
             raise PTYException("Not supported attributes")
         elif not self.is_open():
-            raise PTYException(
-                "The port is closed : open a communication before sending a command"
-            )
+            raise PTYException("The port is closed : open a communication before sending a command")
 
         command_str: str = ""
         if environment is not None:
@@ -200,11 +194,7 @@ class PtyCommLayer(CommunicationLayer, StatusAware):
 
         os.write(self._fd, command_str.encode())
         output: str = self.listen().decode(errors="replace")
-        output = (
-            output.replace(command_str.replace("\n", ""), "")
-            .replace(self._ps1, "")
-            .strip()
-        )
+        output = output.replace(command_str.replace("\n", ""), "").replace(self._ps1, "").strip()
 
         if print_input:
             print(command_str.replace("\n", ""))
@@ -280,4 +270,3 @@ class PtyCommLayer(CommunicationLayer, StatusAware):
         except subprocess.CalledProcessError:
             succeed = False
         return succeed
-

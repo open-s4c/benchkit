@@ -3,20 +3,21 @@
 # SPDX-License-Identifier: MIT
 
 
-from benchkit.communication.pty import PtyCommLayer
-from typing import List
-
+import os
 import pathlib
 import re
-import os
 import select
 import subprocess
 import threading
+from typing import List
+
+from benchkit.communication.pty import PtyCommLayer
+
 
 def thread(port: pathlib.Path):
     decoded: str
     with PtyCommLayer(port=port) as pty:
-        out: bytearray = pty.listen(timeout=5.0) # big timeout to take latencies into account
+        out: bytearray = pty.listen(timeout=5.0)  # big timeout to take latencies into account
         if not len(out):
             print("nothing was received")
         decoded = out.decode(errors="replace")
@@ -24,14 +25,23 @@ def thread(port: pathlib.Path):
     print(decoded)
     assert decoded == "hello\n"
 
+
 if __name__ == "__main__":
-    command: List[str] = ["socat", "-d", "-d", "pty,raw,echo=0", "pty,raw,echo=0"] # opens two linked PTYs
-    fakepty = subprocess.Popen(command,
-                               stdout=subprocess.PIPE,
-                               stdin=subprocess.PIPE,
-                               stderr=subprocess.PIPE,
-                               text=False,
-                               bufsize=0,)
+    command: List[str] = [
+        "socat",
+        "-d",
+        "-d",
+        "pty,raw,echo=0",
+        "pty,raw,echo=0",
+    ]  # opens two linked PTYs
+    fakepty = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stdin=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=False,
+        bufsize=0,
+    )
 
     buf = b""
     if (stdout := fakepty.stderr) is not None:
