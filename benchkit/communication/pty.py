@@ -30,7 +30,6 @@ class PtyCommLayer(CommunicationLayer, StatusAware):
         super().__init__()
 
     def listen(self, timeout: float = 1.0) -> bytearray:
-        # NOTE move to linux terminal?
         if not self.is_open():
             raise PTYException("The port is not open : cannot listen")
 
