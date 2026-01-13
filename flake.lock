@@ -232,18 +232,17 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1766939132,
-        "narHash": "sha256-/DUq4WArPVQEpKm7/AZgu/iYwuls09vU3B2JMZqoIVw=",
-        "ref": "nixos",
-        "rev": "98b0ade99c4f968f1be21156434708ee250f0295",
-        "revCount": 41,
-        "type": "git",
-        "url": "https://github.com/EstAK/pythainer.git"
+        "lastModified": 1767975120,
+        "narHash": "sha256-QU9dMACDn9nxbXfSa+rGPmi/xGXyae6PehI0BDX2jHQ=",
+        "owner": "apaolillo",
+        "repo": "pythainer",
+        "rev": "2c247cf419725e23a8c2386db7a4349028d563d0",
+        "type": "github"
       },
       "original": {
-        "ref": "nixos",
-        "type": "git",
-        "url": "https://github.com/EstAK/pythainer.git"
+        "owner": "apaolillo",
+        "repo": "pythainer",
+        "type": "github"
       }
     },
     "root": {

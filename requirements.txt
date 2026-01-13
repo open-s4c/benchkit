@@ -1,3 +1,0 @@
-libtmux<=0.53.0
-GitPython<=3.1.45
-wget<=3.2
