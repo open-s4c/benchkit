@@ -15,6 +15,20 @@
         "url": "https://files.pythonhosted.org/packages/0d/a5/48cb7efb8b4718b1a4c0c331e3364a3a33f614ff0d6afd2b93ee883d3c47/hatchling-1.28.0-py3-none-any.whl",
         "version": "1.28.0"
       },
+      "markdown-it-py": {
+        "is_direct": false,
+        "sha256": "87327c59b172c5011896038353a81343b6754500a08cd7a4973bb48c6d578147",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/94/54/e7d793b573f298e1c9013b8c4dade17d481164aa517d1d7148619c2cedbf/markdown_it_py-4.0.0-py3-none-any.whl",
+        "version": "4.0.0"
+      },
+      "mdurl": {
+        "is_direct": false,
+        "sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl",
+        "version": "0.1.2"
+      },
       "packaging": {
         "is_direct": false,
         "sha256": "29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484",
@@ -36,6 +50,20 @@
         "url": "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl",
         "version": "1.6.0"
       },
+      "pygments": {
+        "is_direct": false,
+        "sha256": "86540386c03d588bb81d44bc3928634ff26449851e99741617ecb9037ee5ec0b",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/c7/21/705964c7812476f378728bdf590ca4b771ec72385c533964653c68e86bdc/pygments-2.19.2-py3-none-any.whl",
+        "version": "2.19.2"
+      },
+      "rich": {
+        "is_direct": false,
+        "sha256": "76bc51fe2e57d2b1be1f96c524b890b816e334ab4c1e45888799bfaab0021edd",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/25/7a/b0178788f8dc6cafce37a212c99565fa1fe7872c70c6c9c1e1a372d9d88f/rich-14.2.0-py3-none-any.whl",
+        "version": "14.2.0"
+      },
       "trove-classifiers": {
         "is_direct": false,
         "sha256": "a8206978ede95937b9959c3aff3eb258bbf7b07dff391ddd4ea7e61f316635ab",
@@ -53,12 +81,21 @@
           "pluggy",
           "trove-classifiers"
         ],
+        "markdown-it-py": [
+          "mdurl"
+        ],
+        "mdurl": [],
         "packaging": [],
         "pathspec": [],
         "pluggy": [],
+        "pygments": [],
+        "rich": [
+          "markdown-it-py",
+          "pygments"
+        ],
         "trove-classifiers": []
       }
     }
   },
-  "invalidationHash": "d9ba953fb67f6a64d7d7c0fb36be292c3e84ee70bf54ebc1810bcd82c02c7146"
+  "invalidationHash": "156fe21e28238080e9b7e35e84dfb16761c3a17d21291acf0487ba850888dd18"
 }
