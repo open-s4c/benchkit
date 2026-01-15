@@ -78,6 +78,7 @@ from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResul
 from benchkit.core.bktypes.contexts import BuildContext, CollectContext, FetchContext, RunContext
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.utils.buildtools import build_dir_from_ctx, make
+from benchkit.utils.dir import caller_dir
 from benchkit.utils.fetchtools import git_clone
 
 
@@ -92,12 +93,14 @@ class WillitscaleBench:
     - collect: Parse aggregated operation counts from the benchmark output
     """
 
+    _PATCHES: Iterable[Path] = [caller_dir() / "../../../examples/willitscale/patch.diff"]
+
     def fetch(
         self,
         ctx: FetchContext,
         parent_dir: Path,
         commit: str = "a34a85cc1e9b9b74e94fdd3ecc479019da610e6a",
-        patches: Iterable[Path] = (Path("../../examples/willitscale/patch.diff").resolve(),),
+        patches: Iterable[Path] = _PATCHES,
     ) -> FetchResult:
         """
         Fetch the Will-it-scale benchmark source code.
