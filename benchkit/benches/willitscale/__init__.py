@@ -71,6 +71,7 @@ Example:
 
 import re
 from pathlib import Path
+from typing import Iterable
 
 from benchkit.core.bktypes import RecordResult
 from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResult
@@ -95,7 +96,8 @@ class WillitscaleBench:
         self,
         ctx: FetchContext,
         parent_dir: Path,
-        commit: str = "",
+        commit: str = "a34a85cc1e9b9b74e94fdd3ecc479019da610e6a",
+        patches: Iterable[Path] = (Path("../../examples/willitscale/patch.diff").resolve(),),
     ) -> FetchResult:
         """
         Fetch the Will-it-scale benchmark source code.
@@ -109,6 +111,8 @@ class WillitscaleBench:
             parent_dir: Directory where the Will-it-scale repository will be cloned.
             commit: Git commit hash, tag, or branch name.
                 An empty string means the default branch is used.
+            patches: Iterable of patch files to apply to the extracted source,
+                in order.
 
         Returns:
             FetchResult containing the path to the cloned repository.
@@ -118,6 +122,7 @@ class WillitscaleBench:
             ...     ctx=fetch_ctx,
             ...     parent_dir=Path("/tmp/src"),
             ...     commit="master",
+            ...     patches=(Path("../../examples/willitscale/patch.diff").resolve()),
             ... )
         """
 
@@ -125,6 +130,7 @@ class WillitscaleBench:
             ctx=ctx,
             url="https://github.com/antonblanchard/will-it-scale.git",
             commit=commit,
+            patches=patches,
             parent_dir=parent_dir,
         )
 
