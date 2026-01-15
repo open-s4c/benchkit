@@ -77,6 +77,7 @@ from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResul
 from benchkit.core.bktypes.contexts import BuildContext, CollectContext, FetchContext, RunContext
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.utils.buildtools import build_dir_from_ctx, cmake_build
+from benchkit.utils.dir import caller_dir
 from benchkit.utils.fetchtools import git_clone
 
 
@@ -91,12 +92,17 @@ class LevelDBBench:
     - collect: Parse performance metrics from output
     """
 
+    _PATCHES: Iterable[Path] = [
+        caller_dir() / "../../../tutorials/leveldb-bench/patch.diff",
+        caller_dir() / "../../../tutorials/leveldb-bench/patch02.diff",
+    ]
+
     def fetch(
         self,
         ctx: FetchContext,
         parent_dir: Path,
-        commit: str = "",
-        patches: Iterable[Path] = (),
+        commit: str = "ac691084fdc5546421a55b25e7653d450e5a25fb",
+        patches: Iterable[Path] = _PATCHES,
     ) -> FetchResult:
         """
         Fetch LevelDB source code from GitHub.

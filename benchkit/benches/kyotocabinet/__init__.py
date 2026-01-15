@@ -76,6 +76,7 @@ from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResul
 from benchkit.core.bktypes.contexts import BuildContext, CollectContext, FetchContext, RunContext
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.utils.buildtools import make
+from benchkit.utils.dir import caller_dir
 from benchkit.utils.fetchtools import curl, git_apply_patches, tar_extract
 
 
@@ -90,11 +91,18 @@ class KyotoCabinetBench:
     - collect: Parse aggregate performance metrics from the benchmark output
     """
 
+    _PATCHES: Iterable[Path] = [
+        caller_dir() / "../../../examples/kyotocabinet/patches/01-cloudflare.diff",
+        caller_dir() / "../../../examples/kyotocabinet/patches/02-cloudflare.diff",
+        caller_dir() / "../../../examples/kyotocabinet/patches/03-benchmark.diff",
+        caller_dir() / "../../../examples/kyotocabinet/patches/04-benchkit.diff",
+    ]
+
     def fetch(
         self,
         ctx: FetchContext,
         parent_dir: Path,
-        patches: Iterable[Path] = (),
+        patches: Iterable[Path] = _PATCHES,
     ) -> FetchResult:
         """
         Fetch and prepare the KyotoCabinet source tree.
