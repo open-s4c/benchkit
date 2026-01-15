@@ -8,9 +8,9 @@
 
   outputs = {
     self,
-    nixpkgs,
-    dream2nix,
-    pythainer
+      nixpkgs,
+      dream2nix,
+      pythainer
   }:
     let
       eachSystem = nixpkgs.lib.genAttrs [
@@ -40,38 +40,53 @@
 
       devShells = eachSystem (system:
         let
-          pkgs = nixpkgs.legacyPackages.${system}; # 
+          pkgs = import nixpkgs {inherit system;};
           benchkit = self.packages.${system}.default;
           python = benchkit.config.deps.python;
+
+          benchkitCorePackages = [
+            benchkit.config.deps.pythainerPackage
+            benchkit.config.deps.stress-ng
+            benchkit.config.deps.tmux
+          ];
+
+          pythonToolingPackages = [
+            python.pkgs.python-lsp-ruff
+            python.pkgs.numpy
+            python.pkgs.pip
+          ];
+
+          formattingPackages = [
+            python.pkgs.flake8
+            pkgs.pylint
+            pkgs.isort
+            pkgs.black
+            pkgs.ruff 
+          ];
         in {
-          default = pkgs.mkShell { # 
+          core = pkgs.mkShell { # 
             inputsFrom = [benchkit.devShell]; # 
-            packages = [
-                
-              benchkit.config.deps.pythainerPackage
-              benchkit.config.deps.qemu_full
-              benchkit.config.deps.tmux
-
-              python.pkgs.python-lsp-ruff
-              python.pkgs.pip
-              python.pkgs.numpy
-              python.pkgs.flake8
-
-              pkgs.ruff 
-              pkgs.black
-              pkgs.pylint
-
-              # x264 requirements
-              pkgs.pkg-config
-              pkgs.yasm
-              pkgs.nasm
-
-              pkgs.glibc
-              pkgs.glibc.dev
-              pkgs.glibc.static
-            ];
+            packages = benchkitCorePackages
+                       ++ pythonToolingPackages
+                       ++ formattingPackages
+                       ++ [];
           };
-        });
 
+          # example of a devshell where non free software is required
+          # unfree = pkgs.mkShell {
+          #   inputsFrom = [self.devShells.${system}.core];
+          #   packages = let
+          #     pkgs = import nixpkgs {
+          #       inherit system;
+          #       config.allowUnfree = true;
+          #     };
+          #   in benchkitCorePackages
+          #      ++ pythonToolingPackages
+          #      ++ formattingPackages
+          #      ++ [];
+          # };
+
+          default = self.devShells.${system}.core;
+        });
     };
 }
