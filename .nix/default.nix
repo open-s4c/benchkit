@@ -20,7 +20,7 @@ in {
     pythainerPackage = pythainer.default;
     inherit
       (nixpkgs)
-      qemu_full
+      stress-ng
       tmux
       git
     ;
@@ -32,10 +32,9 @@ in {
     nativeBuildInputs = [];
 
     propagatedBuildInputs = [
-      config.deps.qemu_full
-      config.deps.tmux
-      config.deps.git
       config.deps.pythainerPackage
+      config.deps.stress-ng
+      config.deps.git
     ];
 
     src = lib.cleanSourceWith {
@@ -51,10 +50,10 @@ in {
 
   buildPythonPackage = {
     pyproject = true; 
-   pythonImportsCheck = [ # checks that python can import pythainer
-    "benchkit" 
-    "pythainer"
-   ];
+    pythonImportsCheck = [ # checks that python can import pythainer
+      "benchkit" 
+      "pythainer"
+    ];
   };
 
   pip = {
@@ -66,13 +65,13 @@ in {
 
     # this is required as the pypi version of docopt makes the build fail
     overrides.docopt = {
-        buildPythonPackage.pyproject = true;
-        mkDerivation.buildInputs = [config.deps.python.pkgs.setuptools];
+      buildPythonPackage.pyproject = true;
+      mkDerivation.buildInputs = [config.deps.python.pkgs.setuptools];
     };
 
     overrides.wget = {
-        buildPythonPackage.pyproject = true;
-        mkDerivation.buildInputs = [config.deps.python.pkgs.setuptools];
+      buildPythonPackage.pyproject = true;
+      mkDerivation.buildInputs = [config.deps.python.pkgs.setuptools];
     };
   };
 
