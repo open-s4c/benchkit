@@ -68,7 +68,7 @@ def git_clone(
         ctx.exec(argv=["git", "checkout", f"{commit}"], cwd=dest)
 
     if not exists:
-        if not exists and patches:
+        if patches:
             git_apply_patches(ctx=ctx, repo_dir=dest, patches=patches)
 
     return dest
