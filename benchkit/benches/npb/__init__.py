@@ -9,6 +9,8 @@ and scalability of parallel systems. This implementation targets the OpenMP
 variant of NPB (e.g., LU, CG, FT, MG, IS), where each kernel is built as a
 standalone executable for a chosen problem class.
 
+For more information on NPB Please refer to: https://www.nas.nasa.gov/software/npb.html
+
 The implementation covers:
 - Fetching the NPB release tarball (currently NPB 3.4.3) and extracting it
 - Generating the default build configuration (``config/make.def``)
@@ -148,7 +150,7 @@ class NPBBench:
         t_class: str = "A",
     ) -> BuildResult:
         """
-        Configure and build the NAS Parallel Benchmarks (NPB) suite (OpenMP variant).
+        Configure and build the NAS Parallel Benchmarks (NPB) suite.
 
         This step prepares the NPB build system by materializing the ``make.def``
         configuration file from the provided template, creates the expected output
@@ -215,7 +217,7 @@ class NPBBench:
         Execute an NAS Parallel Benchmarks (NPB) workload.
 
         Runs a single NPB kernel binary (e.g., ``lu``, ``cg``, ``ft``) built by the
-        OpenMP NPB suite. The executed binary is selected via ``test_name`` and
+        NPB suite. The executed binary is selected via ``test_name`` and
         ``t_class``
 
         The number of OpenMP threads is controlled through the ``OMP_NUM_THREADS``
