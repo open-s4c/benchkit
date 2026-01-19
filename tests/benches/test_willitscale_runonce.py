@@ -25,7 +25,7 @@ def main() -> None:
         bench=WillitscaleBench(),
         args={
             "parent_dir": benches_dir,
-            "commit": "a34a85cc1e9b9b74e94fdd3ecc479019da610e6a",
+            "commit": "75f66e45697e6f5f49c33dd950c4e6b289198f8f",
             "patches": [
                 Path("../../examples/willitscale/patch.diff").resolve(),
             ],

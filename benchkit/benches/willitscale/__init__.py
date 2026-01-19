@@ -99,7 +99,7 @@ class WillitscaleBench:
         self,
         ctx: FetchContext,
         parent_dir: Path,
-        commit: str = "a34a85cc1e9b9b74e94fdd3ecc479019da610e6a",
+        commit: str = "75f66e45697e6f5f49c33dd950c4e6b289198f8f",
         patches: Iterable[Path] = _PATCHES,
     ) -> FetchResult:
         """
