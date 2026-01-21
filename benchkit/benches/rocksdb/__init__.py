@@ -88,7 +88,7 @@ class RocksDBBench:
         self,
         ctx: FetchContext,
         parent_dir: Path,
-        commit: str = "",
+        commit: str = "v10.7.5",
     ) -> FetchResult:
         """
         Fetch RocksDB source code from GitHub.
