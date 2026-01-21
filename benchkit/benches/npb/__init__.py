@@ -9,7 +9,7 @@ and scalability of parallel systems. This implementation targets the OpenMP
 variant of NPB (e.g., LU, CG, FT, MG, IS), where each kernel is built as a
 standalone executable for a chosen problem class.
 
-For more information on NPB Please refer to: https://www.nas.nasa.gov/software/npb.html
+For more information on NPB, refer to: https://www.nas.nasa.gov/software/npb.html
 
 The implementation covers:
 - Fetching the NPB release tarball (currently NPB 3.4.3) and extracting it
