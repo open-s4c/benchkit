@@ -55,6 +55,8 @@ future.
     - ref: https://lmbench.sourceforge.net/why_lmbench.html
 [ ] https://github.com/eembc/coremark
 [ ] https://sites.google.com/view/parvecbenchmarksuite/ of Magnus
+[ ] rtesbench: A Multi-core Benchmark Framework for Real-Time Embedded Systems
+    https://dl.acm.org/doi/10.1145/3735452.3735521
 
 ## Functional changes
 
@@ -246,6 +248,9 @@ future.
 
 - perf with python?
   https://www.phoronix.com/news/Linux-6.18-Perf-Tools
+
+- consider uv for package system
+  https://nesbitt.io/2025/12/26/how-uv-got-so-fast.html
 
 ## Documentation
 
