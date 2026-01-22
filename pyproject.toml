@@ -14,6 +14,7 @@ classifiers = [
 ]
 dependencies = [
   "docopt<=0.6.2",
+  "rich<=14.2.0",
 ]
 
 [project.urls]
@@ -58,6 +59,7 @@ exclude = '''
 
 [tool.isort]
 profile = "black"
+line_length = 100
 skip = [
     "tutorials/leveldb-bench/deps/",
     "plotbench/venv"

@@ -113,6 +113,7 @@ iterate over the variables and their values using the cartesian product
 (or other supported or custom methods), run the benchmark and output the
 results in a format that is friendly with plotting tools.
 
+For further documentation, see the [documentation](docs/README.md)
 
 ## Quick start with sugars
 

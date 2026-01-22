@@ -9,8 +9,8 @@ Minimal example to run benchmarks from dacapobench.
 from benchmark_dacapobench import dacapobench_campaign
 
 from benchkit.campaign import CampaignSuite
+from benchkit.commandwrappers.javaspeedupstack import JavaSpeedupStackWrapper
 from benchkit.commandwrappers.perf import enable_non_sudo_perf
-from benchkit.commandwrappers.speedupstack import SpeedupStackWrapper
 from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import caller_dir
 
@@ -22,7 +22,7 @@ def main() -> None:
     # Where is the benchmark code located
     dacapobench_src_dir = (caller_dir() / "deps/dacapobench/benchmarks/").resolve()
 
-    speedupstackwrapper = SpeedupStackWrapper()
+    speedupstackwrapper = JavaSpeedupStackWrapper()
 
     # Define the campaign, associated with the LevelDB benchmark
     campaign = dacapobench_campaign(
@@ -61,7 +61,11 @@ def main() -> None:
         command_attachments=speedupstackwrapper.command_attachments(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
         enable_data_dir=True,
+        # Makes sure not to clear the deps between benchmarks.
+        # This decreases compile time while increasing space requirements.
         clean_in_between_different_benchmarks=False,
+        # Makes sure that the latest results are symlinked to a consistent folder.
+        symlink_latest=True,
     )
 
     # Define the campaign suite and run the benchmarks in the suite

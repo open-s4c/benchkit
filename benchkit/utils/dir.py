@@ -10,6 +10,7 @@ import os
 import pathlib
 from typing import Iterable
 
+from benchkit.communication import CommunicationLayer, LocalCommLayer
 from benchkit.shell.shell import shell_out
 from benchkit.utils.types import PathType
 
@@ -81,22 +82,25 @@ def gitrootdir(path: PathType) -> pathlib.Path:
     return result
 
 
-def gitmainrootdir() -> pathlib.Path:
+def gitmainrootdir(
+    comm: CommunicationLayer = LocalCommLayer(),
+) -> pathlib.Path:
     """
     Same as gitrootdir, but it crosses the submodules.
 
     Returns:
         pathlib.Path: the root directory of the main git repository (not the submodules).
     """
-    this_dir = parentdir(__file__)
-    reldir = shell_out(
+    host_this_dir = parentdir(__file__)
+    this_dir = comm.host_to_comm_path(host_this_dir)
+    reldir = comm.shell(
         command="git rev-parse --show-superproject-working-tree",
         current_dir=this_dir,
         print_input=False,
         print_output=False,
     ).strip()
     if not reldir:
-        reldir = shell_out(
+        reldir = comm.shell(
             command="git rev-parse --show-toplevel",
             current_dir=this_dir,
             print_input=False,

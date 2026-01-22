@@ -1,0 +1,589 @@
+diff --git a/lib/appbase.hh b/lib/appbase.hh
+index ba07661..d7e97c6 100644
+--- a/lib/appbase.hh
++++ b/lib/appbase.hh
+@@ -14,7 +14,7 @@
+  */
+ #ifndef APPBASE_HH_
+ #define APPBASE_HH_ 1
+-
++#include <chrono>
+ #include "mr-types.hh"
+ #include "profile.hh"
+ #include "bench.hh"
+@@ -89,7 +89,7 @@ struct mapreduce_appbase {
+     int reduce_worker();
+     int merge_worker();
+     static void *base_worker(void *arg);
+-    void run_phase(int phase, int ncore, uint64_t &t, int first_task = 0);
++    void run_phase(int phase, int ncore, std::chrono::duration<double> &t, int first_task = 0);
+     map_bucket_manager_base *create_map_bucket_manager(int nrow, int ncol);
+ 
+     int nreduce_or_group_task_;
+@@ -104,12 +104,12 @@ struct mapreduce_appbase {
+     uint64_t nsample_;
+     int merge_ncore_;
+ 
+-    int ncore_;   
+-    uint64_t total_sample_time_;
+-    uint64_t total_map_time_;
+-    uint64_t total_reduce_time_;
+-    uint64_t total_merge_time_;
+-    uint64_t total_real_time_;
++    int ncore_;
++    std::chrono::duration<double> total_sample_time_;
++    std::chrono::duration<double> total_map_time_;
++    std::chrono::duration<double> total_reduce_time_;
++    std::chrono::duration<double> total_merge_time_;
++    std::chrono::duration<double> total_real_time_;
+     bool clean_;
+     
+     int next_task() {
+diff --git a/lib/application.cc b/lib/application.cc
+index b124e15..b2df3f0 100644
+--- a/lib/application.cc
++++ b/lib/application.cc
+@@ -20,6 +20,7 @@
+ #include <unistd.h>
+ #include <inttypes.h>
+ #include <iostream>
++#include <chrono>
+ 
+ #include "application.hh"
+ #include "bench.hh"
+@@ -43,8 +44,10 @@ void pprint(const char *key, uint64_t v, const char *delim) {
+     std::cout << key << "\t" << v << delim;
+ }
+ 
+-void cprint(const char *key, uint64_t v, const char *delim) {
+-    pprint(key, cycle_to_ms(v), delim);
++void cprint(const char *key, std::chrono::duration<double> v, const char *delim) {
++	uint64_t ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(v).count();
++    // pprint(key, cycle_to_ms(v), delim);
++    pprint(key, ms_int, delim);
+ }
+ }
+ 
+@@ -177,8 +180,11 @@ void *mapreduce_appbase::base_worker(void *x) {
+     return 0;
+ }
+ 
+-void mapreduce_appbase::run_phase(int phase, int ncore, uint64_t &t, int first_task) {
+-    uint64_t t0 = read_tsc();
++void mapreduce_appbase::run_phase(int phase, int ncore, std::chrono::duration<double> &t, int first_task) {
++    //uint64_t t0 = read_tsc();
++	using namespace std::chrono;
++	high_resolution_clock::time_point t0 = high_resolution_clock::now();
++	// printf("Running phase %lu on %d cores\n", t0, ncore);
+     prof_phase_init();
+     pthread_t tid[JOS_NCPU];
+     phase_ = phase;
+@@ -196,7 +202,8 @@ void mapreduce_appbase::run_phase(int phase, int ncore, uint64_t &t, int first_t
+ 	mthread_join(tid[i], i, &ret);
+     }
+     prof_phase_end();
+-    t += read_tsc() - t0;
++	high_resolution_clock::time_point t1 = high_resolution_clock::now();
++    t += t1 - t0;
+ }
+ 
+ size_t mapreduce_appbase::sched_sample() {
+@@ -239,7 +246,9 @@ int mapreduce_appbase::sched_run() {
+         ma_.push_back(ma);
+         bzero(&ma, sizeof(ma));
+     }
+-    uint64_t real_start = read_tsc();
++	using namespace std::chrono;
++    high_resolution_clock::time_point real_start = high_resolution_clock::now();
++
+     // get the number of reduce tasks by sampling if needed
+     if (skip_reduce_or_group_phase()) {
+         m_ = create_map_bucket_manager(ncore_, 1);
+@@ -251,7 +260,9 @@ int mapreduce_appbase::sched_run() {
+         get_reduce_bucket_manager()->init(nreduce_or_group_task_);
+     }
+ 
+-    uint64_t map_time = 0, reduce_time = 0, merge_time = 0;
++    duration<double> map_time = duration<double>::zero();
++	duration<double> reduce_time = duration<double>::zero();
++	duration<double> merge_time = duration<double>::zero();
+     // map phase
+     run_phase(MAP, ncore_, map_time, nsample_);
+     // reduce phase
+@@ -275,15 +286,16 @@ int mapreduce_appbase::sched_run() {
+     total_map_time_ += map_time;
+     total_reduce_time_ += reduce_time;
+     total_merge_time_ += merge_time;
+-    total_real_time_ += read_tsc() - real_start;
++	high_resolution_clock::time_point real_end = high_resolution_clock::now();
++    total_real_time_ += real_end - real_start;
+     reset();  // result everything except for results_
+     return 0;
+ }
+ 
+ void mapreduce_appbase::print_stats(void) {
+     prof_print(ncore_);
+-    uint64_t sum_time = total_sample_time_ + total_map_time_ + 
+-                        total_reduce_time_ + total_merge_time_;
++	std::chrono::duration<double> sum_time = total_sample_time_ + total_map_time_ + 
++						total_reduce_time_ + total_merge_time_;
+ 
+     std::cout << "Runtime in millisecond [" << ncore_ << " cores]\n\t";
+ #define SEP "\t"
+diff --git a/lib/bench.hh b/lib/bench.hh
+index f524053..5b5ca57 100644
+--- a/lib/bench.hh
++++ b/lib/bench.hh
+@@ -12,184 +12,275 @@
+  * summary of the Metis LICENSE file; the license in that file is legally
+  * binding.
+  */
+-#ifndef BENCH_HH_
+-#define BENCH_HH_ 1
++ #ifndef BENCH_HH_
++ #define BENCH_HH_ 1
++ 
++ #include <stdint.h>
++ #include <stdlib.h>
++ #include <sys/time.h>
++ #include <time.h>
++ #include <sched.h>
++ #include <errno.h>
++ #include <string.h>
++ #include <stdio.h>
++ #include <pthread.h>
++ #include <unistd.h>
++ #include <assert.h>
++ #include <fcntl.h>
++ #include <math.h>
++ #include <sys/stat.h>
++ #include <algorithm>
++ 
++ #define JOS_PAGESIZE    4096
++ enum { debug_print = 0 };
++ 
++ template <typename T, typename M>
++ inline T round_down(T n, M b) {
++	 uintptr_t r = uintptr_t(n);
++	 return (T)(r - r % b);
++ }
++ 
++ template <typename T, typename M>
++ inline T round_up(T n, M b) {
++	 uintptr_t r = uintptr_t(n);
++	 return round_down(r + b - 1, b);
++ }
++ 
++ template <typename T>
++ inline T *safe_malloc(int n = 1) {
++	 void *x = malloc(sizeof(T) * n);
++	 assert(n == 0 || x);
++	 return (T *)x;
++ }
++ 
++ inline uint64_t tv2us(const timeval &v) {
++	 return uint64_t(v.tv_sec) * 1000000 + v.tv_usec;
++ }
++ 
++ inline uint64_t tv2ms(const timeval &v) {
++	 return tv2us(v) / 1000;
++ }
++ 
++ #define cond_printf(__exp, __fmt, __args...) \
++ do { \
++	 if (__exp) \
++		 printf(__fmt, ##__args); \
++ } while (0)
++ 
++ #define dprintf(__fmt, __args...) cond_printf(debug_print, __fmt, ##__args)
++ 
++ #define eprint(__fmt, __args...) \
++ do { \
++	 fprintf(stderr, __fmt, ##__args); \
++	 exit(EXIT_FAILURE); \
++ } while (0)
++ 
++ template <typename T>
++ inline void *int2ptr(T i) {
++	 return (void *)(intptr_t(i));
++ }
++ 
++ template <typename T>
++ inline T ptr2int(void *p) {
++	 return (T)(intptr_t(p));
++ }
++ 
++ inline uint32_t rnd(uint32_t *seed) {
++	 *seed = *seed * 1103515245 + 12345;
++	 return *seed & 0x7fffffff;
++ }
++ 
++ // read_tsc
++ #if defined(__x86_64__) || defined(__i386__)
+ 
+-#include <stdint.h>
+-#include <stdlib.h>
+-#include <sys/time.h>
+-#include <time.h>
+-#include <sched.h>
+-#include <errno.h>
+-#include <string.h>
+-#include <stdio.h>
+-#include <pthread.h>
+-#include <unistd.h>
+-#include <assert.h>
+-#include <fcntl.h>
+-#include <math.h>
+-#include <sys/stat.h>
+-#include <algorithm>
+-
+-#define JOS_PAGESIZE    4096
+-enum { debug_print = 0 };
+-
+-template <typename T, typename M>
+-inline T round_down(T n, M b) {
+-    uintptr_t r = uintptr_t(n);
+-    return (T)(r - r % b);
+-}
+-
+-template <typename T, typename M>
+-inline T round_up(T n, M b) {
+-    uintptr_t r = uintptr_t(n);
+-    return round_down(r + b - 1, b);
+-}
+-
+-template <typename T>
+-inline T *safe_malloc(int n = 1) {
+-    void *x = malloc(sizeof(T) * n);
+-    assert(n == 0 || x);
+-    return (T *)x;
+-}
+-
+-inline uint64_t tv2us(const timeval &v) {
+-    return uint64_t(v.tv_sec) * 1000000 + v.tv_usec;
+-}
+-
+-inline uint64_t tv2ms(const timeval &v) {
+-    return tv2us(v) / 1000;
+-}
+-
+-#define cond_printf(__exp, __fmt, __args...) \
+-do { \
+-    if (__exp) \
+-        printf(__fmt, ##__args); \
+-} while (0)
+-
+-#define dprintf(__fmt, __args...) cond_printf(debug_print, __fmt, ##__args)
+-
+-#define eprint(__fmt, __args...) \
+-do { \
+-    fprintf(stderr, __fmt, ##__args); \
+-    exit(EXIT_FAILURE); \
+-} while (0)
+-
+-template <typename T>
+-inline void *int2ptr(T i) {
+-    return (void *)(intptr_t(i));
+-}
+-
+-template <typename T>
+-inline T ptr2int(void *p) {
+-    return (T)(intptr_t(p));
+-}
+-
+-inline uint32_t rnd(uint32_t *seed) {
+-    *seed = *seed * 1103515245 + 12345;
+-    return *seed & 0x7fffffff;
+-}
+-
+-inline uint64_t read_tsc(void) {
+-    uint32_t a, d;
+-    __asm __volatile("rdtsc":"=a"(a), "=d"(d));
+-    return ((uint64_t) a) | (((uint64_t) d) << 32);
+-}
+-
+-inline uint64_t read_pmc(uint32_t ecx) {
+-    uint32_t a, d;
+-    __asm __volatile("rdpmc":"=a"(a), "=d"(d):"c"(ecx));
+-    return ((uint64_t) a) | (((uint64_t) d) << 32);
+-}
+-
+-inline void mfence(void) {
+-    __asm __volatile("mfence" ::: "memory");
+-}
+-
+-inline void compiler_barrier() {
+-    __asm__ __volatile__("": : :"memory");
+-}
+-
+-inline void nop_pause(void) {
+-    __asm __volatile("pause"::);
+-}
+-
+-inline uint64_t usec(void) {
+-    struct timeval tv;
+-    gettimeofday(&tv, 0);
+-    return uint64_t(tv.tv_sec) * 1000000 + tv.tv_usec;
+-}
+-
+-inline uint64_t get_cpu_freq(void) {
+-#ifdef JOS_USER
+-    return 2000 * 1024 * 1024;
+-#else
+-    FILE *f = fopen("/proc/cpuinfo", "r");
+-    assert(f != NULL);
+-    float freqf = 0;
+-    char *line = NULL;
+-    size_t len = 0;
+-    while (getline(&line, &len, f) != EOF &&
+-           sscanf(line, "cpu MHz\t: %f", &freqf) != 1);
+-    if (line)
+-        free(line);
+-    fclose(f);
+-    return uint64_t(freqf * (1 << 20));
+-#endif
+-}
+-
+-inline uint64_t cycle_to_ms(uint64_t x) {
+-    return (x * 1000) / get_cpu_freq();
+-}
+-
+-inline uint32_t get_core_count(void) {
+-    int r = sysconf(_SC_NPROCESSORS_ONLN);
+-    if (r < 0)
+-	eprint("get_core_count: error: %s\n", strerror(errno));
+-    return r;
+-}
+-
+-inline void lfence(void) {
+-    __asm __volatile("lfence" ::: "memory");
++	// x86/x86_64 version using RDTSC
++	inline uint64_t read_tsc(void) {
++		uint32_t a, d;
++		__asm__ __volatile__("rdtsc" : "=a"(a), "=d"(d));
++		return ((uint64_t)d << 32) | a;
++	}
++ 
++ #elif defined(__aarch64__)
++ 
++	// ARM64 version using CNTVCT_EL0 (virtual counter)
++	inline uint64_t read_tsc(void) {
++		uint64_t cntvct;
++		asm volatile("mrs %0, cntvct_el0" : "=r"(cntvct));
++		return cntvct;
++	}
++ 
++ #elif defined(__arm__)
++ 
++	// ARM (32-bit) fallback
++	// Note: Accessing performance counters may require enabling user access
++	inline uint64_t read_tsc(void) {
++		uint32_t pmccntr;
++		asm volatile("mrc p15, 0, %0, c9, c13, 0" : "=r"(pmccntr));
++		return (uint64_t)pmccntr;
++	}
++ 
++ #else
++ 
++	#warning "read_tsc is not implemented for this architecture"
++	#include <time.h>
++	
++	inline uint64_t read_tsc(void) {
++		struct timespec ts;
++		clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
++		return (uint64_t)ts.tv_sec * 1000000000ull + ts.tv_nsec;
++	}
++ 
++ #endif
++ 
++ inline uint64_t read_pmc(uint32_t ecx) {
++	 uint32_t a, d;
++	 __asm__ __volatile("rdpmc":"=a"(a), "=d"(d):"c"(ecx));
++	 return ((uint64_t) a) | (((uint64_t) d) << 32);
++ }
++ 
++ inline void compiler_barrier() {
++	 __asm__ __volatile__("": : :"memory");
++ }
++ 
++ #if defined(__x86_64__) || defined(__i386__)
++ 
++ // x86/x86_64 versions
++ inline void mfence(void) {
++	 __asm__ __volatile__("mfence" ::: "memory");
++ }
++ 
++ inline void nop_pause(void) {
++	 __asm__ __volatile__("pause");
++ }
++ 
++ #elif defined(__aarch64__)
++ 
++ // ARM64 versions
++ inline void mfence(void) {
++	 __asm__ __volatile__("dmb ish" ::: "memory");
++ }
++ 
++ inline void nop_pause(void) {
++	 __asm__ __volatile__("yield");
++ }
++ 
++ #elif defined(__arm__)
++ 
++ // ARM (32-bit) versions
++ inline void mfence(void) {
++	 __asm__ __volatile__("dmb ish" ::: "memory");
++ }
++ 
++ inline void nop_pause(void) {
++	 __asm__ __volatile__("yield");
++ }
++ 
++ #else
++ 
++ #warning "Unknown architecture: using fallback implementations"
++ 
++ inline void mfence(void) {
++	 __sync_synchronize(); // GCC builtin, portable but may be less efficient
++ }
++ 
++ inline void nop_pause(void) {
++	 // Fallback: do nothing
++ }
++ 
++ #endif
++ 
++ inline uint64_t usec(void) {
++	 struct timeval tv;
++	 gettimeofday(&tv, 0);
++	 return uint64_t(tv.tv_sec) * 1000000 + tv.tv_usec;
++ }
++ 
++ inline uint64_t get_cpu_freq(void) {
++	#ifdef JOS_USER
++		return 2000 * 1024 * 1024;
++	#else
++		FILE *f = fopen("/proc/cpuinfo", "r");
++		assert(f != NULL);
++		float freqf = 0;
++		char *line = NULL;
++		size_t len = 0;
++		while (getline(&line, &len, f) != EOF &&
++				sscanf(line, "cpu MHz\t: %f", &freqf) != 1);
++		if (line)
++			free(line);
++		fclose(f);
++		return uint64_t(freqf * (1 << 20));
++	#endif
++ }
++ 
++ inline uint64_t cycle_to_ms(uint64_t x) {
++	 return (x * 1000) / get_cpu_freq();
++ }
++ 
++ inline uint32_t get_core_count(void) {
++	 int r = sysconf(_SC_NPROCESSORS_ONLN);
++	 if (r < 0)
++	 eprint("get_core_count: error: %s\n", strerror(errno));
++	 return r;
++ }
++ 
++ inline void lfence(void) {
++	#if defined(__x86_64__) || defined(__i386__)
++		__asm__ __volatile__("lfence" ::: "memory");
++	#elif defined(__aarch64__) || defined(__arm__)
++		__asm__ __volatile__("dmb ishld" ::: "memory");
++	#else
++	#warning "lfence not supported on this architecture — using generic barrier"
++		__asm__ __volatile__("" ::: "memory"); // compiler barrier only
++	#endif
+ }
+-
++ 
+ inline int atomic_add32_ret(int *cnt) {
+-    int __c = 1;
+-    __asm__ __volatile("lock; xadd %0,%1":"+r"(__c), "+m"(*cnt)::"memory");
+-    return __c;
+-}
+-
+-template <typename T>
+-inline T prime_lower_bound(T x) {
+-    for (int q = 2; q < sqrt(double(x)); ++q)
+-        if (x % q == 0)
+-            ++x, q = 1;  // restart
+-    return x;
++	#if defined(__x86_64__) || defined(__i386__)
++		int __c = 1;
++		__asm__ __volatile__("lock; xadd %0,%1" : "+r"(__c), "+m"(*cnt) :: "memory");
++		return __c;
++	#elif defined(__aarch64__) || defined(__arm__) || defined(__riscv) || defined(__powerpc__)
++		return __atomic_fetch_add(cnt, 1, __ATOMIC_SEQ_CST);  // Portable & safe
++	#else
++	#warning "atomic_add32_ret falling back to non-atomic implementation"
++		int val = *cnt;
++		*cnt = val + 1;
++		return val;
++	#endif
+ }
+-
+-inline int affinity_set(int cpu) {
+-    cpu_set_t cpuset;
+-    CPU_ZERO(&cpuset);
+-    CPU_SET(cpu, &cpuset);
+-    return sched_setaffinity(0, sizeof(cpuset), &cpuset);
+-}
+-
+-// prefetch instruction
+-inline void prefetch(const void *ptr) {
+-#ifdef NOPREFETCH
+-    (void) ptr;
+-#else
+-    typedef struct { char x[64]; } cacheline_t;
+-    asm volatile("prefetcht0 %0" : : "m" (*(const cacheline_t *)ptr));
+-#endif
+-}
+-inline void prefetchnta(const void *ptr) {
+-#ifdef NOPREFETCH
+-    (void) ptr;
+-#else
+-    typedef struct { char x[64]; } cacheline_t;
+-    asm volatile("prefetchnta %0" : : "m" (*(const cacheline_t *)ptr));
+-#endif
+-}
+-
+-#endif
++ 
++ template <typename T>
++ inline T prime_lower_bound(T x) {
++	 for (int q = 2; q < sqrt(double(x)); ++q)
++		 if (x % q == 0)
++			 ++x, q = 1;  // restart
++	 return x;
++ }
++ 
++ inline int affinity_set(int cpu) {
++	 cpu_set_t cpuset;
++	 CPU_ZERO(&cpuset);
++	 CPU_SET(cpu, &cpuset);
++	 return sched_setaffinity(0, sizeof(cpuset), &cpuset);
++ }
++ 
++ // prefetch instruction
++ inline void prefetch(const void *ptr) {
++ #ifdef NOPREFETCH
++	 (void) ptr;
++ #else
++	 typedef struct { char x[64]; } cacheline_t;
++	 asm volatile("prefetcht0 %0" : : "m" (*(const cacheline_t *)ptr));
++ #endif
++ }
++ inline void prefetchnta(const void *ptr) {
++ #ifdef NOPREFETCH
++	 (void) ptr;
++ #else
++	 typedef struct { char x[64]; } cacheline_t;
++	 asm volatile("prefetchnta %0" : : "m" (*(const cacheline_t *)ptr));
++ #endif
++ }
++ 
++ #endif

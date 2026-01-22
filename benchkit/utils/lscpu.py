@@ -70,11 +70,17 @@ class LsCpu:
         """
         Return the number of sockets (or packages).
 
+        If the socket value cannot be parsed as an integer (e.g. on some
+        platforms like Raspberry Pi 5), a default value of 1 is returned.
+
         Returns:
-            int: the number of sockets (or packages).
+            int: the number of sockets (or packages) or 1 if not specified.
         """
-        result = self.get("Socket(s):")
-        return int(result.strip())
+        result = self.get("Socket(s):").strip()
+        if not result.isdigit():
+            print(f"[WARNING] Invalid socket value '{result}' in lscpu, defaulting to 1")
+            return 1
+        return int(result)
 
     def l1d_cache(self) -> int:
         """

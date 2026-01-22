@@ -8,9 +8,14 @@ mkdir deps
 cd deps/
 git clone --recurse-submodules https://github.com/google/leveldb.git
 cd leveldb/
-git checkout 068d5ee1a3ac40dabd00d211d5013af44be55bea
+git checkout ac691084fdc5546421a55b25e7653d450e5a25fb
 git apply ../../patch.diff  # apply patch for benchstats, fairness, mutex init & fixed duration support
+git apply ../../patch02.diff  # apply patch for upstreaming
+cd third_party/googletest
+git checkout v1.17.0
+cd ../..
 git add -u
+git submodule update --init --recursive
 cd ../../../..
 ```
 

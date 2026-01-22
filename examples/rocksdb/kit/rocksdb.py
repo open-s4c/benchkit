@@ -296,6 +296,7 @@ def rocksdb_campaign(
     continuing: bool = False,
     constants: Constants = None,
     pretty: Pretty | None = None,
+    symlink_latest: bool = False,
 ) -> CampaignCartesianProduct:
     """Return a cartesian product campaign configured for the RocksDB benchmark."""
     variables = {
@@ -339,4 +340,5 @@ def rocksdb_campaign(
         benchmark_duration_seconds=benchmark_duration_seconds,
         results_dir=results_dir,
         pretty=pretty,
+        symlink_latest=symlink_latest,
     )
