@@ -42,10 +42,6 @@ def main() -> None:
         fetch_args={
             "parent_dir": deps_dir,
             "commit": "ac691084fdc5546421a55b25e7653d450e5a25fb",
-            "patches": [
-                Path("../../tutorials/leveldb-bench/patch.diff").resolve(),
-                Path("../../tutorials/leveldb-bench/patch02.diff").resolve(),
-            ],
         }
     )
     fr = bench.fetch(ctx=fc, **fc.fetch_args)

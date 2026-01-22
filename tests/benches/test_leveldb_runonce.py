@@ -26,10 +26,6 @@ def main() -> None:
         args={
             "parent_dir": benches_dir,
             "commit": "ac691084fdc5546421a55b25e7653d450e5a25fb",
-            "patches": [
-                Path("../../tutorials/leveldb-bench/patch.diff").resolve(),
-                Path("../../tutorials/leveldb-bench/patch02.diff").resolve(),
-            ],
             "bench_name": "readrandom",
             "nb_threads": 3,
         },
