@@ -5,6 +5,7 @@
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Generator
 
 this_year = datetime.now().year
@@ -74,7 +75,8 @@ def main() -> int:
     nb_invalid = 0
     for file_path in find_py_files("."):
         if not has_valid_header(file_path):
-            print(f"{file_path} does not have the valid copyright header", file=sys.stderr)
+            abs_file_path = Path(file_path).resolve()
+            print(f"{abs_file_path} does not have the valid copyright header", file=sys.stderr)
             nb_invalid += 1
     return nb_invalid
 

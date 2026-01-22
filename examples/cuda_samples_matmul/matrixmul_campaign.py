@@ -3,27 +3,24 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
-import numpy as np
 import shutil
-from typing import Any, Dict, List, Iterable
+from typing import Any, Dict, Iterable, List
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignCartesianProduct, CampaignSuite
-from benchkit.commandwrappers.ncu2 import NcuWrap, CommandWrapper
-from benchkit.platforms import Platform
-from benchkit.utils.types import PathType
+from benchkit.commandwrappers.ncu2 import CommandWrapper
+from benchkit.platforms import Platform, get_current_platform
 from benchkit.sharedlibs import SharedLib
-from benchkit.utils.dir import get_curdir, parentdir
-from benchkit.platforms import get_current_platform
-
+from benchkit.utils.dir import get_curdir
 
 # MA_WIDTHS = [32,64,128,256,512]
 # MA_HEIGHTS = [32,64,128,256,512]
 # MB_HEIGHTS = [32,64,128,256,512]
 
-MA_WIDTHS = [32,64]
-MA_HEIGHTS = [32,64]
-MB_WIDTHS = [32,64]
+MA_WIDTHS = [32, 64]
+MA_HEIGHTS = [32, 64]
+MB_WIDTHS = [32, 64]
+
 
 class MatrixMulBench(Benchmark):
     def __init__(
@@ -61,17 +58,14 @@ class MatrixMulBench(Benchmark):
     def get_build_var_names() -> List[str]:
         return []
 
-    '''
+    """
     Because this is matrix multiplication the outer dims of the 2 matrices have to match
     As a result mb_width = ma_height
-    '''
+    """
+
     @staticmethod
     def get_run_var_names() -> List[str]:
-        return [
-            "ma_width",
-            "ma_height",
-            "mb_width"
-        ]
+        return ["ma_width", "ma_height", "mb_width"]
 
     @staticmethod
     def get_tilt_var_names():
@@ -108,7 +102,7 @@ class MatrixMulBench(Benchmark):
             f"-wA={ma_width}",
             f"-hA={ma_height}",
             f"-wB={mb_width}",
-            f"-hB={ma_width}"
+            f"-hB={ma_width}",
         ]
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
@@ -129,16 +123,11 @@ class MatrixMulBench(Benchmark):
         return output
 
     @staticmethod
-    def _parse_results(
-        ma_width: int,
-        ma_height: int,
-        mb_width: int,
-        output: str
-    ) -> Dict[str, Any]:
+    def _parse_results(ma_width: int, ma_height: int, mb_width: int, output: str) -> Dict[str, Any]:
         output_lines = output.splitlines()
         result_line = next(line for line in output_lines if line.startswith("Performance="))
-        sections = result_line.split(',')
-        names=[
+        sections = result_line.split(",")
+        names = [
             "ma_width",
             "ma_height",
             "mb_width",
@@ -146,9 +135,9 @@ class MatrixMulBench(Benchmark):
             "GFlops/s",
             "Time ms",
             "Ops",
-            "Workgroup Size"
+            "Workgroup Size",
         ]
-        values = [ma_width,ma_height,ma_height,mb_width]
+        values = [ma_width, ma_height, ma_height, mb_width]
 
         gflops = " "
         ops = " "
@@ -161,7 +150,7 @@ class MatrixMulBench(Benchmark):
                 gflops = words[1]
             if "Ops" in section:
                 words = section.split()
-                ops = words[1] 
+                ops = words[1]
             if "Time" in section:
                 words = section.split()
                 time = words[1]
@@ -174,10 +163,9 @@ class MatrixMulBench(Benchmark):
         values.append(time)
         values.append(wgsize)
 
-        result_dict = dict(zip(names,values))
+        result_dict = dict(zip(names, values))
 
         return result_dict
-
 
     def parse_output_to_results(
         self,
@@ -191,11 +179,7 @@ class MatrixMulBench(Benchmark):
         ma_height = int(run_variables["ma_height"])
         mb_width = int(run_variables["mb_width"])
 
-        result_dict = self._parse_results(
-            ma_width,
-            ma_height,
-            mb_width,
-            command_output)
+        result_dict = self._parse_results(ma_width, ma_height, mb_width, command_output)
 
         return result_dict
 
@@ -212,11 +196,7 @@ def main():
         name="gpumatmul_ncu",
         benchmark=bench,
         nb_runs=nb_runs,
-        variables={
-            "ma_width": MA_WIDTHS,
-            "ma_height": MA_HEIGHTS,
-            "mb_width": MB_WIDTHS
-        },
+        variables={"ma_width": MA_WIDTHS, "ma_height": MA_HEIGHTS, "mb_width": MB_WIDTHS},
         constants={},
         debug=False,
         gdb=False,

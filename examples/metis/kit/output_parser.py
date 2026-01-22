@@ -3,64 +3,56 @@
 import re
 from typing import Any, Dict, List
 
+
 def parse_output(output: str) -> Dict[str, Any]:
-	lines = output.strip().splitlines()
+    lines = output.strip().splitlines()
 
-	# Extract number of cores
-	cores_match = re.search(r'\[(\d+)\s+cores\]', lines[0])
-	cores = int(cores_match.group(1)) if cores_match else None
-	
-	# Extract runtime key-value pairs
-	runtime_in_ms = {}
-	for match in re.finditer(r'(\w+):\s+(\d+)', lines[1]):
-		key, value = match.groups()
-		runtime_in_ms[key.lower()] = int(value)
+    # Extract number of cores
+    cores_match = re.search(r"\[(\d+)\s+cores\]", lines[0])
+    cores = int(cores_match.group(1)) if cores_match else None
 
-	
-	# Extract number of tasks
-	num_tasks = {
-		key.lower(): int(value)
-		for key, value in re.findall(r'(\w+):\s+(\d+)', lines[3])
-	}
+    # Extract runtime key-value pairs
+    runtime_in_ms = {}
+    for match in re.finditer(r"(\w+):\s+(\d+)", lines[1]):
+        key, value = match.groups()
+        runtime_in_ms[key.lower()] = int(value)
 
-	return {
-		"number_of_cores": cores,
-		"runtime_in_ms": runtime_in_ms,
-		"number_of_tasks": num_tasks
-	}
+    # Extract number of tasks
+    num_tasks = {key.lower(): int(value) for key, value in re.findall(r"(\w+):\s+(\d+)", lines[3])}
+
+    return {"number_of_cores": cores, "runtime_in_ms": runtime_in_ms, "number_of_tasks": num_tasks}
+
 
 def parse_outputs(output: str, output_keys: List[str]) -> Dict[str, any]:
-	result_dict = {}
-	blocks = re.split(r'(?=Runtime in millisecond \[\d+ cores\])', output.strip())
-	
-	for i, block in enumerate(blocks[1:]):
-		if i >= len(output_keys):
-			break  # Ignore extra blocks if no key is provided
+    result_dict = {}
+    blocks = re.split(r"(?=Runtime in millisecond \[\d+ cores\])", output.strip())
 
-		lines = block.strip().splitlines()
-		if len(lines) < 4:
-			continue  # Skip incomplete blocks
+    for i, block in enumerate(blocks[1:]):
+        if i >= len(output_keys):
+            break  # Ignore extra blocks if no key is provided
 
-		# Extract cores
-		cores_match = re.search(r'\[(\d+)\s+cores\]', lines[0])
-		cores = int(cores_match.group(1)) if cores_match else None
+        lines = block.strip().splitlines()
+        if len(lines) < 4:
+            continue  # Skip incomplete blocks
 
-		# Extract runtime values
-		runtime_in_ms = {
-			key.lower(): int(value)
-			for key, value in re.findall(r'(\w+):\s+(\d+)', lines[1])
-		}
+        # Extract cores
+        cores_match = re.search(r"\[(\d+)\s+cores\]", lines[0])
+        cores = int(cores_match.group(1)) if cores_match else None
 
-		# Extract number of tasks
-		num_tasks = {
-			key.lower(): int(value)
-			for key, value in re.findall(r'(\w+):\s+(\d+)', lines[3])
-		}
+        # Extract runtime values
+        runtime_in_ms = {
+            key.lower(): int(value) for key, value in re.findall(r"(\w+):\s+(\d+)", lines[1])
+        }
 
-		result_dict[output_keys[i]] = {
-			"number_of_cores": cores,
-			"runtime_in_ms": runtime_in_ms,
-			"number_of_tasks": num_tasks
-		}
+        # Extract number of tasks
+        num_tasks = {
+            key.lower(): int(value) for key, value in re.findall(r"(\w+):\s+(\d+)", lines[3])
+        }
 
-	return result_dict
+        result_dict[output_keys[i]] = {
+            "number_of_cores": cores,
+            "runtime_in_ms": runtime_in_ms,
+            "number_of_tasks": num_tasks,
+        }
+
+    return result_dict

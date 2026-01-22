@@ -1,44 +1,50 @@
-
 #!/usr/bin/env python3
-# Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
+# Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
 import pathlib
 import shutil
-from typing import Any, Dict, List, Iterable
+from typing import Any, Dict, Iterable, List
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignIterateVariables, CampaignSuite
-from benchkit.commandwrappers.ncu2 import NcuWrap, CommandWrapper
-from benchkit.platforms import Platform
-from benchkit.utils.types import PathType
+from benchkit.commandwrappers.ncu2 import CommandWrapper
+from benchkit.platforms import Platform, get_current_platform
 from benchkit.sharedlibs import SharedLib
-from benchkit.utils.dir import get_curdir, parentdir
-from benchkit.platforms import get_current_platform
+from benchkit.utils.dir import get_curdir
 
 # Variables
 vars = [
-    {'image': './build/images/img1.jpg',
-     'outdir': './build/encode_output/',
-     'quality': 20,
-     'subsampling': 411,
-     'huffman': 1},
-    {'image': './build/images/img3.jpg',
-     'outdir': './build/encode_output/',
-     'quality': 80,
-     'subsampling': 422,
-     'huffman': 0},
-    {'image': './build/images/img5.jpg',
-     'outdir': './build/encode_output/',
-     'quality': 50,
-     'subsampling': 444,
-     'huffman': 1},
-    {'image': './build/images/img7.jpg',
-     'outdir': './build/encode_output/',
-     'quality': 100,
-     'subsampling': 440,
-     'huffman': 0},
+    {
+        "image": "./build/images/img1.jpg",
+        "outdir": "./build/encode_output/",
+        "quality": 20,
+        "subsampling": 411,
+        "huffman": 1,
+    },
+    {
+        "image": "./build/images/img3.jpg",
+        "outdir": "./build/encode_output/",
+        "quality": 80,
+        "subsampling": 422,
+        "huffman": 0,
+    },
+    {
+        "image": "./build/images/img5.jpg",
+        "outdir": "./build/encode_output/",
+        "quality": 50,
+        "subsampling": 444,
+        "huffman": 1,
+    },
+    {
+        "image": "./build/images/img7.jpg",
+        "outdir": "./build/encode_output/",
+        "quality": 100,
+        "subsampling": 440,
+        "huffman": 0,
+    },
 ]
+
 
 class JPEGEncodeBench(Benchmark):
     def __init__(
@@ -76,19 +82,14 @@ class JPEGEncodeBench(Benchmark):
     def get_build_var_names() -> List[str]:
         return []
 
-    '''
+    """
     Because this is matrix multiplication the outer dims of the 2 matrices have to match
     As a result mb_width = ma_height
-    '''
+    """
+
     @staticmethod
     def get_run_var_names() -> List[str]:
-        return [
-            "image",
-            "outdir",
-            "quality",
-            "subsampling",
-            "huffman"
-        ]
+        return ["image", "outdir", "quality", "subsampling", "huffman"]
 
     @staticmethod
     def get_tilt_var_names():
@@ -133,7 +134,7 @@ class JPEGEncodeBench(Benchmark):
             f"-o {outdir}",
             f"-q {quality}",
             f"-s {subsampling}",
-            f"-huf {huffman}"
+            f"-huf {huffman}",
         ]
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
@@ -155,12 +156,7 @@ class JPEGEncodeBench(Benchmark):
 
     @staticmethod
     def _parse_results(
-        image: str,
-        outdir: str,
-        quality: int,
-        subsampling: int,
-        huffman: int,
-        output: str
+        image: str, outdir: str, quality: int, subsampling: int, huffman: int, output: str
     ) -> Dict[str, Any]:
         output_lines = output.splitlines()
         num_channels = 0
@@ -168,30 +164,21 @@ class JPEGEncodeBench(Benchmark):
         time = 0.0
         for line in output_lines:
             if line.startswith("Image is "):
-                num_channels = int(line.split(' ')[2]) 
+                num_channels = int(line.split(" ")[2])
             elif line.startswith("Channel "):
-                sizes = line.split(': ')[1].split(' x ')
+                sizes = line.split(": ")[1].split(" x ")
                 size_tup = (int(sizes[0]), int(sizes[1]))
                 channel_sizes.append(size_tup)
             elif line.startswith("Total time spent on encoding: "):
-                time = float(line.split(': ')[1])
+                time = float(line.split(": ")[1])
 
-        names=[
-            "image",
-            "outdir",
-            "quality",
-            "subsampling",
-            "huffman",
-            "num_channels",
-            "time"
-        ]
-        values = [image,outdir,quality,subsampling,huffman,num_channels,time]
+        names = ["image", "outdir", "quality", "subsampling", "huffman", "num_channels", "time"]
+        values = [image, outdir, quality, subsampling, huffman, num_channels, time]
         for i in range(num_channels):
             names.append(f"channel {i}")
             values.append(channel_sizes[i])
 
-        return dict(zip(names,values))
-
+        return dict(zip(names, values))
 
     def parse_output_to_results(
         self,
@@ -201,19 +188,14 @@ class JPEGEncodeBench(Benchmark):
     ) -> Dict[str, Any]:
         result_dict = {}
 
-
         image = str(run_variables["image"])
         outdir = str(run_variables["outdir"])
         quality = int(run_variables["quality"])
         subsampling = int(run_variables["subsampling"])
         huffman = int(run_variables["huffman"])
         result_dict = self._parse_results(
-            image,
-            outdir,
-            quality,
-            subsampling,
-            huffman,
-            command_output)
+            image, outdir, quality, subsampling, huffman, command_output
+        )
 
         return result_dict
 
@@ -222,9 +204,7 @@ def main():
     nb_runs = 1
     platform = get_current_platform()
 
-    bench = JPEGEncodeBench(
-        platform=platform
-    )
+    bench = JPEGEncodeBench(platform=platform)
 
     campaign = CampaignIterateVariables(
         name="gpuJPEGencode",
@@ -234,7 +214,7 @@ def main():
         constants=None,
         debug=False,
         gdb=False,
-        enable_data_dir=True
+        enable_data_dir=True,
     )
 
     campaign_suite = CampaignSuite(campaigns=[campaign])
