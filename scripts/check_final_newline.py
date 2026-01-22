@@ -68,7 +68,8 @@ def main() -> None:
     if bad_files:
         print("The following files do not end with a newline:")
         for path in bad_files:
-            print("  ", path.relative_to(repo_root))
+            abs_path = path.resolve()
+            print("  ", abs_path)
         exit(1)
 
 

@@ -1,38 +1,31 @@
+# Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 """
-Command wrapper for the `ncu (Nvidia Nsight Compute CLI)` tool for profiling applications that run on GPUs 
+Command wrapper for the `ncu (Nvidia Nsight Compute CLI)` tool for profiling
+applications that run on GPUs
 """
 
-import csv
-import json
 import os
 import os.path
-import pathlib
-import re
 import subprocess
-import sys
-import time
+from io import StringIO
+from typing import List, Optional
+
 import ncu_report
-from functools import cache
-from typing import Callable, Dict, List, Optional, Tuple
+import pandas as pd
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
-from benchkit.commandwrappers import CommandWrapper, PackageDependency
-from benchkit.communication import CommunicationLayer
-from benchkit.helpers.linux import ps, sysctl
-from benchkit.platforms import Platform, get_current_platform
-from benchkit.shell.shell import shell_interactive, shell_out
-from benchkit.shell.shellasync import AsyncProcess, SplitCommand
-from benchkit.utils.types import Environment, PathType
-import pandas as pd
-from io import StringIO
-
+from benchkit.commandwrappers import CommandWrapper
+from benchkit.shell.shell import shell_out
+from benchkit.utils.types import PathType
 
 """
 SETTING UP NCU
 1) Add ncu_report to PYTHONPATH (/opt/nvidia/nsight-compute/20xy.z.w/extras/python)
    i.e. export PYTHONPATH="${PYTHONPATH}:/opt/nvidia/nsight-compute/2022.4.1/extras/python"
 
-2) Setup NCU sudoless - https://developer.nvidia.com/nvidia-development-tools-solutions-err_nvgpuctrperm-permission-issue-performance-counters
+2) Setup NCU sudoless:
+https://developer.nvidia.com/nvidia-development-tools-solutions-err_nvgpuctrperm-permission-issue-performance-counters
 """
 
 Metric = str
@@ -45,7 +38,7 @@ def _list_to_regex(names: List) -> str:
 
 
 def _get_metrics_from_list(metrics: Optional[List]) -> str:
-    return ','.join(metrics)
+    return ",".join(metrics)
 
 
 def _which(executable: str) -> Optional[PathType]:
@@ -64,11 +57,6 @@ def _which(executable: str) -> Optional[PathType]:
 def _find_ncu_bin(search_path: Optional[PathType]) -> PathType:
 
     result = None
-    kernel = shell_out(
-        "uname -r",
-        print_input=False,
-        print_output=False,
-    ).strip()
 
     if search_path is not None:
         ncu_path = os.path.realpath(os.path.join(search_path, "ncu"))
@@ -85,8 +73,6 @@ def _find_ncu_bin(search_path: Optional[PathType]) -> PathType:
     return result
 
 
-
-
 """
 report_file_name - name of the generated report file ncu
 report_or_log - if False generate an ncu report file (.ncu-rep) otherwise generate a log file
@@ -96,11 +82,18 @@ config_path - get parameters names from a seperate file instead of passing them 
 Consult the NCU docks for all the command line options:
 https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html#command-line-options
 
-target_process_filter - only accepts strings denoting regular expressions TODO expand to lists of names
-target_kernels - only accepts strings denoting regular expressions TODO expand to lists of names
-section - only accepts strings denoting regular expressions
-remove_absent_sections/metrics - If the specified section/metric is not correct just remove it and run ncu with sections/meteics that are correct
+target_process_filter:
+    only accepts strings denoting regular expressions TODO expand to lists of names
+target_kernels:
+    only accepts strings denoting regular expressions TODO expand to lists of names
+section:
+    only accepts strings denoting regular expressions
+remove_absent_sections/metrics:
+    If the specified section/metric is not correct just remove it and run ncu with
+    sections/meteics that are correct
 """
+
+
 class NcuWrap(CommandWrapper):
 
     def __init__(
@@ -122,7 +115,8 @@ class NcuWrap(CommandWrapper):
         metrics: Optional[List[Metric]] = None,
         remove_absent_metrics: bool = True,
         user_args: List[str] = None,
-        csv: bool = False):
+        use_csv: bool = False,
+    ):
 
         self._report_or_log = report_or_log
         self._config_path = config_path
@@ -135,29 +129,27 @@ class NcuWrap(CommandWrapper):
         self._target_kernels = target_kernels
         self._launch_count = launch_count
         self._user_args = user_args
-        self._csv = csv
+        self._csv = use_csv
 
         self._ncu_bin = _find_ncu_bin(ncu_path)
 
         self._set = user_set
         if self._set is not None:
-            self._validate_set(
-                ncu_bin=self._ncu_bin,
-                user_set=self._set)
+            self._validate_set(ncu_bin=self._ncu_bin, user_set=self._set)
 
         self._metrics = metrics
         if self._metrics is not None:
             self._validate_metrics(
-                ncu_bin=self._ncu_bin,
-                metrics=metrics,
-                remove_absent_metric=remove_absent_metrics)
+                ncu_bin=self._ncu_bin, metrics=metrics, remove_absent_metric=remove_absent_metrics
+            )
 
         self._sections = sections
         if self._sections is not None:
             self._validate_sections(
                 ncu_bin=self._ncu_bin,
                 sections=self._sections,
-                remove_absent_section=remove_absent_sections)
+                remove_absent_section=remove_absent_sections,
+            )
 
         super().__init__()
 
@@ -169,22 +161,18 @@ class NcuWrap(CommandWrapper):
             # PackageDependency("nvidia-gds")
         ]
 
-    def command_prefix(
-        self,
-        record_data_dir: Optional[PathType],
-        **kwargs
-    ) -> List[str]:
+    def command_prefix(self, record_data_dir: Optional[PathType], **kwargs) -> List[str]:
 
         cmd_prefix = super().command_prefix(**kwargs)
         options = []
 
-        if self._report_file_name == None:
+        if self._report_file_name is None:
             raise ValueError(
                 "Report data file cannot be None, it is required to save strace output."
             )
 
         if self._config_path is not None:
-            options.append(["--config-file-path", f"{self._config_path}"]) 
+            options.append(["--config-file-path", f"{self._config_path}"])
         else:
             if self._force_overwrite:
                 options.append("-f")
@@ -196,7 +184,7 @@ class NcuWrap(CommandWrapper):
                 options.append("--nvtx")
 
             if self._app_only:
-                options.extend(["--target-processes"],["application-only"])
+                options.extend(["--target-processes"], ["application-only"])
 
             # if self._target_process_filter is not None:
             #     options.extend(["--target_process_filter"],[f"regex:{self._target_process_filter}"])
@@ -205,10 +193,10 @@ class NcuWrap(CommandWrapper):
             #     options.extend(["--target_process_filter"],[f"exclude:{self._exclude_process}"])
 
             if self._target_kernels is not None:
-                options.extend(["--kernel-name",f"regex:{self._target_kernels}"])
+                options.extend(["--kernel-name", f"regex:{self._target_kernels}"])
 
             if self._set is not None:
-                options.extend(["--set",f"{self._set}"])
+                options.extend(["--set", f"{self._set}"])
 
             if self._sections is not None:
                 for section in self._sections:
@@ -224,7 +212,8 @@ class NcuWrap(CommandWrapper):
             if self._user_args is not None:
                 options.extend(self._user_args)
 
-        if record_data_dir is None: record_data_dir = ''
+        if record_data_dir is None:
+            record_data_dir = ""
         ncu_report_file_path = os.path.join(record_data_dir, self._report_file_name)
         option = "-o"
 
@@ -232,25 +221,13 @@ class NcuWrap(CommandWrapper):
             option = "--log-file"
             ncu_report_file_path = ncu_report_file_path + ".csv"
 
-        cmd_prefix = (
-            ["ncu"]
-            + options
-            + [
-                option,
-                f"{ncu_report_file_path}"
-            ] 
-            + cmd_prefix
-        )      
+        cmd_prefix = ["ncu"] + options + [option, f"{ncu_report_file_path}"] + cmd_prefix
 
         return cmd_prefix
 
-    
     # method for returing a dictionary from a loaded profile context
     # https://docs.nvidia.com/nsight-compute/PythonReportInterface/index.html
-    def _process_ncu_context(
-        self,
-        profile_context
-    ) -> RecordResult:
+    def _process_ncu_context(self, profile_context) -> RecordResult:
 
         # "https://pythonhow.com/how/check-if-a-string-is-a-float/"
         def is_float(word):
@@ -266,8 +243,9 @@ class NcuWrap(CommandWrapper):
             for action_idx in range(len(rnge)):
                 action = rnge[action_idx]
                 # output_dict[f"ncu/range_{rnge_idx}"][f"{str(action)}_{action_idx}"] = {}
-                for metric in (action):
-                    # handling of string parameters needs to be discussed - better to analyse ncu report file instead
+                for metric in action:
+                    # handling of string parameters needs to be discussed.
+                    # It is better to analyze ncu report file instead
                     try:
                         val = float(action[metric].value())
                         if metric not in metric_dict:
@@ -284,7 +262,6 @@ class NcuWrap(CommandWrapper):
                 metric_dict[key] = mean
 
         return metric_dict
-
 
     def _process_log_file(self, file_path: str) -> RecordResult:
         # read the file contents and remove any lines that start with "=="
@@ -303,9 +280,9 @@ class NcuWrap(CommandWrapper):
             try:
                 df = pd.read_csv(content_io)
 
-                names = df['Metric Name'].to_list()
-                units = df['Metric Unit'].to_list()
-                values = df['Metric Value'].to_list()
+                names = df["Metric Name"].to_list()
+                units = df["Metric Unit"].to_list()
+                values = df["Metric Value"].to_list()
 
                 output_dict = {}
                 for i in range(len(names)):
@@ -319,7 +296,6 @@ class NcuWrap(CommandWrapper):
         except FileNotFoundError:
             return {}
 
-
     def post_run_hook_update_results(
         self,
         experiment_results_lines: List[RecordResult],
@@ -331,11 +307,12 @@ class NcuWrap(CommandWrapper):
 
         # read the report file with the Python package
         # iterate over the ranges
-        # for each action in a given range specify the metric and the metric value and add it to the dict
+        # for each action in a given range specify the metric and the metric value
+        # and add it to the dict
 
         ncu_out_file_path = os.path.join(record_data_dir, f"{self._report_file_name}")
         output_dict = {}
-        if not self._report_or_log: # we saved a report file and not a csv log
+        if not self._report_or_log:  # we saved a report file and not a csv log
             ncu_out_file_path = ncu_out_file_path + ".ncu-rep"
 
             try:
@@ -350,7 +327,6 @@ class NcuWrap(CommandWrapper):
             output_dict = self._process_log_file(ncu_out_file_path)
 
         return output_dict
-
 
     def _get_all_metrics(self, raw_output):
 
@@ -367,21 +343,20 @@ class NcuWrap(CommandWrapper):
 
         return names
 
-
     def _get_all_sets(self, raw_output):
 
         lines = raw_output.splitlines()
         useful_lines = lines[3:]
         names = []
         for line in useful_lines:
-            if (not line[0].isalnum()): continue
+            if not line[0].isalnum():
+                continue
             sline = line.strip()
             vals = sline.split()
             set_name = vals[0]
             names.append(set_name)
 
         return names
-
 
     def _get_all_sections(self, raw_output):
 
@@ -396,11 +371,7 @@ class NcuWrap(CommandWrapper):
 
         return names
 
-
-    def _get_available_options(
-            self,
-            ncu_bin: PathType,
-            cmd_suffix: str):
+    def _get_available_options(self, ncu_bin: PathType, cmd_suffix: str):
 
         raw_output = shell_out(
             command=f"{ncu_bin} {cmd_suffix}",
@@ -415,21 +386,14 @@ class NcuWrap(CommandWrapper):
         elif "sections" in cmd_suffix:
             return self._get_all_sections(raw_output)
         else:
-            raise ValueError(
-                                f"The provided command line suffix is not supported: {cmd_suffix}"
-                            )
-
+            raise ValueError(f"The provided command line suffix is not supported: {cmd_suffix}")
 
     def _validate_options(
-        self,
-        ncu_bin: PathType,
-        cmd_suffix: str,
-        options: List[str],
-        remove_absent_options: bool
+        self, ncu_bin: PathType, cmd_suffix: str, options: List[str], remove_absent_options: bool
     ) -> List[str]:
-        
+
         all_options = self._get_available_options(ncu_bin, cmd_suffix)
-            
+
         set_all_options = set(all_options)
         set_user_options = set(options)
 
@@ -439,54 +403,31 @@ class NcuWrap(CommandWrapper):
         if len(not_available_options) != 0:
             if not remove_absent_options:
                 raise ValueError(
-                    f"The following provided metrics are not available: {', '.join(not_available_options)}"
+                    f"The following provided metrics are not available: "
+                    f"{', '.join(not_available_options)}"
                 )
             available_options = set_user_options.difference(not_available_options)
             if len(available_options) == 0:
                 raise ValueError(
-                    f"The options you provided simply do not exist... Options: {', '.join(options)}"
+                    f"The options you provided simply do not exist. "
+                    f"Options: {', '.join(options)}"
                 )
 
         return list(available_options)
 
-
     def _validate_metrics(
-        self,
-        ncu_bin: PathType,
-        metrics: List[Metric],
-        remove_absent_metric: bool
+        self, ncu_bin: PathType, metrics: List[Metric], remove_absent_metric: bool
     ) -> List[Metric]:
 
         self._validate_options(ncu_bin, "--query-metrics", metrics, remove_absent_metric)
 
     def _validate_sections(
-        self,
-        ncu_bin: PathType,
-        sections: List[Section],
-        remove_absent_section: bool
+        self, ncu_bin: PathType, sections: List[Section], remove_absent_section: bool
     ) -> List[Metric]:
 
         self._validate_options(ncu_bin, "--list-sections", sections, remove_absent_section)
 
-    def _validate_set(
-        self,
-        ncu_bin: PathType,
-        user_set: NcuSet
-    ) -> NcuSet:
-        
-        all_sets = self._validate_options(ncu_bin, "--list-sets", [user_set], False)
+    def _validate_set(self, ncu_bin: PathType, user_set: NcuSet) -> NcuSet:
+        self._validate_options(ncu_bin, "--list-sets", [user_set], False)
 
-
-
-
-    #https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#post-installation-actions
-    # assumes you have a 64 bit OS
-    #   def updated_environment(self, environment: Environment) -> Environment:
-    #       add_env_vars = {
-    #           "PATH": "/usr/local/cuda-12.8/bin/bin${PATH:+:${PATH}}",
-    #           "LD_LIBRARY_PATH": "/usr/local/cuda-12.8/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-    #       }
-    #       return environment | add_env_vars
-
-    # def wrap(self, command, environment, **kwargs):
-    #     return super().wrap(command, environment, **kwargs)
+    # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#post-installation-actions
