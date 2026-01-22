@@ -255,3 +255,83 @@ def caller_dir() -> pathlib.Path:
     caller_filepath = caller_file_abs_path()
     caller_parent = caller_filepath.parent.resolve()
     return caller_parent
+
+
+def benchkit_dir() -> pathlib.Path:
+    """
+    Return the absolute path to the benchkit project root directory.
+
+    This function resolves the location of the benchkit source tree based on the
+    current file location. It is intended to be used for accessing resources that
+    are shipped with benchkit itself (e.g., built-in tutorials, patches, templates).
+
+    The directory structure is assumed to be:
+        benchkit/
+          ├── benchkit/
+          │   └── utils/
+          │       └── dir.py   (this file)
+          └── ...
+
+    Returns:
+        pathlib.Path: Absolute, resolved path to the benchkit root directory.
+    """
+    utils_dir = pathlib.Path(__file__).parent
+    benchkit_root_dir = utils_dir.parent.parent
+    return benchkit_root_dir.resolve()
+
+
+def benchkit_home_dir() -> pathlib.Path:
+    """
+    Return the benchkit user home directory.
+
+    This directory is used to store user-specific data such as fetched benchmarks,
+    build artifacts, and execution results. By default, it resolves to:
+
+        ~/.benchkit/
+
+    The directory may not necessarily exist yet.
+
+    Returns:
+        pathlib.Path: Absolute path to the benchkit home directory.
+    """
+    return pathlib.Path("~/.benchkit").expanduser().resolve()
+
+
+def get_benches_dir(parent_dir: pathlib.Path | None) -> pathlib.Path:
+    """
+    Return the directory where benchmark sources are stored.
+
+    If a parent directory is explicitly provided, it is returned unchanged.
+    Otherwise, the default benchkit benches directory is used:
+
+        ~/.benchkit/benches/
+
+    Args:
+        parent_dir: Optional path overriding the default benches directory.
+
+    Returns:
+        pathlib.Path: Path to the directory containing benchmark sources.
+    """
+    if parent_dir is None:
+        return benchkit_home_dir() / "benches"
+    return parent_dir
+
+
+def get_results_dir(results_dir: pathlib.Path | None) -> pathlib.Path:
+    """
+    Return the directory where benchmark results are stored.
+
+    If a results directory is explicitly provided, it is returned unchanged.
+    Otherwise, the default benchkit results directory is used:
+
+        ~/.benchkit/results/
+
+    Args:
+        results_dir: Optional path overriding the default results directory.
+
+    Returns:
+        pathlib.Path: Path to the directory containing benchmark results.
+    """
+    if results_dir is None:
+        return benchkit_home_dir() / "results"
+    return results_dir

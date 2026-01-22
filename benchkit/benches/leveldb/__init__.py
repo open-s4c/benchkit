@@ -77,7 +77,7 @@ from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResul
 from benchkit.core.bktypes.contexts import BuildContext, CollectContext, FetchContext, RunContext
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.utils.buildtools import build_dir_from_ctx, cmake_build
-from benchkit.utils.dir import caller_dir
+from benchkit.utils.dir import benchkit_dir, get_benches_dir
 from benchkit.utils.fetchtools import git_clone
 
 
@@ -93,14 +93,14 @@ class LevelDBBench:
     """
 
     _PATCHES: Iterable[Path] = [
-        caller_dir() / "../../../tutorials/leveldb-bench/patch.diff",
-        caller_dir() / "../../../tutorials/leveldb-bench/patch02.diff",
+        benchkit_dir() / "tutorials/leveldb-bench/patch.diff",
+        benchkit_dir() / "tutorials/leveldb-bench/patch02.diff",
     ]
 
     def fetch(
         self,
         ctx: FetchContext,
-        parent_dir: Path,
+        parent_dir: Path | None = None,
         commit: str = "ac691084fdc5546421a55b25e7653d450e5a25fb",
         patches: Iterable[Path] = _PATCHES,
     ) -> FetchResult:
@@ -120,6 +120,7 @@ class LevelDBBench:
         Returns:
             FetchResult containing the path to the cloned repository.
         """
+        parent_dir = get_benches_dir(parent_dir=parent_dir)
 
         leveldb_dir = git_clone(
             ctx=ctx,
@@ -164,8 +165,8 @@ class LevelDBBench:
         """
         platform = ctx.platform
         src_dir = ctx.fetch_result.src_dir
-        db_bench_path = src_dir / "db_bench"
         obj_dir = build_dir_from_ctx(ctx=ctx)
+        db_bench_path = obj_dir / "db_bench"
         tmpdb_dir = obj_dir / "tmp" / "benchkit_level_db"
 
         if not platform.comm.isfile(db_bench_path):
