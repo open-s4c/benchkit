@@ -61,9 +61,9 @@ class StepSession:
 
 def _get_step_args(
     step_fn: Callable,
-    step_name: str,
     args: Vars,
 ) -> tuple[Vars, Vars]:
+    step_name = step_fn.__name__
     sig = inspect.signature(step_fn)
     sig_params = sig.parameters
     params = list(sig_params.keys())
@@ -87,7 +87,7 @@ def _get_step_args(
         provided = ""
         if args:
             provided = ", ".join(f'{k} ("{v}")' for k, v in args.items())
-            provided = f"Provided: {provided}."
+            provided = f" Provided: {provided}."
         raise MissingStepArgError(
             f"Missing required arguments in {step_name}(): {', '.join(missing_args)}.{provided}"
         )
@@ -114,7 +114,6 @@ class Stepper:
         if do_fetch:
             fetch_args, default_args = _get_step_args(
                 step_fn=self.bench.fetch,
-                step_name="fetch",
                 args=args,
             )
 
@@ -140,7 +139,6 @@ class Stepper:
         if do_build:
             build_args, default_args = _get_step_args(
                 step_fn=self.bench.build,
-                step_name="build",
                 args=args,
             )
 
@@ -163,7 +161,7 @@ class Stepper:
         return result
 
     def run(self, session: StepSession, args: Vars, duration_s: int | None) -> StepSession:
-        run_args, default_args = _get_step_args(step_fn=self.bench.run, step_name="run", args=args)
+        run_args, default_args = _get_step_args(step_fn=self.bench.run, args=args)
         run_ctx = RunContext.from_build(
             ctx=session.build_ctx,
             build_result=session.build_result,
@@ -191,7 +189,6 @@ class Stepper:
         if do_collect:
             collect_args, default_args = _get_step_args(
                 step_fn=self.bench.collect,
-                step_name="collect",
                 args=args,
             )
 
