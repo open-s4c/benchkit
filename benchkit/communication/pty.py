@@ -1,16 +1,55 @@
 # Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
+"""
+Communication layer to handle a PTY device.
 
-from __future__ import annotations
+A PTY device is a file that behaves like a terminal. It is mostly used to
+communicate with embedded devices over a serial connection (e.g., /dev/ttyUSB0
+on Linux). Or, an virtual terminal on the local machine.
+
+As this module interacts with low-level OS features, it is only supported on
+Unix-like on a local host.
+"""
 
 import os
 import select
 from typing import List
 
-from benchkit.communication import CommunicationLayer, StatusAware
+from benchkit.communication import CommunicationLayer
 from benchkit.utils.types import Command, PathType
 
 CHUNK_SIZE: int = 1024
+
+
+class StatusAware:
+    """
+    Abstract class for communication layers that are aware of their connection status.
+    NOTE: use a python interface ?
+    """
+
+    """
+    Returns whether the communication layer is open.
+    """
+
+    def is_open(self) -> bool: ...
+
+    """
+    Starts the communication layer.
+    """
+
+    def start_comm(self) -> None: ...
+
+    """
+    Performs checks then, closes the communication layer.
+    """
+
+    def close_comm(self) -> None: ...
+
+    """
+    Closes the communication layer without checking whether it is open.
+    """
+
+    def _unchecked_close_comm(self) -> None: ...
 
 
 class PTYException(Exception):
@@ -18,10 +57,21 @@ class PTYException(Exception):
 
 
 class PtyCommLayer(CommunicationLayer, StatusAware):
+    """
+    Communication layer to handle a PTY device.
+    """
+
     def __init__(
         self,
         port: PathType,
     ) -> None:
+        """
+        Initializes the PTY communication layer.
+        Args:
+            port (PathType):
+                path to the PTY device.
+        """
+
         self._port: PathType = port
         self._fd: int | None = None
         self._ps1: str = ""  # only for shells : make it optional ?
@@ -29,20 +79,27 @@ class PtyCommLayer(CommunicationLayer, StatusAware):
         super().__init__()
 
     def __enter__(self):
-        # open and close file descriptors on demand to not maintain a fd opened for nothing
+        """
+        Context manager entry point for the PTY communication layer.
+        """
+
         if self.is_open():
             raise PTYException("The comm layer is already running")
         self.start_comm()
         return self
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
+        """
+        Context manager exit point for the PTY communication layer.
+        """
         self._unchecked_close_comm()  # when using the context manager, the comm
         # should always be opened at __exit__
         return False
 
     @property
     def remote_host(self) -> str | None:
-        """Returns an identifier (typically hostname) of the remote host, or None if communication
+        """
+        Returns an identifier (typically hostname) of the remote host, or None if communication
         happens locally.
 
         Returns:
@@ -52,7 +109,8 @@ class PtyCommLayer(CommunicationLayer, StatusAware):
 
     @property
     def is_local(self) -> bool:
-        """Returns whether the communication layer happens locally on the host.
+        """
+        Returns whether the communication layer happens locally on the host.
 
         Returns:
             bool: whether the communication layer happens locally on the host.
@@ -84,7 +142,8 @@ class PtyCommLayer(CommunicationLayer, StatusAware):
         ignore_ret_codes: Iterable[int] = (),
         ignore_any_error_code: bool = False,
     ) -> str:
-        """Run a shell command on the target host.
+        """
+        Run a shell command on the target host.
 
         Args:
             command (Command):
@@ -128,7 +187,7 @@ class PtyCommLayer(CommunicationLayer, StatusAware):
             or ignore_any_error_code
             or ignore_ret_codes != ()
         ):
-            raise PTYException("Not supported attributes")
+            raise PTYException("Unsupported attributes")
         elif not self.is_open():
             raise PTYException("The port is closed : open a communication before sending a command")
 
@@ -184,11 +243,17 @@ class PtyCommLayer(CommunicationLayer, StatusAware):
 
         return buf
 
-    def checked_close_comm(self) -> None:
+    def close_comm(self) -> None:
+        """
+        Closes the PTY communication layer after performing checks.
+        """
         if self.is_open():
             os.close(self._fd)
         else:
             raise PTYException("The comm layer was manually closed or something else smh")
 
     def _unchecked_close_comm(self) -> None:
+        """
+        Closes the PTY communication layer without performing checks.
+        """
         os.close(self._fd)
