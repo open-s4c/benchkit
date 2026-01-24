@@ -30,6 +30,8 @@ from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResul
 from benchkit.core.bktypes.contexts import BuildContext, CollectContext, FetchContext, RunContext
 from benchkit.platforms import Platform
 
+RunCtxTransform = Callable[[RunContext], RunContext]
+
 
 class MissingStepArgError(ValueError):
     """
@@ -160,7 +162,14 @@ class Stepper:
         )
         return result
 
-    def run(self, session: StepSession, args: Vars, duration_s: int | None) -> StepSession:
+    def run(
+        self,
+        session: StepSession,
+        args: Vars,
+        duration_s: int | None,
+        *,
+        ctx_transform: RunCtxTransform | None = None,
+    ) -> StepSession:
         run_args, default_args = _get_step_args(step_fn=self.bench.run, args=args)
         run_ctx = RunContext.from_build(
             ctx=session.build_ctx,
@@ -169,6 +178,10 @@ class Stepper:
             default_args=default_args,
             duration_s=duration_s,
         )
+
+        if ctx_transform is not None:
+            run_ctx = ctx_transform(run_ctx)
+
         run_result = run_ctx.call(self.bench.run)
         result = StepSession(
             fetch_ctx=session.fetch_ctx,
