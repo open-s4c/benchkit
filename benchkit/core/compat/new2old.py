@@ -114,7 +114,14 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List
 
 from benchkit.benchmark import Benchmark as BenchmarkOld
-from benchkit.benchmark import CommandAttachment, CommandWrapper, PostRunHook, PreRunHook, SharedLib
+from benchkit.benchmark import (
+    CommandAttachment,
+    CommandWrapper,
+    PostRunHook,
+    PreRunHook,
+    SharedLib,
+    WriteRecordFileFunction,
+)
 from benchkit.campaign import CampaignCartesianProduct as CampaignCartesianProductOld
 from benchkit.core.benchmark import Benchmark
 from benchkit.core.bktypes.contexts import RunContext
@@ -166,7 +173,7 @@ def _check_fetch_args(
     Raises:
         ValueError: if a fetch parameter is present and has a number of values != 1.
     """
-    params = _get_params(step_fn=benchmark.fetch)
+    params = _get_params(step_fn=benchmark.fetch) if hasattr(benchmark, "fetch") else []
     fetch_args = {k: v for k, v in parameter_space.items() if k in params}
 
     for param_name, param_value in fetch_args.items():
@@ -354,6 +361,8 @@ class Adapted(BenchmarkOld):
         """
         if self._session_fetch is None:
             raise ValueError("Benchmark not bootstrapped.")
+        if self._session_fetch.fetch_result is None:
+            return Path()
         return self._session_fetch.fetch_result.src_dir
 
     def get_build_var_names(self) -> List[str]:
@@ -362,7 +371,7 @@ class Adapted(BenchmarkOld):
 
         Derived from the new benchmark's `build()` signature.
         """
-        return _get_params(step_fn=self.benchmark.build)
+        return _get_params(step_fn=self.benchmark.build) if hasattr(self.benchmark, "build") else []
 
     def get_run_var_names(self) -> List[str]:
         """
@@ -384,7 +393,16 @@ class Adapted(BenchmarkOld):
             args=kwargs,
         )
 
-    def single_run(self, **kwargs) -> str | AsyncProcess:
+    def single_run(
+        self,
+        platform: Platform,
+        benchmark_duration_seconds: int | None,
+        build_variables: dict[str, Any],
+        other_variables: dict[str, Any],
+        record_data_dir: Path,
+        write_record_file_fun: WriteRecordFileFunction,
+        **kwargs,
+    ) -> str | AsyncProcess:
         """
         Legacy run phase: call the new benchmark's run step through Stepper.
 
@@ -396,15 +414,19 @@ class Adapted(BenchmarkOld):
             does not support legacy async execution.
         """
         run_args = dict(kwargs)
-        duration_s = run_args.pop("benchmark_duration_seconds", None)
+        duration_s = benchmark_duration_seconds
 
         def _transform_run_ctx(run_ctx: RunContext) -> RunContext:
             # Build the legacy "variables" mapping expected by wrappers/sharedlibs.
-            other_variables = dict(run_ctx.fetch_args) | run_args.get("other_variables", {})
+            other_variables_inner = dict(run_ctx.fetch_args) | other_variables
             variables = {
+                # "platform": platform, # TODO re-enable only if necessary
+                # "benchmark_duration_seconds": duration_s, # TODO re-enable only if necessary
                 "build_variables": dict(run_ctx.build_args),
                 "run_variables": dict(run_ctx.run_args),
-                "other_variables": other_variables,
+                "other_variables": other_variables_inner,
+                "record_data_dir": record_data_dir,
+                "write_record_file_fun": write_record_file_fun,
                 **dict(run_ctx.fetch_args),
                 **dict(run_ctx.build_args),
                 **dict(run_ctx.run_args),
@@ -453,11 +475,11 @@ class Adapted(BenchmarkOld):
 
 
 def CampaignCartesianProduct(
-    name: str,
     benchmark: Benchmark,
     parameter_space: dict[str, Iterable[Any]],
+    name: str = "campaign",
     nb_runs: int = 1,
-    duration_s: int = 5,
+    duration_s: int | None = None,
     results_dir: Path | None = None,
     command_wrappers: Iterable[CommandWrapper] = (),
     command_attachments: Iterable[CommandAttachment] = (),

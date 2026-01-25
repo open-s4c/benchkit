@@ -88,8 +88,8 @@ def _get_step_args(
     if missing_args:
         provided = ""
         if args:
-            provided = ", ".join(f'{k} ("{v}")' for k, v in args.items())
-            provided = f" Provided: {provided}."
+            provided = "\n".join(f'- {k} ("{v}")' for k, v in args.items())
+            provided = f" Provided: \n{provided}."
         raise MissingStepArgError(
             f"Missing required arguments in {step_name}(): {', '.join(missing_args)}.{provided}"
         )

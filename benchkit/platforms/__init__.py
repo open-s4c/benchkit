@@ -8,7 +8,6 @@ is able to run remote command on the target where the benchmark will run.
 """
 
 import importlib.util
-import sys
 
 from benchkit.communication import LocalCommLayer, SSHCommLayer
 from benchkit.platforms.generic import Platform
@@ -45,14 +44,14 @@ def get_current_platform() -> Platform:
         )
         return platform
 
-    print(
-        (
-            "[WARNING] Host machine not registered with hostname, "
-            "and deephierarchy module not found. "
-            "Defaulting to generic platform."
-        ),
-        file=sys.stderr,
-    )
+    # print(
+    #    (
+    #        "[WARNING] Host machine not registered with hostname, "
+    #        "and deephierarchy module not found. "
+    #        "Defaulting to generic platform."
+    #    ),
+    #    file=sys.stderr,
+    # )
     return Platform(comm_layer=LocalCommLayer())
 
 
@@ -78,13 +77,13 @@ def get_remote_platform(
     if platform is not None:
         return platform
 
-    print(
-        (
-            "[WARNING] Remote host machine not registered with hostname, "
-            "defaulting to generic platform."
-        ),
-        file=sys.stderr,
-    )
+    # print(
+    #     (
+    #         "[WARNING] Remote host machine not registered with hostname, "
+    #         "defaulting to generic platform."
+    #     ),
+    #     file=sys.stderr,
+    # )
     return Platform(
         comm_layer=SSHCommLayer(
             host=host,
