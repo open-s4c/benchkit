@@ -296,6 +296,7 @@ class PerfStatWrap(CommandWrapper):
         use_json: bool = True,
         separator: Optional[str] = None,
         remove_absent_event: bool = False,
+        aggregate_hybrid: bool = False,
         platform: Platform | None = None,
     ):
         if use_json and separator is not None:
@@ -321,6 +322,7 @@ class PerfStatWrap(CommandWrapper):
         self._output_filename = output_filename
         self._use_json = use_json
         self._separator = separator  # if None, does not use `-x` option
+        self._aggregate_hybrid = aggregate_hybrid
 
         self._perf_stat_options = None
 
@@ -371,7 +373,6 @@ class PerfStatWrap(CommandWrapper):
 
     def command_prefix(  # pylint: disable=arguments-differ
         self,
-        platform: Platform,
         perf_stat_enable: bool = True,
         record_data_dir: Optional[PathType] = None,
         **kwargs,
@@ -379,7 +380,6 @@ class PerfStatWrap(CommandWrapper):
         """Define perf-stat prefix for the command to wrap.
 
         Args:
-            platform (Platform): platform where to run the command.
             perf_stat_enable (bool, optional): whether to enable the perf-stat prefix. Defaults to
                                                True.
             record_data_dir (Optional[PathType], optional): path to the record data directory if it
@@ -399,7 +399,7 @@ class PerfStatWrap(CommandWrapper):
             perf_stat_pathname = os.path.join(record_data_dir, self._output_filename)
             output_option = ["--output", perf_stat_pathname]
 
-        perf_prefix = _perf_command_prefix(perf_bin=self._perf_bin, platform=platform)
+        perf_prefix = _perf_command_prefix(perf_bin=self._perf_bin, platform=self.platform)
         cmd_prefix = perf_prefix + ["stat"] + self.perf_stat_options + output_option + cmd_prefix
 
         return cmd_prefix
@@ -487,6 +487,9 @@ class PerfStatWrap(CommandWrapper):
                 output_dict |= self._results_per_thread(perf_stat_pathname=perf_stat_pathname)
             else:
                 output_dict |= self._results_global(perf_stat_pathname=perf_stat_pathname)
+
+        if self._aggregate_hybrid:
+            aggregate_hybrid_results(output_dict)
 
         return output_dict
 
@@ -1016,3 +1019,124 @@ class PerfReportWrap(CommandWrapper):
             chosen_path = os.path.join(search_dir, chosen_file)
             command = command_fun(chosen_path)
             shell_interactive(command=command, ignore_ret_codes=(-13,))  # ignore broken pipe error
+
+
+def aggregate_hybrid_results(perf_results: dict[str, str | int]) -> None:
+    def _parse_num(v: Any) -> Optional[float]:
+        """
+        Parse perf stat numeric field:
+          - "8008.000000" -> 8008.0
+          - "<not counted>" / None / "" -> None
+        """
+        if v is None:
+            return None
+        if isinstance(v, (int, float)):
+            return float(v)
+        s = str(v).strip()
+        if not s or s.startswith("<"):
+            return None
+        # perf sometimes uses commas depending on locale; be conservative
+        s = s.replace(",", "")
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
+    def _get_triplet(
+        d: dict,
+        k: str,
+    ) -> Tuple[Optional[float], str, Optional[float], Optional[float]]:
+        """
+        Returns (value, unit, rt, cov) for base key k.
+        """
+        val = _parse_num(d.get(k))
+        unit = str(d.get(f"{k}.unit") or "")
+        rt = _parse_num(d.get(f"{k}.rt"))
+        cov = _parse_num(d.get(f"{k}.cov"))
+        return val, unit, rt, cov
+
+    def _fmt_value(x: float) -> str:
+        # keep same style as perf stat parsing typically yields
+        return f"{x:.6f}"
+
+    def _fmt_int_like(x: float) -> int:
+        # rt in your dict looks like an int
+        return int(round(x))
+
+    def _fmt_cov(x: float) -> str:
+        # cov stored as string in your dict
+        return f"{x:.1f}"
+
+    # Recognize hybrid PMU prefixes to merge.
+    pmu_prefixes = ("cpu_atom", "cpu_core")
+
+    # Build set of "event base names" that exist for at least one PMU.
+    # Example: perf-stat/cpu_atom/cache-misses -> event = cache-misses
+    event_re = re.compile(r"^perf-stat/(%s)/(.+)$" % "|".join(map(re.escape, pmu_prefixes)))
+
+    events: set[str] = set()
+    for k in perf_results.keys():
+        # ignore metadata suffixes here; we’ll handle them via base keys
+        if k.endswith((".unit", ".rt", ".cov")):
+            continue
+        m = event_re.match(k)
+        if m:
+            events.add(m.group(2))
+
+    for event in sorted(events):
+        agg_key = f"perf-stat/{event}"
+
+        total = 0.0
+        any_counted = False
+
+        # For unit: pick first non-empty (they should match anyway)
+        unit_out = ""
+
+        # For rt/cov: compute a weighted cov by rt when possible, else fall back.
+        rt_sum = 0.0
+        cov_weighted_sum = 0.0
+        cov_fallback = 0.0
+        rt_fallback = 0.0
+
+        for pmu in pmu_prefixes:
+            base = f"perf-stat/{pmu}/{event}"
+            val, unit, rt, cov = _get_triplet(perf_results, base)
+
+            if unit and not unit_out:
+                unit_out = unit
+
+            if val is not None:
+                total += val
+                any_counted = True
+
+            # rt/cov handling
+            if rt is not None and rt > 0:
+                rt_sum += rt
+                if cov is not None:
+                    cov_weighted_sum += cov * rt
+            else:
+                # keep best-effort fallback (e.g. atom has rt, core has 0)
+                if rt is not None:
+                    rt_fallback = max(rt_fallback, rt)
+                if cov is not None:
+                    cov_fallback = max(cov_fallback, cov)
+
+        if any_counted:
+            perf_results[agg_key] = _fmt_value(total)
+        else:
+            # if neither PMU counted, keep the canonical "<not counted>"
+            perf_results[agg_key] = "<not counted>"
+
+        # unit
+        perf_results[f"{agg_key}.unit"] = unit_out
+
+        # rt: prefer sum of non-zero rts (system-wide style), else fallback
+        rt_out = rt_sum if rt_sum > 0 else rt_fallback
+        perf_results[f"{agg_key}.rt"] = _fmt_int_like(rt_out)
+
+        # cov: prefer weighted average by rt, else fallback, else 0.0
+        if rt_sum > 0 and cov_weighted_sum > 0:
+            cov_out = cov_weighted_sum / rt_sum
+        else:
+            cov_out = cov_fallback
+        perf_results[f"{agg_key}.cov"] = _fmt_cov(cov_out)
