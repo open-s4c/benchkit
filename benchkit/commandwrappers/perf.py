@@ -1063,7 +1063,6 @@ def aggregate_hybrid_results(perf_results: dict[str, str | int]) -> None:
         return int(round(x))
 
     def _fmt_cov(x: float) -> str:
-        # cov stored as string in your dict
         return f"{x:.1f}"
 
     # Recognize hybrid PMU prefixes to merge.
