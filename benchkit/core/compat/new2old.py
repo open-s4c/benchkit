@@ -476,7 +476,8 @@ class Adapted(BenchmarkOld):
 
 def CampaignCartesianProduct(
     benchmark: Benchmark,
-    parameter_space: dict[str, Iterable[Any]],
+    variables: dict[str, Iterable[Any]],
+    constants: dict[str, Any] | None = None,
     name: str = "campaign",
     nb_runs: int = 1,
     duration_s: int | None = None,
@@ -498,7 +499,9 @@ def CampaignCartesianProduct(
 
     Args:
         benchmark: New protocol benchmark to run through the legacy engine.
-        parameter_space: Legacy cartesian-product parameter space `{name -> values}`.
+        variables: Legacy cartesian-product parameter space `{name -> values}`.
+        constants: Mapping of constant names to their values `{name -> value}`.
+        name: Campaign name.
         nb_runs: Repetitions per cartesian point.
         duration_s: Legacy benchmark duration (seconds). Passed to the legacy engine as
             `benchmark_duration_seconds` and forwarded to the new run context as `duration_s`.
@@ -528,7 +531,7 @@ def CampaignCartesianProduct(
         platform=platform,
     )
     benchmark_old.bootstrap(
-        args=parameter_space,
+        args=variables,
         record_dir=results_dir,
     )
 
@@ -536,8 +539,8 @@ def CampaignCartesianProduct(
         name=name,
         benchmark=benchmark_old,
         nb_runs=nb_runs,
-        variables=parameter_space,
-        constants=None,
+        variables=variables,
+        constants=constants,
         debug=False,
         gdb=False,
         enable_data_dir=True,
