@@ -56,6 +56,7 @@ def git_clone(
     """
     platform = ctx.platform
     comm = platform.comm
+    parent_dir = comm.host_to_comm_path(host_path=parent_dir)
     name = url.split("/")[-1].split(".")[0]
     dest = parent_dir / name
 
@@ -142,15 +143,16 @@ def git_apply_patches(
 
     for patch in patches:
         # TODO: This currently assumes patch files are present on the target machine.
-        if not comm.isfile(patch):
+        comm_patch = comm.host_to_comm_path(host_path=patch)
+        if not comm.isfile(comm_patch):
             raise FileNotFoundError(
-                f"Patch file not found on target machine: {patch}. "
+                f"Patch file not found on target machine: {comm_patch}. "
                 "Applying patches currently assumes patches are available "
                 "locally on the target comm."
             )
 
         ctx.exec(
-            argv=["git", "apply", str(patch)],
+            argv=["git", "apply", str(comm_patch)],
             cwd=repo_dir,
         )
 
