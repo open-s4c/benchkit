@@ -76,7 +76,7 @@ from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResul
 from benchkit.core.bktypes.contexts import BuildContext, CollectContext, FetchContext, RunContext
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.utils.buildtools import make
-from benchkit.utils.dir import caller_dir
+from benchkit.utils.dir import caller_dir, get_benches_dir
 from benchkit.utils.fetchtools import curl, git_apply_patches, tar_extract
 
 
@@ -101,7 +101,7 @@ class KyotoCabinetBench:
     def fetch(
         self,
         ctx: FetchContext,
-        parent_dir: Path,
+        parent_dir: Path | None = None,
         patches: Iterable[Path] = _PATCHES,
     ) -> FetchResult:
         """
@@ -124,6 +124,8 @@ class KyotoCabinetBench:
                 - src_dir: Path to the extracted and patched KyotoCabinet
                   source directory.
         """
+        parent_dir = get_benches_dir(parent_dir=parent_dir)
+
         platform = ctx.platform
         comm = platform.comm
         deps_dir = parent_dir / "kyotocabinet"
@@ -300,10 +302,12 @@ class KyotoCabinetBench:
 
         total_ops = int(m_ops.group(1))
 
+        throughput = (total_ops / duration_s) if duration_s > 0 else 0.0
         record: RecordResult = {
             "duration": duration_s,
             "global_count": total_ops,
-            "operations/second": (total_ops / duration_s) if duration_s > 0 else 0.0,
+            "operations/second": throughput,
+            "throughput": throughput,
         }
 
         m_upd = re.search(r"^total_update\s*=\s*(\d+)\s*$", output, flags=re.MULTILINE)

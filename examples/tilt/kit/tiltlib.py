@@ -69,7 +69,8 @@ class TiltLib(FromSourceSharedLib):
         )
 
         lock = kwargs.get("lock")
-        if lock:
+        enabled = lock not in ["", "default", "baseline"]
+        if enabled:
             lib_lockname = f"lib{lock}"
             lib_path = (self.build_dir / f"{lib_lockname}.so").resolve()
             if lib_path.is_file():
