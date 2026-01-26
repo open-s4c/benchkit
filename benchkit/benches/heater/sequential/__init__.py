@@ -33,6 +33,15 @@ Motivation (hybrid and asymmetric cores):
     reveals systematic differences between fast and slow cores.
     This helps attribute observed variability to underlying hardware
     asymmetry and validate the impact of affinity and placement control.
+
+Platform notes:
+    This benchmark is designed to produce meaningful results on Linux.
+
+    Although it will execute on other operating systems (e.g., macOS),
+    CPU affinity is not enforced by the scheduler in the same way.
+    As a result, the reported per-core measurements may be misleading
+    or incorrect on non-Linux platforms, since the process may migrate
+    freely across cores despite the requested affinity.
 """
 
 import re
