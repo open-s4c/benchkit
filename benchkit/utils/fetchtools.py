@@ -10,6 +10,8 @@ This module provides reusable helper functions for typical benchmark fetch opera
 - curl : Download files or fetch remote resources over HTTP(S), FTP, and related protocols
 - sed : Apply in-place text substitutions/patches to files
 - tar : Extract tar archives (e.g., .tar, .tar.gz, .tgz) on the target machine
+- fuseiso_mount: Mount ISO disk images to the target machine without root
+- fuseiso_umount: Unmount ISO disk images from the target machine without root
 
 These utilities reduce code duplication across benchmark implementations and provide
 sensible defaults (e.g., git clone).
@@ -288,3 +290,76 @@ def tar_extract(
     )
 
     return extract_dir
+
+
+def fuseiso_mount(
+    ctx: BaseContext,
+    image: Path,
+    mount_point: Path,
+    read_only: bool = True,  # kept for API symmetry
+) -> Path:
+    """
+    Mount an ISO image using fuseiso (no root required).
+
+    This helper uses FUSE to mount ISO9660 images as a regular user.
+    The mount can be removed with `fusermount -u`.
+
+    Args:
+        ctx: Context providing platform and execution capabilities.
+        image: Path to the ISO image on the target machine.
+        mount_point: Directory where the ISO should be mounted.
+        read_only: Ignored (fuseiso mounts read-only by default).
+
+    Returns:
+        Path to the mount point.
+
+    Raises:
+        FileNotFoundError: If the ISO image does not exist.
+    """
+    platform = ctx.platform
+    comm = platform.comm
+
+    if not comm.isfile(image):
+        raise FileNotFoundError(f"ISO image not found on target machine: {image}")
+
+    if not comm.isdir(mount_point):
+        comm.makedirs(path=mount_point, exist_ok=True)
+
+    # fuseiso is read-only by nature
+    ctx.exec(
+        argv=["fuseiso", str(image), str(mount_point)],
+        cwd=mount_point,
+    )
+
+    return mount_point
+
+
+def fuseiso_umount(
+    ctx: BaseContext,
+    mount_point: Path,
+) -> None:
+    """
+    Unmount a FUSE-mounted ISO filesystem.
+
+    Unmounts a filesystem previously mounted with `fuseiso` using
+    `fusermount -u`. This operation does not require superuser
+    privileges and works for user-space FUSE mounts.
+
+    Args:
+        ctx: Context providing platform and execution capabilities.
+        mount_point: Directory where the ISO filesystem is mounted.
+
+    Raises:
+        subprocess.CalledProcessError: If the unmount operation fails
+            (e.g., if the mount point is not a FUSE mount or is busy).
+
+    Example:
+        >>> fuseiso_umount(
+        ...     ctx=fetch_ctx,
+        ...     mount_point=Path("/tmp/alpine-iso"),
+        ... )
+    """
+    ctx.exec(
+        argv=["fusermount", "-u", str(mount_point)],
+        cwd=mount_point,
+    )
