@@ -335,3 +335,23 @@ def get_results_dir(results_dir: pathlib.Path | None) -> pathlib.Path:
     if results_dir is None:
         return benchkit_home_dir() / "results"
     return results_dir
+
+
+def get_tools_dir(tools_dir: pathlib.Path | None) -> pathlib.Path:
+    """
+    Return the directory where external tools used by benchkit are stored.
+
+    If a tools directory is explicitly provided, it is returned unchanged.
+    Otherwise, the default benchkit tools directory is used:
+
+        ~/.benchkit/tools/
+
+    Args:
+        tools_dir: Optional path overriding the default tools directory.
+
+    Returns:
+        pathlib.Path: Path to the directory containing benchkit tools.
+    """
+    if tools_dir is None:
+        return benchkit_home_dir() / "tools"
+    return tools_dir
