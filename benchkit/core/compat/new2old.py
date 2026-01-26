@@ -453,6 +453,7 @@ class Adapted(BenchmarkOld):
 
 
 def CampaignCartesianProduct(
+    name: str,
     benchmark: Benchmark,
     parameter_space: dict[str, Iterable[Any]],
     nb_runs: int = 1,
@@ -510,7 +511,7 @@ def CampaignCartesianProduct(
     )
 
     return CampaignCartesianProductOld(
-        name="campaign",
+        name=name,
         benchmark=benchmark_old,
         nb_runs=nb_runs,
         variables=parameter_space,
