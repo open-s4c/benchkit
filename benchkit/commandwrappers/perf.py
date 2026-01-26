@@ -1060,7 +1060,6 @@ def aggregate_hybrid_results(perf_results: dict[str, str | int]) -> None:
         return f"{x:.6f}"
 
     def _fmt_int_like(x: float) -> int:
-        # rt in your dict looks like an int
         return int(round(x))
 
     def _fmt_cov(x: float) -> str:
