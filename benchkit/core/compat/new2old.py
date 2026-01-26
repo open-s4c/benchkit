@@ -6,58 +6,71 @@ benchmarks migrate to the new core protocol.
 
 Why this module exists
 ----------------------
-Benchkit currently has two "layers" that are being transitioned:
+Benchkit is transitioning from the legacy campaign/benchmark stack to the new
+core protocol:
 
-- **Old engine** (legacy):
-  - `benchkit.benchmark.Benchmark` and `benchkit.campaign.CampaignCartesianProduct`
-  - Supports cartesian-product parameter exploration, CSV output, record directories,
-    `continuing`, and legacy orchestration.
-  - Provides extension points such as command wrappers, attachments, shared libraries
-    and pre/post run hooks.
+- **Legacy stack**:
+  - `benchkit.benchmark.Benchmark` (referred to as `BenchmarkOld` here) and
+    `benchkit.campaign.CampaignCartesianProduct`.
+  - Supports cartesian-product parameter exploration, CSV output, record
+    directories, `continuing`, and legacy orchestration.
+  - Provides extension points such as command wrappers, shared libraries
+    (`LD_PRELOAD`), command attachments, and pre/post run hooks.
 
 - **New core protocol**:
-  - `benchkit.core.benchmark.Benchmark` with the `fetch/build/run/collect` steps.
-  - Executed via `benchkit.engine.Stepper`, which constructs typed contexts and
-    captures step outputs in `StepSession`.
+  - `benchkit.core.benchmark.Benchmark` protocol with the `fetch/build/run/collect` steps.
+  - Executed by `benchkit.engine.stepper.Stepper`, which constructs typed contexts
+    (`FetchContext`, `BuildContext`, `RunContext`, `CollectContext`) and stores
+    step outputs in a `StepSession`.
 
 For a transition period we want to:
 - keep existing legacy campaigns (cartesian products, CSV layout, record dirs, etc.)
-- run *new* protocol benchmarks without porting all old orchestration code at once.
+- run *new* protocol benchmarks without porting all legacy orchestration code at once.
 
 This module provides that bridge by adapting a new-protocol benchmark to the legacy
-`Benchmark` interface expected by the old campaign engine.
+`BenchmarkOld` interface expected by the old campaign engine.
+
+How the bridge works
+--------------------
+The adapter is built around `Stepper`:
+
+- `bootstrap()` executes `fetch()` once (legacy campaigns do not model fetch).
+- `build_bench()` executes `build()` for each build-point.
+- `single_run()` executes `run()` for each run-point / repetition.
+- `parse_output_to_results()` executes `collect()` to produce record rows.
+
+Legacy wrappers and shared libraries are applied by intercepting `RunContext.exec`:
+`single_run()` uses the Stepper's `ctx_transform` hook (see `benchkit.engine.stepper`)
+to replace the `exec` function inside `RunContext` with an adapter that:
+1) computes `LD_PRELOAD` / env from `SharedLib` instances
+2) applies `CommandWrapper` instances to argv/env
+3) delegates to the original `ExecFn`
 
 What works today
 ----------------
-- Running new protocol benches through the legacy cartesian-product campaign engine.
-- Record directories and results directory handling (via the legacy engine).
-- Legacy `pre_run_hooks` and `post_run_hooks` (validated by tests).
-- Reuse of the new `Stepper` to call `fetch/build/run/collect` with signature-based
-  argument filtering.
+- Running new-protocol benchmarks through the legacy cartesian-product campaign engine.
+- Record directories and results directory layout as produced by the legacy engine.
+- `pre_run_hooks` and `post_run_hooks` (hook invocation remains owned by the legacy engine).
+- `CommandWrapper` and `SharedLib` (`LD_PRELOAD`) support **provided the benchmark uses**
+  `ctx.exec(...)` to run external commands.
 
 Known limitations (important)
 -----------------------------
-This adapter does **not yet** preserve legacy features that mutate the command line
-or environment of the executed workload:
-
-- `CommandWrapper` (e.g., taskset/numactl/perf wrappers)
-- `SharedLib` / `LD_PRELOAD` injection
-- `CommandAttachment` (async side processes)
-
-In the legacy engine, those features are applied in `BenchmarkOld.run_bench_command()`
-and related helpers. The new core protocol executes through `ctx.exec()` (via Stepper)
-and currently bypasses that legacy wrapping machinery.
-
-This module intentionally keeps the implementation minimal for now; the next step is
-to route execution through an "exec adapter" that applies wrappers/sharedlibs/
-attachments before dispatching the command.
+- **CommandAttachment is not supported** (attachments often rely on async side processes).
+- **Async execution is not supported**; this adapter returns synchronous stdout-like outputs.
+- **Only commands executed through `ctx.exec` are wrappable**. If a benchmark uses
+  `subprocess.*` directly (or otherwise bypasses `ctx.exec`), wrappers/sharedlibs
+  cannot be injected by this compatibility layer.
+- **Fetch arguments must be single-valued** in a legacy cartesian campaign. If a fetch
+  parameter appears in `parameter_space`, it must have exactly one value because
+  `fetch()` is executed once during `bootstrap()`.
 
 API
 ---
 The module exposes:
 
 - :class:`Adapted`: a legacy `BenchmarkOld` implementation backed by a new core benchmark.
-- :func:`CampaignCartesianProduct`: convenience function returning a legacy campaign
+- :func:`CampaignCartesianProduct`: convenience helper returning a legacy campaign
   configured with an adapted benchmark.
 
 The convenience function is primarily meant for existing "kit" style campaign scripts
@@ -94,7 +107,9 @@ legacy cartesian-product runner.
 
 """
 
+import dataclasses
 import inspect
+import shlex
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List
 
@@ -102,6 +117,9 @@ from benchkit.benchmark import Benchmark as BenchmarkOld
 from benchkit.benchmark import CommandAttachment, CommandWrapper, PostRunHook, PreRunHook, SharedLib
 from benchkit.campaign import CampaignCartesianProduct as CampaignCartesianProductOld
 from benchkit.core.benchmark import Benchmark
+from benchkit.core.bktypes.contexts import RunContext
+from benchkit.core.bktypes.execfn import ExecFn, ExecOutput
+from benchkit.core.validatebench import validate_benchmark
 from benchkit.engine.stepper import Stepper
 from benchkit.platforms import Platform
 from benchkit.shell.shellasync import AsyncProcess
@@ -110,7 +128,7 @@ from benchkit.utils.dir import get_results_dir
 
 def _get_params(step_fn: Callable) -> list[str]:
     """
-    Return the parameter names of a step function, excluding the context parameter.
+    Return the parameter names of a step function, excluding the `ctx` parameter.
 
     This mirrors the argument discovery logic used by the Stepper (`_get_step_args`).
 
@@ -118,7 +136,7 @@ def _get_params(step_fn: Callable) -> list[str]:
         step_fn: A step function such as `bench.fetch`, `bench.build`, `bench.run`, etc.
 
     Returns:
-        The list of explicit argument names (excluding the `ctx` parameter).
+        List of explicit parameter names excluding `ctx`.
     """
     sig = inspect.signature(step_fn)
     params = list(sig.parameters.keys())
@@ -129,21 +147,21 @@ def _get_params(step_fn: Callable) -> list[str]:
 
 def _check_fetch_args(
     benchmark: Benchmark,
-    parameter_space: dict[str, Any],
+    parameter_space: dict[str, Iterable[Any]],
 ) -> dict[str, Any]:
     """
     Extract and validate fetch arguments from a legacy cartesian parameter space.
 
-    The legacy cartesian campaign passes a parameter space as a mapping
-    `{name -> iterable(values)}`. Fetch arguments must be single-valued in that
-    representation, because fetch is executed once during adapter bootstrap.
+    Legacy cartesian campaigns represent parameters as `{name -> values}`.
+    Fetch is executed once during :meth:`Adapted.bootstrap`, so any fetch argument
+    present in `parameter_space` must be single-valued.
 
     Args:
-        benchmark: New protocol benchmark.
-        parameter_space: Legacy-style parameter space mapping.
+        benchmark: New-protocol benchmark instance.
+        parameter_space: Legacy parameter space mapping.
 
     Returns:
-        A dictionary `{fetch_param_name -> single_value}` suitable to call `fetch()`.
+        `{fetch_param_name -> single_value}` suitable for `Stepper.fetch(args=...)`.
 
     Raises:
         ValueError: if a fetch parameter is present and has a number of values != 1.
@@ -152,22 +170,96 @@ def _check_fetch_args(
     fetch_args = {k: v for k, v in parameter_space.items() if k in params}
 
     for param_name, param_value in fetch_args.items():
+        param_value_lst = list(param_value)
         # Legacy param spaces are expected to provide iterables of values.
         # For fetch args we enforce a single value.
-        if 1 != len(param_value):
+        if 1 != len(param_value_lst):
             raise ValueError(
                 "New->Old benchmark wrapper does not support multiple values "
-                f"for fetch parameters: {param_name}: {param_value}."
+                f"for fetch parameters: {param_name}: {param_value_lst}."
             )
 
-    return {k: v[0] for k, v in fetch_args.items()}
+    result = {k: list(v)[0] for k, v in fetch_args.items()}
+    return result
+
+
+def _make_legacy_exec(
+    *,
+    benchmark_old: BenchmarkOld,
+    base_exec: ExecFn,
+    variables: dict[str, Any],
+) -> ExecFn:
+    """
+    Create an ExecFn wrapper that applies legacy wrappers/sharedlibs before delegating.
+
+    This adapter is designed to be installed into `RunContext.exec` via
+    `dataclasses.replace(run_ctx, exec=...)` in `Adapted.single_run()`.
+
+    Args:
+        benchmark_old: The legacy benchmark instance (provides `_preload_env`, `_wrap_command`).
+        base_exec: The original ExecFn to delegate to (typically `run_ctx.exec`).
+        variables: "Legacy variable dict" passed to wrappers/sharedlibs (build/run/other vars).
+
+    Returns:
+        An ExecFn compatible callable.
+    """
+
+    def legacy_exec(
+        *,
+        argv,
+        cwd=None,
+        env=None,
+        timeout_s=None,
+        record_dir=None,
+        print_output=False,
+        output_is_log=False,
+        ignore_ret_codes=(),
+        ignore_any_error_code=False,
+    ) -> ExecOutput:
+        # 0) Normalize argv into a list[str] for the legacy wrapper APIs.
+        if isinstance(argv, str):
+            run_command: list[str] = shlex.split(argv)
+        else:
+            run_command = list(argv)
+
+        # 1) Build environment from SharedLibs (LD_PRELOAD etc.) and merge explicit env.
+        #    Explicit env wins on conflicts.
+        preload_env = benchmark_old._preload_env(**variables)  # pylint: disable=protected-access
+        merged_env: dict[str, str] = {}
+        if preload_env:
+            merged_env.update(preload_env)
+        if env:
+            # Explicit env wins over preload_env
+            merged_env.update(dict(env))
+
+        # 2) Apply legacy CommandWrappers (may return env=None).
+        wrapped_argv, wrapped_env = benchmark_old._wrap_command(  # pylint: disable=protected-access
+            run_command=run_command,
+            environment=merged_env or None,
+            **variables,
+        )
+
+        # 3) Delegate to the original ExecFn.
+        return base_exec(
+            argv=wrapped_argv,
+            cwd=cwd,
+            env=wrapped_env or None,
+            timeout_s=timeout_s,
+            record_dir=record_dir,
+            print_output=print_output,
+            output_is_log=output_is_log,
+            ignore_ret_codes=tuple(ignore_ret_codes),
+            ignore_any_error_code=ignore_any_error_code,
+        )
+
+    return legacy_exec
 
 
 class Adapted(BenchmarkOld):
     """
     Adapter implementing the legacy `BenchmarkOld` interface on top of a new-protocol benchmark.
 
-    The legacy campaign engine calls into:
+    The legacy campaign engine calls:
       - `build_bench()` for each build-variable configuration
       - `single_run()` for each run-variable configuration (and repetition)
       - `parse_output_to_results()` to generate result records
@@ -178,10 +270,8 @@ class Adapted(BenchmarkOld):
       - `run()` in :meth:`single_run`
       - `collect()` in :meth:`parse_output_to_results`
 
-    Important:
-        This adapter currently **does not** apply legacy wrappers/sharedlibs/attachments.
-        Hooks work because the legacy engine owns the hook invocation logic around
-        `single_run()` and `parse_output_to_results()`.
+    Wrappers/sharedlibs are supported by injecting a wrapped ExecFn into `RunContext.exec`
+    (only effective if the benchmark executes commands through `ctx.exec`).
     """
 
     def __init__(
@@ -198,15 +288,19 @@ class Adapted(BenchmarkOld):
         Create an adapted benchmark.
 
         Args:
-            benchmark: New protocol benchmark implementing fetch/build/run/collect.
-            command_wrappers: Legacy command wrappers (currently ignored by the adapter
-                execution path; accepted to keep legacy campaign scripts unchanged).
-            command_attachments: Legacy command attachments (currently ignored).
-            shared_libs: Legacy shared libs (currently ignored).
-            pre_run_hooks: Legacy pre-run hooks (supported by old engine).
-            post_run_hooks: Legacy post-run hooks (supported by old engine).
+            benchmark: New-protocol benchmark implementing fetch/build/run/collect.
+            command_wrappers: Command wrappers (applied through `RunContext.exec`).
+            command_attachments: Command attachments (not supported in this adapter).
+            shared_libs: Shared libs (LD_PRELOAD injection; applied through `RunContext.exec`).
+            pre_run_hooks: Pre-run hooks (executed by the legacy engine).
+            post_run_hooks: Post-run hooks (executed by the legacy engine).
             platform: Optional platform override for the legacy benchmark.
         """
+        if command_attachments:
+            raise NotImplementedError(
+                "Command attachments are not currently supported by this adapter."
+            )
+
         super().__init__(
             command_wrappers=command_wrappers,
             command_attachments=command_attachments,
@@ -228,14 +322,14 @@ class Adapted(BenchmarkOld):
 
     def bootstrap(
         self,
-        args: dict[str, Any],
+        args: dict[str, Iterable[Any]],
         record_dir: Path,
     ) -> None:
         """
         Execute the new benchmark's fetch step once and store its session.
 
-        The legacy engine does not have a dedicated fetch phase; therefore the adapter
-        performs fetch once up-front using single-valued fetch arguments extracted
+        The legacy engine does not have a dedicated fetch phase. Therefore the adapter
+        executes fetch once up-front using single-valued fetch arguments extracted
         from the provided legacy parameter space.
 
         Args:
@@ -245,6 +339,8 @@ class Adapted(BenchmarkOld):
         Raises:
             ValueError: If fetch arguments are provided with multiple values.
         """
+        validate_benchmark(bench=self.benchmark)
+
         fetch_args = _check_fetch_args(benchmark=self.benchmark, parameter_space=args)
         self._session_fetch = self._stepper.fetch(args=fetch_args, record_dir=record_dir)
 
@@ -252,9 +348,6 @@ class Adapted(BenchmarkOld):
     def bench_src_path(self) -> Path:
         """
         Return the source directory of the fetched benchmark.
-
-        The legacy engine uses this for metadata (git SHA, branch, etc.). We map it
-        to the new fetch result's `src_dir`.
 
         Raises:
             ValueError: If the benchmark was not bootstrapped (fetch not executed).
@@ -267,7 +360,7 @@ class Adapted(BenchmarkOld):
         """
         Return build variable names as expected by the legacy engine.
 
-        This is derived from the new benchmark's `build()` signature.
+        Derived from the new benchmark's `build()` signature.
         """
         return _get_params(step_fn=self.benchmark.build)
 
@@ -275,7 +368,7 @@ class Adapted(BenchmarkOld):
         """
         Return run variable names as expected by the legacy engine.
 
-        This is derived from the new benchmark's `run()` signature.
+        Derived from the new benchmark's `run()` signature.
         """
         return _get_params(step_fn=self.benchmark.run)
 
@@ -284,7 +377,7 @@ class Adapted(BenchmarkOld):
         Legacy build phase: call the new benchmark's build step through Stepper.
 
         Args:
-            **kwargs: Build arguments (the legacy engine only passes build vars here).
+            **kwargs: Build arguments (the legacy engine passes build vars here).
         """
         self._last_session_build = self._stepper.build(
             session=self._session_fetch,
@@ -298,20 +391,38 @@ class Adapted(BenchmarkOld):
         The legacy engine passes `benchmark_duration_seconds`, which is translated to
         `duration_s` expected by Stepper/RunContext.
 
-        Args:
-            **kwargs: Run arguments and legacy orchestration parameters.
-
         Returns:
-            The captured stdout of the run. The adapter always returns a string for now.
-            (Legacy async mode via attachments is not supported yet.)
+            Captured stdout of the run. This adapter currently returns a string and
+            does not support legacy async execution.
         """
         run_args = dict(kwargs)
         duration_s = run_args.pop("benchmark_duration_seconds", None)
+
+        def _transform_run_ctx(run_ctx: RunContext) -> RunContext:
+            # Build the legacy "variables" mapping expected by wrappers/sharedlibs.
+            other_variables = dict(run_ctx.fetch_args) | run_args.get("other_variables", {})
+            variables = {
+                "build_variables": dict(run_ctx.build_args),
+                "run_variables": dict(run_ctx.run_args),
+                "other_variables": other_variables,
+                **dict(run_ctx.fetch_args),
+                **dict(run_ctx.build_args),
+                **dict(run_ctx.run_args),
+                **dict(run_args.get("other_variables", {})),
+            }
+
+            legacy_exec = _make_legacy_exec(
+                benchmark_old=self,
+                base_exec=run_ctx.exec,
+                variables=variables,
+            )
+            return dataclasses.replace(run_ctx, exec=legacy_exec)
 
         self._last_session_run = self._stepper.run(
             session=self._last_session_build,
             args=run_args,
             duration_s=duration_s,
+            ctx_transform=_transform_run_ctx,
         )
         return self._last_session_run.run_result.outputs[-1].stdout
 
@@ -320,7 +431,7 @@ class Adapted(BenchmarkOld):
         Legacy parse phase: call the new benchmark's collect step through Stepper.
 
         The legacy engine calls this with a mixture of arguments. We merge:
-          - the full kwargs (includes record_data_dir, etc.)
+          - full kwargs (includes record_data_dir, etc.)
           - build_variables (if present)
           - run_variables (if present)
 
@@ -331,7 +442,7 @@ class Adapted(BenchmarkOld):
             **kwargs: Legacy parse arguments.
 
         Returns:
-            The record dictionary produced by the new benchmark's `collect()` step.
+            Record dictionary produced by the new benchmark's `collect()` step.
         """
         collect_args = kwargs | kwargs.get("build_variables", {}) | kwargs.get("run_variables", {})
         self._last_session_collect = self._stepper.collect(
@@ -360,20 +471,20 @@ def CampaignCartesianProduct(
     This helper:
       1) Creates an :class:`Adapted` benchmark.
       2) Executes fetch once (bootstrap).
-      3) Builds and returns a legacy :class:`CampaignCartesianProductOld`.
+      3) Returns a legacy :class:`CampaignCartesianProductOld`.
 
     Args:
         benchmark: New protocol benchmark to run through the legacy engine.
         parameter_space: Legacy cartesian-product parameter space `{name -> values}`.
         nb_runs: Repetitions per cartesian point.
-        duration_s: Legacy benchmark duration (seconds). Passed to legacy engine as
+        duration_s: Legacy benchmark duration (seconds). Passed to the legacy engine as
             `benchmark_duration_seconds` and forwarded to the new run context as `duration_s`.
         results_dir: Optional base directory for results.
-        command_wrappers: Legacy command wrappers (currently not applied by adapter execution).
-        command_attachments: Legacy command attachments (currently not applied).
-        shared_libs: Legacy shared libs (currently not applied).
-        pre_run_hooks: Legacy pre-run hooks (supported).
-        post_run_hooks: Legacy post-run hooks (supported).
+        command_wrappers: Legacy command wrappers (applied via `RunContext.exec` interception).
+        command_attachments: Legacy command attachments (not supported).
+        shared_libs: Legacy shared libs (applied via `RunContext.exec` interception).
+        pre_run_hooks: Legacy pre-run hooks (supported; executed by legacy engine).
+        post_run_hooks: Legacy post-run hooks (supported; executed by legacy engine).
         platform: Optional platform override.
 
     Returns:
