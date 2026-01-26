@@ -285,15 +285,21 @@ def benchkit_home_dir() -> pathlib.Path:
     Return the benchkit user home directory.
 
     This directory is used to store user-specific data such as fetched benchmarks,
-    build artifacts, and execution results. By default, it resolves to:
+    build artifacts, and execution results.
 
-        ~/.benchkit/
+    Resolution order:
+      1. If BENCHKIT_HOME is set in the environment, use it.
+      2. Otherwise, default to ~/.benchkit/
 
     The directory may not necessarily exist yet.
 
     Returns:
         pathlib.Path: Absolute path to the benchkit home directory.
     """
+    env = os.environ.get("BENCHKIT_HOME")
+    if env:
+        return pathlib.Path(env).expanduser().resolve()
+
     return pathlib.Path("~/.benchkit").expanduser().resolve()
 
 
