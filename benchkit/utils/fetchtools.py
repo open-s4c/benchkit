@@ -339,7 +339,25 @@ def fuseiso_umount(
     mount_point: Path,
 ) -> None:
     """
-    Unmount a fuseiso mount.
+    Unmount a FUSE-mounted ISO filesystem.
+
+    Unmounts a filesystem previously mounted with `fuseiso` using
+    `fusermount -u`. This operation does not require superuser
+    privileges and works for user-space FUSE mounts.
+
+    Args:
+        ctx: Context providing platform and execution capabilities.
+        mount_point: Directory where the ISO filesystem is mounted.
+
+    Raises:
+        subprocess.CalledProcessError: If the unmount operation fails
+            (e.g., if the mount point is not a FUSE mount or is busy).
+
+    Example:
+        >>> fuseiso_umount(
+        ...     ctx=fetch_ctx,
+        ...     mount_point=Path("/tmp/alpine-iso"),
+        ... )
     """
     ctx.exec(
         argv=["fusermount", "-u", str(mount_point)],
