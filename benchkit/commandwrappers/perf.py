@@ -661,9 +661,10 @@ class PerfReportWrap(CommandWrapper):
         flamegraph_path: Optional[PathType] = None,
         perf_record_options: Optional[List[str]] = None,
         perf_report_options: Optional[List[str]] = None,
+        platform: Platform | None = None,
     ):
         super().__init__()
-        self.platform = get_current_platform()
+        self.platform = get_current_platform() if platform is None else platform
         self.latest_perf_path = None
 
         self._perf_bin = _find_perf_bin(search_path=perf_path)
@@ -728,7 +729,6 @@ class PerfReportWrap(CommandWrapper):
     def command_prefix(  # pylint: disable=arguments-differ
         self,
         record_data_dir: Optional[PathType],
-        platform: Platform,
         **kwargs,
     ) -> List[str]:
         cmd_prefix = super().command_prefix(**kwargs)
@@ -736,7 +736,7 @@ class PerfReportWrap(CommandWrapper):
         _validate_record_data_dir(record_data_dir=record_data_dir)
         perf_data_pathname = os.path.join(record_data_dir, "perf.data")
 
-        perf_prefix = _perf_command_prefix(perf_bin=self._perf_bin, platform=platform)
+        perf_prefix = _perf_command_prefix(perf_bin=self._perf_bin, platform=self.platform)
         cmd_prefix = (
             perf_prefix
             + ["record", "--output", f"{perf_data_pathname}"]
@@ -804,6 +804,28 @@ class PerfReportWrap(CommandWrapper):
 
         if self._report_interactive:
             shell_interactive(command=command, ignore_ret_codes=(-13,))  # ignore broken pipe error
+
+    def fetch_flamegraph(
+        self,
+        flamegraph_commit: str = "41fee1f99f9276008b7cd112fca19dc3ea84ac32",
+    ) -> None:
+        if self._flamegraph_path.is_dir():
+            return
+
+        # Cannot use fetchtools.git_clone as there is no context.
+        parent_dir = self._flamegraph_path.parent.resolve()
+        flamegraph_url = "https://github.com/brendangregg/FlameGraph.git"
+
+        self.platform.comm.makedirs(path=parent_dir, exist_ok=True)
+
+        self.platform.comm.shell(
+            command=["git", "clone", f"{flamegraph_url}", "FlameGraph"],
+            current_dir=parent_dir,
+        )
+        self.platform.comm.shell(
+            command=["git", "checkout", f"{flamegraph_commit}"],
+            current_dir=parent_dir / "FlameGraph",
+        )
 
     def post_run_hook_flamegraph(
         self,
