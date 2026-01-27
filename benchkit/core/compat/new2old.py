@@ -131,6 +131,7 @@ from benchkit.engine.stepper import Stepper
 from benchkit.platforms import Platform
 from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.dir import get_results_dir
+from benchkit.utils.types import Pretty
 
 
 def _get_params(step_fn: Callable) -> list[str]:
@@ -487,6 +488,7 @@ def CampaignCartesianProduct(
     shared_libs: Iterable[SharedLib] = (),
     pre_run_hooks: Iterable[PreRunHook] = (),
     post_run_hooks: Iterable[PostRunHook] = (),
+    pretty: Pretty | None = None,
     platform: Platform | None = None,
 ) -> CampaignCartesianProductOld:
     """
@@ -511,6 +513,7 @@ def CampaignCartesianProduct(
         shared_libs: Legacy shared libs (applied via `RunContext.exec` interception).
         pre_run_hooks: Legacy pre-run hooks (supported; executed by legacy engine).
         post_run_hooks: Legacy post-run hooks (supported; executed by legacy engine).
+        pretty: Pretty-printing mapping of variables for campaign results.
         platform: Optional platform override.
 
     Returns:
