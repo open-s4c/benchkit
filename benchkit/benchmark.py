@@ -18,7 +18,6 @@ from benchkit.dependencies import check_dependencies
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import get_current_platform
 from benchkit.sharedlibs import SharedLib
-from benchkit.sharedlibs.tiltlib import TiltLib
 from benchkit.shell.shellasync import AsyncProcess, shell_async
 from benchkit.utils.gdb import generate_gdb_script_from_cmd
 from benchkit.utils.misc import (
@@ -112,17 +111,12 @@ class Benchmark:
         pre_run_hooks: Iterable[PreRunHook],
         post_run_hooks: Iterable[PostRunHook],
     ) -> None:
-        # TODO tilt is still hardcoded for now, remove tilt from the base benchmark class
-        tilts = [lib for lib in shared_libs if isinstance(lib, TiltLib)]
-        tilt = tilts[0] if tilts else None
-
         self._command_wrappers = command_wrappers
         self._command_attachments = list(command_attachments)
         self._shared_libs = shared_libs
         self._pre_run_hooks = pre_run_hooks
         self._post_run_hooks = post_run_hooks
 
-        self.tilt = tilt
         self.platform = get_current_platform()
 
         self._configured = False
@@ -134,7 +128,6 @@ class Benchmark:
         self._nb_runs = None
         self._variables = None
         self._other_campaigns_seconds = None
-        self._use_tilt = None
         self._constants = None
         self._pretty_variables = None
 
@@ -173,16 +166,6 @@ class Benchmark:
 
         Returns:
             List[str]: the names of the run variables.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def get_tilt_var_names() -> List[str]:
-        """
-        Get the names of the tilt variables.
-
-        Returns:
-            List[str]: the names of the tilt variables.
         """
         raise NotImplementedError
 
@@ -350,8 +333,6 @@ class Benchmark:
         self._constants = constants
         self._variables = variables
 
-        self._use_tilt = self.tilt is not None
-
         self._pretty_variables = pretty_variables
 
         self._debug = debug
@@ -396,13 +377,14 @@ class Benchmark:
             nb_cases = 0
 
             for record_params in self._variables:
-                build_variables, run_variables, _, _ = self._group_record_parameters(
+                build_variables, run_variables, other_variables = self._group_record_parameters(
                     record_parameters=record_params,
                 )
 
                 experiment_point = {}
                 experiment_point.update(build_variables)
                 experiment_point.update(run_variables)
+                experiment_point.update(other_variables)
 
                 is_valid_point = self.valid_experiment_parameters(**experiment_point)
                 if is_valid_point:
@@ -525,15 +507,6 @@ class Benchmark:
 
         self._configure_shared_libs()
 
-        if self._use_tilt:
-            self.tilt.clean()
-            tilt_gb = list_groupby(
-                variables_names=self.get_tilt_var_names(),
-                bench_variables=self._variables,
-            )
-            for tilt_variables, _ in tilt_gb:
-                self.build_tilt(**tilt_variables)
-
         prebuild_seconds = self.prebuild_bench(
             benchmark_duration_seconds=self._benchmark_duration_seconds,
         )
@@ -606,15 +579,6 @@ class Benchmark:
             )
 
         print(f"[INFO] Benchmark done. " f'Results are stored in: "{self._csv_output_path}"')
-
-    def build_tilt(
-        self,
-        **kwargs,
-    ) -> None:
-        """
-        Build the tilt library related to this benchmark.
-        TODO this is deprecated, now benchmark is independent from tilt
-        """
 
     def prebuild_bench(
         self,
@@ -900,16 +864,16 @@ class Benchmark:
     def _group_record_parameters(
         self,
         record_parameters: Dict[str, Any],
-    ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
+    ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
         """
-        Partition the record parameters into build/run/tilt/other variable groups.
+        Partition the record parameters into build/run/other variable groups.
 
         Args:
             record_parameters (Dict[str, Any]): parameters to split.
 
         Returns:
-            Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
-                split parameters (build/run/tilt/other).
+            Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
+                split parameters (build/run/other).
         """
         build_variables = {
             k: record_parameters[k] for k in self.get_build_var_names() if k in record_parameters
@@ -917,17 +881,12 @@ class Benchmark:
         run_variables = {
             k: record_parameters[k] for k in self.get_run_var_names() if k in record_parameters
         }
-        tilt_variables = (
-            {k: record_parameters[k] for k in self.get_tilt_var_names() if k in record_parameters}
-            if self._use_tilt
-            else {}
-        )
         other_variables = {
             k: record_parameters[k]
             for k in record_parameters
             if k not in build_variables and k not in run_variables
         }
-        return build_variables, run_variables, tilt_variables, other_variables
+        return build_variables, run_variables, other_variables
 
     def _is_result_cached(
         self,
@@ -979,7 +938,6 @@ class Benchmark:
         (
             build_variables,
             run_variables,
-            _,  # tilt_variables, TODO remove tilt
             other_variables,
         ) = self._group_record_parameters(record_parameters=record_parameters)
 
@@ -1232,12 +1190,6 @@ class Benchmark:
 
         boot_args = get_boot_args()
         log_line(f"kernel_boot_args: {boot_args}")
-
-        if self.tilt is not None:
-            tilt_compiler = self.tilt.get_compiler()
-            tilt_exact_compiler = self.tilt.get_exact_compiler()
-            log_line(f"tilt_compiler: {tilt_compiler}")
-            log_line(f"tilt_exact_compiler: {tilt_exact_compiler}")
 
         if expected_duration_seconds is not None:
             expected_duration_pretty = seconds2pretty(expected_duration_seconds)
