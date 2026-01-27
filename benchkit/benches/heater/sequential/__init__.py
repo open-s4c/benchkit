@@ -243,7 +243,7 @@ def heater_seq_campaign(
     return CampaignCartesianProductNew(
         name=name,
         benchmark=benchmark,
-        parameter_space={"cpu": cpu},
+        variables={"cpu": cpu},
         nb_runs=nb_runs,
         duration_s=duration_s,
         results_dir=results_dir,
