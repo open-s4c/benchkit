@@ -78,7 +78,6 @@ Example:
     >>> record["duration_s"]
 """
 import os
-import platform
 import re
 from pathlib import Path
 
@@ -155,7 +154,7 @@ class SPECCPU2017Bench:
 
         # cp config
         # TODO: support ARM
-        arch = platform.machine().lower()
+        arch = ctx.platform.architecture
         if arch != "x86_64":
             raise NotImplementedError(f"SPEC CPU 2017 is only supported on x86_64 (got {arch})")
 
