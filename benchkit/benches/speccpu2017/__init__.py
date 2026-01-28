@@ -140,14 +140,14 @@ class SPECCPU2017Bench:
         if comm.isdir(spec_dir):
             return FetchResult(src_dir=spec_dir)
 
-        if not comm.isdir(spec_dir):
-            comm.makedirs(path=spec_dir, exist_ok=True)
+        comm.makedirs(path=spec_dir, exist_ok=True)
 
         fuseiso_mount(ctx, spec_source_iso, mnt_dir)
 
         ctx.exec(
             argv=["bash", "-lc", f"yes | ./install.sh -d {spec_dir}"],
             cwd=mnt_dir,
+            output_is_log=True,
         )
 
         fuseiso_umount(ctx, mnt_dir)
@@ -254,6 +254,7 @@ class SPECCPU2017Bench:
                     ),
                 ],
                 cwd=src_dir,
+                output_is_log=True,
             )
 
         result = BuildResult(
@@ -316,7 +317,7 @@ class SPECCPU2017Bench:
                 - duration_s: Total wall-clock execution time in seconds
         """
 
-        duration_s = ctx.run_result.outputs[0].duration_s
+        duration_s = ctx.run_result.outputs[-1].duration_s
 
         result_dict = {
             "duration_s": duration_s,
