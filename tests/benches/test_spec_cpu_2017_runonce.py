@@ -4,7 +4,7 @@
 import logging
 from pathlib import Path
 
-from benchkit.benches.SPEC_CPU_2017 import SPECSPU2017Bench
+from benchkit.benches.speccpu2017 import SPECCPU2017Bench
 from benchkit.engine.runonce import run_once
 from benchkit.utils.logging import bkpprint, bkprint, configure_logging
 
@@ -23,7 +23,7 @@ def main() -> None:
     spec_source = Path("PATH_TO_SPEC_ISO").expanduser().resolve()
 
     result = run_once(
-        bench=SPECSPU2017Bench(),
+        bench=SPECCPU2017Bench(),
         args={
             "parent_dir": benches_dir,
             "spec_source_iso": spec_source / "cpu2017-1.1.9.iso",

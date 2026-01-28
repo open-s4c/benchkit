@@ -20,6 +20,17 @@ The implementation relies on a fake run during the build phase to discover
 the benchmark run directory and exact invocation command, enabling precise
 and reproducible execution without hardcoded paths.
 
+**Note:** This integration assumes that the user holds a valid
+SPEC CPU® 2017 license and has legally obtained and stored the
+SPEC CPU 2017 distribution (via a local ISO image).
+
+This module **does not reimplement** or redistribute any part
+of SPEC CPU 2017. Instead, it merely **orchestrates and automates
+the execution** of the official SPEC CPU 2017 benchmark suite
+using benchkit's workflow and abstractions (fetch/build/run/collect).
+All benchmark code, tools, and execution semantics remain those of
+the original SPEC CPU 2017 distribution.
+
 Example:
     >>> from pathlib import Path
     >>> bench = SPECSPU2017Bench()
@@ -29,7 +40,7 @@ Example:
     >>> fetch_ctx = FetchContext.from_args(
     ...     fetch_args={
     ...         "parent_dir": Path("/tmp/spec"),
-    ...         "spec_source_iso": Path("/tmp/SPEC_CPU_2017.iso"),
+    ...         "spec_source_iso": Path("/tmp/speccpu2017.iso"),
     ...     }
     ... )
     >>> fetch_result = bench.fetch(ctx=fetch_ctx, **fetch_ctx.fetch_args)
@@ -67,6 +78,7 @@ Example:
     >>> record["duration_s"]
 """
 import os
+import platform
 import re
 from pathlib import Path
 
@@ -74,10 +86,11 @@ from benchkit.core.bktypes import RecordResult
 from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResult
 from benchkit.core.bktypes.contexts import BuildContext, CollectContext, FetchContext, RunContext
 from benchkit.dependencies.packages import PackageDependency
+from benchkit.utils.dir import benchkit_home_dir
 from benchkit.utils.fetchtools import fuseiso_mount, fuseiso_umount, sed_edit
 
 
-class SPECSPU2017Bench:
+class SPECCPU2017Bench:
     """
     Benchmark implementation for the SPEC CPU® 2017 benchmark suite.
 
@@ -120,8 +133,7 @@ class SPECSPU2017Bench:
             FetchResult with `src_dir` set to the installed SPEC directory
             (`<parent_dir>/spec`).
         """
-        benchkit_home_dir = Path("~/.benchkit/").expanduser().resolve()
-        mnt_dir = benchkit_home_dir / "spec-mnt"
+        mnt_dir = benchkit_home_dir() / "spec-mnt"
         spec_dir = parent_dir / "spec"
 
         comm = ctx.platform.comm
@@ -142,6 +154,11 @@ class SPECSPU2017Bench:
         fuseiso_umount(ctx, mnt_dir)
 
         # cp config
+        # TODO: support ARM
+        arch = platform.machine().lower()
+        if arch != "x86_64":
+            raise NotImplementedError(f"SPEC CPU 2017 is only supported on x86_64 (got {arch})")
+
         ctx.exec(
             argv=["cp", "config/Example-gcc-linux-x86.cfg", "config/config-gcc-linux-x86.cfg"],
             cwd=spec_dir,
@@ -224,7 +241,6 @@ class SPECSPU2017Bench:
         build_dir = Path(m.group("cwd").strip())
         run_command = m.group("cmd").split(">", 1)[0].rstrip()
         exe = build_dir / os.path.basename(run_command.split()[0])
-        print(platform.comm.isfile(exe))
 
         # Only build the bench if it does not already exist
         if not platform.comm.isfile(exe):
@@ -273,9 +289,6 @@ class SPECSPU2017Bench:
         """
         build_dir = ctx.build_result.build_dir
         run_command = ctx.build_result.other["run_command"]
-
-        print("build_dir:", build_dir)
-        print("run_comment:", run_command)
 
         exec_out = ctx.exec(argv=run_command, cwd=build_dir, output_is_log=True)
 
