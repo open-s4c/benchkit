@@ -11,7 +11,7 @@ import os
 import pathlib
 from multiprocessing import Barrier
 from subprocess import CalledProcessError
-from typing import IO, Any, Dict, Iterable, List, Optional, Protocol, Tuple
+from typing import IO, Any, Dict, Iterable, List, Optional, Protocol, Tuple, Type
 
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies import check_dependencies
@@ -20,6 +20,7 @@ from benchkit.platforms import get_current_platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.shell.shellasync import AsyncProcess, shell_async
 from benchkit.utils.gdb import generate_gdb_script_from_cmd
+from benchkit.utils.json_encoders import MultipleJsonEncoders, PathEncoder
 from benchkit.utils.misc import (
     CSV_SEPARATOR,
     TimeMeasure,
@@ -110,6 +111,7 @@ class Benchmark:
         shared_libs: Iterable[SharedLib],
         pre_run_hooks: Iterable[PreRunHook],
         post_run_hooks: Iterable[PostRunHook],
+        encoders: list[Type[json.JSONEncoder]] = [PathEncoder],
     ) -> None:
         self._command_wrappers = command_wrappers
         self._command_attachments = list(command_attachments)
@@ -138,6 +140,7 @@ class Benchmark:
         self._debug = False
         self._gdb = False
         self._flamegraph_path: Optional[PathType] = None
+        self._encoders: MultipleJsonEncoders = MultipleJsonEncoders(encoders=encoders)
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -1092,7 +1095,12 @@ class Benchmark:
                         xrline.update(hook_dict)
 
             wrdr(
-                file_content=json.dumps(experiment_results_lines, indent=4).strip() + "\n",
+                file_content=json.dumps(
+                    experiment_results_lines,
+                    indent=4,
+                    cls=self._encoders,
+                ).strip()
+                + "\n",
                 filename="experiment_results.json",
             )
 
