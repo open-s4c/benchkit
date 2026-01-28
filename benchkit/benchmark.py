@@ -20,6 +20,7 @@ from benchkit.platforms import get_current_platform
 from benchkit.sharedlibs import SharedLib
 from benchkit.shell.shellasync import AsyncProcess, shell_async
 from benchkit.utils.gdb import generate_gdb_script_from_cmd
+from benchkit.utils.json_encoders import MultipleJsonEncoders, PathEncoder
 from benchkit.utils.misc import (
     CSV_SEPARATOR,
     TimeMeasure,
@@ -38,7 +39,6 @@ from benchkit.utils.types import (
     SplitCommand,
 )
 from benchkit.utils.variables import list_groupby
-from benchkit.utils.json_encoders import MultipleJsonEncoders, PathEncoder
 
 RecordKey = str
 RecordValue = Any

@@ -5,6 +5,7 @@ import json
 import pathlib
 from typing import Type
 
+
 class PathEncoder(json.JSONEncoder):
     """
     JSONEncoder extension to support pathlib.Path serialization.
