@@ -131,7 +131,7 @@ def _get_available_events(
         sline = line.strip()
 
         # New group section
-        m = re.match(r"^([-_/:A-Za-z0-9\s]+):$", sline)
+        m = re.match(r"^([-_/%:A-Za-z0-9\s]+):$", sline)
         if m:
             (group_name,) = m.groups()
             current_group = group_name
@@ -139,7 +139,7 @@ def _get_available_events(
             continue
 
         # event OR alias [description] (all on one line)
-        m = re.match(r"([-_/:.a-zA-Z0-9]+)\s+OR\s+([-_/:.a-zA-Z0-9]+)\s*\[(.*)\]", sline)
+        m = re.match(r"([-_/%:.a-zA-Z0-9]+)\s+OR\s+([-_/%:.a-zA-Z0-9]+)\s*\[(.*)\]", sline)
         if m:
             event_left, event_right, event_desc = m.groups()
             events.extend([event_left, event_right])
@@ -148,7 +148,7 @@ def _get_available_events(
             continue
 
         # event OR alias (description is on next line)
-        m = re.match(r"([-_/:.a-zA-Z0-9]+)\s+OR\s+([-_/:.a-zA-Z0-9]+)$", sline)
+        m = re.match(r"([-_/%:.a-zA-Z0-9]+)\s+OR\s+([-_/%:.a-zA-Z0-9]+)$", sline)
         if m:
             event_left, event_right = m.groups()
             events.extend([event_left, event_right])
@@ -156,7 +156,7 @@ def _get_available_events(
             continue
 
         # event [description] (canonical case)
-        m = re.match(r"([-_/:.a-zA-Z0-9]+)\s+\[(.*)\]", sline)
+        m = re.match(r"([-_/%:.a-zA-Z0-9]+)\s+\[(.*)\]", sline)
         if m:
             event_id, event_desc = m.groups()
             events.append(event_id)
@@ -164,7 +164,7 @@ def _get_available_events(
             continue
 
         # Single event name only (description may follow)
-        m = re.match(r"(^[-_/:.a-zA-Z0-9]+)$", sline)
+        m = re.match(r"(^[-_/%:.a-zA-Z0-9]+)$", sline)
         if m:
             (event_id,) = m.groups()
             events.append(event_id)
