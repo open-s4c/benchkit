@@ -550,7 +550,7 @@ def CampaignCartesianProduct(
         continuing=False,
         benchmark_duration_seconds=duration_s,
         results_dir=results_dir,
-        pretty=None,
+        pretty=pretty,
         filter_func=None,
         symlink_latest=False,
     )

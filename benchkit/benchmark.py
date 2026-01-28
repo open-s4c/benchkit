@@ -1003,8 +1003,18 @@ class Benchmark:
                 for var_name in self._pretty_variables:
                     ugly2pretty = self._pretty_variables[var_name]
                     ugly_var_value = experiment_results.get(var_name)
+
+                    if not isinstance(ugly2pretty, dict):
+                        # If the pretty variable is not a dict, assume it's the pretty column name
+                        experiment_results[ugly2pretty] = ugly_var_value
+                        continue
+
                     pretty_var_value = ugly2pretty.get(ugly_var_value, ugly_var_value)
                     experiment_results[f"{var_name}_pretty"] = f'"{pretty_var_value}"'
+                    # If __category__ is defined, also create a column with that name
+                    category = ugly2pretty.get("__category__")
+                    if category is not None:
+                        experiment_results[category] = f'"{pretty_var_value}"'
 
             experiment_results.update({"rep": run_id})
 
