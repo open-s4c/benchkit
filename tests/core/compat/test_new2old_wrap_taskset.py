@@ -93,7 +93,7 @@ def main() -> None:
 
     campaign = CampaignCartesianProduct(
         benchmark=bench,
-        parameter_space=parameter_space,
+        variables=parameter_space,
         command_wrappers=[wrapper],
         duration_s=1,
     )

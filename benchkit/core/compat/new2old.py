@@ -431,7 +431,8 @@ class Adapted(BenchmarkOld):
                 **dict(run_ctx.fetch_args),
                 **dict(run_ctx.build_args),
                 **dict(run_ctx.run_args),
-                **dict(run_args.get("other_variables", {})),
+                **other_variables_inner,
+                **other_variables,
             }
 
             legacy_exec = _make_legacy_exec(
