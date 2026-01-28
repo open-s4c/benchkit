@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import json
+import pathlib
 from typing import Type
 
 class PathEncoder(json.JSONEncoder):
