@@ -1,8 +1,10 @@
 __pycache__/
 venv/
+.direnv
 .venv/
 .idea/
 .vscode/
 .DS_Store
 results/
 benchkit.egg-info/
+.envrc
