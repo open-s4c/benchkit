@@ -107,6 +107,8 @@ legacy cartesian-product runner.
 
 """
 
+# TODO check of dependencies should be reintegrated in new API
+
 import dataclasses
 import inspect
 import shlex
