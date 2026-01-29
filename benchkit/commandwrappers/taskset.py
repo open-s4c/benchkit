@@ -50,7 +50,7 @@ class TasksetWrap(CommandWrapper):
         mtc = master_thread_core
 
         if self.set_all_cpus:
-            if cpu_order is None or nb_threads is None:
+            if cpu_order is None:
                 return []
 
             cpu_order_list = self.platform.cpu_order(provided_order=cpu_order)
