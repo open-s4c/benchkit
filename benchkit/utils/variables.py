@@ -20,12 +20,21 @@ def cartesian_product(variables: Dict[str, Iterable[Any]]) -> Iterator[Dict[str,
         variables (Dict[str, Iterable[Any]]): set of variables to multiply to each other.
 
     Returns:
-        Iterator[Dict[str, Any]]: cartesian product if the given variables.
+        Iterator[Dict[str, Any]]: cartesian product of the given variables.
 
     Yields:
-        Iterator[Dict[str, Any]]: cartesian product if the given variables.
+        Dict[str, Any]: one assignment from the cartesian product.
     """
-    non_empty_variables = {k: v for k, v in variables.items() if v}
+
+    def _normalize_values(v: Any) -> Iterable[Any]:
+        # If the variable is a dict, iterate over (key, value) pairs
+        if isinstance(v, dict):
+            return [(k, vv) for k, vv in v.items()]
+        return v
+
+    normalized = {k: _normalize_values(v) for k, v in variables.items()}
+    non_empty_variables = {k: v for k, v in normalized.items() if v}
+
     product_gen = (
         dict(zip(non_empty_variables.keys(), record))
         for record in itertools.product(*non_empty_variables.values())
