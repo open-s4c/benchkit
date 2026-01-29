@@ -5,7 +5,7 @@ Command wrapper for the `taskset` utility which allows to control on what CPU or
 threads of the wrapped command are scheduled.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.utils.types import CpuOrder
@@ -33,6 +33,7 @@ class TasksetWrap(CommandWrapper):
     def command_prefix(
         self,
         cpu_order: CpuOrder = None,
+        cpu_list: Optional[Tuple[str, List[int]]] = None,
         master_thread_core: Optional[int] = None,
         nb_threads: Optional[int] = None,
         **kwargs,
@@ -43,6 +44,9 @@ class TasksetWrap(CommandWrapper):
             **kwargs,
         )
 
+        if cpu_order is None and cpu_list is not None:
+            cpu_order = cpu_list[1]
+
         mtc = master_thread_core
 
         if self.set_all_cpus:
@@ -51,13 +55,16 @@ class TasksetWrap(CommandWrapper):
 
             cpu_order_list = self.platform.cpu_order(provided_order=cpu_order)
 
-            cpu_order_list = [str(x) for x in cpu_order_list[0:nb_threads]]
+            cpu_order_list = [str(x) for x in cpu_order_list]
             cpu_order_str = ",".join(cpu_order_list)
+
+            if not cpu_order_list:
+                return []
 
             cmd_prefix = ["taskset", "--cpu-list", cpu_order_str] + cmd_prefix
         else:
             if mtc is None:
-                if cpu_order is None:
+                if not cpu_order:
                     return []
 
                 cpu_order_list = self.platform.cpu_order(provided_order=cpu_order)

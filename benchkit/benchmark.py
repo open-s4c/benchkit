@@ -11,7 +11,7 @@ import os
 import pathlib
 from multiprocessing import Barrier
 from subprocess import CalledProcessError
-from typing import IO, Any, Dict, Iterable, List, Optional, Protocol, Tuple, Type
+from typing import IO, Any, Dict, Iterable, List, Optional, Protocol, Sequence, Tuple, Type
 
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies import check_dependencies
@@ -929,6 +929,9 @@ class Benchmark:
                     experiment_results[ugly2pretty] = ugly_var_value
                     continue
 
+                if isinstance(ugly_var_value, Sequence):
+                    ugly_var_value = ugly_var_value[0]
+
                 pretty_var_value = ugly2pretty.get(ugly_var_value, ugly_var_value)
                 experiment_results[f"{var_name}_pretty"] = f'"{pretty_var_value}"'
                 # If __category__ is defined, also create a column with that name
@@ -977,8 +980,6 @@ class Benchmark:
             experiment_results.update(build_variables)
             experiment_results.update(run_variables)
             experiment_results.update(other_variables)
-
-            self._update_pretty_variables(experiment_results=experiment_results)
 
             experiment_results.update({"rep": run_id})
 
@@ -1096,6 +1097,9 @@ class Benchmark:
                 if hook_dict:
                     for xrline in experiment_results_lines:
                         xrline.update(hook_dict)
+
+            for xrline in experiment_results_lines:
+                self._update_pretty_variables(experiment_results=xrline)
 
             wrdr(
                 file_content=json.dumps(
