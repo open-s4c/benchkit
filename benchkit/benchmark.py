@@ -11,7 +11,7 @@ import os
 import pathlib
 from multiprocessing import Barrier
 from subprocess import CalledProcessError
-from typing import IO, Any, Dict, Iterable, List, Optional, Protocol, Sequence, Tuple, Type
+from typing import IO, Any, Dict, Iterable, List, Optional, Protocol, Tuple, Type
 
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies import check_dependencies
