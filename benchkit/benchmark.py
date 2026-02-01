@@ -929,7 +929,7 @@ class Benchmark:
                     experiment_results[ugly2pretty] = ugly_var_value
                     continue
 
-                if isinstance(ugly_var_value, Sequence):
+                if isinstance(ugly_var_value, Sequence) and not isinstance(ugly_var_value, str):
                     ugly_var_value = ugly_var_value[0]
 
                 pretty_var_value = ugly2pretty.get(ugly_var_value, ugly_var_value)
