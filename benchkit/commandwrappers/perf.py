@@ -876,6 +876,14 @@ class PerfReportWrap(CommandWrapper):
         )
         perf_folded_pathname.write_text(out_folded.strip())
 
+        if not out_folded.strip():
+            print(
+                "[WARNING] No perf stack counts found. "
+                "Skipping flamegraph generation for this run.",
+                file=sys.stderr,
+            )
+            return
+
         flamegraph_command = self._flamegraph_command(
             title=flamegraph_title,
             subtitle=flamegraph_subtitle,
