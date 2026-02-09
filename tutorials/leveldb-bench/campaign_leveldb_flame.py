@@ -8,7 +8,7 @@ Example of campaign script for LevelDB benchmarks, generating one flamegraph per
 from leveldb import leveldb_campaign
 
 from benchkit.campaign import CampaignSuite
-from benchkit.commandwrappers.perf import PerfReportWrap, enable_non_sudo_perf
+from benchkit.commandwrappers.perf import PerfRecordWrap, enable_non_sudo_perf
 from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import caller_dir, get_curdir
 
@@ -26,7 +26,7 @@ def main() -> None:
 
     # Define the "perf-record" command wrapper to be passed to the benchmark initialization.
     # It is used to collect information from the PMCs, to later generate the associated flamegraph.
-    perf_wrapper = PerfReportWrap(
+    perf_wrapper = PerfRecordWrap(
         freq=99,
         # freq=10,
         report_interactive=False,

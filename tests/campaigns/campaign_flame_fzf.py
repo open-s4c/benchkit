@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 from benchkit import CampaignCartesianProduct
 from benchkit.benches.small.dd import DDBench
-from benchkit.commandwrappers.perf import PerfReportWrap, enable_non_sudo_perf
+from benchkit.commandwrappers.perf import PerfRecordWrap, enable_non_sudo_perf
 from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import get_tools_dir
 
@@ -13,7 +13,7 @@ def main() -> None:
     enable_non_sudo_perf(comm_layer=platform.comm)
 
     flamegraph_dir = get_tools_dir(None) / "FlameGraph"
-    perf_wrapper = PerfReportWrap(
+    perf_wrapper = PerfRecordWrap(
         freq=99,
         report_interactive=False,
         report_file=True,

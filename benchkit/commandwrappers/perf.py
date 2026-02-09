@@ -646,7 +646,7 @@ class PerfStatWrap(CommandWrapper):
         return output_dict
 
 
-class PerfReportWrap(CommandWrapper):
+class PerfRecordWrap(CommandWrapper):
     """Command wrapper for the `perf record`/`perf report` utility."""
 
     def __init__(

@@ -5,13 +5,13 @@
 from cgol_cpu import cgol_campaign
 
 from benchkit.campaign import CampaignSuite
-from benchkit.commandwrappers.perf import PerfReportWrap
+from benchkit.commandwrappers.perf import PerfRecordWrap
 from benchkit.utils.dir import get_curdir
 
 
 def create_campaign_for_version(cgol_dir, flamegraph_dir, version_nr):
     version_src_dir = cgol_dir / f"version-{version_nr}"
-    wrapper = PerfReportWrap(
+    wrapper = PerfRecordWrap(
         flamegraph_path=flamegraph_dir,
         perf_record_options=["--call-graph", "dwarf", "-g", "--all-user"],
     )
