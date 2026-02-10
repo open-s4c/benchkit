@@ -2,35 +2,31 @@
 # Copyright (C) 2024 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from benchmarks.sleep import SleepBench
+"""
+Flamegraph test campaign.
 
-from benchkit.campaign import CampaignIterateVariables
+Two sub-campaigns exercise perf-based flame graph generation:
+
+  1. **sleep** — a workload that produces zero CPU samples.
+     Validates the graceful no-samples path (warning instead of crash).
+
+  2. **dd** — a CPU-intensive workload (dd if=/dev/urandom of=/dev/null).
+     Validates actual flamegraph SVG generation with real perf data.
+"""
+
+from benchkit import CampaignCartesianProduct
+from benchkit.benches.small.dd import DDBench
+from benchkit.benches.small.sleep import SleepBench
+from benchkit.campaign import CampaignSuite
 from benchkit.commandwrappers.perf import PerfReportWrap, enable_non_sudo_perf
 from benchkit.platforms import get_current_platform
-from benchkit.utils.dir import caller_dir
-from benchkit.utils.git import clone_repo
+from benchkit.utils.dir import get_tools_dir
 
 
-def main() -> None:
-    platform = get_current_platform()
-    enable_non_sudo_perf(comm_layer=platform.comm)
+def _make_flame_post_hook(perf_wrapper):
+    """Return a post-run hook that generates a flame graph for each run."""
 
-    flamegraph_path = caller_dir() / "deps/FlameGraph"
-    clone_repo(
-        repo_url="https://github.com/brendangregg/FlameGraph.git",
-        repo_src_dir=flamegraph_path,
-        commit="cd9ee4c4449775a2f867acf31c84b7fe4b132ad5",
-    )
-
-    perf_wrapper = PerfReportWrap(
-        freq=99,
-        # freq=10,
-        report_interactive=False,
-        report_file=True,
-        flamegraph_path=flamegraph_path,
-    )
-
-    def flame_post_hook(
+    def hook(
         experiment_results_lines,
         record_data_dir,
         write_record_file_fun,
@@ -43,35 +39,60 @@ def main() -> None:
             flamegraph_fontsize=14,
         )
 
-    campaign = CampaignIterateVariables(
-        name="flame",
-        benchmark=SleepBench(
-            command_wrappers=[perf_wrapper],
-            post_run_hooks=[
-                perf_wrapper.post_run_hook_report,
-                flame_post_hook,
-            ],
-        ),
+    return hook
+
+
+def main() -> None:
+    platform = get_current_platform()
+    enable_non_sudo_perf(comm_layer=platform.comm)
+
+    flamegraph_dir = get_tools_dir(None) / "FlameGraph"
+
+    # --- shared perf wrapper (one instance is fine for sequential campaigns) ---
+    perf_wrapper = PerfReportWrap(
+        freq=99,
+        report_interactive=False,
+        report_file=True,
+        flamegraph_path=flamegraph_dir,
+    )
+    perf_wrapper.fetch_flamegraph()
+
+    flame_hook = _make_flame_post_hook(perf_wrapper)
+
+    # --- Campaign 1: sleep (no CPU samples → graceful skip) ---
+    campaign_sleep = CampaignCartesianProduct(
+        name="flame_sleep",
+        benchmark=SleepBench(),
+        variables={
+            "duration_seconds": [1],
+        },
         nb_runs=1,
-        variables=[
-            {
-                "duration_seconds": 1,
-            },
-            {
-                "duration_seconds": 2,
-            },
+        command_wrappers=[perf_wrapper],
+        post_run_hooks=[
+            perf_wrapper.post_run_hook_report,
+            flame_hook,
         ],
-        constants=None,
-        debug=False,
-        gdb=False,
-        enable_data_dir=True,
+        platform=platform,
     )
 
-    campaign.run()
+    # --- Campaign 2: dd (CPU-intensive → real flamegraph) ---
+    campaign_dd = CampaignCartesianProduct(
+        name="flame_dd",
+        benchmark=DDBench(),
+        variables={
+            "block_count": [50],
+        },
+        nb_runs=1,
+        command_wrappers=[perf_wrapper],
+        post_run_hooks=[
+            perf_wrapper.post_run_hook_report,
+            flame_hook,
+        ],
+        platform=platform,
+    )
 
-    results_path = campaign.base_data_dir()
-    perf_wrapper.fzf_report(search_dir=results_path)
-    perf_wrapper.fzf_flamegraph(search_dir=results_path)
+    suite = CampaignSuite(campaigns=[campaign_sleep, campaign_dd])
+    suite.run_suite()
 
 
 if __name__ == "__main__":
