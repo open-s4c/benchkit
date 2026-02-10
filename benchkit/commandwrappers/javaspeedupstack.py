@@ -1,7 +1,7 @@
 # Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from benchkit.commandwrappers.javaperf import JavaPerfReportWrap, JavaPerfStatWrap
+from benchkit.commandwrappers.javaperf import JavaPerfRecordWrap, JavaPerfStatWrap
 from benchkit.commandwrappers.jvmxlog import JVMXlogWrap
 from benchkit.platforms import get_current_platform
 
@@ -23,7 +23,7 @@ class JavaSpeedupStackWrapper:
 
         self.jvmxlogwrap = JVMXlogWrap()
 
-        self.javaperfreportwrap = JavaPerfReportWrap(
+        self.javaperfrecordwrap = JavaPerfRecordWrap(
             perf_record_options=["-e", "syscalls:sys_enter_futex,syscalls:sys_exit_futex"],
             perf_report_options=[],
             report_file=True,
@@ -41,7 +41,7 @@ class JavaSpeedupStackWrapper:
                 record_data_dir=record_data_dir,
                 poll_ms=100,
             ),
-            lambda process, record_data_dir: self.javaperfreportwrap.attach_every_thread(
+            lambda process, record_data_dir: self.javaperfrecordwrap.attach_every_thread(
                 platform=get_current_platform(),
                 process=process,
                 record_data_dir=record_data_dir,
@@ -52,5 +52,5 @@ class JavaSpeedupStackWrapper:
         return [
             self.javaperfstatwrap.post_run_hook_update_results,
             self.jvmxlogwrap.post_run_hook_update_results,
-            self.javaperfreportwrap.post_run_hook_report,
+            self.javaperfrecordwrap.post_run_hook_report,
         ]

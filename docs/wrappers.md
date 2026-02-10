@@ -76,14 +76,14 @@ graph see [hooks](hooks.md).
 Runs the [`perf`](https://perf.wiki.kernel.org) Linux utility on your benchmark.
 This wrapper can be created in the following way:
 ```python
-from benchkit.commandwrappers.perf import PerfStatWrap, PerfReportWrap
+from benchkit.commandwrappers.perf import PerfStatWrap, PerfRecordWrap
 
 perfStatWrap = PerfStatWrap(events=["cache-misses"])
-perfReportWrap = PerfReportWrap()
+perfRecordWrap = PerfRecordWrap()
 ```
 
 There are two versions of the `perf` wrapper, `PerfStatWrap` will wrap
-you command with the `perf stat` command, while `PerfReportWrap` will
+you command with the `perf stat` command, while `PerfRecordWrap` will
 wrap your command with `perf record` and `perf report`.
 
 When using `PerfStatWrap`, you should also pass the `events` argument,
@@ -93,7 +93,7 @@ this argument decides with [PMU]() events `perf` should record.
 `PerfStatWrap` has the following [hooks](hooks.md):
 * `post_run_hook_update_results`
 
-`PerfReportWrap` has the following [hooks](hooks.md):
+`PerfRecordWrap` has the following [hooks](hooks.md):
 * `post_run_hook_flamegraph`
 * `post_run_hook_report`
 

@@ -18,7 +18,7 @@ from benchkit import CampaignCartesianProduct
 from benchkit.benches.small.dd import DDBench
 from benchkit.benches.small.sleep import SleepBench
 from benchkit.campaign import CampaignSuite
-from benchkit.commandwrappers.perf import PerfReportWrap, enable_non_sudo_perf
+from benchkit.commandwrappers.perf import PerfRecordWrap, enable_non_sudo_perf
 from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import get_tools_dir
 
@@ -49,7 +49,7 @@ def main() -> None:
     flamegraph_dir = get_tools_dir(None) / "FlameGraph"
 
     # --- shared perf wrapper (one instance is fine for sequential campaigns) ---
-    perf_wrapper = PerfReportWrap(
+    perf_wrapper = PerfRecordWrap(
         freq=99,
         report_interactive=False,
         report_file=True,

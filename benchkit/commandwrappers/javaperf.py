@@ -15,7 +15,7 @@ from typing import Dict, List, Optional
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.commandwrappers.perf import (
-    PerfReportWrap,
+    PerfRecordWrap,
     PerfStatWrap,
     _perf_command_prefix,
 )
@@ -206,7 +206,7 @@ class JavaPerfStatWrap(PerfStatWrap):
         return output_dict
 
 
-class JavaPerfReportWrap(PerfReportWrap):
+class JavaPerfRecordWrap(PerfRecordWrap):
     """Command wrapper for the `perf record`/`perf report` utility."""
 
     def __init__(self, **kwargs):
