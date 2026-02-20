@@ -9,8 +9,10 @@ from benchkit.commandattachments.llcstat import Llcstat
 from benchkit.commandattachments.offcputime import Offcputime
 from benchkit.commandattachments.signal import Signal
 from benchkit.commandwrappers import CommandWrapper
+from benchkit.commandwrappers.perflock import PerfLockWrap
 from benchkit.commandwrappers.strace import StraceWrap
 from benchkit.dependencies.packages import PackageDependency
+from benchkit.platforms import get_current_platform
 from benchkit.utils.types import PathType
 
 
@@ -22,6 +24,13 @@ class SpeedupStackWrapper(CommandWrapper):
         self._offcputime = Offcputime(libbpf_tools_dir)
         self._llcstat = Llcstat(libbpf_tools_dir)
         self._strace = StraceWrap(pid=True, summary=False, summary_only=True)
+
+        self._perflock = PerfLockWrap(
+            perf_record_options=[],
+            perf_report_options=[],
+            report_file=False,
+            report_interactive=False,
+        )
 
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)
@@ -37,6 +46,11 @@ class SpeedupStackWrapper(CommandWrapper):
             self._llcstat.attachment,
             self._strace.attachment,
             self._sigcont.attachment,
+            lambda process, record_data_dir: self._perflock.attach_every_thread(
+                platform=get_current_platform(),
+                process=process,
+                record_data_dir=record_data_dir,
+            ),
         ]
 
     def post_run_hooks(self):
@@ -45,6 +59,7 @@ class SpeedupStackWrapper(CommandWrapper):
             self._offcputime.post_run_hook,
             self._llcstat.post_run_hook,
             self._strace.post_run_hook,
+            self._perflock.post_run_hook_report,
         ]
 
     def dependencies(self) -> List[PackageDependency]:
