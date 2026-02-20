@@ -14,11 +14,7 @@ from threading import Thread
 from typing import Dict, List, Optional
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
-from benchkit.commandwrappers.perf import (
-    PerfRecordWrap,
-    PerfStatWrap,
-    _perf_command_prefix,
-)
+from benchkit.commandwrappers.perf import PerfRecordWrap, PerfStatWrap, _perf_command_prefix
 from benchkit.helpers.linux import ps
 from benchkit.platforms import Platform
 from benchkit.shell.shell import shell_interactive, shell_out
