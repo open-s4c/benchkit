@@ -45,12 +45,12 @@ class SpeedupStackWrapper(CommandWrapper):
             self._offcputime.attachment,
             self._llcstat.attachment,
             self._strace.attachment,
-            self._sigcont.attachment,
             lambda process, record_data_dir: self._perflock.attach_every_thread(
                 platform=get_current_platform(),
                 process=process,
                 record_data_dir=record_data_dir,
             ),
+            self._sigcont.attachment,
         ]
 
     def post_run_hooks(self):
