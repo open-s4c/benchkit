@@ -316,7 +316,7 @@ benchkit
 ## Success Stories
 
 `benchkit` has been used to evaluate the performance of system software
-in 3 published papers [1,2,3], 6 Huawei internal projects, and allowed
+in 6 published papers [1-3,5-7], 6 Huawei internal projects, and allowed
 to obtain 4 SIGOPS badges of reproducible research. It has also been
 used to provide some performance evidence on the Linux Kernel Mailing
 List [4].
@@ -328,6 +328,12 @@ List [4].
 [3] [CLoF: A Compositional Lock Framework for Multi-level NUMA Systems. SOSP'2021.](https://dl.acm.org/doi/10.1145/3477132.3483557)
 
 [4] [lock_torture results for different patches. LKML, 2023.](https://lkml.org/lkml/2023/3/1/603)
+
+[5] [Exact schedulability test for sporadic mixed-criticality real-time systems using antichains and oracles. RTNS'2024.](https://doi.org/10.1145/3696355.3699702)
+
+[6] [SentryRT-1: A Case Study in Evaluating Real-Time Linux for Safety-Critical Robotic Perception. OSPERT@ECRTS'2025.](https://www.ecrts.org/workshops/ospert25/)
+
+[7] [Is Mojo Ready for Real-Time? A Language Evaluation for Time-Sensitive System Software. RTNS'2025.](https://rtns2025.retis.santannapisa.it/)
 
 
 ## Contributing
