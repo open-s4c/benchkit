@@ -154,7 +154,6 @@ class PerfLockWrap(PerfRecordWrap):
             with open(report_file) as f:
                 for line in f.readlines():
                     line = line.rstrip()
-                    print(line)
                     m = row_re.search(line)
                     if m:
                         # name = m.group(1)
