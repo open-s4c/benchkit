@@ -22,10 +22,16 @@ def main() -> None:
 
     campaign = rocksdb_campaign(
         src_dir=rocksdb_src_dir,
-        bench_name=["readrandom"],
-        nb_runs=5,
-        benchmark_duration_seconds=3,
-        nb_threads=[2, 4, 8],
+        bench_name=[
+            "readrandom",
+            # "readmissing",
+            # "seekrandom",
+            # "multireadrandom",
+            # "readwhilewriting",
+        ],
+        nb_runs=1,
+        benchmark_duration_seconds=10,
+        nb_threads=[4, 8],
         command_wrappers=([speedupstackwrapper] + speedupstackwrapper.command_wrappers()),
         command_attachments=speedupstackwrapper.command_attachments(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
@@ -75,6 +81,14 @@ def main() -> None:
         plot_name="lineplot",
         x="nb_threads",
         y="strace_total_time_s",
+        hue="bench_name",
+    )
+
+    suite.generate_graph(
+        title="Perf Record Lock",
+        plot_name="lineplot",
+        x="nb_threads",
+        y="perf_record_lock_total_wait_ns",
         hue="bench_name",
     )
 
