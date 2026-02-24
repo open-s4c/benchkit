@@ -135,7 +135,7 @@ def _generate_chart_from_df(
 
         chart.figure.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
         fig = chart.figure
-    elif "speedup-stack" == plot_name:
+    elif "java-speedup-stack" == plot_name:
         bench_names = df["bench_name"].unique()
         n_benches = len(bench_names)
 

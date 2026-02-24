@@ -84,7 +84,7 @@ def main() -> None:
     )
 
     # Generate a speedup stacks
-    suite.generate_graph(plot_name="speedup-stack", use_json=True)
+    suite.generate_graph(plot_name="java-speedup-stack", use_json=True)
 
 
 if __name__ == "__main__":
