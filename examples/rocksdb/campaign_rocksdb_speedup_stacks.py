@@ -86,12 +86,12 @@ def main() -> None:
     suite.generate_graph(
         title="Speedup Stack",
         plot_name="speedup-stack",
-        duration_transformation=time_transformation("s", "ns"),
+        duration_transformation=lambda d: time_transformation(d, "s", "ns"),
         speedup_stack_components={
-            "klockstat_total_wait_ns": lambda x: x,
-            "offcputime_avg_micro_s": time_transformation("us", "ns"),
-            "llcstat_total_nr_misses": lambda x: x,
-            "strace_total_time_s": time_transformation("s", "ns"),
+            "klockstat_total_wait_ns": lambda d, nb_t: d / nb_t,
+            "offcputime_avg_micro_s": lambda d, nb_t: time_transformation(d, "us", "ns"),
+            "llcstat_total_nr_misses": lambda d, nb_t: d / nb_t,
+            "strace_total_time_s": lambda d, nb_t: time_transformation(d, "s", "ns") / nb_t,
         },
         constant_duration=True,
         speed_metric="operations/second",

@@ -278,14 +278,11 @@ def _generate_chart_from_df(
     plt.close()
 
 
-# def time_transformation(from: str, to: str) -> Callable[[float], float]:
-#     return (lambda x: x)
-
-
 def time_transformation(
+    val: float,
     from_unit: str,
     to_unit: str,
-) -> Callable[[float], float]:
+) -> float:
     unit_table = {
         "h": 60 * 60,
         "m": 60,
@@ -294,13 +291,13 @@ def time_transformation(
         "us": 1e-6,
         "ns": 1e-9,
     }
-    return lambda x: (x * (unit_table[from_unit] / unit_table[to_unit]))
+    return val * (unit_table[from_unit] / unit_table[to_unit])
 
 
 def _get_speedup_data(
     df: DataFrame,
     duration_transformation: Optional[Callable[[float], float]],
-    speedup_stack_components: dict[str, Callable[[float], float]],
+    speedup_stack_components: dict[str, Callable[[float, float], float]],
     constant_duration: bool = False,
     speed_metric: Optional[str] = None,
     **kwargs,
@@ -340,7 +337,7 @@ def _get_speedup_data(
         #     print(name, row[name], func(row[name]), func(row[name]) / duration)
 
         slowdown_components = {
-            name: (func(row[name]) / duration) for name, func in speedup_stack_components.items()
+            name: (func(row[name], nb_threads) / duration) for name, func in speedup_stack_components.items()
         }
 
         other_component = 1 - measured_component - sum(slowdown_components.values())
