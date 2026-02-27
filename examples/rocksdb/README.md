@@ -55,7 +55,10 @@ cd ../../..
 
 Running the speedup stack campaign.
 ```
+sudo -v
+while true; do sudo -v; sleep 60; done &
 ./campaign_rocksdb_speedup_stacks.py
+kill %1
 ```
 
 
@@ -88,9 +91,9 @@ sudo setcap cap_sys_resource,cap_sys_admin+eip ./klockstat
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./offcputime
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./llcstat
 sudo setcap cap_sys_ptrace+ep /usr/bin/strace
-kill %1
 cd ../../..
 ./campaign_rocksdb_speedup_stacks.py
+kill %1
 ```
 
 

@@ -161,10 +161,7 @@ def main() -> None:
 
     match target:
         case Target.HARMONY:
-            from benchkit.devices.hdc import (
-                OpenHarmonyCommLayer,
-                OpenHarmonyDeviceConnector,
-            )
+            from benchkit.devices.hdc import OpenHarmonyCommLayer, OpenHarmonyDeviceConnector
 
             bench_dir = "/data/local/tmp"
             device = list(OpenHarmonyDeviceConnector.query_devices())[0]
