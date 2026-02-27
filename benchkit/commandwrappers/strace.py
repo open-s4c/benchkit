@@ -45,6 +45,7 @@ class StraceWrap(CommandWrapper):
         trace_forks: bool = False,
         output_separately: bool = False,
         platform: Platform = None,
+        filter_syscalls: list[str] = [],
     ):
         super().__init__()
 
@@ -54,6 +55,7 @@ class StraceWrap(CommandWrapper):
         self._output_separately = output_separately
         self._trace_forks = trace_forks
         self.platform = platform if platform is not None else get_current_platform()
+        self._filter_syscalls = filter_syscalls
 
         self._output_file_name = "strace.txt"
         self.out_file_name = "strace.out"
@@ -157,22 +159,25 @@ class StraceWrap(CommandWrapper):
                 if m:
                     syscall_name = m.group(6)
 
-                    per_syscall_dict[syscall_name] = {
-                        "percentage_time": float(m.group(1).replace(",", ".")),
-                        "time_s": float(m.group(2).replace(",", ".")),
-                        "micro_s_per_call": int(m.group(3)),
-                        "nr_calls": int(m.group(4)),
-                        "nr_errors": int(m.group(5) if m.group(5) else 0),
-                    }
+                    if syscall_name not in self._filter_syscalls:
+                        per_syscall_dict[syscall_name] = {
+                            "percentage_time": float(m.group(1).replace(",", ".")),
+                            "time_s": float(m.group(2).replace(",", ".")),
+                            "micro_s_per_call": int(m.group(3)),
+                            "nr_calls": int(m.group(4)),
+                            "nr_errors": int(m.group(5) if m.group(5) else 0),
+                        }
 
         # Post run hooks must return a dictionary where each key at the top level corresponds
         # to some information to be kept. The current per-syscall dictionary
         # does not adhere to this structure.
 
-        # TODO: Currently, the output from strace is processed by just taking a sum.
-        # However, this is most likely not what the user wants when calling this post run hook.
-        # For example, in the context of a locking benchmark, you might already be processing
-        # the locks separately. So maybe we would like to be able to filter on certain system calls.
+        # This prints the system calls by time
+        # sorted_dict = sorted(
+        #     per_syscall_dict.items(), key=lambda item: item[1]["time_s"], reverse=True
+        # )
+        # __import__("pprint").pprint(sorted_dict)
+
         total_time_s = sum(d["time_s"] for d in per_syscall_dict.values())
         return_dict = {
             "strace_total_time_s": total_time_s,
