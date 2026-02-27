@@ -19,7 +19,7 @@ class SpeedupStackWrapper(CommandWrapper):
         self._libbpf_tools_dir = libbpf_tools_dir
 
         self._klockstat = Klockstat(libbpf_tools_dir)
-        self._offcputime = Offcputime(libbpf_tools_dir)
+        self._offcputime = Offcputime(libbpf_tools_dir, filter_comm=["rocksdb:rocksdb"])
         self._llcstat = Llcstat(libbpf_tools_dir)
         self._strace = StraceWrap(
             pid=True, summary=False, summary_only=True, filter_syscalls=["futex"]

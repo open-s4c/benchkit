@@ -88,18 +88,14 @@ def main() -> None:
         plot_name="speedup-stack",
         duration_transformation=time_transformation("s", "ns"),
         speedup_stack_components={
-            "klockstat_total_wait_ns": _id,
+            "klockstat_total_wait_ns": lambda x: x,
             "offcputime_avg_micro_s": time_transformation("us", "ns"),
-            "llcstat_total_nr_misses": _id,
+            "llcstat_total_nr_misses": lambda x: x,
             "strace_total_time_s": time_transformation("s", "ns"),
         },
         constant_duration=True,
         speed_metric="operations/second",
     )
-
-
-def _id(val: float):
-    return val
 
 
 if __name__ == "__main__":
