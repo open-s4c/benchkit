@@ -196,6 +196,9 @@ class Offcputime(LibbpfTools):
                 (sum(d["total_off_time_micro_s"] for d in per_pid_dict.values()) / number_of_pids)
                 if number_of_pids != 0
                 else 0
-            )
+            ),
+            "offcputime_total_micro_s": sum(
+                d["total_off_time_micro_s"] for d in per_pid_dict.values()
+            ),
         }
         return return_dict
