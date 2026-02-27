@@ -9,6 +9,7 @@ from rocksdb import rocksdb_campaign
 
 from benchkit.campaign import CampaignSuite
 from benchkit.commandwrappers.speedupstack import SpeedupStackWrapper
+from benchkit.lwchart import time_transformation
 from benchkit.utils.dir import get_curdir
 
 
@@ -78,9 +79,8 @@ def main() -> None:
         ],
         nb_runs=1,
         benchmark_duration_seconds=3,
-        # nb_threads=[1, 2, 4],
-        # nb_threads=[1, 2, 4, 8, 12],
-        nb_threads=[8],
+        nb_threads=[1, 2, 4, 8],
+        # nb_threads=[1, 2],
         command_wrappers=([speedupstackwrapper] + speedupstackwrapper.command_wrappers()),
         command_attachments=speedupstackwrapper.command_attachments(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
@@ -163,6 +163,24 @@ def main() -> None:
     #     speedupstackwrapper=speedupstackwrapper,
     #     show_run_number=5,
     # )
+
+    suite.generate_graph(
+        title="Speedup Stack",
+        plot_name="speedup-stack",
+        duration_transformation=time_transformation("s", "ns"),
+        speedup_stack_components={
+            "klockstat_total_wait_ns": _id,
+            "offcputime_avg_micro_s": time_transformation("us", "ns"),
+            "llcstat_total_nr_misses": _id,
+            "strace_total_time_s": time_transformation("s", "ns"),
+        },
+        constant_duration=True,
+        speed_metric="operations/second",
+    )
+
+
+def _id(val: float):
+    return val
 
 
 if __name__ == "__main__":
