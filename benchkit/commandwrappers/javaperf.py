@@ -14,11 +14,7 @@ from threading import Thread
 from typing import Dict, List, Optional
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
-from benchkit.commandwrappers.perf import (
-    PerfRecordWrap,
-    PerfStatWrap,
-    _perf_command_prefix,
-)
+from benchkit.commandwrappers.perf import PerfRecordWrap, PerfStatWrap, _perf_command_prefix
 from benchkit.helpers.linux import ps
 from benchkit.platforms import Platform
 from benchkit.shell.shell import shell_interactive, shell_out
@@ -119,7 +115,7 @@ class JavaPerfStatWrap(PerfStatWrap):
     # TODO: Look into different version of perf. This might not be needed.
     # Remove this fix when #231 is merged.
     def _get_perf_field(self, perf_counter_row: dict, field: str, perf_version: str):
-        workaround_versions = ["6.8.12", "6.17.rc2.gb19a97d57c15",  "6.17.9"]
+        workaround_versions = ["6.8.12", "6.17.rc2.gb19a97d57c15", "6.17.9"]
         if perf_version in workaround_versions:
             match field:
                 case "event_name":
