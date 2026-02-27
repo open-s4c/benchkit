@@ -30,7 +30,6 @@ def main() -> None:
         nb_runs=5,
         benchmark_duration_seconds=10,
         nb_threads=[1, 2, 4, 8],
-        # nb_threads=[1, 2],
         command_wrappers=([speedupstackwrapper] + speedupstackwrapper.command_wrappers()),
         command_attachments=speedupstackwrapper.command_attachments(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),

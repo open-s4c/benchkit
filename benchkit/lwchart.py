@@ -337,7 +337,8 @@ def _get_speedup_data(
         #     print(name, row[name], func(row[name]), func(row[name]) / duration)
 
         slowdown_components = {
-            name: (func(row[name], nb_threads) / duration) for name, func in speedup_stack_components.items()
+            name: (func(row[name], nb_threads) / duration)
+            for name, func in speedup_stack_components.items()
         }
 
         other_component = 1 - measured_component - sum(slowdown_components.values())
