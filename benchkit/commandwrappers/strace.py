@@ -35,6 +35,7 @@ class StraceWrap(CommandWrapper):
         summary_only: Count time, calls, and errors for each syscall and report summary
         trace_forks: Follow forks
         output_separately: Follow forks with output into separate files
+        filter_syscalls: System calls that should not get traced
     """
 
     def __init__(
@@ -89,6 +90,8 @@ class StraceWrap(CommandWrapper):
             options.append("--output-separately")
         if self._trace_forks:
             options.append("--follow-forks")
+        if self._filter_syscalls:
+            options.extend(["-e", "trace=!" + ",".join(self._filter_syscalls)])
 
         cmd_prefix = (
             ["strace"]
@@ -121,6 +124,8 @@ class StraceWrap(CommandWrapper):
             command.append("--output-separately")
         if self._trace_forks:
             command.append("--follow-forks")
+        if self._filter_syscalls:
+            command.extend(["-e", "trace=!" + ",".join(self._filter_syscalls)])
 
         # Initialize AsyncProcess for strace
         self._process = AsyncProcess(
@@ -159,14 +164,13 @@ class StraceWrap(CommandWrapper):
                 if m:
                     syscall_name = m.group(6)
 
-                    if syscall_name not in self._filter_syscalls:
-                        per_syscall_dict[syscall_name] = {
-                            "percentage_time": float(m.group(1).replace(",", ".")),
-                            "time_s": float(m.group(2).replace(",", ".")),
-                            "micro_s_per_call": int(m.group(3)),
-                            "nr_calls": int(m.group(4)),
-                            "nr_errors": int(m.group(5) if m.group(5) else 0),
-                        }
+                    per_syscall_dict[syscall_name] = {
+                        "percentage_time": float(m.group(1).replace(",", ".")),
+                        "time_s": float(m.group(2).replace(",", ".")),
+                        "micro_s_per_call": int(m.group(3)),
+                        "nr_calls": int(m.group(4)),
+                        "nr_errors": int(m.group(5) if m.group(5) else 0),
+                    }
 
         # Post run hooks must return a dictionary where each key at the top level corresponds
         # to some information to be kept. The current per-syscall dictionary
