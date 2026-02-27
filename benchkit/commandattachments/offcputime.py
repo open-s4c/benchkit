@@ -46,6 +46,7 @@ class Offcputime(LibbpfTools):
                         (default 1024)
         state: filter on this thread state bitmask (eg, 2 == TASK_UNINTERRUPTIBLE)
                         see include/linux/sched.h
+        filter_comm: filter out the given comm names
     """
 
     def __init__(
@@ -60,6 +61,7 @@ class Offcputime(LibbpfTools):
         perf_max_stack_depth: int = -1,
         stack_storage_size: int = -1,
         state: int = -1,
+        filter_comm: list[str] = [],
         platform: Platform = None,
     ) -> None:
 
@@ -78,6 +80,7 @@ class Offcputime(LibbpfTools):
         self._perf_max_stack_depth = perf_max_stack_depth
         self._stack_storage_size = stack_storage_size
         self._state = state
+        self._filter_comm = filter_comm
 
         self.out_file_name = "offcputime.out"
         self.err_file_name = "offcputime.err"
@@ -166,6 +169,9 @@ class Offcputime(LibbpfTools):
                 m = row_re.search(line)
                 if m:
                     name = m.group(1)
+                    if name in self._filter_comm:
+                        continue
+
                     pid = int(m.group(2))
                     delta_micro_s = int(m.group(3))
 
