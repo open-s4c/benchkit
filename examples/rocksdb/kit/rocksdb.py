@@ -11,13 +11,7 @@ import pathlib
 import re
 from typing import Any, Dict, Iterable, List
 
-from benchkit.benchmark import (
-    Benchmark,
-    CommandAttachment,
-    CommandWrapper,
-    PostRunHook,
-    PreRunHook,
-)
+from benchkit.benchmark import Benchmark, CommandAttachment, CommandWrapper, PostRunHook, PreRunHook
 from benchkit.campaign import CampaignCartesianProduct
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform

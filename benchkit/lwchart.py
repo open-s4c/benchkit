@@ -17,7 +17,7 @@ import json
 import os
 import pathlib
 import sys
-from typing import Any, Dict, List, Protocol
+from typing import Any, Callable, Dict, List, Optional, Protocol
 
 import numpy as np
 from numpy import floating, mean
@@ -160,7 +160,56 @@ def _generate_chart_from_df(
 
         for ax, bench in zip(axes, bench_names):
             bench_df = df[df["bench_name"] == bench]
-            speedup_data = _get_speedup_data(bench_df)
+
+            speedup_data = _get_speedup_data(bench_df, **kwargs)
+            # speedup_data = dict(sorted(speedup_data.items()))
+            __import__("pprint").pprint(speedup_data)
+
+            ind = np.arange(len(speedup_data))
+            bottom = np.zeros(len(speedup_data))
+
+            for component_name, color in zip(next(iter(speedup_data.values())).keys(), colors):
+                vals = [d[component_name] for d in speedup_data.values()]
+                ax.bar(ind, vals, bottom=bottom, label=component_name, color=color)
+                bottom += vals
+
+            ax.set_title(bench)
+            ax.set_xlabel("Number of Threads")
+            ax.set_xticks(ind)
+            ax.set_xticklabels([str(k) for k in speedup_data.keys()])
+            if ax is axes[0]:
+                ax.set_ylabel("Speedup")
+            ax.legend(loc="upper left")
+
+        # plt.title(title + ": " + ", ".join(bench_names))
+        plt.tight_layout()
+        plt.show()
+    elif "java-speedup-stack" == plot_name:
+        bench_names = df["bench_name"].unique()
+        n_benches = len(bench_names)
+
+        sns.set_theme()
+        fig, axes = plt.subplots(nrows=1, ncols=n_benches, figsize=(5 * n_benches, 8), sharey=True)
+
+        fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=18, y=0.98)
+
+        if n_benches == 1:
+            axes = [axes]
+
+        colors = sns.color_palette("pastel")
+
+        factors = ["measured", "gc", "sync", "lock", "other"]
+        labels = [
+            "Measured",
+            "Garbage Collection",
+            "Synchronization Activities",
+            "Lock Contention",
+            "Other Overheads",
+        ]
+
+        for ax, bench in zip(axes, bench_names):
+            bench_df = df[df["bench_name"] == bench]
+            speedup_data = _get_java_speedup_data(bench_df)
             speedup_data = dict(sorted(speedup_data.items()))
 
             ind = np.arange(len(speedup_data))
@@ -229,7 +278,82 @@ def _generate_chart_from_df(
     plt.close()
 
 
+def time_transformation(
+    val: float,
+    from_unit: str,
+    to_unit: str,
+) -> float:
+    unit_table = {
+        "h": 60 * 60,
+        "m": 60,
+        "s": 1,
+        "ms": 1e-3,
+        "us": 1e-6,
+        "ns": 1e-9,
+    }
+    return val * (unit_table[from_unit] / unit_table[to_unit])
+
+
 def _get_speedup_data(
+    df: DataFrame,
+    duration_transformation: Optional[Callable[[float], float]],
+    speedup_stack_components: dict[str, Callable[[float, float], float]],
+    constant_duration: bool = False,
+    speed_metric: Optional[str] = None,
+    **kwargs,
+) -> Dict[int, Dict[str, Any]]:
+    mean_df = (
+        df.groupby("nb_threads")[
+            ["duration"]
+            + list(speedup_stack_components.keys())
+            + ([speed_metric] if constant_duration else [])
+        ]
+        .mean()
+        .reset_index()
+    )
+    if duration_transformation:
+        mean_df["duration"] = mean_df["duration"].apply(duration_transformation)
+
+    single_threaded_duration = mean_df.loc[mean_df["nb_threads"] == 1, "duration"].iloc[0]
+    single_threaded_speed_metric = (
+        mean_df.loc[mean_df["nb_threads"] == 1, speed_metric].iloc[0] if speed_metric else 0
+    )
+
+    multithreaded_df = mean_df[mean_df["nb_threads"] != 1]
+    data: dict[int, dict[str, float]] = {}
+
+    for _, row in multithreaded_df.iterrows():
+        nb_threads = row["nb_threads"]
+
+        duration = row["duration"]
+        if constant_duration:
+            # The benchmark has a constant duration, so compute a duration based on speed metric
+            duration = duration / (row[speed_metric] / single_threaded_speed_metric)
+
+        perfect_speedup_duration = single_threaded_duration / nb_threads
+        measured_component = perfect_speedup_duration / duration
+
+        # for name, func in speedup_stack_components.items():
+        #     print(name, row[name], func(row[name]), func(row[name]) / duration)
+
+        slowdown_components = {
+            name: (func(row[name], nb_threads) / duration)
+            for name, func in speedup_stack_components.items()
+        }
+
+        other_component = 1 - measured_component - sum(slowdown_components.values())
+
+        data[nb_threads] = {
+            "measured": measured_component * nb_threads,
+            "other": other_component * nb_threads,
+        } | {
+            name: (component_value * nb_threads)
+            for name, component_value in slowdown_components.items()
+        }
+    return data
+
+
+def _get_java_speedup_data(
     df: DataFrame,
 ) -> Dict[str, Dict[str, Any]]:
     single_threaded_duration = df[df["nb_threads"] == 1]["duration"].values[0]
