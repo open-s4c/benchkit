@@ -805,6 +805,31 @@ class PerfRecordWrap(CommandWrapper):
         if self._report_interactive:
             shell_interactive(command=command, ignore_ret_codes=(-13,))  # ignore broken pipe error
 
+    def post_run_hook_script(
+        self,
+        experiment_results_lines: List[RecordResult],
+        record_data_dir: PathType,
+        write_record_file_fun: WriteRecordFileFunction,
+    ) -> Optional[Dict[str, Any]]:
+        """Post run hook to generate extension of result dict holding the results of perf script.
+
+        Args:
+            experiment_results_lines (List[RecordResult]): the record results.
+            record_data_dir (PathType): path to the record data directory.
+            write_record_file_fun (WriteRecordFileFunction): callback to record a file into data
+                                                             directory.
+        """
+        assert experiment_results_lines and record_data_dir
+
+        perf_data_pathname = self.latest_perf_path
+        self._chown(pathname=perf_data_pathname)
+
+        command = self._perf_script_command(perf_data_pathname=perf_data_pathname)
+
+        output = shell_out(command, print_output=False)
+
+        write_record_file_fun(file_content=output.strip(), filename="perf.script")
+
     def fetch_flamegraph(
         self,
         flamegraph_commit: str = "41fee1f99f9276008b7cd112fca19dc3ea84ac32",
@@ -1018,6 +1043,16 @@ class PerfRecordWrap(CommandWrapper):
         command = [
             self._perf_bin,
             "report",
+            "--input",
+            f"{perf_data_pathname}",
+        ] + self.perf_report_options
+
+        return command
+
+    def _perf_script_command(self, perf_data_pathname: PathType) -> SplitCommand:
+        command = [
+            self._perf_bin,
+            "script",
             "--input",
             f"{perf_data_pathname}",
         ] + self.perf_report_options
