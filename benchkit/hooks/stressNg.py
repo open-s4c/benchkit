@@ -3,12 +3,7 @@
 
 from typing import List, Optional
 
-from benchkit.benchmark import (
-    PostRunHook,
-    PreRunHook,
-    RecordResult,
-    WriteRecordFileFunction,
-)
+from benchkit.benchmark import PostRunHook, PreRunHook, RecordResult, WriteRecordFileFunction
 from benchkit.platforms import get_current_platform
 from benchkit.shell.shellasync import shell_async
 from benchkit.utils.types import PathType

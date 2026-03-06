@@ -35,6 +35,7 @@ class StraceWrap(CommandWrapper):
         summary_only: Count time, calls, and errors for each syscall and report summary
         trace_forks: Follow forks
         output_separately: Follow forks with output into separate files
+        filter_syscalls: System calls that should not get traced
     """
 
     def __init__(
@@ -45,6 +46,7 @@ class StraceWrap(CommandWrapper):
         trace_forks: bool = False,
         output_separately: bool = False,
         platform: Platform = None,
+        filter_syscalls: list[str] = [],
     ):
         super().__init__()
 
@@ -54,6 +56,7 @@ class StraceWrap(CommandWrapper):
         self._output_separately = output_separately
         self._trace_forks = trace_forks
         self.platform = platform if platform is not None else get_current_platform()
+        self._filter_syscalls = filter_syscalls
 
         self._output_file_name = "strace.txt"
         self.out_file_name = "strace.out"
@@ -87,6 +90,8 @@ class StraceWrap(CommandWrapper):
             options.append("--output-separately")
         if self._trace_forks:
             options.append("--follow-forks")
+        if self._filter_syscalls:
+            options.extend(["-e", "trace=!" + ",".join(self._filter_syscalls)])
 
         cmd_prefix = (
             ["strace"]
@@ -119,6 +124,8 @@ class StraceWrap(CommandWrapper):
             command.append("--output-separately")
         if self._trace_forks:
             command.append("--follow-forks")
+        if self._filter_syscalls:
+            command.extend(["-e", "trace=!" + ",".join(self._filter_syscalls)])
 
         # Initialize AsyncProcess for strace
         self._process = AsyncProcess(
@@ -169,10 +176,12 @@ class StraceWrap(CommandWrapper):
         # to some information to be kept. The current per-syscall dictionary
         # does not adhere to this structure.
 
-        # TODO: Currently, the output from strace is processed by just taking a sum.
-        # However, this is most likely not what the user wants when calling this post run hook.
-        # For example, in the context of a locking benchmark, you might already be processing
-        # the locks separately. So maybe we would like to be able to filter on certain system calls.
+        # This prints the system calls by time
+        # sorted_dict = sorted(
+        #     per_syscall_dict.items(), key=lambda item: item[1]["time_s"], reverse=True
+        # )
+        # __import__("pprint").pprint(sorted_dict)
+
         total_time_s = sum(d["time_s"] for d in per_syscall_dict.values())
         return_dict = {
             "strace_total_time_s": total_time_s,
