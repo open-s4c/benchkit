@@ -35,6 +35,15 @@ To run the speedup stack example, you need the following dependencies.
 - LLVM 3.7.1 or newer, compiled with BPF support (default=on)
 - Clang, built from the same tree as LLVM
 
+```bash
+# On Ubuntu 24.04
+sudo apt install libc6-dev-i386 libc6-dev linux-headers-$(uname -r)
+
+sudo apt install -y zip bison build-essential cmake flex git llvm libedit-dev \
+  libllvm18 llvm-18-dev libclang-18-dev python3 zlib1g-dev libelf-dev libfl-dev python3-setuptools \
+  liblzma-dev libdebuginfod-dev arping netperf iperf libpolly-18-dev
+```
+https://github.com/iovisor/bcc/blob/master/INSTALL.md#ubuntu---source
 
 Cloning and compiling the libbpf-tools dependencies.
 ```
