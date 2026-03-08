@@ -8,6 +8,7 @@ TODO
 import os
 import pathlib
 import re
+from collections import defaultdict
 from threading import Thread
 from typing import List
 
@@ -102,83 +103,80 @@ class ThreadProfiler:
                     print(line)
                 return {}
 
+        # This dictionary will hold all the aggregated values for each lock
+        per_thread_dict: dict[int, list] = defaultdict(list)
+        row_re = re.compile(r"^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s*(\d+)?\s*$")
+
         with open(threadprofiler_out_file) as out_file:
             for line in out_file.readlines():
                 line = line.rstrip()
-                print(line)
-
-        return {}
-
-        # This dictionary will hold all the aggregated values for each lock
-        per_lock_dict = {}
-
-        time_regex = re.compile(r"^\s*(\d+\.?\d*)\s*(ns|us|ms|s|m|h)\s*$", re.IGNORECASE)
-
-        def parse_time_to_ns(s: str) -> float:
-            """Parse strings like '1.6 us', '800 ns', '2.3 ms' -> nanoseconds (float)."""
-            m = time_regex.match(s.rstrip())
-            if not m:
-                raise ValueError(f"can't parse time value: {s}")
-            val = float(m.group(1))
-            unit = m.group(2).lower()
-            return (
-                val
-                * {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9, "m": 1e9 * 60, "h": 1e9 * 3600}[unit]
-            )
-
-        current_table = "wait"
-        row_re = re.compile(r"(\S+)\s+(\S+\s+\S+)\s+(\d+)\s+(\S+\s+\S+)\s+(\S+\s+\S+)")
-
-        with open(klockstat_out_file) as out_file:
-            for line in out_file.readlines():
-                line = line.rstrip()
-
-                if "Avg Wait" in line:
-                    current_table = "wait"
-                    continue
-                if "Avg Hold" in line:
-                    current_table = "hold"
-                    continue
 
                 m = row_re.search(line)
                 if m:
-                    caller = m.group(1)
-                    avg_key = "avg_" + current_table
-                    count_key = "count_" + current_table
-                    max_key = "max_" + current_table
-                    total_key = "total_" + current_table
+                    tid = int(m.group(1))
+                    block_index = int(m.group(2))
+                    block_start_time_ns = int(m.group(3))
+                    first_event_time_ns = int(m.group(4))
+                    last_event_time_ns = int(m.group(5))
+                    offcpu_time_ns = int(m.group(6))
+                    end_state = m.group(7)
+                    cutoff_time_ns = m.group(8)
 
-                    parsed_avg = parse_time_to_ns(m.group(2))
-                    parsed_count = int(m.group(3))
-                    parsed_max = parse_time_to_ns(m.group(4))
-                    parsed_total = parse_time_to_ns(m.group(5))
+                    # print(
+                    #     tid,
+                    #     block_index,
+                    #     block_start_time_ns,
+                    #     first_event_time_ns,
+                    #     last_event_time_ns,
+                    #     offcpu_time_ns,
+                    #     end_state,
+                    # )
 
-                    old_values = per_lock_dict.setdefault(
-                        caller,
+                    per_thread_dict[tid].append(
                         {
-                            "avg_wait": 0,
-                            "count_wait": 0,
-                            "max_wait": 0,
-                            "total_wait": 0,
-                            "avg_hold": 0,
-                            "count_hold": 0,
-                            "max_hold": 0,
-                            "total_hold": 0,
-                        },
-                    )
-
-                    per_lock_dict[caller].update(
-                        {
-                            avg_key: (
-                                old_values[avg_key] * old_values[count_key]
-                                + parsed_avg * parsed_count
-                            )
-                            / (old_values[count_key] + parsed_count),
-                            count_key: old_values[count_key] + parsed_count,
-                            max_key: max(old_values[max_key], parsed_max),
-                            total_key: old_values[total_key] + parsed_total,
+                            "block_index": block_index,
+                            "block_start_time_ns": block_start_time_ns,
+                            "first_event_time_ns": first_event_time_ns,
+                            "last_event_time_ns": last_event_time_ns,
+                            "offcpu_time_ns": offcpu_time_ns,
+                            "end_state": end_state,
+                            "cutoff_time_ns": cutoff_time_ns,
                         }
                     )
+
+                    # TODO: 1. Make a timeline of these blocks
+                    #       2. Make a graph that shows this timeline
+                    #          (like speedup stack but horizontal)
+
+                    # old_values = per_lock_dict.setdefault(
+                    #     caller,
+                    #     {
+                    #         "avg_wait": 0,
+                    #         "count_wait": 0,
+                    #         "max_wait": 0,
+                    #         "total_wait": 0,
+                    #         "avg_hold": 0,
+                    #         "count_hold": 0,
+                    #         "max_hold": 0,
+                    #         "total_hold": 0,
+                    #     },
+                    # )
+
+                    # per_lock_dict[caller].update(
+                    #     {
+                    #         avg_key: (
+                    #             old_values[avg_key] * old_values[count_key]
+                    #             + parsed_avg * parsed_count
+                    #         )
+                    #         / (old_values[count_key] + parsed_count),
+                    #         count_key: old_values[count_key] + parsed_count,
+                    #         max_key: max(old_values[max_key], parsed_max),
+                    #         total_key: old_values[total_key] + parsed_total,
+                    #     }
+                    # )
+
+            __import__("pprint").pprint(per_thread_dict)
+            return {}
 
             # Post run hooks must return a dictionary where each key at the top level corresponds
             # to some information to be kept. The current per-lock dictionary
