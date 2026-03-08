@@ -18,14 +18,63 @@ def main() -> None:
     rocksdb_src_dir = (get_curdir(__file__) / "deps/rocksdb/").resolve()
     libbpf_tools_dir = (get_curdir(__file__) / "deps/bcc/libbpf-tools/").resolve()
 
-    speedupstackwrapper = SpeedupStackWrapper(libbpf_tools_dir)
+    thread_profiler_dir = (get_curdir(__file__) / "deps/thread-profiler-bpf/src").resolve()
+
+    speedupstackwrapper = SpeedupStackWrapper(libbpf_tools_dir, thread_profiler_dir)
 
     campaign = rocksdb_campaign(
         src_dir=rocksdb_src_dir,
-        bench_name=["readrandom"],
-        nb_runs=5,
+        bench_name=[
+            "readrandom",
+            # "readmissing",
+            # TODO: make selection of working benchmarks
+            # "fillseq",  # write N values in sequential key order in async mode
+            # "fillseqdeterministic",  # write N values in the specified key order and keep
+            #  the shape of the LSM tree
+            # "fillrandom",  # write N values in random key order in async mode
+            # "filluniquerandomdeterministic",  # write N values in a random key order and keep
+            #  the shape of the LSM tree
+            # "overwrite",  # overwrite N values in random key order in async mode
+            # "fillsync",  # write N/1000 values in random key order in sync mode
+            # "fill100K",  # write N/1000 100K values in random order in async mode
+            # "deleteseq",  # delete N keys in sequential order
+            # "deleterandom",  # delete N keys in random order
+            # "readseq",  # read N times sequentially
+            # "readtocache",  # 1 thread reading database sequentially
+            # "readreverse",  # read N times in reverse order
+            # "readrandom",  # read N times in random order
+            # "readmissing",  # read N missing keys in random order
+            # "readwhilewriting",  # 1 writer, N threads doing random reads
+            # "readwhilemerging",  # 1 merger, N threads doing random reads
+            # "readwhilescanning",  # 1 thread doing full table scan, N threads doing random reads
+            # "readrandomwriterandom",  # N threads doing random-read, random-write
+            # "updaterandom",  # N threads doing read-modify-write for random keys
+            # "xorupdaterandom",  # N threads doing read-XOR-write for random keys
+            # "appendrandom",  # N threads doing read-modify-write with growing values
+            # "mergerandom",  # same as updaterandom/appendrandom using merge operator.
+            #  Must be used with merge_operator
+            # "readrandommergerandom",  # perform N random read-or-merge operations.
+            #  Must be used with merge_operator
+            # "newiterator",  # repeated iterator creation
+            # "seekrandom",  # N random seeks, call Next seek_nexts times per seek
+            # "seekrandomwhilewriting",  # seekrandom and 1 thread doing overwrite
+            # "seekrandomwhilemerging",  # seekrandom and 1 thread doing merge
+            # "crc32c",  # repeated crc32c of <block size> data
+            # "xxhash",  # repeated xxHash of <block size> data
+            # "xxhash64",  # repeated xxHash64 of <block size> data
+            # "xxh3",  # repeated XXH3 of <block size> data
+            # "acquireload",  # load N*1000 times
+            # "fillseekseq",  # write N values in sequential key, then read them by
+            #  seeking to each key
+            # "randomtransaction",  # execute N random transactions and verify correctness
+            # "randomreplacekeys",  # randomly replaces N keys by deleting the old version
+            #  and putting the new version
+            # "timeseries",  # 1 writer generates time series data and multiple readers
+            #  doing random reads on id
+        ],
+        nb_runs=1,
         benchmark_duration_seconds=3,
-        nb_threads=[2, 4, 8],
+        nb_threads=[1, 2, 4],
         command_wrappers=([speedupstackwrapper] + speedupstackwrapper.command_wrappers()),
         command_attachments=speedupstackwrapper.command_attachments(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),

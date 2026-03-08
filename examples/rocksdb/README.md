@@ -62,6 +62,23 @@ sudo setcap cap_sys_ptrace+ep /usr/bin/strace
 cd ../../..
 ```
 
+
+Cloning and compiling the pensieveBPF (temp name) dependency
+
+```bash
+cd deps/
+# git clone https://github.com/theodegeest/thread-profiler-bpf.git --recursive
+git clone git@github.com:theodegeest/thread-profiler-bpf.git --recursive
+cd thread-profiler-bpf/
+make install
+make -j
+sudo setcap cap_sys_resource,cap_sys_admin+eip ./src/thread-profiler
+sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_fork
+sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_exit
+cd ../..
+```
+
+
 Running the speedup stack campaign.
 ```
 ./campaign_rocksdb_speedup_stacks.py
