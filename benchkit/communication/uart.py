@@ -1,10 +1,12 @@
 # Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
+
 # SPDX-License-Identifier: MIT
 
 from . import CommunicationLayer, SSHCommLayer
 from .extensions.status import StatusAware
 
 import re
+import time
 import types
 import serial
 import pathlib
@@ -23,17 +25,14 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
         baudrate: int = 115200,
         timeout: float = 1.0,
         ps1: str | None = None,
-        use_shell: bool = False,
     ):
-
-
         super().__init__()
 
         self._port: pathlib.Path = port
         self._baudrate: int = baudrate
         self._timeout: float = timeout
+        self._is_shell: bool = False
         self._ps1: str | None = ps1
-        self._is_shell: bool = use_shell
 
         self._con: serial.Serial = serial.Serial(
             baudrate=self._baudrate,
@@ -46,57 +45,76 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
                 command="", print_input=False, print_output=False
             ).strip()
 
-        if use_shell:
-            list_of_methods_to_use: list[str] = [
-                "file_size",
-                "path_exists",
-            ]
-            # HACK we dynamically add the methods of SSHCommLayer to this class, as
-            # they are close to what it would be to implement them for UART
-            for foo in list_of_methods_to_use:
-                setattr(
-                    self,
-                    foo,
-                    types.MethodType(getattr(SSHCommLayer, foo), self),
-                )
-
     # FIXME remove this from the CommunicatioLayer
     def read_file(
         self,
         path: PathType,
     ) -> str:
-        """
-        Is not guaranteed for any UART, should be defined ad hoc
-        """
         pass
 
+    def use_shell(self) -> None:
+        self._is_shell = True
+        list_of_methods_to_use: list[str] = [
+            "file_size",
+            "path_exists",
+        ]
+        # HACK we dynamically add the methods of SSHCommLayer to this class, as
+        # they are close to what it would be to implement them for UART
+        for foo in list_of_methods_to_use:
+            setattr(
+                self,
+                foo,
+                types.MethodType(getattr(SSHCommLayer, foo), self),
+            )
+
     def is_open(self) -> bool:
-        """
-        Returns whether the communication layer is open.
-        """
         return self._con.is_open  # type: ignore
 
     def start_comm(self) -> None:
-        """ 
-        Performs check then, starts the communication layer.
-        """
         if self.is_open():
             raise RuntimeError("Communication layer is already open.")
         self._con.open()
 
     def close_comm(self) -> None:
-        """
-        Performs checks then, closes the communication layer.
-        """
         if not self.is_open():
             raise RuntimeError("Communication layer is not open.")
         self._unchecked_close_comm()
 
     def _unchecked_close_comm(self) -> None:
-        """
-        Closes the communication layer without checking whether it is open.
-        """
         self._con.close()  # type: ignore
+
+    def listen(
+            self,
+            chunk_size: int = 16,
+            timeout: float = 1.0,
+            timeout_per_input: bool = False,
+    ) -> str:
+        """
+        Listen to the UART for a given amount of time and return the output.
+        Args:
+            chunk_size (int, optional): number of bytes to read at a time. Defaults to 16.
+            timeout (float, optional): number of seconds to listen for. Defaults to 1.
+            timeout_per_input (bool, optional): whether to reset the timeout after each input is received. Defaults to False.
+        Returns:
+            str: the output received from the UART.
+        """
+
+        if not self.is_open():
+            self.start_comm()
+
+        buffer: list[bytes] = list()
+        before: float  = time.time()
+
+        while time.time() - before < timeout :
+            if not self._con.readable():
+                break
+
+            buffer.append(self._con.read(chunk_size))
+            before = time.time() if timeout_per_input else before
+
+
+        self.close_comm()
+        return b''.join(buffer).decode('utf-8').removesuffix("\n").removesuffix("\r")
 
     def shell(
         self,
