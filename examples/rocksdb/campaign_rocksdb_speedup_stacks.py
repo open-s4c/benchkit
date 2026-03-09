@@ -74,7 +74,9 @@ def main() -> None:
         ],
         nb_runs=1,
         benchmark_duration_seconds=3,
-        nb_threads=[1, 2, 4],
+        # nb_threads=[1, 2, 4],
+        # nb_threads=[1, 2, 4, 8, 12],
+        nb_threads=[4],
         command_wrappers=([speedupstackwrapper] + speedupstackwrapper.command_wrappers()),
         command_attachments=speedupstackwrapper.command_attachments(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
@@ -87,45 +89,76 @@ def main() -> None:
     suite.print_durations()
     suite.run_suite()
 
-    suite.generate_graph(
-        title="Throughput",
-        plot_name="lineplot",
-        x="nb_threads",
-        y="throughput",
-        hue="bench_name",
-    )
+    # suite.generate_graph(
+    #     title="Throughput",
+    #     plot_name="lineplot",
+    #     x="nb_threads",
+    #     y="throughput",
+    #     hue="bench_name",
+    # )
+
+    # suite.generate_graph(
+    #     title="Klockstat",
+    #     plot_name="lineplot",
+    #     x="nb_threads",
+    #     y="klockstat_total_wait_ns",
+    #     hue="bench_name",
+    # )
+
+    # suite.generate_graph(
+    #     title="Offcputime",
+    #     plot_name="lineplot",
+    #     x="nb_threads",
+    #     y="offcputime_avg_micro_s",
+    #     hue="bench_name",
+    # )
+
+    # suite.generate_graph(
+    #     title="Llcstat",
+    #     plot_name="lineplot",
+    #     x="nb_threads",
+    #     y="llcstat_total_nr_misses",
+    #     hue="bench_name",
+    # )
+
+    # suite.generate_graph(
+    #     title="Strace",
+    #     plot_name="lineplot",
+    #     x="nb_threads",
+    #     y="strace_total_time_s",
+    #     hue="bench_name",
+    # )
 
     suite.generate_graph(
-        title="Klockstat",
-        plot_name="lineplot",
-        x="nb_threads",
-        y="klockstat_total_wait_ns",
-        hue="bench_name",
+        title="Thread Event Profile",
+        plot_name="thread-profile",
+        speedupstackwrapper=speedupstackwrapper,
+        show_run_number=1,
     )
 
-    suite.generate_graph(
-        title="Offcputime",
-        plot_name="lineplot",
-        x="nb_threads",
-        y="offcputime_avg_micro_s",
-        hue="bench_name",
-    )
+    # suite.generate_graph(
+    #     plot_name="thread-profile",
+    #     speedupstackwrapper=speedupstackwrapper,
+    #     show_run_number=2,
+    # )
 
-    suite.generate_graph(
-        title="Llcstat",
-        plot_name="lineplot",
-        x="nb_threads",
-        y="llcstat_total_nr_misses",
-        hue="bench_name",
-    )
+    # suite.generate_graph(
+    #     plot_name="thread-profile",
+    #     speedupstackwrapper=speedupstackwrapper,
+    #     show_run_number=3,
+    # )
 
-    suite.generate_graph(
-        title="Strace",
-        plot_name="lineplot",
-        x="nb_threads",
-        y="strace_total_time_s",
-        hue="bench_name",
-    )
+    # suite.generate_graph(
+    #     plot_name="thread-profile",
+    #     speedupstackwrapper=speedupstackwrapper,
+    #     show_run_number=4,
+    # )
+
+    # suite.generate_graph(
+    #     plot_name="thread-profile",
+    #     speedupstackwrapper=speedupstackwrapper,
+    #     show_run_number=5,
+    # )
 
 
 if __name__ == "__main__":

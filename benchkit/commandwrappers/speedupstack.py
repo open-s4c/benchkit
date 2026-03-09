@@ -23,7 +23,7 @@ class SpeedupStackWrapper(CommandWrapper):
         self._offcputime = Offcputime(libbpf_tools_dir)
         self._llcstat = Llcstat(libbpf_tools_dir)
         self._strace = StraceWrap(pid=True, summary=False, summary_only=True)
-        self._threadprofiler = ThreadProfiler(thread_profiler_dir)
+        self._threadprofiler = ThreadProfiler(thread_profiler_dir, granularity=int(1e8))
 
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)
@@ -63,3 +63,6 @@ class SpeedupStackWrapper(CommandWrapper):
         deps.extend(self._llcstat.dependencies())
 
         return deps
+
+    def get_threadprofiler(self):
+        return self._threadprofiler

@@ -9,7 +9,6 @@ import os
 import pathlib
 import re
 from collections import defaultdict
-from threading import Thread
 from typing import List
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
@@ -27,6 +26,7 @@ class ThreadProfiler:
         thread_profiler_dir: the directory that points to threadprofiler
         pid: Filter by process ID (True = use the process PID)
         tid: Filter by thread ID (the given tid is used for filtering)
+        granularity: Size of granularity for profile blocks in ns
     """
 
     def __init__(
@@ -34,6 +34,7 @@ class ThreadProfiler:
         thread_profiler_dir: PathType,
         pid: bool = True,
         tid: int = -1,
+        granularity: int = -1,
         platform: Platform = None,
     ) -> None:
 
@@ -45,6 +46,9 @@ class ThreadProfiler:
         self._thread_profiler_dir = thread_profiler_dir
         self._pid = pid
         self._tid = tid
+        self._granularity_ns = granularity
+        self._per_run_per_thread_profile = {}
+        self._run_counter = 1
 
         self.out_file_name = "threadprofiler.out"
         self.err_file_name = "threadprofiler.err"
@@ -66,6 +70,9 @@ class ThreadProfiler:
         if self._tid > 0:
             command.extend(["-t", str(self._tid)])
 
+        if self._granularity_ns > 0:
+            command.extend(["-g", str(self._granularity_ns)])
+
         # Initialize AsyncProcess for threadprofiler
         self._process = AsyncProcess(
             platform=self.platform,
@@ -81,6 +88,9 @@ class ThreadProfiler:
 
     def attachment_thread(self, command: list[str]):
         self.platform.comm.shell(command=command)
+
+    def get_per_thread_profiles(self):
+        return self._per_run_per_thread_profile
 
     def post_run_hook(
         self,
@@ -120,7 +130,7 @@ class ThreadProfiler:
                     last_event_time_ns = int(m.group(5))
                     offcpu_time_ns = int(m.group(6))
                     end_state = m.group(7)
-                    cutoff_time_ns = m.group(8)
+                    cutoff_time_ns = int(m.group(8)) if m.group(8) else None
 
                     # print(
                     #     tid,
@@ -132,6 +142,19 @@ class ThreadProfiler:
                     #     end_state,
                     # )
 
+                    # TODO: maybe filter out if block id 0 after end (Main thread?)
+
+                    if tid in per_thread_dict:
+                        # If you are not the first block make sure to grow
+                        # the previous one until yourself
+                        per_thread_dict[tid][-1][
+                            "block_end_time_ns"
+                        ] = block_start_time_ns  # TODO: Maybe +1
+
+                        # If a block that is not the first has the id 0 then it should be ignored
+                        if block_index == 0:
+                            continue
+
                     per_thread_dict[tid].append(
                         {
                             "block_index": block_index,
@@ -141,6 +164,11 @@ class ThreadProfiler:
                             "offcpu_time_ns": offcpu_time_ns,
                             "end_state": end_state,
                             "cutoff_time_ns": cutoff_time_ns,
+                            "block_end_time_ns": (
+                                block_start_time_ns + self._granularity_ns
+                                if end_state != "THREAD_EXIT"
+                                else last_event_time_ns
+                            ),
                         }
                     )
 
@@ -175,7 +203,9 @@ class ThreadProfiler:
                     #     }
                     # )
 
-            __import__("pprint").pprint(per_thread_dict)
+            # __import__("pprint").pprint(per_thread_dict)
+            self._per_run_per_thread_profile[self._run_counter] = per_thread_dict
+            self._run_counter += 1
             return {}
 
             # Post run hooks must return a dictionary where each key at the top level corresponds

@@ -182,6 +182,182 @@ def _generate_chart_from_df(
         # plt.title(title + ": " + ", ".join(bench_names))
         plt.tight_layout()
         plt.show()
+    elif "thread-profile" == plot_name:
+
+        all_thread_profiles = (
+            kwargs["speedupstackwrapper"].get_threadprofiler().get_per_thread_profiles()
+        )
+        show_run_number = kwargs["show_run_number"]
+
+        thread_profiles = all_thread_profiles[show_run_number]
+        # __import__("pprint").pprint(thread_profiles)
+        # tid = list(thread_profiles.keys())[1]
+        thread_mapping = {v: i + 1 for i, v in enumerate(sorted(list(thread_profiles.keys())))}
+
+        # print(thread_profile)
+        bench_names = df["bench_name"].unique()
+        # n_benches = len(bench_names)
+
+        sns.set_theme()
+        fig, ax = plt.subplots(figsize=(8, 6))
+        # fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=18, y=0.98)
+
+        colors = sns.color_palette("pastel")
+
+        # plt.rcParams["patch.edgecolor"] = "none"
+        # plt.rcParams["patch.linewidth"] = 0.0
+
+        profile_settings = {
+            "edgecolor": "none",
+            "linewidth": 0,
+        }
+
+        state_to_color_map = {
+            "SCHEDULED_OUT": colors[1],
+            "SCHEDULED_IN": colors[0],
+            "THREAD_EXIT": colors[3],
+        }
+
+        for tid, idx in thread_mapping.items():
+            thread_profile = thread_profiles[tid]
+            # print(tid)
+            # __import__("pprint").pprint(thread_profile)
+            current_left = 0
+            current_state = "SCHEDULED_OUT"
+
+            for profile_block in thread_profile:
+                block_index = profile_block["block_index"]
+                block_start_time = profile_block["block_start_time_ns"]
+                block_end_time = profile_block["block_end_time_ns"]
+                block_total_width = block_end_time - block_start_time
+                first_event_time = profile_block["first_event_time_ns"]
+                last_event_time = profile_block["last_event_time_ns"]
+                end_state = profile_block["end_state"]
+                offcpu_time = profile_block["offcpu_time_ns"]
+                cutoff_time = profile_block["cutoff_time_ns"]
+                # ax.barh(idx, block_total_width, left=block_start_time, color=colors[0])
+
+                current_left = block_start_time
+
+                if cutoff_time:
+                    # This is the last block of this thread
+                    last_block_width = cutoff_time - block_start_time
+                    if last_block_width > 0:
+                        ax.barh(
+                            idx,
+                            last_block_width,
+                            left=current_left,
+                            label=current_state,
+                            color=state_to_color_map[current_state],
+                            **profile_settings,
+                        )
+                    continue
+
+                # Show part before first event (if it exists)
+                before_part_width = first_event_time - block_start_time
+                if before_part_width > 0:
+                    ax.barh(
+                        idx,
+                        before_part_width,
+                        left=current_left,
+                        label=current_state,
+                        color=state_to_color_map[current_state],
+                        **profile_settings,
+                    )
+                    current_left += before_part_width
+
+                # Show all the components of block
+                total_component_width = last_event_time - first_event_time
+                scheduled_in_width = total_component_width - offcpu_time
+                if scheduled_in_width > 0:
+                    ax.barh(
+                        idx,
+                        scheduled_in_width,
+                        left=current_left,
+                        label="SCHEDULED_IN",
+                        color=state_to_color_map["SCHEDULED_IN"],
+                        **profile_settings,
+                    )
+                    current_left += scheduled_in_width
+
+                if offcpu_time > 0:
+                    ax.barh(
+                        idx,
+                        offcpu_time,
+                        left=current_left,
+                        label="SCHEDULED_OUT",
+                        color=state_to_color_map["SCHEDULED_OUT"],
+                        **profile_settings,
+                    )
+                    current_left += offcpu_time
+
+                # if total_component_width > 0:
+                #     ax.barh(
+                #         idx,
+                #         total_component_width,
+                #         left=current_left,
+                #         label="Components",
+                #         color=colors[2],
+                #     )
+                #     current_left += total_component_width
+
+                # Show part after last event (if it exists)
+                after_part_width = block_end_time - last_event_time
+                if after_part_width > 0:
+                    ax.barh(
+                        idx,
+                        after_part_width,
+                        left=current_left,
+                        label=end_state,
+                        color=state_to_color_map[end_state],
+                        **profile_settings,
+                    )
+                    current_left += after_part_width
+
+                current_state = end_state
+
+        ax.set_yticks(list(thread_mapping.values()))
+        ax.set_yticklabels(list(thread_mapping.keys()))
+        # handles, labels = ax.get_legend_handles_labels()
+        handles, labels = ax.get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))  # removes duplicates
+        ax.legend(by_label.values(), by_label.keys())
+        # ax.legend(loc="upper left")
+
+        # factors = ["measured", "gc", "sync", "lock", "other"]
+        # labels = [
+        #     "Measured",
+        #     "Garbage Collection",
+        #     "Synchronization Activities",
+        #     "Lock Contention",
+        #     "Other Overheads",
+        # ]
+
+        # bench_df = df[df["bench_name"] == bench]
+        # speedup_data = _get_speedup_data(bench_df)
+        # speedup_data = dict(sorted(speedup_data.items()))
+
+        # ind = np.arange(len(speedup_data))
+        # bottom = np.zeros(len(speedup_data))
+
+        # for factor, label, color in zip(factors, labels, colors):
+        #     vals = [d[factor] for d in speedup_data.values()]
+        #     ax.bar(ind, vals, bottom=bottom, label=label, color=color)
+        #     bottom += vals
+
+        # ax.set_title(bench)
+        # ax.set_xlabel("Number of Threads")
+        # ax.set_xticks(ind)
+        # ax.set_xticklabels([str(k) for k in speedup_data.keys()])
+        # if ax is axes[0]:
+        #     ax.set_ylabel("Speedup")
+        # ax.legend(loc="upper left")
+
+        plt.xlabel("Time since boot (ns)")
+        plt.ylabel("Thread Identifier (TID)")
+        plt.title(title + ": " + ", ".join(bench_names))
+        plt.tight_layout()
+        plt.show()
     else:
         fig = plt.figure(dpi=150)
         chart = fig.add_subplot()
