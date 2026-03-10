@@ -270,7 +270,9 @@ def _generate_chart_from_df(
 
                 # Show all the components of block
                 total_component_width = last_event_time - first_event_time
-                scheduled_in_width = total_component_width - offcpu_time - mutex_wait_time - disk_io_time
+                scheduled_in_width = (
+                    total_component_width - offcpu_time - mutex_wait_time - disk_io_time
+                )
                 if scheduled_in_width > 0:
                     ax.barh(
                         idx,

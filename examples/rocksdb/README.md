@@ -94,6 +94,8 @@ sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_exit
 # sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_read
 sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_issue
 sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_complete
+sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_enter_futex
+sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_futex
 cd ../..
 ```
 
@@ -148,6 +150,8 @@ sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_exit
 # sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_read
 sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_issue
 sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_complete
+sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_enter_futex
+sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_futex
 cd ../..
 ./campaign_rocksdb_speedup_stacks.py
 ```
