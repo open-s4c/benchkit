@@ -204,6 +204,13 @@ def _generate_chart_from_df(
 
         colors = sns.color_palette("pastel")
 
+        state_to_color_map = {
+            "SCHEDULED_OUT": colors[1],
+            "SCHEDULED_IN": colors[0],
+            "THREAD_EXIT": colors[3],
+            "MUTEX_WAIT": colors[4],
+        }
+
         # plt.rcParams["patch.edgecolor"] = "none"
         # plt.rcParams["patch.linewidth"] = 0.0
 
@@ -212,16 +219,8 @@ def _generate_chart_from_df(
             "linewidth": 0,
         }
 
-        state_to_color_map = {
-            "SCHEDULED_OUT": colors[1],
-            "SCHEDULED_IN": colors[0],
-            "THREAD_EXIT": colors[3],
-        }
-
         for tid, idx in thread_mapping.items():
             thread_profile = thread_profiles[tid]
-            # print(tid)
-            # __import__("pprint").pprint(thread_profile)
             current_left = 0
             current_state = "SCHEDULED_OUT"
 
@@ -234,6 +233,7 @@ def _generate_chart_from_df(
                 last_event_time = profile_block["last_event_time_ns"]
                 end_state = profile_block["end_state"]
                 offcpu_time = profile_block["offcpu_time_ns"]
+                mutex_wait_time = profile_block["mutex_wait_time_ns"]
                 cutoff_time = profile_block["cutoff_time_ns"]
                 # ax.barh(idx, block_total_width, left=block_start_time, color=colors[0])
 
@@ -268,7 +268,7 @@ def _generate_chart_from_df(
 
                 # Show all the components of block
                 total_component_width = last_event_time - first_event_time
-                scheduled_in_width = total_component_width - offcpu_time
+                scheduled_in_width = total_component_width - offcpu_time - mutex_wait_time
                 if scheduled_in_width > 0:
                     ax.barh(
                         idx,
@@ -280,6 +280,17 @@ def _generate_chart_from_df(
                     )
                     current_left += scheduled_in_width
 
+                if mutex_wait_time > 0:
+                    ax.barh(
+                        idx,
+                        mutex_wait_time,
+                        left=current_left,
+                        label="MUTEX_WAIT",
+                        color=state_to_color_map["MUTEX_WAIT"],
+                        **profile_settings,
+                    )
+                    current_left += mutex_wait_time
+
                 if offcpu_time > 0:
                     ax.barh(
                         idx,
@@ -290,16 +301,6 @@ def _generate_chart_from_df(
                         **profile_settings,
                     )
                     current_left += offcpu_time
-
-                # if total_component_width > 0:
-                #     ax.barh(
-                #         idx,
-                #         total_component_width,
-                #         left=current_left,
-                #         label="Components",
-                #         color=colors[2],
-                #     )
-                #     current_left += total_component_width
 
                 # Show part after last event (if it exists)
                 after_part_width = block_end_time - last_event_time
@@ -322,35 +323,6 @@ def _generate_chart_from_df(
         handles, labels = ax.get_legend_handles_labels()
         by_label = dict(zip(labels, handles))  # removes duplicates
         ax.legend(by_label.values(), by_label.keys())
-        # ax.legend(loc="upper left")
-
-        # factors = ["measured", "gc", "sync", "lock", "other"]
-        # labels = [
-        #     "Measured",
-        #     "Garbage Collection",
-        #     "Synchronization Activities",
-        #     "Lock Contention",
-        #     "Other Overheads",
-        # ]
-
-        # bench_df = df[df["bench_name"] == bench]
-        # speedup_data = _get_speedup_data(bench_df)
-        # speedup_data = dict(sorted(speedup_data.items()))
-
-        # ind = np.arange(len(speedup_data))
-        # bottom = np.zeros(len(speedup_data))
-
-        # for factor, label, color in zip(factors, labels, colors):
-        #     vals = [d[factor] for d in speedup_data.values()]
-        #     ax.bar(ind, vals, bottom=bottom, label=label, color=color)
-        #     bottom += vals
-
-        # ax.set_title(bench)
-        # ax.set_xlabel("Number of Threads")
-        # ax.set_xticks(ind)
-        # ax.set_xticklabels([str(k) for k in speedup_data.keys()])
-        # if ax is axes[0]:
-        #     ax.set_ylabel("Speedup")
         # ax.legend(loc="upper left")
 
         plt.xlabel("Time since boot (ns)")
