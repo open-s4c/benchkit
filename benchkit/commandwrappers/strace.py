@@ -107,7 +107,7 @@ class StraceWrap(CommandWrapper):
     ) -> None:
         rdd = pathlib.Path(record_data_dir)
 
-        command = ["strace", "-o", rdd / self._output_file_name]
+        command = ["strace", "-o", str(rdd / self._output_file_name)]
 
         if self._pid:
             command.extend(["-p", str(process.pid)])
