@@ -98,3 +98,34 @@ class OpenOCDProgrammer(Programmer):
             print_output=False,
             print_input=True,
         )
+
+
+    def start(self) -> None:
+        """
+        Start the device (e.g., by running it or exiting reset).
+        """
+        plat: Platform = get_current_platform()
+        plat.comm.shell(
+            command=self.__cmd_prefix.split(" ") + [
+                '-c', 'init',
+                '-c', 'reset run',
+                '-c', 'exit',
+            ],
+            print_output=False,
+            print_input=True,
+        )
+
+    def stop(self) -> None:
+        """
+        Stop the device (e.g., by halting it or entering reset).
+        """
+        plat: Platform = get_current_platform()
+        plat.comm.shell(
+            command=self.__cmd_prefix.split(" ") + [
+                '-c', 'init',
+                '-c', 'reset halt',
+                '-c', 'exit',
+            ],
+            print_output=False,
+            print_input=True,
+        )

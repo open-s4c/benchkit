@@ -11,12 +11,38 @@ class Programmer:
     actual implementation of these methods will depend on the specific
     programmer being used.kjq:
     """
-    def flash(self, bin: pathlib.Path, addr: str) -> None: ...
-    def reset(self) -> None: ...
-    def start(self) -> None: ...
-    def stop(self) -> None: ...
+    def flash(self, bin: pathlib.Path, addr: str) -> None:
+        """
+        Flash the binary at the specified address.
+        Args:
+            bin: The path to the binary to flash.
+            addr: The address to flash the binary to (e.g., "0x080000
+        """
+        ...
+    def reset(self) -> None:
+        """
+        Reset the device.
+        """
+        ...
+    def start(self) -> None:
+        """
+        Start the device (e.g., by running it or exiting reset).
+        """
+        ...
+    def stop(self) -> None:
+        """
+        Stop the device (e.g., by halting it or entering reset).
+        """
+        ...
 
     def with_features(self, features: list[str]) -> "Programmer":
+        """
+        Return a new instance of the programmer with only the specified features
+        implemented. As not all programmers, MCUs, ... support all features,
+        this allows us to create a programmer that only implements the features
+        that are supported by the underlying hardware and software.
+        """
+
         methods: set[str] = set(inspect.getmembers(self.__class__, predicate=inspect.isroutine))
         to_remove: set[str] = methods - set(features)
 
