@@ -209,6 +209,7 @@ def _generate_chart_from_df(
             "SCHEDULED_IN": colors[0],
             "THREAD_EXIT": colors[3],
             "MUTEX_WAIT": colors[4],
+            "DISK_IO": colors[2],
         }
 
         # plt.rcParams["patch.edgecolor"] = "none"
@@ -234,6 +235,7 @@ def _generate_chart_from_df(
                 end_state = profile_block["end_state"]
                 offcpu_time = profile_block["offcpu_time_ns"]
                 mutex_wait_time = profile_block["mutex_wait_time_ns"]
+                disk_io_time = profile_block["disk_io_time_ns"]
                 cutoff_time = profile_block["cutoff_time_ns"]
                 # ax.barh(idx, block_total_width, left=block_start_time, color=colors[0])
 
@@ -268,7 +270,7 @@ def _generate_chart_from_df(
 
                 # Show all the components of block
                 total_component_width = last_event_time - first_event_time
-                scheduled_in_width = total_component_width - offcpu_time - mutex_wait_time
+                scheduled_in_width = total_component_width - offcpu_time - mutex_wait_time - disk_io_time
                 if scheduled_in_width > 0:
                     ax.barh(
                         idx,
@@ -279,6 +281,17 @@ def _generate_chart_from_df(
                         **profile_settings,
                     )
                     current_left += scheduled_in_width
+
+                if disk_io_time > 0:
+                    ax.barh(
+                        idx,
+                        disk_io_time,
+                        left=current_left,
+                        label="DISK_IO",
+                        color=state_to_color_map["DISK_IO"],
+                        **profile_settings,
+                    )
+                    current_left += disk_io_time
 
                 if mutex_wait_time > 0:
                     ax.barh(

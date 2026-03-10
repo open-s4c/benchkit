@@ -116,7 +116,7 @@ class ThreadProfiler:
         # This dictionary will hold all the aggregated values for each lock
         per_thread_dict: dict[int, list] = defaultdict(list)
         row_re = re.compile(
-            r"^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s*(\d+)?\s*$"
+            r"^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s*(\d+)?\s*$"
         )
 
         with open(threadprofiler_out_file) as out_file:
@@ -132,8 +132,9 @@ class ThreadProfiler:
                     last_event_time_ns = int(m.group(5))
                     offcpu_time_ns = int(m.group(6))
                     mutex_wait_time_ns = int(m.group(7))
-                    end_state = m.group(8)
-                    cutoff_time_ns = int(m.group(9)) if m.group(9) else None
+                    disk_io_time_ns = int(m.group(8))
+                    end_state = m.group(9)
+                    cutoff_time_ns = int(m.group(10)) if m.group(10) else None
 
                     # print(
                     #     tid,
@@ -166,6 +167,7 @@ class ThreadProfiler:
                             "last_event_time_ns": last_event_time_ns,
                             "offcpu_time_ns": offcpu_time_ns,
                             "mutex_wait_time_ns": mutex_wait_time_ns,
+                            "disk_io_time_ns": disk_io_time_ns,
                             "end_state": end_state,
                             "cutoff_time_ns": cutoff_time_ns,
                             "block_end_time_ns": (

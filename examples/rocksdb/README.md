@@ -90,6 +90,10 @@ make -j
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./src/thread-profiler
 sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_fork
 sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_exit
+# sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_enter_read
+# sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_read
+sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_issue
+sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_complete
 cd ../..
 ```
 
@@ -131,6 +135,20 @@ sudo setcap cap_sys_resource,cap_sys_admin+eip ./llcstat
 sudo setcap cap_sys_ptrace+ep $(which strace)
 kill %1
 cd ../../..
+cd deps/
+# git clone https://github.com/theodegeest/thread-profiler-bpf.git --recursive
+git clone git@github.com:theodegeest/thread-profiler-bpf.git --recursive
+cd thread-profiler-bpf/
+make install
+make -j
+sudo setcap cap_sys_resource,cap_sys_admin+eip ./src/thread-profiler
+sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_fork
+sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_exit
+# sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_enter_read
+# sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_read
+sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_issue
+sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_complete
+cd ../..
 ./campaign_rocksdb_speedup_stacks.py
 ```
 
