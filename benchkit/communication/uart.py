@@ -116,6 +116,33 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
         self.close_comm()
         return b''.join(buffer).decode('utf-8').removesuffix("\n").removesuffix("\r")
 
+    def listen_with_fences(
+        self,
+        fences: tuple[str, str],
+        chunk_size: int = 16,
+        timeout: float = 1.0,
+        timeout_per_input: bool = False,
+    ) -> str:
+        start_fence, end_fence = fences
+
+        out: str = self.listen(
+            chunk_size=chunk_size,
+            timeout=timeout,
+            timeout_per_input=timeout_per_input
+        )
+
+        start_idx: int = out.find(start_fence)
+        if start_idx == -1:
+            raise ValueError(f"Start fence '{start_fence}' not found.")
+
+        end_idx: int = out.find(end_fence, start_idx + len(start_fence))
+        if end_idx == -1:
+            raise ValueError(f"End fence '{end_fence}' not found after start fence.")
+
+        # Extract content between fences
+        content: str = out[start_idx + len(start_fence):end_idx]
+        return content.strip()
+
     def shell(
         self,
         command: Command,
