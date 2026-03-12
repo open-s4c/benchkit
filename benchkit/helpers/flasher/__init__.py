@@ -11,12 +11,15 @@ class Flasher:
     This is an interface for a flasher, which can be used to flash a binary
     to a device, reset the device, start the device, and stop the device. The
     actual implementation of these methods will depend on the specific
-    flasher being used.kjq:
+    flasher being used
     """
 
     @property
     def platform(self) -> Platform: 
-        return self._platform
+        """
+        Get the platform that this flasher is designed for
+        """
+        ...
 
     def flash(
             self,

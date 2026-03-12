@@ -61,6 +61,9 @@ class OpenOCDFlasher(Flasher):
             f"{'sudo' if self.__need_sudo else ''} openocd -f {self._board}"
         )
 
+    @property
+    def platform(self) -> Platform:
+        return self._platform
 
     def flash(
             self,
