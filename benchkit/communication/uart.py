@@ -22,6 +22,7 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
     def __init__(
         self,
         port: pathlib.Path,
+        is_shell: bool = False,
         baudrate: int = 115200,
         timeout: float = 1.0,
         ps1: str | None = None,
@@ -31,14 +32,16 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
         self._port: pathlib.Path = port
         self._baudrate: int = baudrate
         self._timeout: float = timeout
-        self._is_shell: bool = False
         self._ps1: str | None = ps1
 
+        if is_shell:
+            self.__use_shell()
+
         self._con: serial.Serial = serial.Serial(
+            port=str(self._port),
             baudrate=self._baudrate,
             timeout=self._timeout,
         )  # create a closed serial connection
-        self._con.port = str(self._port)
 
         if self._ps1 is None:
             self._ps1 = self.shell(
@@ -52,7 +55,7 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
     ) -> str:
         pass
 
-    def use_shell(self) -> None:
+    def __use_shell(self) -> None:
         self._is_shell = True
         list_of_methods_to_use: list[str] = [
             "file_size",
