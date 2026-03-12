@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
+# SPDX-License-Identifier: MIT
 
 from benchkit.helpers.flasher.openocd import OpenOCDFlasher
-import pathlib
 
 if __name__ == "__main__":
     """
@@ -12,7 +13,7 @@ if __name__ == "__main__":
     device: str = "st_nucleo_l4"
     openocd = OpenOCDFlasher.with_board(board=device, need_sudo=True)
 
-    # to flash an a file do : 
+    # To flash a file, execute the following:
     # openocd.flash(bin=pathlib.Path("firmware.elf").resolve(), addr="0x08000000")
 
     openocd.stop()
