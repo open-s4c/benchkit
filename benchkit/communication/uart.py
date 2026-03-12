@@ -86,11 +86,11 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
     def _unchecked_close_comm(self) -> None:
         self._con.close()  # type: ignore
 
- def listen(
-            self,
-            chunk_size: int = 16,
-            timeout: float = 1.0,
-            timeout_per_input: bool = False,
+    def listen(
+        self,
+        chunk_size: int = 16,
+        timeout: float = 1.0,
+        timeout_per_input: bool = False,
     ) -> str:
         """
         Listen to the UART for a given amount of time and return the output.
