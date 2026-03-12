@@ -1,17 +1,28 @@
 # Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+from benchkit.platforms import Platform
+
 import pathlib
 import inspect
 
-class Programmer:
-    """"
-    This is an interface for a programmer, which can be used to flash a binary
+class Flasher:
+    """
+    This is an interface for a flasher, which can be used to flash a binary
     to a device, reset the device, start the device, and stop the device. The
     actual implementation of these methods will depend on the specific
-    programmer being used.kjq:
+    flasher being used.kjq:
     """
-    def flash(self, bin: pathlib.Path, addr: str) -> None:
+
+    @property
+    def platform(self) -> Platform: 
+        return self._platform
+
+    def flash(
+            self,
+            bin: pathlib.Path,
+            addr: str,
+    ) -> None:
         """
         Flash the binary at the specified address.
         Args:
@@ -19,6 +30,7 @@ class Programmer:
             addr: The address to flash the binary to (e.g., "0x080000
         """
         ...
+
     def reset(self) -> None:
         """
         Reset the device.
@@ -35,11 +47,11 @@ class Programmer:
         """
         ...
 
-    def with_features(self, features: list[str]) -> "Programmer":
+    def with_features(self, features: list[str]) -> "Flasher":
         """
-        Return a new instance of the programmer with only the specified features
-        implemented. As not all programmers, MCUs, ... support all features,
-        this allows us to create a programmer that only implements the features
+        Return a new instance of the flasher with only the specified features
+        implemented. As not all flashers, MCUs, ... support all features,
+        this allows us to create a flasher that only implements the features
         that are supported by the underlying hardware and software.
         """
 
@@ -49,6 +61,7 @@ class Programmer:
         if len(to_remve) != len(methods) - len(features):
             raise ValueError(f"Some features in {features} are not valid for {self.__class__.__name__}")
 
+        # HACK this is a bit hacky, but it allows us to easily remove methods from the programmer
         def blank(*args, **kwargs):
             raise NotImplementedError(f"{feature} is not implemented for {self.__class__.__name__}")
 

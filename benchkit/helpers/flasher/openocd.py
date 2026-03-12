@@ -1,18 +1,19 @@
 # Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from . import Programmer
+from . import Flasher
 
 from benchkit.platforms import Platform, get_current_platform
 from benchkit.helpers.linux.groups import current_user_in_group
 
 import pathlib
 
-class OpenOCDProgrammer(Programmer):
+class OpenOCDFlasher(Flasher):
     def __init__(
             self,
             interface: str,
             target: str,
+            platform: Platform = get_current_platform(),
             need_sudo: bool = True,
     ) -> None:
         """
@@ -24,22 +25,23 @@ class OpenOCDProgrammer(Programmer):
         self._interface: str | None = f"interface/{interface}.cfg"
         self._target: str | None = f"target/{target}.cfg"
         self._board: str | None = None
+        self._platform: Platform = platform # meta class platform property
         self.__need_sudo: bool = need_sudo
 
     @staticmethod
     def with_board(
             board: str,
             need_sudo: bool = True,
-    ) -> "OpenOCDProgrammer":
+    ) -> "OpenOCDFlasher":
         """
-        Configure the programmer for a specific board. This is a no-op for OpenOCD since the interface and target are already specified.
+        Configure the flasher for a specific board. This is a no-op for OpenOCD since the interface and target are already specified.
         Args:
             board: The name of the board (e.g., "st_nucleo_l4")
             need_sudo: Whether to use sudo when invoking OpenOCD
         Returns:
-            An instance of OpenOCDProgrammer configured for the specified board.
+            An instance of OpenOCDFlasher configured for the specified board.
         """
-        s = OpenOCDProgrammer(
+        s = OpenOCDFlasher(
             interface = None,
             target = None,
             need_sudo=need_sudo,
@@ -73,9 +75,8 @@ class OpenOCDProgrammer(Programmer):
         
         HACK addr is str because we use the hex format and don't want decimal
         """
-        plat: Platform = get_current_platform()
 
-        plat.comm.shell(
+        self.platform.comm.shell(
             command=self.__cmd_prefix.split(" ") + [
                 "-c",
                 f"program {bin} {addr} reset exit"
@@ -87,8 +88,7 @@ class OpenOCDProgrammer(Programmer):
         """
         Reset the board via OpenOCD.
         """
-        plat: Platform = get_current_platform()
-        plat.comm.shell(
+        self.platform.comm.shell(
             command=(
                 f"{self.__cmd_prefix} "
                 '-c "init" '
@@ -104,8 +104,7 @@ class OpenOCDProgrammer(Programmer):
         """
         Start the device (e.g., by running it or exiting reset).
         """
-        plat: Platform = get_current_platform()
-        plat.comm.shell(
+        self.platform.comm.shell(
             command=self.__cmd_prefix.split(" ") + [
                 '-c', 'init',
                 '-c', 'reset run',
@@ -119,8 +118,7 @@ class OpenOCDProgrammer(Programmer):
         """
         Stop the device (e.g., by halting it or entering reset).
         """
-        plat: Platform = get_current_platform()
-        plat.comm.shell(
+        self.platform.comm.shell(
             command=self.__cmd_prefix.split(" ") + [
                 '-c', 'init',
                 '-c', 'reset halt',
