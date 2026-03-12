@@ -1,18 +1,18 @@
 # Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from . import CommunicationLayer, SSHCommLayer
-from .extensions.status import StatusAware
-
+import pathlib
 import re
 import time
 import types
-import serial
-import pathlib
-
 from typing import Iterable
 
-from benchkit.utils.types import Command, PathType, Environment
+import serial
+
+from benchkit.utils.types import Command, Environment, PathType
+
+from . import CommunicationLayer, SSHCommLayer
+from .extensions.status import StatusAware
 
 
 class UARTCommLayer(CommunicationLayer, StatusAware):
@@ -43,9 +43,7 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
         )  # create a closed serial connection
 
         if self._ps1 is None:
-            self._ps1 = self.shell(
-                command="", print_input=False, print_output=False
-            ).strip()
+            self._ps1 = self.shell(command="", print_input=False, print_output=False).strip()
 
     # FIXME remove this from the CommunicatioLayer
     def read_file(
@@ -105,9 +103,9 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
             self.start_comm()
 
         buffer: list[bytes] = list()
-        before: float  = time.time()
+        before: float = time.time()
 
-        while time.time() - before < timeout :
+        while time.time() - before < timeout:
             if not self._con.readable():
                 break
 
@@ -117,7 +115,7 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
                 before = time.time() if timeout_per_input else before
 
         self.close_comm()
-        return b''.join(buffer).decode('utf-8').removesuffix("\n").removesuffix("\r")
+        return b"".join(buffer).decode("utf-8").removesuffix("\n").removesuffix("\r")
 
     def listen_with_fences(
         self,
@@ -129,9 +127,7 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
         start_fence, end_fence = fences
 
         out: str = self.listen(
-            chunk_size=chunk_size,
-            timeout=timeout,
-            timeout_per_input=timeout_per_input
+            chunk_size=chunk_size, timeout=timeout, timeout_per_input=timeout_per_input
         )
 
         start_idx: int = out.find(start_fence)
@@ -143,7 +139,7 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
             raise ValueError(f"End fence '{end_fence}' not found after start fence.")
 
         # Extract content between fences
-        content: str = out[start_idx + len(start_fence):end_idx]
+        content: str = out[start_idx + len(start_fence) : end_idx]
         return content.strip()
 
     def shell(

@@ -2,8 +2,9 @@
 # Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-from benchkit.communication.uart import UARTCommLayer
 import pathlib
+
+from benchkit.communication.uart import UARTCommLayer
 
 if __name__ == "__main__":
     """
