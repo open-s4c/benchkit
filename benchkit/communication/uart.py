@@ -206,9 +206,9 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
         if print_input:
             print(f"[input]{cmd}")
 
-        writtren_bytes: int = self._con.write(cmd.encode() + b"\n")  # type: ignore
+        written_bytes: int = self._con.write(cmd.encode() + b"\n")  # type: ignore
 
-        if writtren_bytes != len(cmd) + 1:
+        if written_bytes != len(cmd) + 1:
             raise RuntimeError("Failed to write the full command to UART.")
         # 7-bit C1 ANSI sequences
         ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
