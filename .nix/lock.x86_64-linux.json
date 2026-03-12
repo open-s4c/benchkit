@@ -1,0 +1,185 @@
+{
+  "fetchPipMetadata": {
+    "sources": {
+      "black": {
+        "is_direct": false,
+        "sha256": "f1cd08e99d2f9317292a311dfe578fd2a24b15dbce97792f9c4d752275c1fa56",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/e1/87/af89ad449e8254fdbc74654e6467e3c9381b61472cc532ee350d28cfdafb/black-26.3.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "version": "26.3.1"
+      },
+      "click": {
+        "is_direct": false,
+        "sha256": "981153a64e25f12d547d3426c367a4857371575ee7ad18df2a6183ab0545b2a6",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/98/78/01c019cdb5d6498122777c1a43056ebb3ebfeef2076d9d026bfe15583b2b/click-8.3.1-py3-none-any.whl",
+        "version": "8.3.1"
+      },
+      "docopt": {
+        "is_direct": false,
+        "sha256": "49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/a2/55/8f8cab2afd404cf578136ef2cc5dfb50baa1761b68c9da1fb1e4eed343c9/docopt-0.6.2.tar.gz",
+        "version": "0.6.2"
+      },
+      "hatchling": {
+        "is_direct": false,
+        "sha256": "50af9343281f34785fab12da82e445ed987a6efb34fd8c2fc0f6e6630dbcc1b0",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/d3/8a/44032265776062a89171285ede55a0bdaadc8ac00f27f0512a71a9e3e1c8/hatchling-1.29.0-py3-none-any.whl",
+        "version": "1.29.0"
+      },
+      "isort": {
+        "is_direct": false,
+        "sha256": "28b89bc70f751b559aeca209e6120393d43fbe2490de0559662be7a9787e3d75",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/3e/95/c7c34aa53c16353c56d0b802fba48d5f5caa2cdee7958acbcb795c830416/isort-8.0.1-py3-none-any.whl",
+        "version": "8.0.1"
+      },
+      "markdown-it-py": {
+        "is_direct": false,
+        "sha256": "87327c59b172c5011896038353a81343b6754500a08cd7a4973bb48c6d578147",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/94/54/e7d793b573f298e1c9013b8c4dade17d481164aa517d1d7148619c2cedbf/markdown_it_py-4.0.0-py3-none-any.whl",
+        "version": "4.0.0"
+      },
+      "mdurl": {
+        "is_direct": false,
+        "sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl",
+        "version": "0.1.2"
+      },
+      "mypy-extensions": {
+        "is_direct": false,
+        "sha256": "1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/79/7b/2c79738432f5c924bef5071f933bcc9efd0473bac3b4aa584a6f7c1c8df8/mypy_extensions-1.1.0-py3-none-any.whl",
+        "version": "1.1.0"
+      },
+      "numpy": {
+        "is_direct": false,
+        "sha256": "d5f51900414fc9204a0e0da158ba2ac52b75656e7dce7e77fb9f84bfa343b4cc",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/7e/eb/7daecbea84ec935b7fc732e18f532073064a3816f0932a40a17f3349185f/numpy-2.4.3-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+        "version": "2.4.3"
+      },
+      "packaging": {
+        "is_direct": false,
+        "sha256": "b36f1fef9334a5588b4166f8bcd26a14e521f2b55e6b9de3aaa80d3ff7a37529",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/b7/b9/c538f279a4e237a006a2c98387d081e9eb060d203d8ed34467cc0f0b9b53/packaging-26.0-py3-none-any.whl",
+        "version": "26.0"
+      },
+      "pathspec": {
+        "is_direct": false,
+        "sha256": "fb6ae2fd4e7c921a165808a552060e722767cfa526f99ca5156ed2ce45a5c723",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/ef/3c/2c197d226f9ea224a9ab8d197933f9da0ae0aac5b6e0f884e2b8d9c8e9f7/pathspec-1.0.4-py3-none-any.whl",
+        "version": "1.0.4"
+      },
+      "platformdirs": {
+        "is_direct": false,
+        "sha256": "68a9a4619a666ea6439f2ff250c12a853cd1cbd5158d258bd824a7df6be2f868",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/63/d7/97f7e3a6abb67d8080dd406fd4df842c2be0efaf712d1c899c32a075027c/platformdirs-4.9.4-py3-none-any.whl",
+        "version": "4.9.4"
+      },
+      "pluggy": {
+        "is_direct": false,
+        "sha256": "e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl",
+        "version": "1.6.0"
+      },
+      "pygments": {
+        "is_direct": false,
+        "sha256": "86540386c03d588bb81d44bc3928634ff26449851e99741617ecb9037ee5ec0b",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/c7/21/705964c7812476f378728bdf590ca4b771ec72385c533964653c68e86bdc/pygments-2.19.2-py3-none-any.whl",
+        "version": "2.19.2"
+      },
+      "pyserial": {
+        "is_direct": false,
+        "sha256": "c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl",
+        "version": "3.5"
+      },
+      "pythainer": {
+        "is_direct": true,
+        "rev": "be193dff97c44210fff4fbe23a4b823cff3f00e2",
+        "sha256": "166iqy4d0pn1hy02n0a61jc6j3fim5lwk2y8cjnix4b3qxr4h599",
+        "type": "git",
+        "url": "https://github.com/apaolillo/pythainer.git",
+        "version": "0.0.6"
+      },
+      "pytokens": {
+        "is_direct": false,
+        "sha256": "29d1d8fb1030af4d231789959f21821ab6325e463f0503a61d204343c9b355d1",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/e0/d2/afe5c7f8607018beb99971489dbb846508f1b8f351fcefc225fcf4b2adc0/pytokens-0.4.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "version": "0.4.1"
+      },
+      "rich": {
+        "is_direct": false,
+        "sha256": "76bc51fe2e57d2b1be1f96c524b890b816e334ab4c1e45888799bfaab0021edd",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/25/7a/b0178788f8dc6cafce37a212c99565fa1fe7872c70c6c9c1e1a372d9d88f/rich-14.2.0-py3-none-any.whl",
+        "version": "14.2.0"
+      },
+      "trove-classifiers": {
+        "is_direct": false,
+        "sha256": "1f9553927f18d0513d8e5ff80ab8980b8202ce37ecae0e3274ed2ef11880e74d",
+        "type": "url",
+        "url": "https://files.pythonhosted.org/packages/bb/4a/2e5583e544bc437d5e8e54b47db87430df9031b29b48d17f26d129fa60c0/trove_classifiers-2026.1.14.14-py3-none-any.whl",
+        "version": "2026.1.14.14"
+      }
+    },
+    "targets": {
+      "default": {
+        "black": [
+          "click",
+          "mypy-extensions",
+          "packaging",
+          "pathspec",
+          "platformdirs",
+          "pytokens"
+        ],
+        "click": [],
+        "docopt": [],
+        "hatchling": [
+          "packaging",
+          "pathspec",
+          "pluggy",
+          "trove-classifiers"
+        ],
+        "isort": [],
+        "markdown-it-py": [
+          "mdurl"
+        ],
+        "mdurl": [],
+        "mypy-extensions": [],
+        "numpy": [],
+        "packaging": [],
+        "pathspec": [],
+        "platformdirs": [],
+        "pluggy": [],
+        "pygments": [],
+        "pyserial": [],
+        "pythainer": [
+          "black",
+          "click",
+          "isort"
+        ],
+        "pytokens": [],
+        "rich": [
+          "markdown-it-py",
+          "pygments"
+        ],
+        "trove-classifiers": []
+      }
+    }
+  },
+  "invalidationHash": "272066a7710bd8e92f6f9a334e589f1cc7645e0f863d09f55c8000b0665f0065"
+}
