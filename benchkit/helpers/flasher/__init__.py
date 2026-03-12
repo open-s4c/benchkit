@@ -17,7 +17,7 @@ class Flasher:
     @property
     def platform(self) -> Platform: 
         """
-        Get the platform that this flasher is designed for
+        Get the platform to run the flasher on
         """
         ...
 
@@ -30,7 +30,7 @@ class Flasher:
         Flash the binary at the specified address.
         Args:
             bin: The path to the binary to flash.
-            addr: The address to flash the binary to (e.g., "0x080000
+            addr: The address to flash the binary to (e.g., "0x080000")
         """
         ...
 
