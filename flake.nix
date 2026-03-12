@@ -41,12 +41,12 @@
           benchkit = self.packages.${system}.default;
           python = benchkit.config.deps.python;
 
-          benchkitCorePackages = [
-            benchkit.config.deps.stress-ng
-            benchkit.config.deps.tmux
-          ];
+          # this is empty at the moment, it should mimic the dependencies from
+          # .nix/default.nix@config.deps
+          benchkitCorePackages = [];
 
           pythonToolingPackages = [
+            pkgs.pyright
             python.pkgs.python-lsp-ruff
             python.pkgs.numpy
             python.pkgs.pip
@@ -66,8 +66,17 @@
                        ++ pythonToolingPackages
                        ++ formattingPackages
                        ++ [
-                         pkgs.openocd
                        ];
+          };
+
+          embedded = pkgs.mkShell {
+            inputsFrom = [self.devShells.${system}.core];
+            packages = benchkitCorePackages
+               ++ pythonToolingPackages
+               ++ formattingPackages
+               ++ [
+                 pkgs.openocd
+               ];
           };
 
           # example of a devshell where non free software is required

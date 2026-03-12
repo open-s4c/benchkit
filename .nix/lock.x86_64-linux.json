@@ -1,14 +1,12 @@
 {
   "fetchPipMetadata": {
     "sources": {
-<<<<<<< HEAD
-=======
       "black": {
         "is_direct": false,
-        "sha256": "6f7b3e653a90ca1ef4e821c20f8edaee80b649c38d2532ed2e9073a9534b14a7",
+        "sha256": "f1cd08e99d2f9317292a311dfe578fd2a24b15dbce97792f9c4d752275c1fa56",
         "type": "url",
-        "url": "https://files.pythonhosted.org/packages/a2/dd/da980b2f512441375b73cb511f38a2c3db4be83ccaa1302b8d39c9fa2dff/black-26.3.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-        "version": "26.3.0"
+        "url": "https://files.pythonhosted.org/packages/e1/87/af89ad449e8254fdbc74654e6467e3c9381b61472cc532ee350d28cfdafb/black-26.3.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "version": "26.3.1"
       },
       "click": {
         "is_direct": false,
@@ -17,7 +15,6 @@
         "url": "https://files.pythonhosted.org/packages/98/78/01c019cdb5d6498122777c1a43056ebb3ebfeef2076d9d026bfe15583b2b/click-8.3.1-py3-none-any.whl",
         "version": "8.3.1"
       },
->>>>>>> 5d575ef (nix)
       "docopt": {
         "is_direct": false,
         "sha256": "49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491",
@@ -27,12 +24,6 @@
       },
       "hatchling": {
         "is_direct": false,
-<<<<<<< HEAD
-        "sha256": "dc48722b68b3f4bbfa3ff618ca07cdea6750e7d03481289ffa8be1521d18a961",
-        "type": "url",
-        "url": "https://files.pythonhosted.org/packages/0d/a5/48cb7efb8b4718b1a4c0c331e3364a3a33f614ff0d6afd2b93ee883d3c47/hatchling-1.28.0-py3-none-any.whl",
-        "version": "1.28.0"
-=======
         "sha256": "50af9343281f34785fab12da82e445ed987a6efb34fd8c2fc0f6e6630dbcc1b0",
         "type": "url",
         "url": "https://files.pythonhosted.org/packages/d3/8a/44032265776062a89171285ede55a0bdaadc8ac00f27f0512a71a9e3e1c8/hatchling-1.29.0-py3-none-any.whl",
@@ -44,7 +35,6 @@
         "type": "url",
         "url": "https://files.pythonhosted.org/packages/3e/95/c7c34aa53c16353c56d0b802fba48d5f5caa2cdee7958acbcb795c830416/isort-8.0.1-py3-none-any.whl",
         "version": "8.0.1"
->>>>>>> 5d575ef (nix)
       },
       "markdown-it-py": {
         "is_direct": false,
@@ -60,21 +50,6 @@
         "url": "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl",
         "version": "0.1.2"
       },
-<<<<<<< HEAD
-      "packaging": {
-        "is_direct": false,
-        "sha256": "29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484",
-        "type": "url",
-        "url": "https://files.pythonhosted.org/packages/20/12/38679034af332785aac8774540895e234f4d07f7545804097de4b666afd8/packaging-25.0-py3-none-any.whl",
-        "version": "25.0"
-      },
-      "pathspec": {
-        "is_direct": false,
-        "sha256": "1373719036e64a2b9de3b8ddd9e30afb082a915619f07265ed76d9ae507800ae",
-        "type": "url",
-        "url": "https://files.pythonhosted.org/packages/05/bb/39e6768529454cc2b57e1e2fa0a0a18ff64397a16303270e215a3e03285f/pathspec-1.0.0-py3-none-any.whl",
-        "version": "1.0.0"
-=======
       "mypy-extensions": {
         "is_direct": false,
         "sha256": "1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505",
@@ -109,7 +84,6 @@
         "type": "url",
         "url": "https://files.pythonhosted.org/packages/63/d7/97f7e3a6abb67d8080dd406fd4df842c2be0efaf712d1c899c32a075027c/platformdirs-4.9.4-py3-none-any.whl",
         "version": "4.9.4"
->>>>>>> 5d575ef (nix)
       },
       "pluggy": {
         "is_direct": false,
@@ -125,8 +99,6 @@
         "url": "https://files.pythonhosted.org/packages/c7/21/705964c7812476f378728bdf590ca4b771ec72385c533964653c68e86bdc/pygments-2.19.2-py3-none-any.whl",
         "version": "2.19.2"
       },
-<<<<<<< HEAD
-=======
       "pyserial": {
         "is_direct": false,
         "sha256": "c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0",
@@ -136,8 +108,8 @@
       },
       "pythainer": {
         "is_direct": true,
-        "rev": "b260a75e58d20d6a07cd8c0cc075c45b8e1e7cd2",
-        "sha256": "0w4s4lp60yq9f63aj28421a9gcpz6ldah3cv3kjh7hlhdihk3mgx",
+        "rev": "be193dff97c44210fff4fbe23a4b823cff3f00e2",
+        "sha256": "166iqy4d0pn1hy02n0a61jc6j3fim5lwk2y8cjnix4b3qxr4h599",
         "type": "git",
         "url": "https://github.com/apaolillo/pythainer.git",
         "version": "0.0.6"
@@ -149,7 +121,6 @@
         "url": "https://files.pythonhosted.org/packages/e0/d2/afe5c7f8607018beb99971489dbb846508f1b8f351fcefc225fcf4b2adc0/pytokens-0.4.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
         "version": "0.4.1"
       },
->>>>>>> 5d575ef (nix)
       "rich": {
         "is_direct": false,
         "sha256": "76bc51fe2e57d2b1be1f96c524b890b816e334ab4c1e45888799bfaab0021edd",
@@ -159,23 +130,14 @@
       },
       "trove-classifiers": {
         "is_direct": false,
-<<<<<<< HEAD
-        "sha256": "a8206978ede95937b9959c3aff3eb258bbf7b07dff391ddd4ea7e61f316635ab",
-        "type": "url",
-        "url": "https://files.pythonhosted.org/packages/4f/7e/bc19996fa86cad8801e8ffe6f1bba5836ca0160df76d0410d27432193712/trove_classifiers-2025.12.1.14-py3-none-any.whl",
-        "version": "2025.12.1.14"
-=======
         "sha256": "1f9553927f18d0513d8e5ff80ab8980b8202ce37ecae0e3274ed2ef11880e74d",
         "type": "url",
         "url": "https://files.pythonhosted.org/packages/bb/4a/2e5583e544bc437d5e8e54b47db87430df9031b29b48d17f26d129fa60c0/trove_classifiers-2026.1.14.14-py3-none-any.whl",
         "version": "2026.1.14.14"
->>>>>>> 5d575ef (nix)
       }
     },
     "targets": {
       "default": {
-<<<<<<< HEAD
-=======
         "black": [
           "click",
           "mypy-extensions",
@@ -185,7 +147,6 @@
           "pytokens"
         ],
         "click": [],
->>>>>>> 5d575ef (nix)
         "docopt": [],
         "hatchling": [
           "packaging",
@@ -193,20 +154,11 @@
           "pluggy",
           "trove-classifiers"
         ],
-<<<<<<< HEAD
-=======
         "isort": [],
->>>>>>> 5d575ef (nix)
         "markdown-it-py": [
           "mdurl"
         ],
         "mdurl": [],
-<<<<<<< HEAD
-        "packaging": [],
-        "pathspec": [],
-        "pluggy": [],
-        "pygments": [],
-=======
         "mypy-extensions": [],
         "numpy": [],
         "packaging": [],
@@ -221,7 +173,6 @@
           "isort"
         ],
         "pytokens": [],
->>>>>>> 5d575ef (nix)
         "rich": [
           "markdown-it-py",
           "pygments"
@@ -230,10 +181,5 @@
       }
     }
   },
-<<<<<<< HEAD
-  "invalidationHash": "156fe21e28238080e9b7e35e84dfb16761c3a17d21291acf0487ba850888dd18"
-}
-=======
   "invalidationHash": "272066a7710bd8e92f6f9a334e589f1cc7645e0f863d09f55c8000b0665f0065"
 }
->>>>>>> 5d575ef (nix)
