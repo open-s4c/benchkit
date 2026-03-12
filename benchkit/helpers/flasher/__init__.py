@@ -49,26 +49,3 @@ class Flasher:
         Stop the device (e.g., by halting it or entering reset).
         """
         ...
-
-    def with_features(self, features: list[str]) -> "Flasher":
-        """
-        Return a new instance of the flasher with only the specified features
-        implemented. As not all flashers, MCUs, ... support all features,
-        this allows us to create a flasher that only implements the features
-        that are supported by the underlying hardware and software.
-        """
-
-        methods: set[str] = set(inspect.getmembers(self.__class__, predicate=inspect.isroutine))
-        to_remove: set[str] = methods - set(features)
-
-        if len(to_remve) != len(methods) - len(features):
-            raise ValueError(f"Some features in {features} are not valid for {self.__class__.__name__}")
-
-        # HACK this is a bit hacky, but it allows us to easily remove methods from the programmer
-        def blank(*args, **kwargs):
-            raise NotImplementedError(f"{feature} is not implemented for {self.__class__.__name__}")
-
-        for feature in to_remove: 
-            setattr(self, feature, blank)
-
-        return self
