@@ -83,6 +83,12 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
     def _unchecked_close_comm(self) -> None:
         self._con.close()  # type: ignore
 
+    def flush(self) -> None:
+        """Drain any pending bytes from the UART receive buffer."""
+        if not self.is_open():
+            self.start_comm()
+        self._con.reset_input_buffer()
+
     def listen(
         self,
         chunk_size: int = 16,
