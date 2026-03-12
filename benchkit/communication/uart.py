@@ -83,7 +83,7 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
     def _unchecked_close_comm(self) -> None:
         self._con.close()  # type: ignore
 
-    def listen(
+ def listen(
             self,
             chunk_size: int = 16,
             timeout: float = 1.0,
@@ -109,9 +109,10 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
             if not self._con.readable():
                 break
 
-            buffer.append(self._con.read(chunk_size))
-            before = time.time() if timeout_per_input else before
-
+            chunk: bytes = self._con.read(chunk_size)
+            if chunk:
+                buffer.append(chunk)
+                before = time.time() if timeout_per_input else before
 
         self.close_comm()
         return b''.join(buffer).decode('utf-8').removesuffix("\n").removesuffix("\r")
