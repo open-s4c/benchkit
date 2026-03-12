@@ -92,9 +92,13 @@ class UARTCommLayer(CommunicationLayer, StatusAware):
         """
         Listen to the UART for a given amount of time and return the output.
         Args:
-            chunk_size (int, optional): number of bytes to read at a time. Defaults to 16.
-            timeout (float, optional): number of seconds to listen for. Defaults to 1.
-            timeout_per_input (bool, optional): whether to reset the timeout after each input is received. Defaults to False.
+            chunk_size (int, optional):
+                number of bytes to read at a time. Defaults to 16.
+            timeout (float, optional):
+                number of seconds to listen for. Defaults to 1.
+            timeout_per_input (bool, optional):
+                whether to reset the timeout after each input is received.
+                Defaults to False.
         Returns:
             str: the output received from the UART.
         """
