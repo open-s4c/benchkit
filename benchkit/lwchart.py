@@ -208,7 +208,8 @@ def _generate_chart_from_df(
             "SCHEDULED_OUT": colors[1],
             "SCHEDULED_IN": colors[0],
             "THREAD_EXIT": colors[3],
-            "MUTEX_WAIT": colors[4],
+            "MUTEX": colors[4],
+            "FUTEX": colors[6],
             "DISK_IO": colors[2],
         }
 
@@ -222,56 +223,58 @@ def _generate_chart_from_df(
 
         for tid, idx in thread_mapping.items():
             thread_profile = thread_profiles[tid]
-            current_left = 0
-            current_state = "SCHEDULED_OUT"
+            # current_left = 0
+            # current_state = "SCHEDULED_OUT"
 
             for profile_block in thread_profile:
                 block_index = profile_block["block_index"]
                 block_start_time = profile_block["block_start_time_ns"]
                 block_end_time = profile_block["block_end_time_ns"]
                 block_total_width = block_end_time - block_start_time
-                first_event_time = profile_block["first_event_time_ns"]
-                last_event_time = profile_block["last_event_time_ns"]
-                end_state = profile_block["end_state"]
+                # first_event_time = profile_block["first_event_time_ns"]
+                # last_event_time = profile_block["last_event_time_ns"]
+                # end_state = profile_block["end_state"]
                 offcpu_time = profile_block["offcpu_time_ns"]
-                mutex_wait_time = profile_block["mutex_wait_time_ns"]
+                mutex_time = profile_block["mutex_time_ns"]
+                futex_time = profile_block["futex_time_ns"]
                 disk_io_time = profile_block["disk_io_time_ns"]
                 cutoff_time = profile_block["cutoff_time_ns"]
                 # ax.barh(idx, block_total_width, left=block_start_time, color=colors[0])
 
+                # TODO: handle cutoff properly
                 current_left = block_start_time
 
-                if cutoff_time:
-                    # This is the last block of this thread
-                    last_block_width = cutoff_time - block_start_time
-                    if last_block_width > 0:
-                        ax.barh(
-                            idx,
-                            last_block_width,
-                            left=current_left,
-                            label=current_state,
-                            color=state_to_color_map[current_state],
-                            **profile_settings,
-                        )
-                    continue
+                # if cutoff_time:
+                #     # This is the last block of this thread
+                #     last_block_width = cutoff_time - block_start_time
+                #     if last_block_width > 0:
+                #         ax.barh(
+                #             idx,
+                #             last_block_width,
+                #             left=current_left,
+                #             label=current_state,
+                #             color=state_to_color_map[current_state],
+                #             **profile_settings,
+                #         )
+                #     continue
 
                 # Show part before first event (if it exists)
-                before_part_width = first_event_time - block_start_time
-                if before_part_width > 0:
-                    ax.barh(
-                        idx,
-                        before_part_width,
-                        left=current_left,
-                        label=current_state,
-                        color=state_to_color_map[current_state],
-                        **profile_settings,
-                    )
-                    current_left += before_part_width
+                # before_part_width = first_event_time - block_start_time
+                # if before_part_width > 0:
+                #     ax.barh(
+                #         idx,
+                #         before_part_width,
+                #         left=current_left,
+                #         label=current_state,
+                #         color=state_to_color_map[current_state],
+                #         **profile_settings,
+                #     )
+                #     current_left += before_part_width
 
                 # Show all the components of block
-                total_component_width = last_event_time - first_event_time
+                # total_component_width = last_event_time - first_event_time
                 scheduled_in_width = (
-                    total_component_width - offcpu_time - mutex_wait_time - disk_io_time
+                    block_total_width - offcpu_time - mutex_time - futex_time - disk_io_time
                 )
                 if scheduled_in_width > 0:
                     ax.barh(
@@ -295,17 +298,6 @@ def _generate_chart_from_df(
                     )
                     current_left += disk_io_time
 
-                if mutex_wait_time > 0:
-                    ax.barh(
-                        idx,
-                        mutex_wait_time,
-                        left=current_left,
-                        label="MUTEX_WAIT",
-                        color=state_to_color_map["MUTEX_WAIT"],
-                        **profile_settings,
-                    )
-                    current_left += mutex_wait_time
-
                 if offcpu_time > 0:
                     ax.barh(
                         idx,
@@ -317,20 +309,42 @@ def _generate_chart_from_df(
                     )
                     current_left += offcpu_time
 
-                # Show part after last event (if it exists)
-                after_part_width = block_end_time - last_event_time
-                if after_part_width > 0:
+                if mutex_time > 0:
                     ax.barh(
                         idx,
-                        after_part_width,
+                        mutex_time,
                         left=current_left,
-                        label=end_state,
-                        color=state_to_color_map[end_state],
+                        label="MUTEX",
+                        color=state_to_color_map["MUTEX"],
                         **profile_settings,
                     )
-                    current_left += after_part_width
+                    current_left += mutex_time
 
-                current_state = end_state
+                if futex_time > 0:
+                    ax.barh(
+                        idx,
+                        futex_time,
+                        left=current_left,
+                        label="FUTEX",
+                        color=state_to_color_map["FUTEX"],
+                        **profile_settings,
+                    )
+                    current_left += futex_time
+
+                # Show part after last event (if it exists)
+                # after_part_width = block_end_time - last_event_time
+                # if after_part_width > 0:
+                #     ax.barh(
+                #         idx,
+                #         after_part_width,
+                #         left=current_left,
+                #         label=end_state,
+                #         color=state_to_color_map[end_state],
+                #         **profile_settings,
+                #     )
+                #     current_left += after_part_width
+
+                # current_state = end_state
 
         ax.set_yticks(list(thread_mapping.values()))
         ax.set_yticklabels(list(thread_mapping.keys()))

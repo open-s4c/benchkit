@@ -116,7 +116,7 @@ class ThreadProfiler:
         # This dictionary will hold all the aggregated values for each lock
         per_thread_dict: dict[int, list] = defaultdict(list)
         row_re = re.compile(
-            r"^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s*(\d+)?\s*$"
+            r"^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*(\d+)?\s*$"
         )
 
         with open(threadprofiler_out_file) as out_file:
@@ -128,13 +128,12 @@ class ThreadProfiler:
                     tid = int(m.group(1))
                     block_index = int(m.group(2))
                     block_start_time_ns = int(m.group(3))
-                    first_event_time_ns = int(m.group(4))
-                    last_event_time_ns = int(m.group(5))
-                    offcpu_time_ns = int(m.group(6))
-                    mutex_wait_time_ns = int(m.group(7))
+                    block_end_time_ns = int(m.group(4))
+                    offcpu_time_ns = int(m.group(5))
+                    mutex_time_ns = int(m.group(6))
+                    futex_time_ns = int(m.group(7))
                     disk_io_time_ns = int(m.group(8))
-                    end_state = m.group(9)
-                    cutoff_time_ns = int(m.group(10)) if m.group(10) else None
+                    cutoff_time_ns = int(m.group(9)) if m.group(9) else None
 
                     # print(
                     #     tid,
@@ -146,41 +145,29 @@ class ThreadProfiler:
                     #     end_state,
                     # )
 
-                    # TODO: maybe filter out if block id 0 after end (Main thread?)
+                    # if tid in per_thread_dict:
+                    #     # If you are not the first block make sure to grow
+                    #     # the previous one until yourself
+                    #     per_thread_dict[tid][-1][
+                    #         "block_end_time_ns"
+                    #     ] = block_start_time_ns  # TODO: Maybe +1
 
-                    if tid in per_thread_dict:
-                        # If you are not the first block make sure to grow
-                        # the previous one until yourself
-                        per_thread_dict[tid][-1][
-                            "block_end_time_ns"
-                        ] = block_start_time_ns  # TODO: Maybe +1
-
-                        # If a block that is not the first has the id 0 then it should be ignored
-                        if block_index == 0:
-                            continue
+                    #     # If a block that is not the first has the id 0 then it should be ignored
+                    #     if block_index == 0:
+                    #         continue
 
                     per_thread_dict[tid].append(
                         {
                             "block_index": block_index,
                             "block_start_time_ns": block_start_time_ns,
-                            "first_event_time_ns": first_event_time_ns,
-                            "last_event_time_ns": last_event_time_ns,
+                            "block_end_time_ns": block_end_time_ns,
                             "offcpu_time_ns": offcpu_time_ns,
-                            "mutex_wait_time_ns": mutex_wait_time_ns,
+                            "mutex_time_ns": mutex_time_ns,
+                            "futex_time_ns": futex_time_ns,
                             "disk_io_time_ns": disk_io_time_ns,
-                            "end_state": end_state,
                             "cutoff_time_ns": cutoff_time_ns,
-                            "block_end_time_ns": (
-                                block_start_time_ns + self._granularity_ns
-                                if end_state != "THREAD_EXIT"
-                                else last_event_time_ns
-                            ),
                         }
                     )
-
-                    # TODO: 1. Make a timeline of these blocks
-                    #       2. Make a graph that shows this timeline
-                    #          (like speedup stack but horizontal)
 
                     # old_values = per_lock_dict.setdefault(
                     #     caller,
