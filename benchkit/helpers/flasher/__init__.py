@@ -1,10 +1,10 @@
 # Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
+import pathlib
+
 from benchkit.platforms import Platform
 
-import pathlib
-import inspect
 
 class Flasher:
     """
@@ -15,16 +15,16 @@ class Flasher:
     """
 
     @property
-    def platform(self) -> Platform: 
+    def platform(self) -> Platform:
         """
         Get the platform to run the flasher on
         """
         ...
 
     def flash(
-            self,
-            bin: pathlib.Path,
-            addr: str,
+        self,
+        bin: pathlib.Path,
+        addr: str,
     ) -> None:
         """
         Flash the binary at the specified address.
@@ -39,11 +39,13 @@ class Flasher:
         Reset the device.
         """
         ...
+
     def start(self) -> None:
         """
         Start the device (e.g., by running it or exiting reset).
         """
         ...
+
     def stop(self) -> None:
         """
         Stop the device (e.g., by halting it or entering reset).
