@@ -70,7 +70,7 @@ class OpenOCDFlasher(Flasher):
     def flash(
         self,
         bin: pathlib.Path,
-        addr: str,
+        addr: str = "",
     ) -> None:
         """
         Flash the firmware onto the board via OpenOCD.
@@ -91,7 +91,7 @@ class OpenOCDFlasher(Flasher):
         Reset the board via OpenOCD.
         """
         self.platform.comm.shell(
-            command=(f"{self.__cmd_prefix} " '-c "init" ' '-c "reset" ' '-c "exit"'),
+            command=f"{self.__cmd_prefix} " '-c "init" ' '-c "reset" ' '-c "exit"',
             print_output=False,
             print_input=True,
         )
