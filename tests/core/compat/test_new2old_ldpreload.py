@@ -100,7 +100,7 @@ class HookSharedLib(SharedLibOld):
 
 
 def main() -> None:
-    parameter_space = {
+    variables = {
         "hook_enabled": [True, False],
     }
 
@@ -109,7 +109,7 @@ def main() -> None:
 
     campaign = CampaignCartesianProduct(
         benchmark=bench,
-        parameter_space=parameter_space,
+        variables=variables,
         shared_libs=[lib],
         duration_s=1,
     )

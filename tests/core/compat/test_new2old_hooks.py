@@ -63,7 +63,7 @@ class PostMarkHook:
 
 
 def main() -> None:
-    parameter_space: dict[str, list[Any]] = {
+    variables: dict[str, list[Any]] = {
         # no parameters needed; we just want one run
     }
 
@@ -71,7 +71,7 @@ def main() -> None:
 
     campaign = CampaignCartesianProduct(
         benchmark=bench,
-        parameter_space=parameter_space,
+        variables=variables,
         pre_run_hooks=[PreMarkHook()],
         post_run_hooks=[PostMarkHook()],
         duration_s=1,

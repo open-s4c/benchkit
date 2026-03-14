@@ -84,7 +84,7 @@ int main() {
 
 
 def main() -> None:
-    parameter_space = {
+    variables = {
         "master_thread_core": [None, 0, 1],
     }
 
@@ -93,7 +93,7 @@ def main() -> None:
 
     campaign = CampaignCartesianProduct(
         benchmark=bench,
-        variables=parameter_space,
+        variables=variables,
         command_wrappers=[wrapper],
         duration_s=1,
     )

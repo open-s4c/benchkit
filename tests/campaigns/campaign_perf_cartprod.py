@@ -84,7 +84,7 @@ def main() -> None:
     campaign = CampaignCartesianProduct(
         name="strace",
         benchmark=SleepBench(),
-        parameter_space={"duration_seconds": [3]},
+        variables={"duration_seconds": [3]},
         nb_runs=1,
         command_wrappers=[perfstatwrap],
         post_run_hooks=[perfstatwrap.post_run_hook_update_results],
