@@ -46,6 +46,9 @@ class SpeedupStackWrapper(CommandWrapper):
             self._sigcont.attachment,
         ]
 
+    def pre_run_hooks(self):
+        return [self._threadprofiler.prerun_hook]
+
     def post_run_hooks(self):
         return [
             self._klockstat.post_run_hook,

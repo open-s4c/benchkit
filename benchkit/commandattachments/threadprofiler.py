@@ -10,7 +10,9 @@ import os
 import pathlib
 import re
 from collections import defaultdict
-from typing import List
+from typing import List, Tuple
+
+from numpy import mean
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.commandattachments import wait_for_output
@@ -54,6 +56,8 @@ class ThreadProfiler:
         self.out_file_name = "threadprofiler.out"
         self.err_file_name = "threadprofiler.err"
 
+        self._nb_threads = 0
+
     def attachment(
         self,
         process: AsyncProcess,
@@ -92,6 +96,19 @@ class ThreadProfiler:
 
     def get_per_thread_profiles(self):
         return self._per_run_per_thread_profile
+
+    def prerun_hook(
+        self,
+        build_variables: RecordResult,
+        run_variables: RecordResult,
+        other_variables: RecordResult,
+        record_data_dir: PathType,
+    ) -> None:
+        if "nb_threads" not in run_variables:
+            print("ERROR: threadprofiler expects the 'nb_threads' variable to be present")
+            return
+
+        self._nb_threads = run_variables["nb_threads"]
 
     def post_run_hook(
         self,
@@ -150,27 +167,6 @@ class ThreadProfiler:
                     disk_io_time_ns = int(m.group(8))
                     cutoff_time_ns = int(m.group(9)) if m.group(9) else None
 
-                    # print(
-                    #     tid,
-                    #     block_index,
-                    #     block_start_time_ns,
-                    #     first_event_time_ns,
-                    #     last_event_time_ns,
-                    #     offcpu_time_ns,
-                    #     end_state,
-                    # )
-
-                    # if tid in per_thread_dict:
-                    #     # If you are not the first block make sure to grow
-                    #     # the previous one until yourself
-                    #     per_thread_dict[tid][-1][
-                    #         "block_end_time_ns"
-                    #     ] = block_start_time_ns  # TODO: Maybe +1
-
-                    #     # If a block that is not the first has the id 0 then it should be ignored
-                    #     if block_index == 0:
-                    #         continue
-
                     merged = per_thread_dict[tid]["merged"]
                     if merged["block_index"] < block_index:
                         merged["block_index"] = block_index
@@ -201,57 +197,74 @@ class ThreadProfiler:
                             }
                         )
 
-                    # old_values = per_lock_dict.setdefault(
-                    #     caller,
-                    #     {
-                    #         "avg_wait": 0,
-                    #         "count_wait": 0,
-                    #         "max_wait": 0,
-                    #         "total_wait": 0,
-                    #         "avg_hold": 0,
-                    #         "count_hold": 0,
-                    #         "max_hold": 0,
-                    #         "total_hold": 0,
-                    #     },
-                    # )
-
-                    # per_lock_dict[caller].update(
-                    #     {
-                    #         avg_key: (
-                    #             old_values[avg_key] * old_values[count_key]
-                    #             + parsed_avg * parsed_count
-                    #         )
-                    #         / (old_values[count_key] + parsed_count),
-                    #         count_key: old_values[count_key] + parsed_count,
-                    #         max_key: max(old_values[max_key], parsed_max),
-                    #         total_key: old_values[total_key] + parsed_total,
-                    #     }
-                    # )
-
-            # __import__("pprint").pprint(per_thread_dict)
             self._per_run_per_thread_profile[self._run_counter] = per_thread_dict
             self._run_counter += 1
-            return {}
 
-            # Post run hooks must return a dictionary where each key at the top level corresponds
-            # to some information to be kept. The current per-lock dictionary
-            # does not adhere to this structure.
+        # Detect the benchmarking threads using heuristic
+        # For now the heuristic will contain two part:
+        # 1. There are exactly nb_threads benchmarking threads
+        # 2. The benchmarking threads are the most scheduled in of all the threads
+        #    with the pid of the benchmark
+        def sorting_key(x: Tuple[int, dict]) -> int:
+            merged_block = x[1]["merged"]
+            block_duration = merged_block["block_end_time_ns"] - merged_block["block_start_time_ns"]
+            return (
+                block_duration
+                - merged_block["offcpu_time_ns"]
+                - merged_block["mutex_time_ns"]
+                - merged_block["futex_time_ns"]
+                - merged_block["disk_io_time_ns"]
+            )
 
-            total_wait = sum(d["total_wait"] for d in per_lock_dict.values())
-            total_hold = sum(d["total_hold"] for d in per_lock_dict.values())
-            count_wait = sum(d["count_wait"] for d in per_lock_dict.values())
-            count_hold = sum(d["count_wait"] for d in per_lock_dict.values())
-            return_dict = {
-                "klockstat_total_wait_ns": total_wait,
-                "klockstat_avg_wait_ns": (total_wait / count_wait) if count_wait != 0 else 0,
-                "klockstat_max_wait_ns": max(
-                    list(d["max_wait"] for d in per_lock_dict.values()) + [0]
-                ),
-                "klokstat_total_hold_ns": total_hold,
-                "klockstat_avg_hold_ns": (total_hold / count_hold) if count_hold != 0 else 0,
-                "klockstat_max_hold_ns": max(
-                    list(d["max_hold"] for d in per_lock_dict.values()) + [0]
-                ),
-            }
+        per_thread_list = list(per_thread_dict.items())
+        sorted_by_schedule_in = sorted(per_thread_list, key=sorting_key, reverse=True)
 
-            return return_dict
+        # __import__("pprint").pprint(sorted_by_schedule_in)
+
+        benchmarking_threads = sorted_by_schedule_in[: self._nb_threads]
+        benchmarking_tids = list(map(lambda x: x[0], benchmarking_threads))
+
+        # To find the main thread we use the property that the spawned threads
+        # have higher TIDs than their parent
+        main_thread_tuple = sorted(per_thread_list, key=lambda x: x[0])[0]
+        main_thread_tid = main_thread_tuple[0]
+        main_thread_dict = main_thread_tuple[1]
+
+        # Find initialization component
+        main_thread_merged = main_thread_dict["merged"]
+        main_thread_start_ts = main_thread_merged["block_start_time_ns"]
+        total_run_duration = main_thread_merged["block_end_time_ns"] - main_thread_start_ts
+
+        mean_initialization_time = int(
+            mean(
+                list(
+                    map(
+                        lambda x: x[1]["merged"]["block_start_time_ns"] - main_thread_start_ts,
+                        benchmarking_threads,
+                    )
+                )
+            )
+        )
+
+        # Combine the benchmarking thread merged profile blocks to create the slowdown components
+
+        mean_offcpu_time_ns = int(
+            mean(list(map(lambda x: x[1]["merged"]["offcpu_time_ns"], benchmarking_threads)))
+        )
+        mean_mutex_time_ns = int(
+            mean(list(map(lambda x: x[1]["merged"]["mutex_time_ns"], benchmarking_threads)))
+        )
+        mean_futex_time_ns = int(
+            mean(list(map(lambda x: x[1]["merged"]["futex_time_ns"], benchmarking_threads)))
+        )
+        mean_disk_io_time_ns = int(
+            mean(list(map(lambda x: x[1]["merged"]["disk_io_time_ns"], benchmarking_threads)))
+        )
+
+        return {
+            "threadprofiler_initialization_ns": mean_initialization_time,
+            "threadprofiler_offcpu_ns": mean_offcpu_time_ns,
+            "threadprofiler_mutex_ns": mean_mutex_time_ns,
+            "threadprofiler_futex_ns": mean_futex_time_ns,
+            "threadprofiler_disk_io_ns": mean_disk_io_time_ns,
+        }

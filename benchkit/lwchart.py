@@ -298,33 +298,6 @@ def _generate_chart_from_df(
 
                 current_left = block_start_time
 
-                # if cutoff_time:
-                #     # This is the last block of this thread
-                #     last_block_width = cutoff_time - block_start_time
-                #     if last_block_width > 0:
-                #         ax.barh(
-                #             idx,
-                #             last_block_width,
-                #             left=current_left,
-                #             label=current_state,
-                #             color=state_to_color_map[current_state],
-                #             **profile_settings,
-                #         )
-                #     continue
-
-                # Show part before first event (if it exists)
-                # before_part_width = first_event_time - block_start_time
-                # if before_part_width > 0:
-                #     ax.barh(
-                #         idx,
-                #         before_part_width,
-                #         left=current_left,
-                #         label=current_state,
-                #         color=state_to_color_map[current_state],
-                #         **profile_settings,
-                #     )
-                #     current_left += before_part_width
-
                 # Show all the components of block
                 # total_component_width = last_event_time - first_event_time
                 scheduled_in_width = (
@@ -340,6 +313,9 @@ def _generate_chart_from_df(
                         **profile_settings,
                     )
                     current_left += scheduled_in_width
+                else:
+                    print("WARNING scheduled_in_width is negative", scheduled_in_width)
+                    print(block_total_width, offcpu_time, mutex_time, futex_time, disk_io_time)
 
                 if disk_io_time > 0:
                     ax.barh(
@@ -496,6 +472,7 @@ def _get_speedup_data(
     if duration_transformation:
         mean_df["duration"] = mean_df["duration"].apply(duration_transformation)
 
+    single_threaded_df = mean_df[mean_df["nb_threads"] == 1]
     single_threaded_duration = mean_df.loc[mean_df["nb_threads"] == 1, "duration"].iloc[0]
     single_threaded_speed_metric = (
         mean_df.loc[mean_df["nb_threads"] == 1, speed_metric].iloc[0] if speed_metric else 0
@@ -508,30 +485,43 @@ def _get_speedup_data(
         nb_threads = row["nb_threads"]
 
         duration = row["duration"]
-        if constant_duration:
-            # The benchmark has a constant duration, so compute a duration based on speed metric
-            duration = duration / (row[speed_metric] / single_threaded_speed_metric)
 
-        perfect_speedup_duration = single_threaded_duration / nb_threads
-        measured_component = perfect_speedup_duration / duration
+        # how much more data the benchmark has collected
+        duration_muliplier = (
+            row[speed_metric] / single_threaded_speed_metric if constant_duration else 1
+        )
 
-        # for name, func in speedup_stack_components.items():
-        #     print(name, row[name], func(row[name]), func(row[name]) / duration)
+        # if constant_duration:
+        #     # The benchmark has a constant duration, so compute a duration based on speed metric
+        #     duration = duration / (row[speed_metric] / single_threaded_speed_metric)
+
+        # perfect_speedup_duration = single_threaded_duration / nb_threads
+        # measured_component = perfect_speedup_duration / duration
+
+        measured_speedup = single_threaded_duration / (duration / duration_muliplier)
+
+        # TODO: Make use of the known slowdowns in the single threaded execution
+
+        for name, func in speedup_stack_components.items():
+            print(
+                name,
+                row[name],
+                duration,
+                func(row[name], nb_threads),
+                func(row[name], nb_threads) / duration,
+            )
 
         slowdown_components = {
             name: (func(row[name], nb_threads) / duration)
             for name, func in speedup_stack_components.items()
         }
 
-        other_component = 1 - measured_component - sum(slowdown_components.values())
+        other_component = nb_threads - measured_speedup - sum(slowdown_components.values())
 
         data[nb_threads] = {
-            "measured": measured_component * nb_threads,
-            "other": other_component * nb_threads,
-        } | {
-            name: (component_value * nb_threads)
-            for name, component_value in slowdown_components.items()
-        }
+            "measured": measured_speedup,
+            "other": other_component,
+        } | {name: component_value for name, component_value in slowdown_components.items()}
     return data
 
 

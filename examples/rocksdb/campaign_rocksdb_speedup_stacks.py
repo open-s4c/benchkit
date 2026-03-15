@@ -79,9 +79,10 @@ def main() -> None:
         ],
         nb_runs=1,
         benchmark_duration_seconds=2,
-        nb_threads=[1, 2, 4],
+        nb_threads=[1, 2, 4, 8],
         command_wrappers=([speedupstackwrapper] + speedupstackwrapper.command_wrappers()),
         command_attachments=speedupstackwrapper.command_attachments(),
+        pre_run_hooks=speedupstackwrapper.pre_run_hooks(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
         enable_data_dir=True,
         symlink_latest=True,
@@ -136,6 +137,13 @@ def main() -> None:
         title="Thread Event Profile",
         plot_name="thread-profile",
         speedupstackwrapper=speedupstackwrapper,
+        show_run_number=2,
+    )
+
+    suite.generate_graph(
+        title="Thread Event Profile",
+        plot_name="thread-profile",
+        speedupstackwrapper=speedupstackwrapper,
         show_run_number=3,
     )
 
@@ -168,9 +176,25 @@ def main() -> None:
         plot_name="speedup-stack",
         duration_transformation=lambda d: time_transformation(d, "s", "ns"),
         speedup_stack_components={
+            "threadprofiler_mutex_ns": lambda d, nb_t: d,
+            "threadprofiler_futex_ns": lambda d, nb_t: d,
+            "threadprofiler_offcpu_ns": lambda d, nb_t: d,
+            "threadprofiler_disk_io_ns": lambda d, nb_t: d,
+            "threadprofiler_initialization_ns": lambda d, nb_t: d,
+        },
+        constant_duration=True,
+        speed_metric="operations/second",
+    )
+
+    suite.generate_graph(
+        title="Speedup Stack",
+        plot_name="speedup-stack",
+        duration_transformation=lambda d: time_transformation(d, "s", "ns"),
+        speedup_stack_components={
             "klockstat_total_wait_ns": lambda d, nb_t: d / nb_t,
             "offcputime_avg_micro_s": lambda d, nb_t: time_transformation(d, "us", "ns"),
             "llcstat_total_nr_misses": lambda d, nb_t: d / nb_t,
+            "strace_total_time_s": lambda d, nb_t: time_transformation(d, "s", "ns") / nb_t,
             "strace_total_time_s": lambda d, nb_t: time_transformation(d, "s", "ns") / nb_t,
         },
         constant_duration=True,
