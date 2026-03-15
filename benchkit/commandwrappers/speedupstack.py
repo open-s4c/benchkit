@@ -16,14 +16,16 @@ from benchkit.utils.types import PathType
 
 
 class SpeedupStackWrapper(CommandWrapper):
-    def __init__(self, libbpf_tools_dir: PathType, thread_profiler_dir: PathType) -> None:
+    def __init__(
+        self, libbpf_tools_dir: PathType, thread_profiler_dir: PathType, granularity: int = int(1e8)
+    ) -> None:
         self._libbpf_tools_dir = libbpf_tools_dir
 
         self._klockstat = Klockstat(libbpf_tools_dir)
         self._offcputime = Offcputime(libbpf_tools_dir)
         self._llcstat = Llcstat(libbpf_tools_dir)
         self._strace = StraceWrap(pid=True, summary=False, summary_only=True)
-        self._threadprofiler = ThreadProfiler(thread_profiler_dir, granularity=int(1e8))
+        self._threadprofiler = ThreadProfiler(thread_profiler_dir, granularity=granularity)
 
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)

@@ -194,15 +194,18 @@ def _generate_chart_from_df(
         # tid = list(thread_profiles.keys())[1]
         thread_mapping = {v: i + 1 for i, v in enumerate(sorted(list(thread_profiles.keys())))}
 
+        local_df: DataFrame = df
+
         # print(thread_profile)
-        bench_names = df["bench_name"].unique()
+        bench_names = local_df["bench_name"].unique() if ("bench_name" in local_df) else []
         # n_benches = len(bench_names)
 
         sns.set_theme()
         fig, ax = plt.subplots(figsize=(8, 6))
         # fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=18, y=0.98)
 
-        colors = sns.color_palette("pastel")
+        # colors = sns.color_palette("pastel")
+        colors = sns.color_palette()
 
         state_to_color_map = {
             "SCHEDULED_OUT": colors[1],

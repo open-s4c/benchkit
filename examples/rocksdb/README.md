@@ -78,7 +78,7 @@ sudo make install
 ```
 
 
-Cloning and compiling the pensieveBPF (temp name) dependency
+Cloning and compiling the thread-profiler-bpf dependency
 
 ```bash
 cd deps/

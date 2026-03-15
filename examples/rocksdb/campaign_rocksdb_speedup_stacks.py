@@ -20,7 +20,11 @@ def main() -> None:
 
     thread_profiler_dir = (get_curdir(__file__) / "deps/thread-profiler-bpf/src").resolve()
 
-    speedupstackwrapper = SpeedupStackWrapper(libbpf_tools_dir, thread_profiler_dir)
+    speedupstackwrapper = SpeedupStackWrapper(
+        libbpf_tools_dir,
+        thread_profiler_dir,
+        granularity=int(1e8),
+    )
 
     campaign = rocksdb_campaign(
         src_dir=rocksdb_src_dir,
@@ -76,7 +80,7 @@ def main() -> None:
         benchmark_duration_seconds=3,
         # nb_threads=[1, 2, 4],
         # nb_threads=[1, 2, 4, 8, 12],
-        nb_threads=[4],
+        nb_threads=[8],
         command_wrappers=([speedupstackwrapper] + speedupstackwrapper.command_wrappers()),
         command_attachments=speedupstackwrapper.command_attachments(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
