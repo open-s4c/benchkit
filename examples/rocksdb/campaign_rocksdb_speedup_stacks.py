@@ -78,8 +78,8 @@ def main() -> None:
             #  doing random reads on id
         ],
         nb_runs=1,
-        benchmark_duration_seconds=3,
-        nb_threads=[1, 2, 4, 8],
+        benchmark_duration_seconds=2,
+        nb_threads=[1, 2, 4],
         command_wrappers=([speedupstackwrapper] + speedupstackwrapper.command_wrappers()),
         command_attachments=speedupstackwrapper.command_attachments(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
@@ -136,7 +136,7 @@ def main() -> None:
         title="Thread Event Profile",
         plot_name="thread-profile",
         speedupstackwrapper=speedupstackwrapper,
-        show_run_number=1,
+        show_run_number=3,
     )
 
     # suite.generate_graph(

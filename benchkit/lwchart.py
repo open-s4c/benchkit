@@ -274,15 +274,13 @@ def _generate_chart_from_df(
         }
 
         for tid, idx in thread_mapping.items():
-            thread_profile = thread_profiles[tid]
-            # current_left = 0
-            # current_state = "SCHEDULED_OUT"
+            thread_profile = thread_profiles[tid]["blocks"]
+            # thread_profile = [thread_profiles[tid]["merged"]]
 
             for profile_block in thread_profile:
                 block_index = profile_block["block_index"]
                 block_start_time = profile_block["block_start_time_ns"]
                 block_end_time = profile_block["block_end_time_ns"]
-                block_total_width = block_end_time - block_start_time
                 # first_event_time = profile_block["first_event_time_ns"]
                 # last_event_time = profile_block["last_event_time_ns"]
                 # end_state = profile_block["end_state"]
@@ -290,10 +288,14 @@ def _generate_chart_from_df(
                 mutex_time = profile_block["mutex_time_ns"]
                 futex_time = profile_block["futex_time_ns"]
                 disk_io_time = profile_block["disk_io_time_ns"]
-                cutoff_time = profile_block["cutoff_time_ns"]
-                # ax.barh(idx, block_total_width, left=block_start_time, color=colors[0])
 
-                # TODO: handle cutoff properly
+                cutoff_time = profile_block["cutoff_time_ns"]
+                block_total_width = (
+                    cutoff_time - block_start_time
+                    if cutoff_time
+                    else block_end_time - block_start_time
+                )
+
                 current_left = block_start_time
 
                 # if cutoff_time:

@@ -5,6 +5,7 @@
 TODO
 """
 
+import math
 import os
 import pathlib
 import re
@@ -114,7 +115,21 @@ class ThreadProfiler:
                 return {}
 
         # This dictionary will hold all the aggregated values for each lock
-        per_thread_dict: dict[int, list] = defaultdict(list)
+        per_thread_dict: dict[int, dict] = defaultdict(
+            lambda: {
+                "blocks": [],
+                "merged": {
+                    "block_index": -math.inf,
+                    "block_start_time_ns": math.inf,
+                    "block_end_time_ns": -math.inf,
+                    "offcpu_time_ns": 0,
+                    "mutex_time_ns": 0,
+                    "futex_time_ns": 0,
+                    "disk_io_time_ns": 0,
+                    "cutoff_time_ns": None,
+                },
+            }
+        )
         row_re = re.compile(
             r"^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*(\d+)?\s*$"
         )
@@ -156,18 +171,35 @@ class ThreadProfiler:
                     #     if block_index == 0:
                     #         continue
 
-                    per_thread_dict[tid].append(
-                        {
-                            "block_index": block_index,
-                            "block_start_time_ns": block_start_time_ns,
-                            "block_end_time_ns": block_end_time_ns,
-                            "offcpu_time_ns": offcpu_time_ns,
-                            "mutex_time_ns": mutex_time_ns,
-                            "futex_time_ns": futex_time_ns,
-                            "disk_io_time_ns": disk_io_time_ns,
-                            "cutoff_time_ns": cutoff_time_ns,
-                        }
-                    )
+                    merged = per_thread_dict[tid]["merged"]
+                    if merged["block_index"] < block_index:
+                        merged["block_index"] = block_index
+
+                        if merged["block_start_time_ns"] > block_start_time_ns:
+                            merged["block_start_time_ns"] = block_start_time_ns
+                        if cutoff_time_ns:
+                            merged["block_end_time_ns"] = cutoff_time_ns
+                            merged["cutoff_time_ns"] = cutoff_time_ns
+                        elif merged["block_end_time_ns"] < block_end_time_ns:
+                            merged["block_end_time_ns"] = block_end_time_ns
+
+                        merged["offcpu_time_ns"] += offcpu_time_ns
+                        merged["mutex_time_ns"] += mutex_time_ns
+                        merged["futex_time_ns"] += futex_time_ns
+                        merged["disk_io_time_ns"] += disk_io_time_ns
+
+                        per_thread_dict[tid]["blocks"].append(
+                            {
+                                "block_index": block_index,
+                                "block_start_time_ns": block_start_time_ns,
+                                "block_end_time_ns": block_end_time_ns,
+                                "offcpu_time_ns": offcpu_time_ns,
+                                "mutex_time_ns": mutex_time_ns,
+                                "futex_time_ns": futex_time_ns,
+                                "disk_io_time_ns": disk_io_time_ns,
+                                "cutoff_time_ns": cutoff_time_ns,
+                            }
+                        )
 
                     # old_values = per_lock_dict.setdefault(
                     #     caller,
