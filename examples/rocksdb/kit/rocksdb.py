@@ -78,6 +78,7 @@ class RocksDBBench(Benchmark):
             "lock",
             "atomics",
             "use_lse",
+            "threadprofiler_enabled",
         ]
 
     @staticmethod
@@ -267,6 +268,7 @@ def rocksdb_campaign(
     benchmark: RocksDBBench | None = None,
     bench_name: Iterable[str] = ("readrandom",),
     nb_iterations: Iterable[int] = (40000,),
+    threadprofiler_enabled: Iterable[bool] = (True,),
     src_dir: PathType | None = None,
     build_dir: str | None = None,
     results_dir: PathType | None = None,
@@ -302,6 +304,7 @@ def rocksdb_campaign(
         "nb_threads": nb_threads,
         "bench_name": bench_name,
         "nb_iterations": nb_iterations,
+        "threadprofiler_enabled": threadprofiler_enabled,
     }
     if pretty is not None:
         pretty = {"lock": pretty}

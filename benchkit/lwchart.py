@@ -140,23 +140,17 @@ def _generate_chart_from_df(
         n_benches = len(bench_names)
 
         sns.set_theme()
+        plt.rcParams["axes.labelsize"] = 20
+        plt.rcParams["xtick.labelsize"] = 15
+        plt.rcParams["ytick.labelsize"] = 15
         fig, axes = plt.subplots(nrows=1, ncols=n_benches, figsize=(5 * n_benches, 8), sharey=True)
 
-        fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=18, y=0.98)
+        fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=24, y=0.98)
 
         if n_benches == 1:
             axes = [axes]
 
         colors = sns.color_palette("pastel")
-
-        factors = ["measured", "gc", "sync", "lock", "other"]
-        labels = [
-            "Measured",
-            "Garbage Collection",
-            "Synchronization Activities",
-            "Lock Contention",
-            "Other Overheads",
-        ]
 
         for ax, bench in zip(axes, bench_names):
             bench_df = df[df["bench_name"] == bench]
@@ -167,11 +161,35 @@ def _generate_chart_from_df(
 
             ind = np.arange(len(speedup_data))
             bottom = np.zeros(len(speedup_data))
+            top_positive = np.zeros(len(speedup_data))
 
             for component_name, color in zip(next(iter(speedup_data.values())).keys(), colors):
                 vals = [d[component_name] for d in speedup_data.values()]
-                ax.bar(ind, vals, bottom=bottom, label=component_name, color=color)
-                bottom += vals
+
+                if component_name == "measured":
+                    top_positive += vals
+
+                # print(component_name, vals)
+                slowdown_component_bitmap = [(val >= 0) for val in vals]
+                # print(slowdown_component_bitmap)
+                component_bottom = [
+                    bot if val >= 0 else top for val, bot, top in zip(vals, bottom, top_positive)
+                ]
+                widths = [0.8 if val >= 0 else 0.4 for val in vals]
+                ax.bar(
+                    ind,
+                    vals,
+                    bottom=component_bottom,
+                    width=widths,
+                    label=component_name,
+                    color=color,
+                )
+                bottom += [
+                    val if slowdown else 0 for val, slowdown in zip(vals, slowdown_component_bitmap)
+                ]
+                top_positive += [
+                    0 if slowdown else val for val, slowdown in zip(vals, slowdown_component_bitmap)
+                ]
 
             ax.set_title(bench)
             ax.set_xlabel("Number of Threads")
@@ -179,7 +197,7 @@ def _generate_chart_from_df(
             ax.set_xticklabels([str(k) for k in speedup_data.keys()])
             if ax is axes[0]:
                 ax.set_ylabel("Speedup")
-            ax.legend(loc="upper left")
+            ax.legend(loc="upper left", fontsize=15)
 
         # plt.title(title + ": " + ", ".join(bench_names))
         plt.tight_layout()
@@ -250,8 +268,11 @@ def _generate_chart_from_df(
         # n_benches = len(bench_names)
 
         sns.set_theme()
+        plt.rcParams["axes.labelsize"] = 18
+        plt.rcParams["xtick.labelsize"] = 14
+        plt.rcParams["ytick.labelsize"] = 14
         fig, ax = plt.subplots(figsize=(8, 6))
-        # fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=18, y=0.98)
+        # fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=24, y=0.98)
 
         # colors = sns.color_palette("pastel")
         colors = sns.color_palette()
@@ -313,7 +334,7 @@ def _generate_chart_from_df(
                         **profile_settings,
                     )
                     current_left += scheduled_in_width
-                else:
+                elif scheduled_in_width < 0:
                     print("WARNING scheduled_in_width is negative", scheduled_in_width)
                     print(block_total_width, offcpu_time, mutex_time, futex_time, disk_io_time)
 
@@ -381,12 +402,12 @@ def _generate_chart_from_df(
         # handles, labels = ax.get_legend_handles_labels()
         handles, labels = ax.get_legend_handles_labels()
         by_label = dict(zip(labels, handles))  # removes duplicates
-        ax.legend(by_label.values(), by_label.keys())
+        ax.legend(by_label.values(), by_label.keys(), fontsize=15)
         # ax.legend(loc="upper left")
 
         plt.xlabel("Time since boot (ns)")
         plt.ylabel("Thread Identifier (TID)")
-        plt.title(title + ": " + ", ".join(bench_names))
+        plt.title(title + ": " + ", ".join(bench_names), fontsize=24)
         plt.tight_layout()
         plt.show()
     else:
@@ -472,7 +493,7 @@ def _get_speedup_data(
     if duration_transformation:
         mean_df["duration"] = mean_df["duration"].apply(duration_transformation)
 
-    single_threaded_df = mean_df[mean_df["nb_threads"] == 1]
+    single_threaded_row = mean_df[mean_df["nb_threads"] == 1].iloc[0]
     single_threaded_duration = mean_df.loc[mean_df["nb_threads"] == 1, "duration"].iloc[0]
     single_threaded_speed_metric = (
         mean_df.loc[mean_df["nb_threads"] == 1, speed_metric].iloc[0] if speed_metric else 0
@@ -501,22 +522,35 @@ def _get_speedup_data(
         measured_speedup = single_threaded_duration / (duration / duration_muliplier)
 
         # TODO: Make use of the known slowdowns in the single threaded execution
+        # FIX: This introduces negative components. How should these be handled?
+        #      And what about the "other" component now?
 
-        for name, func in speedup_stack_components.items():
-            print(
-                name,
-                row[name],
-                duration,
-                func(row[name], nb_threads),
-                func(row[name], nb_threads) / duration,
-            )
+        # for name, func in speedup_stack_components.items():
+        #     print(
+        #         name,
+        #         row[name],
+        #         duration,
+        #         func(row[name], nb_threads),
+        #         func(row[name], nb_threads) / duration,
+        #     )
 
+        # TODO: maybe migrate the *nb_threads to the components
         slowdown_components = {
-            name: (func(row[name], nb_threads) / duration)
+            # name: (func(row[name], nb_threads) / duration)
+            name: (
+                (func(row[name], nb_threads) / duration)
+                - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
+            )
+            * nb_threads
             for name, func in speedup_stack_components.items()
         }
 
-        other_component = nb_threads - measured_speedup - sum(slowdown_components.values())
+        # other_component = nb_threads - measured_speedup - sum(slowdown_components.values())
+        other_component = (
+            nb_threads
+            - measured_speedup
+            - sum(map(lambda x: x if x >= 0 else 0, slowdown_components.values()))
+        )
 
         data[nb_threads] = {
             "measured": measured_speedup,

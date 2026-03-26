@@ -57,12 +57,17 @@ class ThreadProfiler:
         self.err_file_name = "threadprofiler.err"
 
         self._nb_threads = 0
+        self._enabled = True
 
     def attachment(
         self,
         process: AsyncProcess,
         record_data_dir: PathType,
     ) -> None:
+
+        if not self._enabled:
+            return
+
         rdd = pathlib.Path(record_data_dir)
 
         lib_path = pathlib.Path(self._thread_profiler_dir).as_posix()
@@ -110,12 +115,19 @@ class ThreadProfiler:
 
         self._nb_threads = run_variables["nb_threads"]
 
+        if "threadprofiler_enabled" in run_variables:
+            self._enabled = run_variables["threadprofiler_enabled"]
+
     def post_run_hook(
         self,
         experiment_results_lines: List[RecordResult],
         record_data_dir: PathType,
         write_record_file_fun: WriteRecordFileFunction,
     ) -> RecordResult:
+
+        if not self._enabled:
+            return {}
+
         self._process.send_signal(2, self._process.pid)
         self._process.wait()
 
@@ -217,6 +229,10 @@ class ThreadProfiler:
             )
 
         per_thread_list = list(per_thread_dict.items())
+
+        if len(per_thread_list) == 0:
+            return {}
+
         sorted_by_schedule_in = sorted(per_thread_list, key=sorting_key, reverse=True)
 
         # __import__("pprint").pprint(sorted_by_schedule_in)

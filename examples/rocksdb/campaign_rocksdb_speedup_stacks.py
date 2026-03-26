@@ -137,6 +137,13 @@ def main() -> None:
         title="Thread Event Profile",
         plot_name="thread-profile",
         speedupstackwrapper=speedupstackwrapper,
+        show_run_number=1,
+    )
+
+    suite.generate_graph(
+        title="Thread Event Profile",
+        plot_name="thread-profile",
+        speedupstackwrapper=speedupstackwrapper,
         show_run_number=2,
     )
 
@@ -147,29 +154,12 @@ def main() -> None:
         show_run_number=3,
     )
 
-    # suite.generate_graph(
-    #     plot_name="thread-profile",
-    #     speedupstackwrapper=speedupstackwrapper,
-    #     show_run_number=2,
-    # )
-
-    # suite.generate_graph(
-    #     plot_name="thread-profile",
-    #     speedupstackwrapper=speedupstackwrapper,
-    #     show_run_number=3,
-    # )
-
-    # suite.generate_graph(
-    #     plot_name="thread-profile",
-    #     speedupstackwrapper=speedupstackwrapper,
-    #     show_run_number=4,
-    # )
-
-    # suite.generate_graph(
-    #     plot_name="thread-profile",
-    #     speedupstackwrapper=speedupstackwrapper,
-    #     show_run_number=5,
-    # )
+    suite.generate_graph(
+        title="Thread Event Profile for 8 Threads",
+        plot_name="thread-profile",
+        speedupstackwrapper=speedupstackwrapper,
+        show_run_number=4,
+    )
 
     suite.generate_graph(
         title="Speedup Stack",
@@ -186,20 +176,20 @@ def main() -> None:
         speed_metric="operations/second",
     )
 
-    suite.generate_graph(
-        title="Speedup Stack",
-        plot_name="speedup-stack",
-        duration_transformation=lambda d: time_transformation(d, "s", "ns"),
-        speedup_stack_components={
-            "klockstat_total_wait_ns": lambda d, nb_t: d / nb_t,
-            "offcputime_avg_micro_s": lambda d, nb_t: time_transformation(d, "us", "ns"),
-            "llcstat_total_nr_misses": lambda d, nb_t: d / nb_t,
-            "strace_total_time_s": lambda d, nb_t: time_transformation(d, "s", "ns") / nb_t,
-            "strace_total_time_s": lambda d, nb_t: time_transformation(d, "s", "ns") / nb_t,
-        },
-        constant_duration=True,
-        speed_metric="operations/second",
-    )
+    # suite.generate_graph(
+    #     title="Speedup Stack",
+    #     plot_name="speedup-stack",
+    #     duration_transformation=lambda d: time_transformation(d, "s", "ns"),
+    #     speedup_stack_components={
+    #         "klockstat_total_wait_ns": lambda d, nb_t: d / nb_t,
+    #         "offcputime_avg_micro_s": lambda d, nb_t: time_transformation(d, "us", "ns"),
+    #         "llcstat_total_nr_misses": lambda d, nb_t: d / nb_t,
+    #         "strace_total_time_s": lambda d, nb_t: time_transformation(d, "s", "ns") / nb_t,
+    #         "strace_total_time_s": lambda d, nb_t: time_transformation(d, "s", "ns") / nb_t,
+    #     },
+    #     constant_duration=True,
+    #     speed_metric="operations/second",
+    # )
 
 
 if __name__ == "__main__":

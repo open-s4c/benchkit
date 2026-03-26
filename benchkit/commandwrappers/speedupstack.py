@@ -38,10 +38,10 @@ class SpeedupStackWrapper(CommandWrapper):
     def command_attachments(self):
         return [
             self._sigstop.attachment,
-            self._klockstat.attachment,
-            self._offcputime.attachment,
-            self._llcstat.attachment,
-            self._strace.attachment,
+            # self._klockstat.attachment,
+            # self._offcputime.attachment,
+            # self._llcstat.attachment,
+            # self._strace.attachment,
             self._threadprofiler.attachment,
             self._sigcont.attachment,
         ]
@@ -51,10 +51,10 @@ class SpeedupStackWrapper(CommandWrapper):
 
     def post_run_hooks(self):
         return [
-            self._klockstat.post_run_hook,
-            self._offcputime.post_run_hook,
-            self._llcstat.post_run_hook,
-            self._strace.post_run_hook,
+            # self._klockstat.post_run_hook,
+            # self._offcputime.post_run_hook,
+            # self._llcstat.post_run_hook,
+            # self._strace.post_run_hook,
             self._threadprofiler.post_run_hook,
         ]
 
