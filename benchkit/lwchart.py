@@ -152,6 +152,16 @@ def _generate_chart_from_df(
 
         colors = sns.color_palette("pastel")
 
+        pretty_compontent_names = {
+            "measured": "Measured",
+            "other": "Other",
+            "threadprofiler_initialization_ns": "Initialization",
+            "threadprofiler_offcpu_ns": "Off-CPU Time",
+            "threadprofiler_mutex_ns": "Mutex",
+            "threadprofiler_futex_ns": "Futex",
+            "threadprofiler_disk_io_ns": "Disk IO",
+        }
+
         for ax, bench in zip(axes, bench_names):
             bench_df = df[df["bench_name"] == bench]
 
@@ -181,7 +191,7 @@ def _generate_chart_from_df(
                     vals,
                     bottom=component_bottom,
                     width=widths,
-                    label=component_name,
+                    label=pretty_compontent_names[component_name],
                     color=color,
                 )
                 bottom += [
