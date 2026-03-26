@@ -58,9 +58,47 @@ make -j
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./klockstat
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./offcputime
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./llcstat
-sudo setcap cap_sys_ptrace+ep /usr/bin/strace
+sudo setcap cap_sys_ptrace+ep $(which strace)
 cd ../../..
 ```
+
+The latest versions of strace on Ubuntu 24.04 contain a number of bugs.
+If you encounter some of them please compile and install the latest strace version.
+
+```bash
+sudo apt update
+sudo apt install git build-essential autoconf automake libtool \
+                 pkg-config libunwind-dev
+git clone https://github.com/strace/strace.git
+cd strace
+./bootstrap
+./configure
+make -j
+sudo make install
+```
+
+
+Cloning and compiling the thread-profiler-bpf dependency
+
+```bash
+cd deps/
+# git clone https://github.com/theodegeest/thread-profiler-bpf.git --recursive
+git clone git@github.com:theodegeest/thread-profiler-bpf.git --recursive
+cd thread-profiler-bpf/
+make install
+make -j
+sudo setcap cap_sys_resource,cap_sys_admin+eip ./src/thread-profiler
+sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_fork
+sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_exit
+# sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_enter_read
+# sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_read
+sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_issue
+sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_complete
+sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_enter_futex
+sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_futex
+cd ../..
+```
+
 
 Running the speedup stack campaign.
 ```
@@ -96,9 +134,25 @@ make -j
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./klockstat
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./offcputime
 sudo setcap cap_sys_resource,cap_sys_admin+eip ./llcstat
-sudo setcap cap_sys_ptrace+ep /usr/bin/strace
+sudo setcap cap_sys_ptrace+ep $(which strace)
 kill %1
 cd ../../..
+cd deps/
+# git clone https://github.com/theodegeest/thread-profiler-bpf.git --recursive
+git clone git@github.com:theodegeest/thread-profiler-bpf.git --recursive
+cd thread-profiler-bpf/
+make install
+make -j
+sudo setcap cap_sys_resource,cap_sys_admin+eip ./src/thread-profiler
+sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_fork
+sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_exit
+# sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_enter_read
+# sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_read
+sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_issue
+sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_complete
+sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_enter_futex
+sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_futex
+cd ../..
 ./campaign_rocksdb_speedup_stacks.py
 ```
 
