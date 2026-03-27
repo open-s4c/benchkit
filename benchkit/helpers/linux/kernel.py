@@ -8,12 +8,7 @@ configuring, compiling and installing.
 import pathlib
 from typing import Dict, Iterable, List
 
-from benchkit.helpers.linux.build import (
-    KernelEntry,
-    LinuxBuild,
-    Option,
-    configure_standard_kernel,
-)
+from benchkit.helpers.linux.build import KernelEntry, LinuxBuild, Option, configure_standard_kernel
 from benchkit.shell.shell import shell_out
 from benchkit.utils.types import PathType
 
