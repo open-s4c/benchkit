@@ -352,7 +352,7 @@ class Adapted(BenchmarkOld):
         validate_benchmark(bench=self.benchmark)
 
         fetch_args = _check_fetch_args(benchmark=self.benchmark, parameter_space=args)
-        self._session_fetch = self._stepper.fetch(args=fetch_args, record_dir=record_dir)
+        self._session_fetch = self._stepper.fetch(args=fetch_args)
 
     @property
     def bench_src_path(self) -> Path:
@@ -448,6 +448,7 @@ class Adapted(BenchmarkOld):
             session=self._last_session_build,
             args=run_args,
             duration_s=duration_s,
+            record_dir=record_data_dir,
             ctx_transform=_transform_run_ctx,
         )
         return self._last_session_run.run_result.outputs[-1].stdout
