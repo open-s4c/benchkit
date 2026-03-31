@@ -160,6 +160,8 @@ def _generate_chart_from_df(
             "threadprofiler_mutex_ns": "Mutex",
             "threadprofiler_futex_ns": "Futex",
             "threadprofiler_disk_io_ns": "Disk IO",
+            "threadprofiler_literature_load_imbalance_ns": "Load Imbalance (Literature)",
+            "threadprofiler_proposed_load_imbalance_ns": "Load Imbalance (Proposed)",
         }
 
         for ax, bench in zip(axes, bench_names):
@@ -512,7 +514,7 @@ def _get_speedup_data(
     multithreaded_df = mean_df[mean_df["nb_threads"] != 1]
     data: dict[int, dict[str, float]] = {}
 
-    for _, row in multithreaded_df.iterrows():
+    for _, row in mean_df.iterrows():
         nb_threads = row["nb_threads"]
 
         duration = row["duration"]
@@ -545,6 +547,7 @@ def _get_speedup_data(
         #     )
 
         # TODO: maybe migrate the *nb_threads to the components
+        #       Even better remove the mean() from the component and the *nb_threads here
         slowdown_components = {
             # name: (func(row[name], nb_threads) / duration)
             name: (

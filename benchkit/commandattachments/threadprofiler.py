@@ -215,12 +215,12 @@ class ThreadProfiler:
         # Detect the benchmarking threads using heuristic
         # For now the heuristic will contain two part:
         # 1. There are exactly nb_threads benchmarking threads
-        # 2. The benchmarking threads are the most scheduled in of all the threads
+        # 2. The benchmarking threads perform the most 'useful' of all the threads
         #    with the pid of the benchmark
-        def sorting_key(x: Tuple[int, dict]) -> int:
+        def add_thread_useful_work(x: Tuple[int, dict]) -> None:
             merged_block = x[1]["merged"]
             block_duration = merged_block["block_end_time_ns"] - merged_block["block_start_time_ns"]
-            return (
+            merged_block["useful_work_time_ns"] = (
                 block_duration
                 - merged_block["offcpu_time_ns"]
                 - merged_block["mutex_time_ns"]
@@ -228,17 +228,36 @@ class ThreadProfiler:
                 - merged_block["disk_io_time_ns"]
             )
 
+        def get_thread_useful_work(x: Tuple[int, dict]) -> int:
+            return x[1]["merged"]["useful_work_time_ns"]
+
+        def benchmarking_thread_exit(x: Tuple[int, dict]) -> int:
+            merged_block = x[1]["merged"]
+            return merged_block["block_end_time_ns"]
+
         per_thread_list = list(per_thread_dict.items())
 
         if len(per_thread_list) == 0:
             return {}
 
-        sorted_by_schedule_in = sorted(per_thread_list, key=sorting_key, reverse=True)
+        for thread in per_thread_list:
+            add_thread_useful_work(thread)
+
+        sorted_by_useful_work = sorted(per_thread_list, key=get_thread_useful_work, reverse=True)
 
         # __import__("pprint").pprint(sorted_by_schedule_in)
 
-        benchmarking_threads = sorted_by_schedule_in[: self._nb_threads]
+        benchmarking_threads = sorted_by_useful_work[: self._nb_threads]
+        # __import__("pprint").pprint(benchmarking_threads)
         benchmarking_tids = list(map(lambda x: x[0], benchmarking_threads))
+
+        last_benchmarking_thread_to_exit_time_ns = max(
+            list(map(benchmarking_thread_exit, benchmarking_threads))
+        )
+
+        max_useful_work_time_ns = benchmarking_threads[0][1]["merged"]["useful_work_time_ns"]
+
+        # print("max_useful_work_time_ns", max_useful_work_time_ns)
 
         # To find the main thread we use the property that the spawned threads
         # have higher TIDs than their parent
@@ -277,10 +296,39 @@ class ThreadProfiler:
             mean(list(map(lambda x: x[1]["merged"]["disk_io_time_ns"], benchmarking_threads)))
         )
 
+        mean_literature_load_imbalance_time_ns = int(
+            mean(
+                list(
+                    map(
+                        lambda x: last_benchmarking_thread_to_exit_time_ns
+                        - x[1]["merged"]["block_end_time_ns"],
+                        benchmarking_threads,
+                    )
+                )
+            )
+        )
+
+        print("mean_literature_load_imbalance_time_ns:", mean_literature_load_imbalance_time_ns)
+
+        mean_propoped_load_imbalance_time_ns = int(
+            mean(
+                list(
+                    map(
+                        lambda x: max_useful_work_time_ns - x[1]["merged"]["useful_work_time_ns"],
+                        benchmarking_threads,
+                    )
+                )
+            )
+        )
+
+        print("mean_propoped_load_imbalance_time_ns:", mean_propoped_load_imbalance_time_ns)
+
         return {
             "threadprofiler_initialization_ns": mean_initialization_time,
             "threadprofiler_offcpu_ns": mean_offcpu_time_ns,
             "threadprofiler_mutex_ns": mean_mutex_time_ns,
             "threadprofiler_futex_ns": mean_futex_time_ns,
             "threadprofiler_disk_io_ns": mean_disk_io_time_ns,
+            "threadprofiler_literature_load_imbalance_ns": mean_literature_load_imbalance_time_ns,
+            "threadprofiler_proposed_load_imbalance_ns": mean_propoped_load_imbalance_time_ns,
         }
