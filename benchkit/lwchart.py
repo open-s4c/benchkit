@@ -33,6 +33,7 @@ if any(importlib.util.find_spec(lib) is None for lib in libs):
     FacetGrid = Any
 else:
     import matplotlib.pyplot as plt
+    import matplotlib.ticker as mticker
     import pandas as pd
     import seaborn as sns
     from matplotlib.axes import Axes
@@ -171,7 +172,7 @@ def _generate_chart_from_df(
             # speedup_data = dict(sorted(speedup_data.items()))
             __import__("pprint").pprint(speedup_data)
 
-            ind = np.arange(len(speedup_data))
+            ind = np.arange(1, len(speedup_data) + 1)
             bottom = np.zeros(len(speedup_data))
             top_positive = np.zeros(len(speedup_data))
 
@@ -203,10 +204,9 @@ def _generate_chart_from_df(
                     0 if slowdown else val for val, slowdown in zip(vals, slowdown_component_bitmap)
                 ]
 
+            ax.xaxis.set_major_locator(mticker.MaxNLocator(integer=True))
             ax.set_title(bench)
             ax.set_xlabel("Number of Threads")
-            ax.set_xticks(ind)
-            ax.set_xticklabels([str(k) for k in speedup_data.keys()])
             if ax is axes[0]:
                 ax.set_ylabel("Speedup")
             ax.legend(loc="upper left", fontsize=15)
