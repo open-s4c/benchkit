@@ -17,7 +17,7 @@ from benchkit.utils.types import PathType
 
 class SpeedupStackWrapper(CommandWrapper):
     def __init__(
-        self, libbpf_tools_dir: PathType, thread_profiler_dir: PathType, granularity: int = int(1e8)
+        self, libbpf_tools_dir: PathType, thread_profiler_dir: PathType
     ) -> None:
         self._libbpf_tools_dir = libbpf_tools_dir
 
@@ -27,7 +27,7 @@ class SpeedupStackWrapper(CommandWrapper):
         self._strace = StraceWrap(
             pid=True, summary=False, summary_only=True, filter_syscalls=["futex"]
         )
-        self._threadprofiler = ThreadProfiler(thread_profiler_dir, granularity=granularity)
+        self._threadprofiler = ThreadProfiler(thread_profiler_dir)
 
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)

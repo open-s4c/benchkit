@@ -37,7 +37,6 @@ class ThreadProfiler:
         thread_profiler_dir: PathType,
         pid: bool = True,
         tid: int = -1,
-        granularity: int = -1,
         platform: Platform = None,
     ) -> None:
 
@@ -49,7 +48,7 @@ class ThreadProfiler:
         self._thread_profiler_dir = thread_profiler_dir
         self._pid = pid
         self._tid = tid
-        self._granularity_ns = granularity
+        self._granularity_ns = int(1e8)
         self._per_run_per_thread_profile = {}
         self._run_counter = 1
 
@@ -117,6 +116,8 @@ class ThreadProfiler:
 
         if "threadprofiler_enabled" in run_variables:
             self._enabled = run_variables["threadprofiler_enabled"]
+        if "threadprofiler_granularity" in run_variables:
+            self._granularity_ns = run_variables["threadprofiler_granularity"]
 
     def post_run_hook(
         self,

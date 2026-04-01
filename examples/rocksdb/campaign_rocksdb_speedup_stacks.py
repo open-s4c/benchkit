@@ -24,7 +24,7 @@ def main() -> None:
     speedupstackwrapper = SpeedupStackWrapper(
         libbpf_tools_dir,
         thread_profiler_dir,
-        granularity=int(1e8),
+        # granularity=int(1e8),
     )
 
     campaign = rocksdb_campaign(
