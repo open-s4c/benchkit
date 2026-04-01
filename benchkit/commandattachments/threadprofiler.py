@@ -309,8 +309,6 @@ class ThreadProfiler:
             )
         )
 
-        print("mean_literature_load_imbalance_time_ns:", mean_literature_load_imbalance_time_ns)
-
         mean_propoped_load_imbalance_time_ns = int(
             mean(
                 list(
@@ -321,8 +319,6 @@ class ThreadProfiler:
                 )
             )
         )
-
-        print("mean_propoped_load_imbalance_time_ns:", mean_propoped_load_imbalance_time_ns)
 
         return {
             "threadprofiler_initialization_ns": mean_initialization_time,
