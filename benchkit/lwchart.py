@@ -163,6 +163,10 @@ def _generate_chart_from_df(
             "threadprofiler_disk_io_ns": "Disk IO",
             "threadprofiler_literature_load_imbalance_ns": "Load Imbalance (Literature)",
             "threadprofiler_proposed_load_imbalance_ns": "Load Imbalance (Proposed)",
+            "klockstat_total_wait_ns": "Klockstats",
+            "offcputime_total_micro_s": "Offcputime",
+            "llcstat_total_nr_misses": "LLCStat",
+            "strace_total_time_s": "Strace",
         }
 
         for ax, bench in zip(axes, bench_names):
@@ -550,11 +554,15 @@ def _get_speedup_data(
         #       Even better remove the mean() from the component and the *nb_threads here
         slowdown_components = {
             # name: (func(row[name], nb_threads) / duration)
+            # name: (
+            #     (func(row[name], nb_threads) / duration)
+            #     - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
+            # )
+            # * nb_threads
             name: (
                 (func(row[name], nb_threads) / duration)
                 - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
             )
-            * nb_threads
             for name, func in speedup_stack_components.items()
         }
 

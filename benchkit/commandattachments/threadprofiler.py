@@ -271,8 +271,8 @@ class ThreadProfiler:
         main_thread_start_ts = main_thread_merged["block_start_time_ns"]
         total_run_duration = main_thread_merged["block_end_time_ns"] - main_thread_start_ts
 
-        mean_initialization_time = int(
-            mean(
+        total_initialization_time = int(
+            sum(
                 list(
                     map(
                         lambda x: x[1]["merged"]["block_start_time_ns"] - main_thread_start_ts,
@@ -284,21 +284,21 @@ class ThreadProfiler:
 
         # Combine the benchmarking thread merged profile blocks to create the slowdown components
 
-        mean_offcpu_time_ns = int(
-            mean(list(map(lambda x: x[1]["merged"]["offcpu_time_ns"], benchmarking_threads)))
+        total_offcpu_time_ns = int(
+            sum(list(map(lambda x: x[1]["merged"]["offcpu_time_ns"], benchmarking_threads)))
         )
-        mean_mutex_time_ns = int(
-            mean(list(map(lambda x: x[1]["merged"]["mutex_time_ns"], benchmarking_threads)))
+        total_mutex_time_ns = int(
+            sum(list(map(lambda x: x[1]["merged"]["mutex_time_ns"], benchmarking_threads)))
         )
-        mean_futex_time_ns = int(
-            mean(list(map(lambda x: x[1]["merged"]["futex_time_ns"], benchmarking_threads)))
+        total_futex_time_ns = int(
+            sum(list(map(lambda x: x[1]["merged"]["futex_time_ns"], benchmarking_threads)))
         )
-        mean_disk_io_time_ns = int(
-            mean(list(map(lambda x: x[1]["merged"]["disk_io_time_ns"], benchmarking_threads)))
+        total_disk_io_time_ns = int(
+            sum(list(map(lambda x: x[1]["merged"]["disk_io_time_ns"], benchmarking_threads)))
         )
 
-        mean_literature_load_imbalance_time_ns = int(
-            mean(
+        total_literature_load_imbalance_time_ns = int(
+            sum(
                 list(
                     map(
                         lambda x: last_benchmarking_thread_to_exit_time_ns
@@ -309,8 +309,8 @@ class ThreadProfiler:
             )
         )
 
-        mean_propoped_load_imbalance_time_ns = int(
-            mean(
+        total_propoped_load_imbalance_time_ns = int(
+            sum(
                 list(
                     map(
                         lambda x: max_useful_work_time_ns - x[1]["merged"]["useful_work_time_ns"],
@@ -321,11 +321,11 @@ class ThreadProfiler:
         )
 
         return {
-            "threadprofiler_initialization_ns": mean_initialization_time,
-            "threadprofiler_offcpu_ns": mean_offcpu_time_ns,
-            "threadprofiler_mutex_ns": mean_mutex_time_ns,
-            "threadprofiler_futex_ns": mean_futex_time_ns,
-            "threadprofiler_disk_io_ns": mean_disk_io_time_ns,
-            "threadprofiler_literature_load_imbalance_ns": mean_literature_load_imbalance_time_ns,
-            "threadprofiler_proposed_load_imbalance_ns": mean_propoped_load_imbalance_time_ns,
+            "threadprofiler_initialization_ns": total_initialization_time,
+            "threadprofiler_offcpu_ns": total_offcpu_time_ns,
+            "threadprofiler_mutex_ns": total_mutex_time_ns,
+            "threadprofiler_futex_ns": total_futex_time_ns,
+            "threadprofiler_disk_io_ns": total_disk_io_time_ns,
+            "threadprofiler_literature_load_imbalance_ns": total_literature_load_imbalance_time_ns,
+            "threadprofiler_proposed_load_imbalance_ns": total_propoped_load_imbalance_time_ns,
         }
