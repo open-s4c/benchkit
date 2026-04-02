@@ -199,10 +199,15 @@ def shell_out(
         sys.stderr.flush()
 
         if retcode:
-            raise subprocess.CalledProcessError(
-                retcode,
-                process.args,
-            )
+            if ignore_any_error_code:
+                pass
+            elif retcode in ignore_ret_codes:
+                pass
+            else:
+                raise subprocess.CalledProcessError(
+                    retcode,
+                    process.args,
+                )
     else:
         try:
             if std_input is not None:
