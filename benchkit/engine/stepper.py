@@ -168,6 +168,7 @@ class Stepper:
         args: Vars,
         duration_s: int | None,
         *,
+        record_dir: Path | None = None,
         ctx_transform: RunCtxTransform | None = None,
     ) -> StepSession:
         run_args, default_args = _get_step_args(step_fn=self.bench.run, args=args)
@@ -177,6 +178,7 @@ class Stepper:
             run_args=run_args,
             default_args=default_args,
             duration_s=duration_s,
+            record_dir=record_dir,
         )
 
         if ctx_transform is not None:

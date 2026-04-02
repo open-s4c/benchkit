@@ -142,6 +142,7 @@ class BuildContext(BaseContext):
             ctx: The FetchContext from the previous phase.
             fetch_result: The result returned by the fetch phase.
             build_args: Build-specific arguments (e.g., compiler, optimization level).
+            default_args: Optional default arguments.
 
         Returns:
             A BuildContext instance ready for building.
@@ -203,6 +204,7 @@ class RunContext(BaseContext):
         run_args: Vars,
         default_args: Vars | None = None,
         duration_s: int | None = None,
+        record_dir: Path | None = None,
     ) -> "RunContext":
         """
         Create a RunContext from a completed build phase.
@@ -211,7 +213,9 @@ class RunContext(BaseContext):
             ctx: The BuildContext from the previous phase.
             build_result: The result returned by the build phase.
             run_args: Run-specific arguments (e.g., benchmark name, thread count).
+            default_args: Optional default arguments.
             duration_s: Optional duration limit in seconds.
+            record_dir: Optional per-run directory for storing artifacts.
 
         Returns:
             A RunContext instance ready for execution.
@@ -221,7 +225,7 @@ class RunContext(BaseContext):
             exec=ctx.exec,
             vars=ctx.vars,
             default_args=ctx.default_args | (default_args or {}),
-            record_dir=ctx.record_dir,
+            record_dir=ctx.record_dir if record_dir is None else record_dir,
             fetch_args=ctx.fetch_args,
             fetch_result=ctx.fetch_result,
             build_args=ctx.build_args,
