@@ -8,18 +8,22 @@ Example of campaign script for RocksDB benchmark.
 from rocksdb import rocksdb_campaign
 
 from benchkit.campaign import CampaignSuite
+from benchkit.commandwrappers.perf import enable_non_sudo_perf
 from benchkit.commandwrappers.speedupstack import SpeedupStackWrapper
 from benchkit.lwchart import time_transformation
+from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import get_curdir
 
 
 def main() -> None:
     """Main function of the campaign script."""
+    platform = get_current_platform()
+    enable_non_sudo_perf(comm_layer=platform.comm)
 
     rocksdb_src_dir = (get_curdir(__file__) / "deps/rocksdb/").resolve()
     libbpf_tools_dir = (get_curdir(__file__) / "deps/bcc/libbpf-tools/").resolve()
 
-    thread_profiler_dir = (get_curdir(__file__) / "deps/thread-profiler-bpf/src").resolve()
+    thread_profiler_dir = (get_curdir(__file__) / "deps/thread-profiler-bpf").resolve()
 
     speedupstackwrapper = SpeedupStackWrapper(
         libbpf_tools_dir,

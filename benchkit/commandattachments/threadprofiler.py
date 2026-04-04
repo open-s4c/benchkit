@@ -17,6 +17,7 @@ from numpy import mean
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
 from benchkit.commandattachments import wait_for_output
 from benchkit.platforms import Platform, get_current_platform
+from benchkit.shell.shell import shell_out
 from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
 
@@ -45,7 +46,7 @@ class ThreadProfiler:
         if not self.platform.comm.path_exists(thread_profiler_dir):
             raise ValueError("The provided thread_profiler_dir does not exist")
 
-        self._thread_profiler_dir = thread_profiler_dir
+        self._thread_profiler_dir = pathlib.Path(thread_profiler_dir).as_posix()
         self._pid = pid
         self._tid = tid
         self._granularity_ns = int(1e8)
@@ -58,6 +59,37 @@ class ThreadProfiler:
         self._nb_threads = 0
         self._enabled = True
 
+        print("Benchmarking Base CPI...")
+
+        base_cpi_perf_file = "base-cpi-output"
+
+        shell_out(
+            f"taskset -c 0 perf stat -e cycles,instructions --output {base_cpi_perf_file} "
+            + self._thread_profiler_dir
+            + "/base-cpi/base-cpi",
+            print_output=False,
+        )
+
+        cycles = 0
+        instructions = 0
+
+        with open(base_cpi_perf_file) as out_file:
+            for line in out_file.readlines():
+                line = line.rstrip()
+                sline = line.split()
+                if "cycles" in line:
+                    cycles = int(sline[0].replace(",", ""))
+
+                if "instructions" in line:
+                    instructions = int(sline[0].replace(",", ""))
+
+        if cycles == 0 or instructions == 0:
+            raise RuntimeError("Could not get cycles and / or instructions")
+
+        self._base_cpi = cycles / instructions
+
+        print("Base CPI:", self._base_cpi)
+
     def attachment(
         self,
         process: AsyncProcess,
@@ -69,9 +101,9 @@ class ThreadProfiler:
 
         rdd = pathlib.Path(record_data_dir)
 
-        lib_path = pathlib.Path(self._thread_profiler_dir).as_posix()
+        # lib_path = pathlib.Path(self._thread_profiler_dir).as_posix()
 
-        command = [lib_path + "/thread-profiler"]
+        command = [self._thread_profiler_dir + "/src/thread-profiler"]
 
         if self._pid:
             command.extend(["-p", str(process.pid)])
