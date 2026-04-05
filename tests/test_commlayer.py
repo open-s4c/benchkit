@@ -23,10 +23,7 @@ def main() -> None:
             platform = get_current_platform()
             print(platform)
         case Target.HARMONY:
-            from benchkit.devices.hdc import (
-                OpenHarmonyCommLayer,
-                OpenHarmonyDeviceConnector,
-            )
+            from benchkit.devices.hdc import OpenHarmonyCommLayer, OpenHarmonyDeviceConnector
 
             device = list(OpenHarmonyDeviceConnector.query_devices())[0]
             hdc = OpenHarmonyDeviceConnector.from_device(device)
