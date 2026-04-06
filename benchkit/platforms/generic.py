@@ -8,11 +8,7 @@ from typing import List
 
 from benchkit.communication import CommunicationLayer
 from benchkit.platforms import evenorder
-from benchkit.platforms.utils import (
-    get_nb_cpus_active,
-    get_nb_cpus_isolated,
-    get_nb_cpus_total,
-)
+from benchkit.platforms.utils import get_nb_cpus_active, get_nb_cpus_isolated, get_nb_cpus_total
 from benchkit.utils import lscpu
 
 
