@@ -176,6 +176,7 @@ def main() -> None:
             "threadprofiler_disk_io_ns": lambda d, nb_t: d,
             "threadprofiler_initialization_ns": lambda d, nb_t: d,
             "threadprofiler_literature_load_imbalance_ns": lambda d, nb_t: d,
+            "threadprofiler_cpi_overhead_ns": lambda d, nb_t: d,
         },
         constant_duration=True,
         speed_metric="operations/second",

@@ -20,6 +20,7 @@ from benchkit.platforms import Platform, get_current_platform
 from benchkit.shell.shell import shell_out
 from benchkit.shell.shellasync import AsyncProcess
 from benchkit.utils.types import PathType
+from examples.rocksdb.cpiperfstatwrap import CPIPerfStatWrap
 
 
 class ThreadProfiler:
@@ -36,6 +37,7 @@ class ThreadProfiler:
     def __init__(
         self,
         thread_profiler_dir: PathType,
+        cpi_perf: CPIPerfStatWrap,
         pid: bool = True,
         tid: int = -1,
         platform: Platform = None,
@@ -47,6 +49,7 @@ class ThreadProfiler:
             raise ValueError("The provided thread_profiler_dir does not exist")
 
         self._thread_profiler_dir = pathlib.Path(thread_profiler_dir).as_posix()
+        self._cpi_perf = cpi_perf
         self._pid = pid
         self._tid = tid
         self._granularity_ns = int(1e8)
@@ -123,7 +126,7 @@ class ThreadProfiler:
             current_dir=rdd,
         )
 
-        # Wait until klockstat has at least outputted something in the out file,
+        # Wait until threadprofiler has at least outputted something in the out file,
         # or the error file, in order to know that it has attached the eBPF.
         wait_for_output([rdd / self.out_file_name, rdd / self.err_file_name], self.platform)
 
@@ -174,7 +177,7 @@ class ThreadProfiler:
             with open(threadprofiler_err_file) as err_file:
                 for line in err_file.readlines():
                     print(line)
-                return {}
+                # return {}
 
         # This dictionary will hold all the aggregated values for each lock
         per_thread_dict: dict[int, dict] = defaultdict(
@@ -283,6 +286,38 @@ class ThreadProfiler:
         benchmarking_threads = sorted_by_useful_work[: self._nb_threads]
         # __import__("pprint").pprint(benchmarking_threads)
         benchmarking_tids = list(map(lambda x: x[0], benchmarking_threads))
+        benchmarking_thread_dict = dict(benchmarking_threads)
+        # __import__("pprint").pprint(benchmarking_thread_dict)
+
+        per_thread_cpi_stats = self._cpi_perf.get_current_run_stats()
+
+        benchmarking_thread_cpi_stats = {
+            tid: per_thread_cpi_stats[tid]
+            for tid in benchmarking_tids
+            if tid in per_thread_cpi_stats
+        }
+        print(
+            f"DEBUGPRINT[8]: threadprofiler.py:294: benchmarking_thread_cpi_stats={benchmarking_thread_cpi_stats}"
+        )
+
+        # TODO: base should come from the single threaded run I think.
+        #       If this is not the case we can not take the difference
+        #       between the single threaded overheads and the multithreaded overheads.
+        # Maybe not, the diff is between the components so there it might still be valid
+
+        def compute_cpi_overhead(tid: int) -> float:
+            cpi_increase = benchmarking_thread_cpi_stats[tid]["cpi"] - self._base_cpi
+            nr_overhead_cycles = per_thread_cpi_stats[tid]["instructions"] * cpi_increase
+            cycles = per_thread_cpi_stats[tid]["cycles"]
+            # TODO: time might need to be total thread time
+            time_ns = benchmarking_thread_dict[tid]["merged"]["useful_work_time_ns"]
+            overhead_ns = time_ns * (nr_overhead_cycles / cycles)
+
+            return overhead_ns
+
+        per_thread_cpi_increase = {
+            tid: compute_cpi_overhead(tid) for tid in benchmarking_thread_cpi_stats
+        }
 
         last_benchmarking_thread_to_exit_time_ns = max(
             list(map(benchmarking_thread_exit, benchmarking_threads))
@@ -352,6 +387,14 @@ class ThreadProfiler:
             )
         )
 
+        total_cpi_overhead_time_ns = int(
+            sum(
+                list(
+                    per_thread_cpi_increase.values(),
+                )
+            )
+        )
+
         return {
             "threadprofiler_initialization_ns": total_initialization_time,
             "threadprofiler_offcpu_ns": total_offcpu_time_ns,
@@ -360,4 +403,5 @@ class ThreadProfiler:
             "threadprofiler_disk_io_ns": total_disk_io_time_ns,
             "threadprofiler_literature_load_imbalance_ns": total_literature_load_imbalance_time_ns,
             "threadprofiler_proposed_load_imbalance_ns": total_propoped_load_imbalance_time_ns,
+            "threadprofiler_cpi_overhead_ns": total_cpi_overhead_time_ns,
         }

@@ -163,6 +163,7 @@ def _generate_chart_from_df(
             "threadprofiler_disk_io_ns": "Disk IO",
             "threadprofiler_literature_load_imbalance_ns": "Load Imbalance (Literature)",
             "threadprofiler_proposed_load_imbalance_ns": "Load Imbalance (Proposed)",
+            "threadprofiler_cpi_overhead_ns": "CPI Overhead",
             "klockstat_total_wait_ns": "Klockstats",
             "offcputime_total_micro_s": "Offcputime",
             "llcstat_total_nr_misses": "LLCStat",
@@ -315,7 +316,7 @@ def _generate_chart_from_df(
             # thread_profile = [thread_profiles[tid]["merged"]]
 
             for profile_block in thread_profile:
-                block_index = profile_block["block_index"]
+                # block_index = profile_block["block_index"]
                 block_start_time = profile_block["block_start_time_ns"]
                 block_end_time = profile_block["block_end_time_ns"]
                 # first_event_time = profile_block["first_event_time_ns"]

@@ -12,13 +12,13 @@ from benchkit.commandattachments.threadprofiler import ThreadProfiler
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.commandwrappers.strace import StraceWrap
 from benchkit.dependencies.packages import PackageDependency
+from benchkit.platforms import get_current_platform
 from benchkit.utils.types import PathType
+from examples.rocksdb.cpiperfstatwrap import CPIPerfStatWrap
 
 
 class SpeedupStackWrapper(CommandWrapper):
-    def __init__(
-        self, libbpf_tools_dir: PathType, thread_profiler_dir: PathType
-    ) -> None:
+    def __init__(self, libbpf_tools_dir: PathType, thread_profiler_dir: PathType) -> None:
         self._libbpf_tools_dir = libbpf_tools_dir
 
         self._klockstat = Klockstat(libbpf_tools_dir)
@@ -27,7 +27,8 @@ class SpeedupStackWrapper(CommandWrapper):
         self._strace = StraceWrap(
             pid=True, summary=False, summary_only=True, filter_syscalls=["futex"]
         )
-        self._threadprofiler = ThreadProfiler(thread_profiler_dir)
+        self._cpi_perf = CPIPerfStatWrap(events=["cycles", "instructions"])
+        self._threadprofiler = ThreadProfiler(thread_profiler_dir, self._cpi_perf)
 
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)
@@ -42,6 +43,12 @@ class SpeedupStackWrapper(CommandWrapper):
             # self._offcputime.attachment,
             # self._llcstat.attachment,
             # self._strace.attachment,
+            lambda process, record_data_dir: self._cpi_perf.attachment(
+                platform=get_current_platform(),
+                process=process,
+                record_data_dir=record_data_dir,
+                poll_ms=100,
+            ),
             self._threadprofiler.attachment,
             self._sigcont.attachment,
         ]
@@ -55,6 +62,8 @@ class SpeedupStackWrapper(CommandWrapper):
             # self._offcputime.post_run_hook,
             # self._llcstat.post_run_hook,
             # self._strace.post_run_hook,
+            # self.cpi_post_run_hook,
+            self._cpi_perf.post_run_hook,
             self._threadprofiler.post_run_hook,
         ]
 
