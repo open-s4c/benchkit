@@ -430,7 +430,7 @@ class PerfStatWrap(CommandWrapper):
         tids2perf_cmd = {}
 
         while not process.is_finished():
-            current_tids = ps.get_threads_of_process(pid=process.pid)
+            current_tids = ps.get_threads_of_process(pid=process.pid, ignore_any_error_code=True)
             for tid in current_tids:
                 if tid not in tids2perf_cmd:
                     value_pathname = record_data_dir / f"perf-stat-val-tid{tid}.txt"
