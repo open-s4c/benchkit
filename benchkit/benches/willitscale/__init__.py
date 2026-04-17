@@ -68,7 +68,6 @@ Example:
     >>> record["global_count"]
 """
 
-
 import re
 from pathlib import Path
 from typing import Iterable
@@ -78,7 +77,7 @@ from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResul
 from benchkit.core.bktypes.contexts import BuildContext, CollectContext, FetchContext, RunContext
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.utils.buildtools import build_dir_from_ctx, make
-from benchkit.utils.dir import caller_dir
+from benchkit.utils.dir import caller_dir, get_benches_dir
 from benchkit.utils.fetchtools import git_clone
 
 
@@ -98,7 +97,7 @@ class WillitscaleBench:
     def fetch(
         self,
         ctx: FetchContext,
-        parent_dir: Path,
+        parent_dir: Path | None = None,
         commit: str = "75f66e45697e6f5f49c33dd950c4e6b289198f8f",
         patches: Iterable[Path] = _PATCHES,
     ) -> FetchResult:
@@ -128,6 +127,8 @@ class WillitscaleBench:
             ...     patches=(Path("../../examples/willitscale/patch.diff").resolve()),
             ... )
         """
+
+        parent_dir = get_benches_dir(parent_dir=parent_dir)
 
         willitscale_dir = git_clone(
             ctx=ctx,
