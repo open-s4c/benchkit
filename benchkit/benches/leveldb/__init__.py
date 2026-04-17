@@ -295,6 +295,7 @@ class LevelDBBench:
                 - ofleft: Number of keys found (for read benchmarks, if reported).
                 - ofright: Total number of keys searched for (for read benchmarks,
                   if reported).
+                - duration_s: Total wall-clock execution time in seconds
 
         Raises:
             ValueError: If the expected benchstats line is missing or inconsistent
@@ -379,6 +380,9 @@ class LevelDBBench:
             if summary_re.group("ofleft") is not None:
                 record["ofleft"] = int(summary_re.group("ofleft"))
                 record["ofright"] = int(summary_re.group("ofright"))
+
+        duration_s = ctx.run_result.outputs[-1].duration_s
+        record["duration_s"] = duration_s
 
         return record
 
