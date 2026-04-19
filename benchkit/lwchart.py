@@ -568,7 +568,6 @@ def _get_speedup_data(
             #     - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
             # )
             # Difference between total overhead times
-            # TODO: The components must take duration_multiplier into account!
             name: (
                 (
                     func(row[name], nb_threads)
