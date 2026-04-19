@@ -177,7 +177,7 @@ def _generate_chart_from_df(
             # speedup_data = dict(sorted(speedup_data.items()))
             __import__("pprint").pprint(speedup_data)
 
-            ind = np.arange(1, len(speedup_data) + 1)
+            ind = np.arange(len(speedup_data))
             bottom = np.zeros(len(speedup_data))
             top_positive = np.zeros(len(speedup_data))
 
@@ -209,9 +209,11 @@ def _generate_chart_from_df(
                     0 if slowdown else val for val, slowdown in zip(vals, slowdown_component_bitmap)
                 ]
 
-            ax.xaxis.set_major_locator(mticker.MaxNLocator(integer=True))
             ax.set_title(bench)
             ax.set_xlabel("Number of Threads")
+            ax.set_xticks(ind)
+            ax.set_xticklabels([str(int(k)) for k in speedup_data.keys()])
+
             if ax is axes[0]:
                 ax.set_ylabel("Speedup")
             ax.legend(loc="upper left", fontsize=15)
@@ -525,7 +527,7 @@ def _get_speedup_data(
         duration = row["duration"]
 
         # how much more data the benchmark has collected
-        duration_muliplier = (
+        duration_multiplier = (
             row[speed_metric] / single_threaded_speed_metric if constant_duration else 1
         )
 
@@ -536,7 +538,7 @@ def _get_speedup_data(
         # perfect_speedup_duration = single_threaded_duration / nb_threads
         # measured_component = perfect_speedup_duration / duration
 
-        measured_speedup = single_threaded_duration / (duration / duration_muliplier)
+        measured_speedup = single_threaded_duration / (duration / duration_multiplier)
 
         # TODO: Make use of the known slowdowns in the single threaded execution
         # FIX: This introduces negative components. How should these be handled?
@@ -560,9 +562,19 @@ def _get_speedup_data(
             #     - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
             # )
             # * nb_threads
+            # Difference between components
+            # name: (
+            #     (func(row[name], nb_threads) / duration)
+            #     - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
+            # )
+            # Difference between total overhead times
+            # TODO: The components must take duration_multiplier into account!
             name: (
-                (func(row[name], nb_threads) / duration)
-                - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
+                (
+                    func(row[name], nb_threads)
+                    - ((func(single_threaded_row[name], nb_threads)) * duration_multiplier)
+                )
+                / duration
             )
             for name, func in speedup_stack_components.items()
         }

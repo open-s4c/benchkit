@@ -296,9 +296,6 @@ class ThreadProfiler:
             for tid in benchmarking_tids
             if tid in per_thread_cpi_stats
         }
-        print(
-            f"DEBUGPRINT[8]: threadprofiler.py:294: benchmarking_thread_cpi_stats={benchmarking_thread_cpi_stats}"
-        )
 
         # TODO: base should come from the single threaded run I think.
         #       If this is not the case we can not take the difference
