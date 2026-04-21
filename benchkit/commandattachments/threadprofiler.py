@@ -80,6 +80,8 @@ class ThreadProfiler:
             for line in out_file.readlines():
                 line = line.rstrip()
                 sline = line.split()
+                if "not counted" in line:
+                    continue
                 if "cycles" in line:
                     cycles = int(sline[0].replace(",", ""))
 
