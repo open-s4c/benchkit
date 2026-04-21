@@ -83,10 +83,10 @@ class ThreadProfiler:
                 if "not counted" in line:
                     continue
                 if "cycles" in line:
-                    cycles = int(sline[0].replace(",", ""))
+                    cycles += int(sline[0].replace(",", ""))
 
                 if "instructions" in line:
-                    instructions = int(sline[0].replace(",", ""))
+                    instructions += int(sline[0].replace(",", ""))
 
         if cycles == 0 or instructions == 0:
             raise RuntimeError("Could not get cycles and / or instructions")
