@@ -56,6 +56,8 @@ class CPIPerfStatWrap(PerfStatWrap):
                 )
 
                 for counter_stat in counter_stats:
+                    if "not counted" in counter_stat["counter-value"]:
+                        continue
                     tid_m = tid_re.search(counter_stat["thread"])
                     if tid_m:
                         tid = int(tid_m.group(1))
