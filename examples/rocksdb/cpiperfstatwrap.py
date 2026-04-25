@@ -41,7 +41,7 @@ class CPIPerfStatWrap(PerfStatWrap):
 
         tid_re = re.compile(r"^.*-(\d+).*$")
 
-        per_tid_counters: dict[int, dict] = defaultdict(lambda: {"cycles" : 0, "instructions" : 0})
+        per_tid_counters: dict[int, dict] = defaultdict(lambda: {"cycles": 0, "instructions": 0})
 
         # output_dict = {}
         for perf_stat_pathname in perf_stat_pathnames:
@@ -80,11 +80,16 @@ class CPIPerfStatWrap(PerfStatWrap):
                             "CPIPerfStatWrap encounterd an event name that is neither cycles nor instructions"
                         )
 
-                    per_tid_counters[tid][general_event_name] += float(counter_stat["counter-value"])
+                    per_tid_counters[tid][general_event_name] += float(
+                        counter_stat["counter-value"]
+                    )
 
         for tid, counters in per_tid_counters.items():
             if all(event in counters for event in ["cycles", "instructions"]):
-                counters["cpi"] = counters["cycles"] / counters["instructions"]
+                if counters["instructions"] != 0:
+                    counters["cpi"] = counters["cycles"] / counters["instructions"]
+                else:
+                    counters["cpi"] = 0
             else:
                 raise RuntimeError(
                     "CPIPerfStatWrap per_tid_counters did not contain either cycles or instructions"

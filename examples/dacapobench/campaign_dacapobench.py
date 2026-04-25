@@ -20,7 +20,7 @@ def main() -> None:
     enable_non_sudo_perf(comm_layer=platform.comm)
 
     # Where is the benchmark code located
-    dacapobench_src_dir = (caller_dir() / "deps/dacapobench/benchmarks/").resolve()
+    dacapobench_src_dir = (caller_dir() / "deps/dacapobench/").resolve()
 
     speedupstackwrapper = JavaSpeedupStackWrapper()
 
@@ -52,7 +52,7 @@ def main() -> None:
             # "tradesoap",
             "xalan",
             # "zxing",
-            # "h2o", # Not supported due missing data
+            # "h2o",
         ],
         nb_runs=3,
         benchmark_duration_seconds=3,

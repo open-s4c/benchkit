@@ -35,6 +35,7 @@ supported_bench_names = [
     "tradesoap",
     "xalan",
     "zxing",
+    "h2o"
 ]
 
 
@@ -136,40 +137,7 @@ class DacapobenchBench(Benchmark):
         bench_name: str,
         **kwargs,
     ) -> None:
-        if bench_name not in supported_bench_names:
-            raise ValueError(
-                f"Invalid bench_names for dacapobench: {bench_name}\n"
-                f"The supported bench names are: {supported_bench_names}."
-            )
-
-        benchmark_cache_file = "benchmark_cache.txt"
-
-        try:
-            with open(benchmark_cache_file, "r", encoding="utf-8") as f:
-                cached_benchmark = f.read()
-        except FileNotFoundError:
-            cached_benchmark = ""
-
-        should_clean = self.clean_in_between_different_benchmarks and cached_benchmark != bench_name
-
-        if should_clean:
-            self.platform.comm.shell(
-                command="ant clean",
-                current_dir=self._bench_src_path,
-                output_is_log=True,
-            )
-            if os.path.exists(benchmark_cache_file):
-                os.remove(benchmark_cache_file)
-            cached_benchmark = ""
-
-        if cached_benchmark != bench_name:
-            self.platform.comm.shell(
-                command=f"ant {bench_name}",
-                current_dir=self._bench_src_path,
-                output_is_log=True,
-            )
-            with open(benchmark_cache_file, "w", encoding="utf-8") as f:
-                f.write(bench_name)  # no newline added
+        pass
 
     def clean_bench(self) -> None:
         pass
@@ -191,7 +159,7 @@ class DacapobenchBench(Benchmark):
         run_command = [
             "java",
             "-jar",
-            "dacapo-evaluation-git-4e3de06d.jar",
+            "dacapo-23.11-MR2-chopin.jar",
             bench_name,
             f"--thread-count={nb_threads}",
             f"--size={size}",
