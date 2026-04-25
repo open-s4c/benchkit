@@ -18,7 +18,12 @@ from examples.rocksdb.cpiperfstatwrap import CPIPerfStatWrap
 
 
 class SpeedupStackWrapper(CommandWrapper):
-    def __init__(self, libbpf_tools_dir: PathType, thread_profiler_dir: PathType) -> None:
+    def __init__(
+        self,
+        libbpf_tools_dir: PathType,
+        thread_profiler_dir: PathType,
+        output_duration: bool = False,
+    ) -> None:
         self._libbpf_tools_dir = libbpf_tools_dir
 
         self._klockstat = Klockstat(libbpf_tools_dir)
@@ -28,7 +33,9 @@ class SpeedupStackWrapper(CommandWrapper):
             pid=True, summary=False, summary_only=True, filter_syscalls=["futex"]
         )
         self._cpi_perf = CPIPerfStatWrap(events=["cycles", "instructions"])
-        self._threadprofiler = ThreadProfiler(thread_profiler_dir, self._cpi_perf)
+        self._threadprofiler = ThreadProfiler(
+            thread_profiler_dir, self._cpi_perf, output_duration=output_duration
+        )
 
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)
@@ -47,7 +54,7 @@ class SpeedupStackWrapper(CommandWrapper):
                 platform=get_current_platform(),
                 process=process,
                 record_data_dir=record_data_dir,
-                poll_ms=100,
+                poll_ms=10,
             ),
             self._threadprofiler.attachment,
             self._sigcont.attachment,

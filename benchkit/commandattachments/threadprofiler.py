@@ -38,6 +38,7 @@ class ThreadProfiler:
         self,
         thread_profiler_dir: PathType,
         cpi_perf: CPIPerfStatWrap,
+        output_duration: bool = False,
         pid: bool = True,
         tid: int = -1,
         platform: Platform = None,
@@ -50,6 +51,7 @@ class ThreadProfiler:
 
         self._thread_profiler_dir = pathlib.Path(thread_profiler_dir).as_posix()
         self._cpi_perf = cpi_perf
+        self._output_duration = output_duration
         self._pid = pid
         self._tid = tid
         self._granularity_ns = int(1e8)
@@ -394,7 +396,7 @@ class ThreadProfiler:
             )
         )
 
-        return {
+        return_dict = {
             "threadprofiler_initialization_ns": total_initialization_time,
             "threadprofiler_offcpu_ns": total_offcpu_time_ns,
             "threadprofiler_mutex_ns": total_mutex_time_ns,
@@ -404,3 +406,8 @@ class ThreadProfiler:
             "threadprofiler_proposed_load_imbalance_ns": total_propoped_load_imbalance_time_ns,
             "threadprofiler_cpi_overhead_ns": total_cpi_overhead_time_ns,
         }
+
+        if self._output_duration:
+            return_dict["duration"] = total_run_duration
+
+        return return_dict
