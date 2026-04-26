@@ -40,6 +40,7 @@ def main() -> None:
         # input=("simmedium",),
         input=("simlarge",),
         # input=("native",),
+        # input=("simsmall", "simmedium", "simlarge",),
         bench_names=[
             # "blackscholes",
             # "bodytrack",
@@ -138,6 +139,7 @@ def main() -> None:
             "threadprofiler_literature_load_imbalance_ns": lambda d, nb_t: d,
             "threadprofiler_cpi_overhead_ns": lambda d, nb_t: d,
         },
+        # facet_by="input",
         # constant_duration=True,
         # speed_metric="operations/second",
     )

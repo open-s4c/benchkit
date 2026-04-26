@@ -94,29 +94,6 @@ class ParsecBench(Benchmark):
             "input",
         ]
 
-    @staticmethod
-    def _parse_results(
-        output: str,
-        bench_name: str,
-        nb_threads: int,
-    ) -> Dict[str, str]:
-        duration = ""
-        for line in output.split("\n"):
-
-            output_exceptions = ["lusearch"]
-            if bench_name in output_exceptions and line.startswith("===== DaCapo processed"):
-                splits = line.split(" ")
-                duration = splits[6]
-            elif (
-                bench_name not in output_exceptions
-                and line.startswith("===== DaCapo")
-                and "PASSED" in line
-            ):
-                splits = line.split(" ")
-                duration = splits[6]
-
-        return {"duration": duration}
-
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
             PackageDependency("openjdk-21-jdk"),

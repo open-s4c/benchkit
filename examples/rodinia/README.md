@@ -1,21 +1,26 @@
-# Example: PARSEC
+# Example: Rodinia
 
 
-## Pull PARSEC 
+## Pull Rodinia 
 
-This step requires 20 GB of free disk space
 
 ```bash
 mkdir -p deps
 cd deps/
-git clone git@github.com:cirosantilli/parsec-benchmark.git
-cd parsec-benchmark/
-git checkout d4d9afdd27bb
-git apply ../../parsec-run.patch 
-sudo apt-get install build-essential m4 x11proto-xext-dev libglu1-mesa-dev libxi-dev libxmu-dev libtbb-dev
-./get-inputs -n
-. env.sh
-cd ../../
+git clone git@github.com:JuliaParallel/rodinia.git
+cd rodinia/
+git checkout ec580f6
+git apply ../../rodina-benchmark.patch 
+cd openmp
+make -j
+cd ../data/bfs/inputGen/
+make
+./gen_dataset.sh
+cd ../../heartwall/
+make
+cd ../lud/
+make
+cd ../../../../
 ```
 
 ## Generate venv & configure it
@@ -98,6 +103,6 @@ cd ../..
 
 Running the speedup stack campaign.
 ```
-./campaign_parsec.py
+./campaign_rodinia.py
 ```
 

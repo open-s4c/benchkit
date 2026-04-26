@@ -137,18 +137,22 @@ def _generate_chart_from_df(
         chart.figure.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
         fig = chart.figure
     elif "speedup-stack" == plot_name:
+        facet_by_culumn = kwargs.get("facet_by", "bench_name")
+
+        facet_by_values = df[facet_by_culumn].unique()
+        n_facets = len(facet_by_values)
+
         bench_names = df["bench_name"].unique()
-        n_benches = len(bench_names)
 
         sns.set_theme()
         plt.rcParams["axes.labelsize"] = 20
         plt.rcParams["xtick.labelsize"] = 15
         plt.rcParams["ytick.labelsize"] = 15
-        fig, axes = plt.subplots(nrows=1, ncols=n_benches, figsize=(5 * n_benches, 8), sharey=True)
+        fig, axes = plt.subplots(nrows=1, ncols=n_facets, figsize=(5 * n_facets, 8), sharey=True)
 
         fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=24, y=0.98)
 
-        if n_benches == 1:
+        if n_facets == 1:
             axes = [axes]
 
         colors = sns.color_palette("pastel")
@@ -161,8 +165,8 @@ def _generate_chart_from_df(
             "threadprofiler_mutex_ns": "Mutex",
             "threadprofiler_futex_ns": "Futex",
             "threadprofiler_disk_io_ns": "Disk IO",
-            "threadprofiler_literature_load_imbalance_ns": "Load Imbalance (Literature)",
-            "threadprofiler_proposed_load_imbalance_ns": "Load Imbalance (Proposed)",
+            "threadprofiler_literature_load_imbalance_ns": "Load Imbalance",
+            "threadprofiler_proposed_load_imbalance_ns": "Load Imbalance",
             "threadprofiler_cpi_overhead_ns": "CPI Overhead",
             "klockstat_total_wait_ns": "Klockstats",
             "offcputime_total_micro_s": "Offcputime",
@@ -170,8 +174,8 @@ def _generate_chart_from_df(
             "strace_total_time_s": "Strace",
         }
 
-        for ax, bench in zip(axes, bench_names):
-            bench_df = df[df["bench_name"] == bench]
+        for ax, facet_value in zip(axes, facet_by_values):
+            bench_df = df[df[facet_by_culumn] == facet_value]
 
             speedup_data = _get_speedup_data(bench_df, **kwargs)
             # speedup_data = dict(sorted(speedup_data.items()))
@@ -209,16 +213,18 @@ def _generate_chart_from_df(
                     0 if slowdown else val for val, slowdown in zip(vals, slowdown_component_bitmap)
                 ]
 
-            ax.set_title(bench)
-            ax.set_xlabel("Number of Threads")
+            ax.set_title(str(facet_by_culumn) + ": " + str(facet_value))
+            # ax.set_xlabel("Number of Threads")
             ax.set_xticks(ind)
             ax.set_xticklabels([str(int(k)) for k in speedup_data.keys()])
 
             if ax is axes[0]:
                 ax.set_ylabel("Speedup")
-            ax.legend(loc="upper left", fontsize=15)
+                ax.legend(loc="upper left", fontsize=15)
 
+        # fig.legend(handles, labels, loc="upper center", ncol=4, fontsize=15)
         # plt.title(title + ": " + ", ".join(bench_names))
+        fig.supxlabel("Number of Threads", fontsize=20)
         plt.tight_layout()
         plt.show()
     elif "java-speedup-stack" == plot_name:
@@ -544,13 +550,16 @@ def _get_speedup_data(
         # FIX: This introduces negative components. How should these be handled?
         #      And what about the "other" component now?
 
+        # print("Start: ", nb_threads)
         # for name, func in speedup_stack_components.items():
         #     print(
         #         name,
         #         row[name],
         #         duration,
-        #         func(row[name], nb_threads),
-        #         func(row[name], nb_threads) / duration,
+        #         (
+        #             func(row[name], nb_threads)
+        #             - ((func(single_threaded_row[name], nb_threads)) * duration_multiplier)
+        #         ),
         #     )
 
         # TODO: maybe migrate the *nb_threads to the components

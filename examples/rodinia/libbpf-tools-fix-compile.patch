@@ -1,0 +1,84 @@
+diff --git a/libbpf-tools/Makefile b/libbpf-tools/Makefile
+index 66183659..427a5317 100644
+--- a/libbpf-tools/Makefile
++++ b/libbpf-tools/Makefile
+@@ -9,7 +9,7 @@ LIBBPF_SRC := $(abspath ../src/cc/libbpf/src)
+ LIBBPF_OBJ := $(abspath $(OUTPUT)/libbpf.a)
+ LIBBLAZESYM_SRC := $(abspath blazesym/target/release/libblazesym.a)
+ INCLUDES := -I$(OUTPUT) -I../src/cc/libbpf/include/uapi
+-CFLAGS := -g -O2 -Wall -Wmissing-field-initializers -Werror -Werror=undef
++CFLAGS := -g -O2 -Wall -Wmissing-field-initializers -Werror=undef
+ BPFCFLAGS := -g -O2 -Wall -Werror=undef
+ BPFCFLAGS_softirqs := $(BPFCFLAGS) -mcpu=v3
+ INSTALL ?= install
+@@ -25,7 +25,7 @@ CARGO ?= $(shell which cargo)
+ ifeq ($(strip $(CARGO)),)
+ USE_BLAZESYM ?= 0
+ else
+-USE_BLAZESYM ?= 1
++USE_BLAZESYM ?= 0
+ endif
+ endif
+ 
+diff --git a/libbpf-tools/klockstat.c b/libbpf-tools/klockstat.c
+index bf3b3abe..f2396d9b 100644
+--- a/libbpf-tools/klockstat.c
++++ b/libbpf-tools/klockstat.c
+@@ -1031,6 +1031,7 @@ int main(int argc, char **argv)
+ 	}
+ 
+ 	printf("Tracing mutex/sem lock events...  Hit Ctrl-C to end\n");
++	fflush(stdout);
+ 
+ 	for (i = 0; i < env.iterations && !exiting; i++) {
+ 		sleep(env.interval);
+diff --git a/libbpf-tools/llcstat.c b/libbpf-tools/llcstat.c
+index 5b53f50d..5b2851e8 100644
+--- a/libbpf-tools/llcstat.c
++++ b/libbpf-tools/llcstat.c
+@@ -241,6 +241,7 @@ int main(int argc, char **argv)
+ 		goto cleanup;
+ 
+ 	printf("Running for %ld seconds or Hit Ctrl-C to end.\n", env.duration);
++	fflush(stdout);
+ 
+ 	signal(SIGINT, sig_handler);
+ 
+diff --git a/libbpf-tools/offcputime.c b/libbpf-tools/offcputime.c
+index 776468b6..351ce2f6 100644
+--- a/libbpf-tools/offcputime.c
++++ b/libbpf-tools/offcputime.c
+@@ -224,6 +224,7 @@ static void print_map(struct ksyms *ksyms, struct syms_cache *syms_cache,
+ 			goto cleanup;
+ 		}
+ 		lookup_key = next_key;
++    goto skip_ustack;
+ 		if (val.delta == 0)
+ 			continue;
+ 		if (bpf_map_lookup_elem(sfd, &next_key.kern_stack_id, ip) != 0) {
+@@ -282,8 +283,7 @@ print_ustack:
+ 		}
+ 
+ skip_ustack:
+-		printf("    %-16s %s (%d)\n", "-", val.comm, next_key.pid);
+-		printf("        %lld\n\n", val.delta);
++		printf("(%s) %d %lld\n",val.comm, next_key.pid, val.delta);
+ 	}
+ 
+ cleanup:
+@@ -319,10 +319,11 @@ static void print_headers()
+ 	if (!print_header_threads())
+ 		printf(" all threads");
+ 
+-	if (env.duration < 99999999)
+-		printf(" for %d secs.\n", env.duration);
+-	else
+-		printf("... Hit Ctrl-C to end.\n");
++	if (env.duration < 99999999) printf(" for %d secs.\n", env.duration);
++	else printf("... Hit Ctrl-C to end.\n");
++
++  printf("Name PID Delta\n");
++  fflush(stdout);
+ }
+ 
+ int main(int argc, char **argv)
