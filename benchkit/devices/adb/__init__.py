@@ -579,6 +579,7 @@ class AndroidCommLayer(CommunicationLayer):
     def background_subprocess(
         self,
         command: Command,
+        stdin: PathType,
         stdout: PathType,
         stderr: PathType,
         cwd: PathType | None,
@@ -597,6 +598,7 @@ class AndroidCommLayer(CommunicationLayer):
 
         return subprocess.Popen(
             adb_command,
+            stdin=stdin,
             stdout=stdout,
             stderr=stderr,
             env=env,

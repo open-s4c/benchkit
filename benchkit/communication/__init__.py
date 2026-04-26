@@ -190,6 +190,7 @@ class CommunicationLayer:
     def background_subprocess(
         self,
         command: Command,
+        stdin: PathType,
         stdout: PathType,
         stderr: PathType,
         cwd: PathType | None,
@@ -201,6 +202,8 @@ class CommunicationLayer:
         Args:
             command (Command):
                 background command to run on the target host.
+            stdin (PathType):
+                path to the file where stdin input is located.
             stdout (PathType):
                 path to the file where to write the stdout output of the background process.
             stderr (PathType):
@@ -620,6 +623,7 @@ class LocalCommLayer(CommunicationLayer):
     def background_subprocess(
         self,
         command: Command,
+        stdin: PathType,
         stdout: PathType,
         stderr: PathType,
         cwd: PathType | None,
@@ -630,6 +634,7 @@ class LocalCommLayer(CommunicationLayer):
         # This allows to easily kill all children of this background process
         return subprocess.Popen(
             command,
+            stdin=stdin,
             stdout=stdout,
             stderr=stderr,
             cwd=cwd,
@@ -787,6 +792,7 @@ class SSHCommLayer(CommunicationLayer):
     def background_subprocess(
         self,
         command: Command,
+        stdin: PathType,
         stdout: PathType,
         stderr: PathType,
         cwd: PathType | None,
@@ -803,6 +809,7 @@ class SSHCommLayer(CommunicationLayer):
         # This allows to easily kill all children of this background process
         return subprocess.Popen(
             full_command,
+            stdin=stdin,
             stdout=stdout,
             stderr=stderr,
             env=env,

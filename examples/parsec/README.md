@@ -14,7 +14,7 @@ git checkout d4d9afdd27bb
 git apply ../../parsec-run.patch 
 sudo apt-get install build-essential m4 x11proto-xext-dev libglu1-mesa-dev libxi-dev libxmu-dev libtbb-dev
 ./get-inputs -n
-# . env.sh
+. env.sh
 cd ../../
 ```
 

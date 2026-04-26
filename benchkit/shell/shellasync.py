@@ -36,6 +36,7 @@ class AsyncProcess:
         current_dir: Optional[PathType] = None,
         environment: Environment = None,
         ignore_ret_codes: Iterable[int] = (),
+        stdin_path: Optional[PathType] = None,
     ):
         self._platform = platform
         self._arguments = arguments
@@ -46,9 +47,11 @@ class AsyncProcess:
         self._stdout_handle = open(stdout_path, "w")
         self._error_code = None
         self._ignore_ret_codes = ignore_ret_codes
+        self._stdin_handle = open(stdin_path, "r") if stdin_path else None
 
         self._process = self._platform.comm.background_subprocess(
             arguments,
+            stdin=self._stdin_handle,
             stdout=self._stdout_handle,
             stderr=self._stderr_handle,
             cwd=current_dir,
@@ -121,6 +124,8 @@ class AsyncProcess:
         self._process.wait(timeout=timeout)
         self._error_code = self._process.returncode
 
+        if self._stdin_handle and not self._stdin_handle.closed:
+            self._stdin_handle.close()
         if not self._stdout_handle.closed:
             self._stdout_handle.flush()
         if not self._stderr_handle.closed:
@@ -252,6 +257,7 @@ def shell_async(
     print_curdir: bool = True,
     print_shell_cmd: bool = False,
     print_file_shell_cmd: bool = True,
+    stdin_path: Optional[PathType] = None,
 ) -> AsyncProcess:
     """
     Start an asynchronous shell command.
@@ -292,6 +298,8 @@ def shell_async(
             This allows to avoid an exception to be raised for commands that do not end with 0 even
             if they are successful.
             Defaults to ().
+        stdin_path (Optional[PathType]):
+            path for stdin.
 
     Returns:
         AsyncProcess: the handle of the newly created asynchronous process.
@@ -314,6 +322,7 @@ def shell_async(
     process = AsyncProcess(
         platform=platform,
         arguments=arguments,
+        stdin_path=stdin_path,
         stdout_path=stdout_path,
         stderr_path=stderr_path,
         current_dir=current_dir,

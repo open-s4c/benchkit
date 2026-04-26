@@ -1239,6 +1239,7 @@ class Benchmark:
             platform=self.platform,
             current_dir=current_dir,
             environment=wrapped_environment,
+            **kwargs,
         )
 
         return current_process

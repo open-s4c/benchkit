@@ -22,28 +22,10 @@ supported_bench_names = [
     "ferret",
     "fluidanimate",
     "freqmine",
-    "netdedup",
-    "netferret",
-    "netstreamcluster",
-    "raytrace",
     "streamcluster",
     "swaptions",
     "vips",
     "x264",
-    "splash2.barnes",
-    "splash2.cholesky",
-    "splash2.fft",
-    "splash2.fmm",
-    "splash2.lu_cb",
-    "splash2.lu_ncb",
-    "splash2.ocean_cp",
-    "splash2.ocean_ncp",
-    "splash2.radiosity",
-    "splash2.radix",
-    "splash2.raytrace",
-    "splash2.volrend",
-    "splash2.water_nsquared",
-    "splash2.water_spatial",
     "splash2x.barnes",
     "splash2x.cholesky",
     "splash2x.fft",
@@ -55,7 +37,6 @@ supported_bench_names = [
     "splash2x.radiosity",
     "splash2x.radix",
     "splash2x.raytrace",
-    "splash2x.volrend",
     "splash2x.water_nsquared",
     "splash2x.water_spatial",
 ]
@@ -180,7 +161,6 @@ class ParsecBench(Benchmark):
         pre_run_command = None
         for line in pre_pre_run_ouput.splitlines():
             sline = line.strip()
-            print(sline)
 
             if "[Benchmark PARSECDIR]" in sline:
                 m = re.search(r"^.*\[Benchmark PARSECDIR\]:(\S+)\s*$", sline)
@@ -218,8 +198,9 @@ class ParsecBench(Benchmark):
 
         pre_run_script = pre_run_command.split(" ")[0]
 
+        stdin_file = None
         run_command = None
-        if bench_name.startswith("splash2x"):
+        if bench_name.startswith("splash2"):
 
             if not pre_run_script.endswith(".sh"):
                 raise RuntimeError("The pre_run_script does not end with .sh")
@@ -233,7 +214,7 @@ class ParsecBench(Benchmark):
                 sline = line.strip()
 
                 if sline.startswith("echo") and "Running $RUN" in sline:
-                    new_lines.append('echo "[Benchmark Run Command]:$RUN:" ')
+                    new_lines.append('echo "[Benchmark Run Command]:$RUN" ')
                 elif sline.startswith("eval") and "$RUN" in sline:
                     new_lines.append(":")
                 else:
@@ -251,12 +232,17 @@ class ParsecBench(Benchmark):
 
             for line in pre_run_ouput.splitlines():
                 sline = line.strip()
-                print(sline)
 
                 if "[Benchmark Run Command]" in sline:
                     m = re.search(r"^.*\[Benchmark Run Command\]:(.+)\s*$", sline)
                     if m:
-                        run_command = m.group(1).split(" ")
+                        cmd = m.group(1)
+                        if "<" in cmd:
+                            left, right = cmd.split("<", 1)
+                            run_command = left.strip().split(" ")
+                            stdin_file = run_dir + "/" + right.strip()
+                        else:
+                            run_command = m.group(1).split(" ")
         else:
             run_command = pre_run_command.split(" ")
 
@@ -276,6 +262,7 @@ class ParsecBench(Benchmark):
             environment=environment,
             wrapped_environment=wrapped_environment,
             print_output=False,
+            stdin_path=stdin_file,
         )
         return output
 

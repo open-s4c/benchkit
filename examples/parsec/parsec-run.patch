@@ -1,7 +1,16 @@
 diff --git a/bin/parsecmgmt b/bin/parsecmgmt
-index 050186ef..4b69ce46 100755
+index 050186ef..d11ab4c7 100755
 --- a/bin/parsecmgmt
 +++ b/bin/parsecmgmt
+@@ -1025,7 +1025,7 @@ function build_package {
+   fi
+ 
+   # Run make
+-  local makecmd="env ${build_env} ${MAKE}"
++  local makecmd="env ${build_env} ${MAKE} -j"
+   eval echo "${oprefix} Running \'$makecmd\':" 2>&1 \| ${TEE} ${log}
+   eval \( ${makecmd} 2>&1 \) 2>&1 \| ${TEE} ${log} \; retval=\${PIPESTATUS[0]}
+   if [ "$retval" -ne "0" ]; then
 @@ -1234,11 +1234,15 @@ function run_benchmark {
        UPTCPIP_RX_THREADS=1
        export UPTCPIP_RX_THREADS

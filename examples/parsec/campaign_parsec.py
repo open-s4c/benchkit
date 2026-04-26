@@ -37,13 +37,35 @@ def main() -> None:
     campaign = parsec_campaign(
         src_dir=parsec_src_dir,
         # input=("simsmall",),
+        # input=("simmedium",),
         input=("simlarge",),
         # input=("native",),
         bench_names=[
-            "blackscholes",
+            # "blackscholes",
+            # "bodytrack",
+            # "canneal",  # TODO: fix benchmarking thread heuristic
+            # "dedup", # TODO: heuristic
+            # "facesim",
+            # "ferret",
+            # "fluidanimate",
+            # "freqmine",  # TODO: heuristic (no clue if thread parameter does something)
+            # "streamcluster",
+            # "swaptions",
+            # "vips",  # TODO: heuristic
+            # "x264",  # TODO: heuristic (Very weird profile)
+            "splash2x.barnes",
+            # "splash2x.cholesky",
             # "splash2x.fft",
+            # "splash2x.fmm",
+            # "splash2x.lu_cb",
+            # "splash2x.lu_ncb",
+            # "splash2x.ocean_cp",
+            # "splash2x.ocean_ncp",
+            # "splash2x.radiosity",
             # "splash2x.radix",
-            # "splash2x.cholesky", # Too short
+            # "splash2x.raytrace",
+            # "splash2x.water_nsquared",
+            # "splash2x.water_spatial",
         ],
         nb_runs=1,
         # benchmark_duration_seconds=3,
