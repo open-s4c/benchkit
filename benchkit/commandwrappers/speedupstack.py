@@ -10,6 +10,7 @@ from benchkit.commandattachments.offcputime import Offcputime
 from benchkit.commandattachments.signal import Signal
 from benchkit.commandattachments.threadprofiler import ThreadProfiler
 from benchkit.commandwrappers import CommandWrapper
+from benchkit.commandwrappers.jvmxlog import JVMXlogWrap
 from benchkit.commandwrappers.strace import StraceWrap
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import get_current_platform
@@ -23,7 +24,10 @@ class SpeedupStackWrapper(CommandWrapper):
         libbpf_tools_dir: PathType,
         thread_profiler_dir: PathType,
         output_duration: bool = False,
+        jvm_plugin: bool = False,
     ) -> None:
+        self._jvm_plugin = jvm_plugin
+
         self._libbpf_tools_dir = libbpf_tools_dir
 
         self._klockstat = Klockstat(libbpf_tools_dir)
@@ -37,11 +41,13 @@ class SpeedupStackWrapper(CommandWrapper):
             thread_profiler_dir, self._cpi_perf, output_duration=output_duration
         )
 
+        self._jvmxlogwrap = JVMXlogWrap()
+
         self._sigstop = Signal(signal_type=SIGSTOP)
         self._sigcont = Signal(signal_type=SIGCONT)
 
     def command_wrappers(self):
-        return []
+        return [self._jvmxlogwrap] if self._jvm_plugin else []
 
     def command_attachments(self):
         return [
@@ -61,7 +67,9 @@ class SpeedupStackWrapper(CommandWrapper):
         ]
 
     def pre_run_hooks(self):
-        return [self._threadprofiler.prerun_hook]
+        return [self._threadprofiler.prerun_hook] + (
+            [self._jvmxlogwrap.prerun_hook] if self._jvm_plugin else []
+        )
 
     def post_run_hooks(self):
         return [
@@ -72,7 +80,7 @@ class SpeedupStackWrapper(CommandWrapper):
             # self.cpi_post_run_hook,
             self._cpi_perf.post_run_hook,
             self._threadprofiler.post_run_hook,
-        ]
+        ] + ([self._jvmxlogwrap.post_run_hook_update_results] if self._jvm_plugin else [])
 
     def dependencies(self) -> List[PackageDependency]:
         """Dependencies of the command wrapper.
@@ -81,9 +89,9 @@ class SpeedupStackWrapper(CommandWrapper):
             List[PackageDependency]: list of dependencies.
         """
         deps = []
-        deps.extend(self._klockstat.dependencies())
-        deps.extend(self._offcputime.dependencies())
-        deps.extend(self._llcstat.dependencies())
+        # deps.extend(self._klockstat.dependencies())
+        # deps.extend(self._offcputime.dependencies())
+        # deps.extend(self._llcstat.dependencies())
 
         return deps
 

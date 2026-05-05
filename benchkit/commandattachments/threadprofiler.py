@@ -337,7 +337,8 @@ class ThreadProfiler:
         # Find initialization component
         main_thread_merged = main_thread_dict["merged"]
         main_thread_start_ts = main_thread_merged["block_start_time_ns"]
-        total_run_duration = main_thread_merged["block_end_time_ns"] - main_thread_start_ts
+        main_thread_end_ts = main_thread_merged["block_end_time_ns"]
+        total_run_duration = main_thread_end_ts - main_thread_start_ts
 
         total_initialization_time = int(
             sum(
@@ -349,6 +350,10 @@ class ThreadProfiler:
                 )
             )
         )
+
+        total_shutdown_time = (
+            main_thread_end_ts - last_benchmarking_thread_to_exit_time_ns
+        ) * self._nb_threads
 
         # Combine the benchmarking thread merged profile blocks to create the slowdown components
 
@@ -398,6 +403,7 @@ class ThreadProfiler:
 
         return_dict = {
             "threadprofiler_initialization_ns": total_initialization_time,
+            "threadprofiler_shutdown_ns": total_shutdown_time,
             "threadprofiler_offcpu_ns": total_offcpu_time_ns,
             "threadprofiler_mutex_ns": total_mutex_time_ns,
             "threadprofiler_futex_ns": total_futex_time_ns,

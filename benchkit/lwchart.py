@@ -161,6 +161,7 @@ def _generate_chart_from_df(
             "measured": "Measured",
             "other": "Other",
             "threadprofiler_initialization_ns": "Initialization",
+            "threadprofiler_shutdown_ns": "Shutdown",
             "threadprofiler_offcpu_ns": "Off-CPU Time",
             "threadprofiler_mutex_ns": "Mutex",
             "threadprofiler_futex_ns": "Futex",
@@ -172,7 +173,34 @@ def _generate_chart_from_df(
             "offcputime_total_micro_s": "Offcputime",
             "llcstat_total_nr_misses": "LLCStat",
             "strace_total_time_s": "Strace",
+            "jvmxlogwrap_gc_ms": "Garbage Collection",
         }
+
+        all_component_colors = {
+            name: color
+            for name, color in zip(
+                pretty_compontent_names.keys(),
+                sns.color_palette("pastel", len(pretty_compontent_names)),
+            )
+        }
+
+        hatches = [
+            "",
+            "/",
+            "\\",
+            "|",
+            "-",
+            "+",
+            "x",
+            "o",
+            "O",
+            ".",
+            "//",
+            "\\\\",
+            "xx",
+            "..",
+            "oo",
+        ]
 
         for ax, facet_value in zip(axes, facet_by_values):
             bench_df = df[df[facet_by_culumn] == facet_value]
@@ -181,46 +209,75 @@ def _generate_chart_from_df(
             # speedup_data = dict(sorted(speedup_data.items()))
             __import__("pprint").pprint(speedup_data)
 
-            ind = np.arange(len(speedup_data))
-            bottom = np.zeros(len(speedup_data))
-            top_positive = np.zeros(len(speedup_data))
+            threads = list(speedup_data.keys())
+            nr_different_threads = len(threads)
 
-            for component_name, color in zip(next(iter(speedup_data.values())).keys(), colors):
-                vals = [d[component_name] for d in speedup_data.values()]
+            nr_groups = len(next(iter(speedup_data.values())))
 
-                if component_name == "measured":
-                    top_positive += vals
+            ind = np.arange(nr_different_threads)
 
-                # print(component_name, vals)
-                slowdown_component_bitmap = [(val >= 0) for val in vals]
-                # print(slowdown_component_bitmap)
-                component_bottom = [
-                    bot if val >= 0 else top for val, bot, top in zip(vals, bottom, top_positive)
+            group_width = 0.8
+            max_bar_width = group_width / nr_groups
+
+            for group_idx in range(nr_groups):
+                bottom = np.zeros(nr_different_threads)
+                top_positive = np.zeros(nr_different_threads)
+
+                x = ind - group_width / 2 + group_idx * max_bar_width + max_bar_width / 2
+
+                component_names = ["measured", "other"] + [
+                    k for k in speedup_data[1][group_idx].keys() if k not in ("measured", "other")
                 ]
-                widths = [0.8 if val >= 0 else 0.4 for val in vals]
-                ax.bar(
-                    ind,
-                    vals,
-                    bottom=component_bottom,
-                    width=widths,
-                    label=pretty_compontent_names[component_name],
-                    color=color,
-                )
-                bottom += [
-                    val if slowdown else 0 for val, slowdown in zip(vals, slowdown_component_bitmap)
-                ]
-                top_positive += [
-                    0 if slowdown else val for val, slowdown in zip(vals, slowdown_component_bitmap)
-                ]
+
+                for component_name in component_names:
+                    vals = [speedup_data[thread][group_idx][component_name] for thread in threads]
+
+                    if component_name == "measured":
+                        top_positive += vals
+
+                    slowdown_component_bitmap = [val >= 0 for val in vals]
+
+                    component_bottom = [
+                        bot if val >= 0 else top
+                        for val, bot, top in zip(vals, bottom, top_positive)
+                    ]
+
+                    widths = [max_bar_width if val >= 0 else max_bar_width * 0.5 for val in vals]
+
+                    ax.bar(
+                        x,
+                        vals,
+                        bottom=component_bottom,
+                        width=widths,
+                        label=pretty_compontent_names[component_name],
+                        color=all_component_colors[component_name],
+                        hatch=hatches[
+                            list(all_component_colors.keys()).index(component_name) % len(hatches)
+                        ],
+                        edgecolor="black",  # IMPORTANT so hatch is visible
+                        linewidth=0.3,
+                        align="center",
+                    )
+
+                    bottom += [
+                        val if slowdown else 0
+                        for val, slowdown in zip(vals, slowdown_component_bitmap)
+                    ]
+
+                    top_positive += [
+                        0 if slowdown else val
+                        for val, slowdown in zip(vals, slowdown_component_bitmap)
+                    ]
 
             ax.set_title(str(facet_by_culumn) + ": " + str(facet_value))
-            # ax.set_xlabel("Number of Threads")
             ax.set_xticks(ind)
             ax.set_xticklabels([str(int(k)) for k in speedup_data.keys()])
 
             if ax is axes[0]:
                 ax.set_ylabel("Speedup")
-                ax.legend(loc="upper left", fontsize=15)
+                handles, labels = ax.get_legend_handles_labels()
+                by_label = dict(zip(labels, handles))
+                ax.legend(by_label.values(), by_label.keys(), loc="upper left", fontsize=15)
 
         # fig.legend(handles, labels, loc="upper center", ncol=4, fontsize=15)
         # plt.title(title + ": " + ", ".join(bench_names))
@@ -501,15 +558,16 @@ def time_transformation(
 def _get_speedup_data(
     df: DataFrame,
     duration_transformation: Optional[Callable[[float], float]],
-    speedup_stack_components: dict[str, Callable[[float, float], float]],
+    speedup_stack_components: List[dict[str, Callable[[float, float], float]]],
     constant_duration: bool = False,
     speed_metric: Optional[str] = None,
     **kwargs,
-) -> Dict[int, Dict[str, Any]]:
+) -> Dict[int, List[Dict[str, Any]]]:
+    speedup_stack_components_keys = [k for d in speedup_stack_components for k in d]
     mean_df = (
         df.groupby("nb_threads")[
             ["duration"]
-            + list(speedup_stack_components.keys())
+            + speedup_stack_components_keys
             + ([speed_metric] if constant_duration else [])
         ]
         .mean()
@@ -525,7 +583,7 @@ def _get_speedup_data(
     )
 
     multithreaded_df = mean_df[mean_df["nb_threads"] != 1]
-    data: dict[int, dict[str, float]] = {}
+    data: dict[int, List[dict[str, float]]] = {}
 
     for _, row in mean_df.iterrows():
         nb_threads = row["nb_threads"]
@@ -550,12 +608,12 @@ def _get_speedup_data(
         # FIX: This introduces negative components. How should these be handled?
         #      And what about the "other" component now?
 
-        # print("Start: ", nb_threads)
+        # print("Start: ", nb_threads, duration)
         # for name, func in speedup_stack_components.items():
         #     print(
         #         name,
         #         row[name],
-        #         duration,
+        #         func(row[name], nb_threads),
         #         (
         #             func(row[name], nb_threads)
         #             - ((func(single_threaded_row[name], nb_threads)) * duration_multiplier)
@@ -564,40 +622,55 @@ def _get_speedup_data(
 
         # TODO: maybe migrate the *nb_threads to the components
         #       Even better remove the mean() from the component and the *nb_threads here
-        slowdown_components = {
-            # name: (func(row[name], nb_threads) / duration)
-            # name: (
-            #     (func(row[name], nb_threads) / duration)
-            #     - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
-            # )
-            # * nb_threads
-            # Difference between components
-            # name: (
-            #     (func(row[name], nb_threads) / duration)
-            #     - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
-            # )
-            # Difference between total overhead times
-            name: (
-                (
-                    func(row[name], nb_threads)
-                    - ((func(single_threaded_row[name], nb_threads)) * duration_multiplier)
+        slowdown_components = [
+            {
+                # name: (func(row[name], nb_threads) / duration)
+                # name: (
+                #     (func(row[name], nb_threads) / duration)
+                #     - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
+                # )
+                # * nb_threads
+                # Difference between components
+                # name: (
+                #     (func(row[name], nb_threads) / duration)
+                #     - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
+                # )
+                # Difference between total overhead times
+                name: (
+                    (
+                        func(row[name], nb_threads)
+                        - ((func(single_threaded_row[name], nb_threads)) * duration_multiplier)
+                    )
+                    / duration
                 )
-                / duration
+                for name, func in component_dict.items()
+            }
+            for component_dict in speedup_stack_components
+        ]
+
+        for components in slowdown_components:
+            components["other"] = (
+                nb_threads
+                - measured_speedup
+                - sum(map(lambda x: x if x >= 0 else 0, components.values()))
             )
-            for name, func in speedup_stack_components.items()
-        }
+
+            components["measured"] = measured_speedup
 
         # other_component = nb_threads - measured_speedup - sum(slowdown_components.values())
-        other_component = (
-            nb_threads
-            - measured_speedup
-            - sum(map(lambda x: x if x >= 0 else 0, slowdown_components.values()))
-        )
+        # other_component = (
+        #     nb_threads
+        #     - measured_speedup
+        #     - sum(map(lambda x: x if x >= 0 else 0, slowdown_components.values()))
+        # )
 
-        data[nb_threads] = {
-            "measured": measured_speedup,
-            "other": other_component,
-        } | {name: component_value for name, component_value in slowdown_components.items()}
+        # data[nb_threads] = {
+        #     "measured": measured_speedup,
+        #     "other": other_component,
+        # } | {name: component_value for name, component_value in slowdown_components.items()}
+
+        data[nb_threads] = slowdown_components
+
     return data
 
 
@@ -605,27 +678,47 @@ def _get_java_speedup_data(
     df: DataFrame,
 ) -> Dict[str, Dict[str, Any]]:
     single_threaded_duration = df[df["nb_threads"] == 1]["duration"].values[0]
-    single_threaded_gc = df[df["nb_threads"] == 1]["gc"].values[0]
+    single_threaded_gc = df[df["nb_threads"] == 1]["jvmxlogwrap_gc_ms"].values[0]
     multithreaded_df = df[df["nb_threads"] != 1]
     data = {}
 
     for _, row in multithreaded_df.iterrows():
+        print(
+            "t:",
+            row["nb_threads"],
+            ", d:",
+            row["duration"],
+            ", s_gc:",
+            single_threaded_gc,
+            ", gc:",
+            row["jvmxlogwrap_gc_ms"],
+        )
         perfect_speedup_duration = single_threaded_duration / row["nb_threads"]
+        print(
+            f"DEBUGPRINT[88]: lwchart.py:616: perfect_speedup_duration={perfect_speedup_duration}"
+        )
 
         measured_component = perfect_speedup_duration / row["duration"]
-        gc_component = ((row["nb_threads"] * row["gc"]) - single_threaded_gc) / row["duration"]
+        print(f"DEBUGPRINT[89]: lwchart.py:619: measured_component={measured_component}")
+        gc_component = ((row["jvmxlogwrap_gc_ms"]) - single_threaded_gc) / row["duration"]
+        print(f"DEBUGPRINT[90]: lwchart.py:621: gc_component={gc_component}")
         sync_component = (row["context-switches"] / 1000) / row["duration"]
+        print(f"DEBUGPRINT[91]: lwchart.py:623: sync_component={sync_component}")
         lock_component = row["lock"] / row["duration"]
+        print(f"DEBUGPRINT[92]: lwchart.py:625: lock_component={lock_component}")
 
         other_component = 1 - measured_component - gc_component - sync_component - lock_component
+        print(f"DEBUGPRINT[93]: lwchart.py:628: other_component={other_component}")
 
         data[row["nb_threads"]] = {
             "measured": measured_component * row["nb_threads"],
-            "gc": gc_component * row["nb_threads"],
+            "gc": gc_component,
             "sync": sync_component * row["nb_threads"],
             "lock": lock_component * row["nb_threads"],
             "other": other_component * row["nb_threads"],
         }
+
+    print(data)
     return data
 
 
@@ -837,7 +930,7 @@ def _process_jsons(
     # TODO: The processing of json's is currently tightly linked with the
     # processing needed for speedup stacks.
     # This will need to be refactored in order to process arbitrary json.
-    data_columns = ["duration", "gc", "lock", "context-switches"]
+    data_columns = ["duration", "jvmxlogwrap_gc_ms", "lock", "context-switches"]
     information_columns = [
         "experiment_name",
         "benchmark_name",
