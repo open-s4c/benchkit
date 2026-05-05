@@ -6,12 +6,12 @@ Minimal example to run benchmarks from dacapobench.
 """
 
 
-from benchkit.commandwrappers.speedupstack import SpeedupStackWrapper
-from benchkit.lwchart import time_transformation
 from benchmark_dacapobench import dacapobench_campaign
 
 from benchkit.campaign import CampaignSuite
 from benchkit.commandwrappers.perf import enable_non_sudo_perf
+from benchkit.commandwrappers.speedupstack import SpeedupStackWrapper
+from benchkit.lwchart import time_transformation
 from benchkit.platforms import get_current_platform
 from benchkit.utils.dir import caller_dir, get_curdir
 
@@ -23,7 +23,6 @@ def main() -> None:
     # Where is the benchmark code located
     dacapobench_src_dir = (caller_dir() / "deps/dacapobench/").resolve()
 
-    rocksdb_src_dir = (get_curdir(__file__) / "deps/rocksdb/").resolve()
     libbpf_tools_dir = (get_curdir(__file__) / "deps/bcc/libbpf-tools/").resolve()
 
     thread_profiler_dir = (get_curdir(__file__) / "deps/thread-profiler-bpf").resolve()
@@ -32,6 +31,7 @@ def main() -> None:
         libbpf_tools_dir,
         thread_profiler_dir,
         # granularity=int(1e8),
+        jvm_plugin=True,
     )
 
     # Define the campaign, associated with the LevelDB benchmark
@@ -41,7 +41,7 @@ def main() -> None:
         size=("default",),
         # size=("large",),
         bench_names=[
-            # "avrora",
+            # "avrora", # Benchmarking threads are unclear
             # "batik",
             # "biojava",
             # "cassandra",
@@ -62,9 +62,29 @@ def main() -> None:
             # "tradesoap",
             "xalan",
             # "zxing",
-            # "h2o", # Not supported due missing data
+            # "h2o",
+        ],
+        start_heap_space=[
+            # "16m",
+            "32m",
+            # "64m",
+            # "128m",
+            # "512m",
+        ],
+        max_heap_space=[
+            # "16m",
+            "32m",
+            # "64m",
+            # "1g",
+            # "4g"
+        ],
+        garbage_collector=[
+            "G1GC",
+            # "SerialGC",
+            # "ParallelGC",
         ],
         nb_runs=1,
+        nb_iterations=[1],
         # benchmark_duration_seconds=3,
         nb_threads=[1, 2, 4, 8],
         command_wrappers=([speedupstackwrapper] + speedupstackwrapper.command_wrappers()),
@@ -94,47 +114,52 @@ def main() -> None:
     #     use_json=True,
     # )
 
-    # suite.generate_graph(
-    #     title="Thread Event Profile",
-    #     plot_name="thread-profile",
-    #     speedupstackwrapper=speedupstackwrapper,
-    #     show_run_number=1,
-    # )
+    suite.generate_graph(
+        title="Thread Event Profile",
+        plot_name="thread-profile",
+        speedupstackwrapper=speedupstackwrapper,
+        show_run_number=1,
+    )
 
-    # suite.generate_graph(
-    #     title="Thread Event Profile",
-    #     plot_name="thread-profile",
-    #     speedupstackwrapper=speedupstackwrapper,
-    #     show_run_number=2,
-    # )
+    suite.generate_graph(
+        title="Thread Event Profile",
+        plot_name="thread-profile",
+        speedupstackwrapper=speedupstackwrapper,
+        show_run_number=2,
+    )
 
-    # suite.generate_graph(
-    #     title="Thread Event Profile",
-    #     plot_name="thread-profile",
-    #     speedupstackwrapper=speedupstackwrapper,
-    #     show_run_number=3,
-    # )
+    suite.generate_graph(
+        title="Thread Event Profile",
+        plot_name="thread-profile",
+        speedupstackwrapper=speedupstackwrapper,
+        show_run_number=3,
+    )
 
-    # suite.generate_graph(
-    #     title="Thread Event Profile for 8 Threads",
-    #     plot_name="thread-profile",
-    #     speedupstackwrapper=speedupstackwrapper,
-    #     show_run_number=4,
-    # )
+    suite.generate_graph(
+        title="Thread Event Profile for 8 Threads",
+        plot_name="thread-profile",
+        speedupstackwrapper=speedupstackwrapper,
+        show_run_number=4,
+    )
 
     suite.generate_graph(
         title="Speedup Stack",
         plot_name="speedup-stack",
         duration_transformation=lambda d: time_transformation(d, "ms", "ns"),
-        speedup_stack_components={
-            "threadprofiler_mutex_ns": lambda d, nb_t: d,
-            "threadprofiler_futex_ns": lambda d, nb_t: d,
-            "threadprofiler_offcpu_ns": lambda d, nb_t: d,
-            "threadprofiler_disk_io_ns": lambda d, nb_t: d,
-            # "threadprofiler_initialization_ns": lambda d, nb_t: d,
-            "threadprofiler_literature_load_imbalance_ns": lambda d, nb_t: d,
-            "threadprofiler_cpi_overhead_ns": lambda d, nb_t: d,
-        },
+        speedup_stack_components=[
+            {
+                "threadprofiler_mutex_ns": lambda d, nb_t: d,
+                "threadprofiler_futex_ns": lambda d, nb_t: d,
+                "threadprofiler_offcpu_ns": lambda d, nb_t: d,
+                "threadprofiler_disk_io_ns": lambda d, nb_t: d,
+                # "threadprofiler_initialization_ns": lambda d, nb_t: d,
+                "threadprofiler_literature_load_imbalance_ns": lambda d, nb_t: d,
+                "threadprofiler_cpi_overhead_ns": lambda d, nb_t: d,
+            },
+            {
+                "jvmxlogwrap_gc_ms": lambda d, nb_t: time_transformation(d, "ms", "ns"),
+            },
+        ],
         # constant_duration=True,
         # speed_metric="operations/second",
     )

@@ -35,7 +35,7 @@ supported_bench_names = [
     "tradesoap",
     "xalan",
     "zxing",
-    "h2o"
+    "h2o",
 ]
 
 
@@ -91,6 +91,10 @@ class DacapobenchBench(Benchmark):
             "bench_name",
             "size",
             "nb_threads",
+            "nb_iterations",
+            "start_heap_space",
+            "max_heap_space",
+            "garbage_collector",
         ]
 
     @staticmethod
@@ -139,7 +143,11 @@ class DacapobenchBench(Benchmark):
         benchmark_duration_seconds: int,
         size: str,
         nb_threads: int,
+        nb_iterations: int,
         bench_name: str,
+        start_heap_space: str,
+        max_heap_space: str,
+        garbage_collector: str,
         **kwargs,
     ) -> str:
 
@@ -151,11 +159,14 @@ class DacapobenchBench(Benchmark):
         run_command = [
             "java",
             "-jar",
+            f"-Xms{start_heap_space}",
+            f"-Xmx{max_heap_space}",
+            f"-XX:+Use{garbage_collector}",
             "dacapo-23.11-MR2-chopin.jar",
             bench_name,
             f"--thread-count={nb_threads}",
             f"--size={size}",
-            "--iterations=1",
+            f"--iterations={nb_iterations}",
         ]
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
@@ -202,9 +213,13 @@ def dacapobench_campaign(
     post_run_hooks: Iterable[PostRunHook] = (),
     platform: Platform | None = None,
     nb_runs: int = 1,
+    nb_iterations: Iterable[int] = (1,),
     benchmark_duration_seconds: int = 5,
     size: Iterable[str] = ("default",),
     nb_threads: Iterable[int] = (1,),
+    start_heap_space: Iterable[str] = ("512m",),
+    max_heap_space: Iterable[str] = ("4g",),
+    garbage_collector: Iterable[str] = ("G1GC",),
     debug: bool = False,
     gdb: bool = False,
     enable_data_dir: bool = False,
@@ -219,6 +234,10 @@ def dacapobench_campaign(
         "size": size,
         "nb_threads": nb_threads,
         "bench_name": bench_names,
+        "nb_iterations": nb_iterations,
+        "start_heap_space": start_heap_space,
+        "max_heap_space": max_heap_space,
+        "garbage_collector": garbage_collector,
     }
     if pretty is not None:
         pretty = {"size": pretty}

@@ -27,8 +27,8 @@ def main() -> None:
     # Define the campaign, associated with the LevelDB benchmark
     campaign = dacapobench_campaign(
         src_dir=dacapobench_src_dir,
-        size=("small",),
-        # size=("default",),
+        # size=("small",),
+        size=("default",),
         # size=("large",),
         bench_names=[
             # "avrora",
@@ -54,11 +54,12 @@ def main() -> None:
             # "zxing",
             # "h2o",
         ],
-        nb_runs=3,
+        nb_runs=1,
         benchmark_duration_seconds=3,
         nb_threads=[1, 2, 4, 8],
         command_wrappers=speedupstackwrapper.command_wrappers(),
         command_attachments=speedupstackwrapper.command_attachments(),
+        pre_run_hooks=speedupstackwrapper.pre_run_hooks(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
         enable_data_dir=True,
         # Makes sure not to clear the deps between benchmarks.

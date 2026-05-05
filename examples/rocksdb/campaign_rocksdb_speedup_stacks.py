@@ -81,8 +81,8 @@ def main() -> None:
             # "timeseries",  # 1 writer generates time series data and multiple readers
             #  doing random reads on id
         ],
-        nb_runs=1,
-        benchmark_duration_seconds=2,
+        nb_runs=5,
+        benchmark_duration_seconds=5,
         nb_threads=[1, 2, 4, 8],
         command_wrappers=([speedupstackwrapper] + speedupstackwrapper.command_wrappers()),
         command_attachments=speedupstackwrapper.command_attachments(),
@@ -169,15 +169,17 @@ def main() -> None:
         title="Speedup Stack",
         plot_name="speedup-stack",
         duration_transformation=lambda d: time_transformation(d, "s", "ns"),
-        speedup_stack_components={
-            "threadprofiler_mutex_ns": lambda d, nb_t: d,
-            "threadprofiler_futex_ns": lambda d, nb_t: d,
-            "threadprofiler_offcpu_ns": lambda d, nb_t: d,
-            "threadprofiler_disk_io_ns": lambda d, nb_t: d,
-            "threadprofiler_initialization_ns": lambda d, nb_t: d,
-            "threadprofiler_literature_load_imbalance_ns": lambda d, nb_t: d,
-            "threadprofiler_cpi_overhead_ns": lambda d, nb_t: d,
-        },
+        speedup_stack_components=[
+            {
+                "threadprofiler_mutex_ns": lambda d, nb_t: d,
+                "threadprofiler_futex_ns": lambda d, nb_t: d,
+                "threadprofiler_offcpu_ns": lambda d, nb_t: d,
+                "threadprofiler_disk_io_ns": lambda d, nb_t: d,
+                "threadprofiler_initialization_ns": lambda d, nb_t: d,
+                "threadprofiler_literature_load_imbalance_ns": lambda d, nb_t: d,
+                "threadprofiler_cpi_overhead_ns": lambda d, nb_t: d,
+            }
+        ],
         constant_duration=True,
         speed_metric="operations/second",
     )

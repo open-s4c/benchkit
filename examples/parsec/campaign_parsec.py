@@ -38,11 +38,11 @@ def main() -> None:
         src_dir=parsec_src_dir,
         # input=("simsmall",),
         # input=("simmedium",),
-        input=("simlarge",),
-        # input=("native",),
+        # input=("simlarge",),
+        input=("native",),
         # input=("simsmall", "simmedium", "simlarge",),
         bench_names=[
-            # "blackscholes",
+            "blackscholes",
             # "bodytrack",
             # "canneal",  # TODO: fix benchmarking thread heuristic
             # "dedup", # TODO: heuristic
@@ -52,9 +52,9 @@ def main() -> None:
             # "freqmine",  # TODO: heuristic (no clue if thread parameter does something)
             # "streamcluster",
             # "swaptions",
-            # "vips",  # TODO: heuristic
+            # "vips",  # TODO: heuristic (no thread effects)
             # "x264",  # TODO: heuristic (Very weird profile)
-            "splash2x.barnes",
+            # "splash2x.barnes",
             # "splash2x.cholesky",
             # "splash2x.fft",
             # "splash2x.fmm",
@@ -130,7 +130,7 @@ def main() -> None:
         title="Speedup Stack",
         plot_name="speedup-stack",
         duration_transformation=lambda d: time_transformation(d, "ns", "ns"),
-        speedup_stack_components={
+        speedup_stack_components=[{
             "threadprofiler_mutex_ns": lambda d, nb_t: d,
             "threadprofiler_futex_ns": lambda d, nb_t: d,
             "threadprofiler_offcpu_ns": lambda d, nb_t: d,
@@ -138,7 +138,8 @@ def main() -> None:
             "threadprofiler_initialization_ns": lambda d, nb_t: d,
             "threadprofiler_literature_load_imbalance_ns": lambda d, nb_t: d,
             "threadprofiler_cpi_overhead_ns": lambda d, nb_t: d,
-        },
+            "threadprofiler_shutdown_ns": lambda d, nb_t: d,
+        }],
         # facet_by="input",
         # constant_duration=True,
         # speed_metric="operations/second",
