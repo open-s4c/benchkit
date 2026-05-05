@@ -28,6 +28,24 @@ benchkit = "benchkit.cli:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build]
+exclude = [
+  "/.venv*",
+  "/venv*",
+  "/env*",
+  "/__pycache__",
+  "*.pyc",
+  "/.git",
+  "/.github",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.venv*",
+  "/venv*",
+  "/env*",
+]
+
 [tool.hatch.build.targets.wheel]
 include = [
   "benchkit/",
@@ -38,8 +56,9 @@ include = [
   "tutorials/",
 ]
 exclude = [
-  "venv*/",
-  ".venv*/",
+  "/.venv*",
+  "/venv*",
+  "/env*",
 ]
 
 [tool.black]
