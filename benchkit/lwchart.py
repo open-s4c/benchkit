@@ -157,50 +157,33 @@ def _generate_chart_from_df(
 
         colors = sns.color_palette("pastel")
 
-        pretty_compontent_names = {
-            "measured": "Measured",
-            "other": "Other",
-            "threadprofiler_initialization_ns": "Initialization",
-            "threadprofiler_shutdown_ns": "Shutdown",
-            "threadprofiler_offcpu_ns": "Off-CPU Time",
-            "threadprofiler_mutex_ns": "Mutex",
-            "threadprofiler_futex_ns": "Futex",
-            "threadprofiler_disk_io_ns": "Disk IO",
-            "threadprofiler_literature_load_imbalance_ns": "Load Imbalance",
-            "threadprofiler_proposed_load_imbalance_ns": "Load Imbalance",
-            "threadprofiler_cpi_overhead_ns": "CPI Overhead",
-            "klockstat_total_wait_ns": "Klockstats",
-            "offcputime_total_micro_s": "Offcputime",
-            "llcstat_total_nr_misses": "LLCStat",
-            "strace_total_time_s": "Strace",
-            "jvmxlogwrap_gc_ms": "Garbage Collection",
+        # TODO: Add color to the settings
+        compontent_settings = {
+            "measured": ("Measured", ""),
+            "other": ("Other", ""),
+            "threadprofiler_initialization_ns": ("Initialization", "/"),
+            "threadprofiler_shutdown_ns": ("Shutdown", "xx"),
+            "threadprofiler_offcpu_ns": ("Off-CPU Time", "|"),
+            "threadprofiler_mutex_ns": ("Mutex", "."),
+            "threadprofiler_futex_ns": ("Futex", "x"),
+            "threadprofiler_disk_io_ns": ("Disk IO", "\\\\"),
+            "threadprofiler_literature_load_imbalance_ns": ("Load Imbalance", "//"),
+            "threadprofiler_proposed_load_imbalance_ns": ("Load Imbalance", "//"),
+            "threadprofiler_cpi_overhead_ns": ("CPI Overhead", "\\"),
+            "klockstat_total_wait_ns": ("Klockstats", "x"),
+            "offcputime_total_micro_s": ("Offcputime", "|"),
+            "llcstat_total_nr_misses": ("LLCStat", "-"),
+            "strace_total_time_s": ("Strace", "o"),
+            "jvmxlogwrap_gc_ms": ("Garbage Collection", ".."),
         }
 
-        all_component_colors = {
-            name: color
-            for name, color in zip(
-                pretty_compontent_names.keys(),
-                sns.color_palette("pastel", len(pretty_compontent_names)),
-            )
-        }
+        pretty_compontent_map = {k: v[0] for k, v in compontent_settings.items()}
 
-        hatches = [
-            "",
-            "/",
-            "\\",
-            "|",
-            "-",
-            "+",
-            "x",
-            "o",
-            "O",
-            ".",
-            "//",
-            "\\\\",
-            "xx",
-            "..",
-            "oo",
-        ]
+        component_hatches_map = {k: v[1] for k, v in compontent_settings.items()}
+
+        all_component_colors = dict(
+            zip(compontent_settings.keys(), sns.color_palette("pastel", len(compontent_settings)))
+        )
 
         for ax, facet_value in zip(axes, facet_by_values):
             bench_df = df[df[facet_by_culumn] == facet_value]
@@ -249,12 +232,10 @@ def _generate_chart_from_df(
                         vals,
                         bottom=component_bottom,
                         width=widths,
-                        label=pretty_compontent_names[component_name],
+                        label=pretty_compontent_map[component_name],
                         color=all_component_colors[component_name],
-                        hatch=hatches[
-                            list(all_component_colors.keys()).index(component_name) % len(hatches)
-                        ],
-                        edgecolor="black",  # IMPORTANT so hatch is visible
+                        hatch=component_hatches_map[component_name],
+                        edgecolor="black",
                         linewidth=0.3,
                         align="center",
                     )
@@ -582,7 +563,6 @@ def _get_speedup_data(
         mean_df.loc[mean_df["nb_threads"] == 1, speed_metric].iloc[0] if speed_metric else 0
     )
 
-    multithreaded_df = mean_df[mean_df["nb_threads"] != 1]
     data: dict[int, List[dict[str, float]]] = {}
 
     for _, row in mean_df.iterrows():
@@ -595,47 +575,10 @@ def _get_speedup_data(
             row[speed_metric] / single_threaded_speed_metric if constant_duration else 1
         )
 
-        # if constant_duration:
-        #     # The benchmark has a constant duration, so compute a duration based on speed metric
-        #     duration = duration / (row[speed_metric] / single_threaded_speed_metric)
-
-        # perfect_speedup_duration = single_threaded_duration / nb_threads
-        # measured_component = perfect_speedup_duration / duration
-
         measured_speedup = single_threaded_duration / (duration / duration_multiplier)
 
-        # TODO: Make use of the known slowdowns in the single threaded execution
-        # FIX: This introduces negative components. How should these be handled?
-        #      And what about the "other" component now?
-
-        # print("Start: ", nb_threads, duration)
-        # for name, func in speedup_stack_components.items():
-        #     print(
-        #         name,
-        #         row[name],
-        #         func(row[name], nb_threads),
-        #         (
-        #             func(row[name], nb_threads)
-        #             - ((func(single_threaded_row[name], nb_threads)) * duration_multiplier)
-        #         ),
-        #     )
-
-        # TODO: maybe migrate the *nb_threads to the components
-        #       Even better remove the mean() from the component and the *nb_threads here
         slowdown_components = [
             {
-                # name: (func(row[name], nb_threads) / duration)
-                # name: (
-                #     (func(row[name], nb_threads) / duration)
-                #     - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
-                # )
-                # * nb_threads
-                # Difference between components
-                # name: (
-                #     (func(row[name], nb_threads) / duration)
-                #     - (func(single_threaded_row[name], nb_threads) / single_threaded_duration)
-                # )
-                # Difference between total overhead times
                 name: (
                     (
                         func(row[name], nb_threads)
@@ -656,18 +599,6 @@ def _get_speedup_data(
             )
 
             components["measured"] = measured_speedup
-
-        # other_component = nb_threads - measured_speedup - sum(slowdown_components.values())
-        # other_component = (
-        #     nb_threads
-        #     - measured_speedup
-        #     - sum(map(lambda x: x if x >= 0 else 0, slowdown_components.values()))
-        # )
-
-        # data[nb_threads] = {
-        #     "measured": measured_speedup,
-        #     "other": other_component,
-        # } | {name: component_value for name, component_value in slowdown_components.items()}
 
         data[nb_threads] = slowdown_components
 
