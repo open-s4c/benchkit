@@ -159,31 +159,29 @@ def _generate_chart_from_df(
 
         # TODO: Add color to the settings
         compontent_settings = {
-            "measured": ("Measured", ""),
-            "other": ("Other", ""),
-            "threadprofiler_initialization_ns": ("Initialization", "/"),
-            "threadprofiler_shutdown_ns": ("Shutdown", "xx"),
-            "threadprofiler_offcpu_ns": ("Off-CPU Time", "|"),
-            "threadprofiler_mutex_ns": ("Mutex", "."),
-            "threadprofiler_futex_ns": ("Futex", "x"),
-            "threadprofiler_disk_io_ns": ("Disk IO", "\\\\"),
-            "threadprofiler_literature_load_imbalance_ns": ("Load Imbalance", "//"),
-            "threadprofiler_proposed_load_imbalance_ns": ("Load Imbalance", "//"),
-            "threadprofiler_cpi_overhead_ns": ("CPI Overhead", "\\"),
-            "klockstat_total_wait_ns": ("Klockstats", "x"),
-            "offcputime_total_micro_s": ("Offcputime", "|"),
-            "llcstat_total_nr_misses": ("LLCStat", "-"),
-            "strace_total_time_s": ("Strace", "o"),
-            "jvmxlogwrap_gc_ms": ("Garbage Collection", ".."),
+            "measured": ("Measured", "", "#A1C9F4"),
+            "other": ("Other", "", "#FFB482"),
+            "threadprofiler_initialization_ns": ("Initialization", "/", "#8DE5A1"),
+            "threadprofiler_shutdown_ns": ("Shutdown", "xx", "#FF9F9B"),
+            "threadprofiler_offcpu_ns": ("Off-CPU Time", "|", "#D0BBFF"),
+            "threadprofiler_mutex_ns": ("Mutex", ".", "#DEBB9B"),
+            "threadprofiler_futex_ns": ("Futex", "x", "#FAB0E4"),
+            "threadprofiler_disk_io_ns": ("Disk IO", "\\\\", "#CFCFCF"),
+            "threadprofiler_literature_load_imbalance_ns": ("Load Imbalance", "//", "#FFFEA3"),
+            "threadprofiler_proposed_load_imbalance_ns": ("Load Imbalance", "//", "#FFFEA3"),
+            "threadprofiler_cpi_overhead_ns": ("Hardware Contention", "\\", "#9795FF"),
+            "klockstat_total_wait_ns": ("Klockstats", "x", "#FAB0E4"),
+            "offcputime_total_micro_s": ("Offcputime", "|", "#D0BBFF"),
+            "llcstat_total_nr_misses": ("LLCStat", "-", "#A1C9F4"),
+            "strace_total_time_s": ("Strace", "o", "#A1C9F4"),
+            "jvmxlogwrap_gc_ms": ("Garbage Collection", "..", "#54D0BE"),
         }
 
         pretty_compontent_map = {k: v[0] for k, v in compontent_settings.items()}
 
         component_hatches_map = {k: v[1] for k, v in compontent_settings.items()}
 
-        all_component_colors = dict(
-            zip(compontent_settings.keys(), sns.color_palette("pastel", len(compontent_settings)))
-        )
+        component_color_map = {k: v[2] for k, v in compontent_settings.items()}
 
         for ax, facet_value in zip(axes, facet_by_values):
             bench_df = df[df[facet_by_culumn] == facet_value]
@@ -233,7 +231,7 @@ def _generate_chart_from_df(
                         bottom=component_bottom,
                         width=widths,
                         label=pretty_compontent_map[component_name],
-                        color=all_component_colors[component_name],
+                        color=component_color_map[component_name],
                         hatch=component_hatches_map[component_name],
                         edgecolor="black",
                         linewidth=0.3,
