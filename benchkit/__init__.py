@@ -5,6 +5,6 @@ Main benchkit module.
 See README.md in the root of the repository for details.
 """
 
-from benchkit.core.compat.new2old import CampaignCartesianProduct
+from benchkit.core.compat.new2old import CampaignCartesianProduct, CampaignIterateVariables
 
-__all__ = ["CampaignCartesianProduct"]
+__all__ = ["CampaignCartesianProduct", "CampaignIterateVariables"]
