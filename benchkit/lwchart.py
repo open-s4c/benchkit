@@ -172,7 +172,7 @@ def _generate_chart_from_df(
             "threadprofiler_cpi_overhead_ns": ("Hardware Contention", "\\", "#9795FF"),
             "klockstat_total_wait_ns": ("Klockstats", "x", "#FAB0E4"),
             "offcputime_total_micro_s": ("Offcputime", "|", "#D0BBFF"),
-            "llcstat_total_nr_misses": ("LLCStat", "-", "#A1C9F4"),
+            "llcstat_total_nr_misses": ("LLCStat", "-", "#9795FF"),
             "strace_total_time_s": ("Strace", "o", "#A1C9F4"),
             "jvmxlogwrap_gc_ms": ("Garbage Collection", "..", "#54D0BE"),
         }
@@ -573,7 +573,7 @@ def _get_speedup_data(
             row[speed_metric] / single_threaded_speed_metric if constant_duration else 1
         )
 
-        measured_speedup = single_threaded_duration / (duration / duration_multiplier)
+        measured_speedup = (duration_multiplier * single_threaded_duration) / duration
 
         slowdown_components = [
             {
