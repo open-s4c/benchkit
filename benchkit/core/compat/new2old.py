@@ -71,10 +71,12 @@ The module exposes:
 
 - :class:`Adapted`: a legacy `BenchmarkOld` implementation backed by a new core benchmark.
 - :func:`CampaignCartesianProduct`: convenience helper returning a legacy campaign
-  configured with an adapted benchmark.
+  configured with an adapted benchmark, taking a cartesian parameter space.
+- :func:`CampaignIterateVariables`: convenience helper returning a legacy iterate-style
+  campaign (one record per run) configured with an adapted benchmark.
 
-The convenience function is primarily meant for existing "kit" style campaign scripts
-that expect the old `CampaignCartesianProduct` API.
+These convenience functions are primarily meant for existing "kit" style campaign
+scripts that expect the old `CampaignCartesianProduct` / `CampaignIterateVariables` APIs.
 
 Example
 -------
@@ -125,6 +127,7 @@ from benchkit.benchmark import (
     WriteRecordFileFunction,
 )
 from benchkit.campaign import CampaignCartesianProduct as CampaignCartesianProductOld
+from benchkit.campaign import CampaignIterateVariables as CampaignIterateVariablesOld
 from benchkit.core.benchmark import Benchmark
 from benchkit.core.bktypes.contexts import RunContext
 from benchkit.core.bktypes.execfn import ExecFn, ExecOutput
@@ -556,5 +559,101 @@ def CampaignCartesianProduct(
         results_dir=results_dir,
         pretty=pretty,
         filter_func=None,
+        symlink_latest=False,
+    )
+
+
+def CampaignIterateVariables(
+    benchmark: Benchmark,
+    variables: Iterable[Dict[str, Any]],
+    constants: dict[str, Any] | None = None,
+    name: str = "campaign",
+    nb_runs: int = 1,
+    duration_s: int | None = None,
+    results_dir: Path | None = None,
+    command_wrappers: Iterable[CommandWrapper] = (),
+    command_attachments: Iterable[CommandAttachment] = (),
+    shared_libs: Iterable[SharedLib] = (),
+    pre_run_hooks: Iterable[PreRunHook] = (),
+    post_run_hooks: Iterable[PostRunHook] = (),
+    pretty: Pretty | None = None,
+    platform: Platform | None = None,
+) -> CampaignIterateVariablesOld:
+    """
+    Create a legacy iterate-variables campaign for a new-protocol benchmark.
+
+    This helper:
+      1) Creates an :class:`Adapted` benchmark.
+      2) Executes fetch once (bootstrap).
+      3) Returns a legacy :class:`CampaignIterateVariablesOld`.
+
+    Unlike :func:`CampaignCartesianProduct`, ``variables`` is an iterable of records
+    (one record per run), not a cartesian ``{name -> values}`` parameter space.
+
+    Args:
+        benchmark: New protocol benchmark to run through the legacy engine.
+        variables: Iterable of records ``{name -> value}``; the campaign iterates
+            over these records in order.
+        constants: Mapping of constant names to their values ``{name -> value}``.
+        name: Campaign name.
+        nb_runs: Repetitions per record.
+        duration_s: Legacy benchmark duration (seconds). Passed to the legacy engine as
+            `benchmark_duration_seconds` and forwarded to the new run context as `duration_s`.
+        results_dir: Optional base directory for results.
+        command_wrappers: Legacy command wrappers (applied via `RunContext.exec` interception).
+        command_attachments: Legacy command attachments (not supported).
+        shared_libs: Legacy shared libs (applied via `RunContext.exec` interception).
+        pre_run_hooks: Legacy pre-run hooks (supported; executed by legacy engine).
+        post_run_hooks: Legacy post-run hooks (supported; executed by legacy engine).
+        pretty: Pretty-printing mapping of variables for campaign results.
+        platform: Optional platform override.
+
+    Returns:
+        A legacy campaign object ready to run.
+
+    Raises:
+        ValueError: If a fetch parameter takes more than one distinct value across the
+            records — fetch is executed once during bootstrap and must be single-valued.
+    """
+    results_dir = get_results_dir(results_dir=results_dir)
+
+    records = list(variables)
+
+    # Aggregate per-name distinct values seen across records, then reuse
+    # `_check_fetch_args` to enforce that fetch parameters are single-valued.
+    parameter_space: Dict[str, List[Any]] = {}
+    for record in records:
+        for var_name, var_value in record.items():
+            bucket = parameter_space.setdefault(var_name, [])
+            if var_value not in bucket:
+                bucket.append(var_value)
+
+    benchmark_old = Adapted(
+        benchmark=benchmark,
+        command_wrappers=command_wrappers,
+        command_attachments=command_attachments,
+        shared_libs=shared_libs,
+        pre_run_hooks=pre_run_hooks,
+        post_run_hooks=post_run_hooks,
+        platform=platform,
+    )
+    benchmark_old.bootstrap(
+        args=parameter_space,
+        record_dir=results_dir,
+    )
+
+    return CampaignIterateVariablesOld(
+        name=name,
+        benchmark=benchmark_old,
+        nb_runs=nb_runs,
+        variables=records,
+        constants=constants,
+        debug=False,
+        gdb=False,
+        enable_data_dir=True,
+        continuing=False,
+        benchmark_duration_seconds=duration_s,
+        results_dir=results_dir,
+        pretty=pretty,
         symlink_latest=False,
     )
