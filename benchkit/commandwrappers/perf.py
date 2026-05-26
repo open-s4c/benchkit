@@ -937,6 +937,7 @@ class PerfRecordWrap(CommandWrapper):
             height=flamegraph_height,
             fontsize=flamegraph_fontsize,
             minwidth=flamegraph_minwidth,
+            print_output=False,
         )
 
         svg_diffflamechart = self.platform.comm.shell(
