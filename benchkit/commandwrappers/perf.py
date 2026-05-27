@@ -928,6 +928,8 @@ class PerfRecordWrap(CommandWrapper):
                 f"{dst_folded_path}",
             ],
             current_dir=flamegraph_path,
+            print_input=False,
+            print_output=False,
         )
 
         flamegraph_command = self._flamegraph_command(
@@ -937,13 +939,13 @@ class PerfRecordWrap(CommandWrapper):
             height=flamegraph_height,
             fontsize=flamegraph_fontsize,
             minwidth=flamegraph_minwidth,
-            print_output=False,
         )
 
         svg_diffflamechart = self.platform.comm.shell(
             command=flamegraph_command,
             std_input=difffolded_out,
             current_dir=flamegraph_path,
+            print_input=False,
             print_output=False,
         )
         out_svg_path.write_text(svg_diffflamechart)
