@@ -248,7 +248,8 @@ def _generate_chart_from_df(
                         for val, slowdown in zip(vals, slowdown_component_bitmap)
                     ]
 
-            ax.set_title(str(facet_by_culumn) + ": " + str(facet_value))
+            if n_facets > 1:
+                ax.set_title(str(facet_by_culumn) + ": " + str(facet_value))
             ax.set_xticks(ind)
             ax.set_xticklabels([str(int(k)) for k in speedup_data.keys()])
 
