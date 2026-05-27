@@ -255,7 +255,7 @@ class ThreadProfiler:
         # Detect the benchmarking threads using heuristic
         # For now the heuristic will contain two part:
         # 1. There are exactly nb_threads benchmarking threads
-        # 2. The benchmarking threads perform the most 'useful' of all the threads
+        # 2. The benchmarking threads perform the most 'useful' work of all the threads
         #    with the pid of the benchmark
         def add_thread_useful_work(x: Tuple[int, dict]) -> None:
             merged_block = x[1]["merged"]

@@ -164,8 +164,8 @@ def _generate_chart_from_df(
             "threadprofiler_initialization_ns": ("Initialization", "/", "#8DE5A1"),
             "threadprofiler_shutdown_ns": ("Shutdown", "xx", "#FF9F9B"),
             "threadprofiler_offcpu_ns": ("Off-CPU Time", "|", "#D0BBFF"),
-            "threadprofiler_mutex_ns": ("Mutex", ".", "#DEBB9B"),
-            "threadprofiler_futex_ns": ("Futex", "x", "#FAB0E4"),
+            "threadprofiler_mutex_ns": ("Mutex Lock", ".", "#DEBB9B"),
+            "threadprofiler_futex_ns": ("Lock Contention", "x", "#FAB0E4"),
             "threadprofiler_disk_io_ns": ("Disk IO", "\\\\", "#CFCFCF"),
             "threadprofiler_literature_load_imbalance_ns": ("Load Imbalance", "//", "#FFFEA3"),
             "threadprofiler_proposed_load_imbalance_ns": ("Load Imbalance", "//", "#FFFEA3"),
@@ -256,7 +256,7 @@ def _generate_chart_from_df(
                 ax.set_ylabel("Speedup")
                 handles, labels = ax.get_legend_handles_labels()
                 by_label = dict(zip(labels, handles))
-                ax.legend(by_label.values(), by_label.keys(), loc="upper left", fontsize=15)
+                ax.legend(list(by_label.values())[::-1], list(by_label.keys())[::-1], loc="upper left", fontsize=15)
 
         # fig.legend(handles, labels, loc="upper center", ncol=4, fontsize=15)
         # plt.title(title + ": " + ", ".join(bench_names))
