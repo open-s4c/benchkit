@@ -24,6 +24,7 @@ class SpeedupStackWrapper(CommandWrapper):
         libbpf_tools_dir: PathType,
         thread_profiler_dir: PathType,
         output_duration: bool = False,
+        collect_thread_profiles: bool = True,
         jvm_plugin: bool = False,
     ) -> None:
         self._jvm_plugin = jvm_plugin
@@ -38,7 +39,10 @@ class SpeedupStackWrapper(CommandWrapper):
         )
         self._cpi_perf = CPIPerfStatWrap(events=["cycles", "instructions"])
         self._threadprofiler = ThreadProfiler(
-            thread_profiler_dir, self._cpi_perf, output_duration=output_duration
+            thread_profiler_dir,
+            self._cpi_perf,
+            output_duration=output_duration,
+            collect_thread_profiles=collect_thread_profiles,
         )
 
         self._jvmxlogwrap = JVMXlogWrap()

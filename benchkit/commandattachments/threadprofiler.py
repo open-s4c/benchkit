@@ -39,6 +39,7 @@ class ThreadProfiler:
         thread_profiler_dir: PathType,
         cpi_perf: CPIPerfStatWrap,
         output_duration: bool = False,
+        collect_thread_profiles: bool = True,
         pid: bool = True,
         tid: int = -1,
         platform: Platform = None,
@@ -52,6 +53,7 @@ class ThreadProfiler:
         self._thread_profiler_dir = pathlib.Path(thread_profiler_dir).as_posix()
         self._cpi_perf = cpi_perf
         self._output_duration = output_duration
+        self._collect_thread_profiles = collect_thread_profiles
         self._pid = pid
         self._tid = tid
         self._granularity_ns = int(1e8)
@@ -138,6 +140,8 @@ class ThreadProfiler:
         self.platform.comm.shell(command=command)
 
     def get_per_thread_profiles(self):
+        if not self._collect_thread_profiles:
+            raise RuntimeError("ThreadProfiler collect_thread_profiles set to false")
         return self._per_run_per_thread_profile
 
     def prerun_hook(
@@ -249,8 +253,9 @@ class ThreadProfiler:
                             }
                         )
 
-            self._per_run_per_thread_profile[self._run_counter] = per_thread_dict
-            self._run_counter += 1
+            if self._collect_thread_profiles:
+                self._per_run_per_thread_profile[self._run_counter] = per_thread_dict
+                self._run_counter += 1
 
         # Detect the benchmarking threads using heuristic
         # For now the heuristic will contain two part:
