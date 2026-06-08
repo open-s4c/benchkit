@@ -312,6 +312,7 @@ def _generate_chart_from_df(
         plt.tight_layout()
         plt.show()
     elif "thread-profile" == plot_name:
+        from matplotlib.ticker import FuncFormatter
 
         all_thread_profiles = (
             kwargs["speedupstackwrapper"].get_threadprofiler().get_per_thread_profiles()
@@ -321,7 +322,12 @@ def _generate_chart_from_df(
         thread_profiles = all_thread_profiles[show_run_number]
         # __import__("pprint").pprint(thread_profiles)
         # tid = list(thread_profiles.keys())[1]
-        thread_mapping = {v: i + 1 for i, v in enumerate(sorted(list(thread_profiles.keys())))}
+        sorted_tids = sorted(list(thread_profiles.keys()))
+        thread_mapping = {v: i + 1 for i, v in enumerate(sorted_tids)}
+        main_thread_tid = sorted_tids[0]
+        main_thread_merged_profile_block = thread_profiles[main_thread_tid]["merged"]
+        main_thread_start_time_ns = main_thread_merged_profile_block["block_start_time_ns"]
+
 
         local_df: DataFrame = df
 
@@ -379,7 +385,7 @@ def _generate_chart_from_df(
                     else block_end_time - block_start_time
                 )
 
-                current_left = block_start_time
+                current_left = block_start_time - main_thread_start_time_ns
 
                 # Show all the components of block
                 # total_component_width = last_event_time - first_event_time
@@ -391,7 +397,7 @@ def _generate_chart_from_df(
                         idx,
                         scheduled_in_width,
                         left=current_left,
-                        label="SCHEDULED_IN",
+                        label="Scheduled In",
                         color=state_to_color_map["SCHEDULED_IN"],
                         **profile_settings,
                     )
@@ -405,7 +411,7 @@ def _generate_chart_from_df(
                         idx,
                         disk_io_time,
                         left=current_left,
-                        label="DISK_IO",
+                        label="Disk I/O",
                         color=state_to_color_map["DISK_IO"],
                         **profile_settings,
                     )
@@ -416,7 +422,7 @@ def _generate_chart_from_df(
                         idx,
                         offcpu_time,
                         left=current_left,
-                        label="SCHEDULED_OUT",
+                        label="Scheduled Out",
                         color=state_to_color_map["SCHEDULED_OUT"],
                         **profile_settings,
                     )
@@ -427,7 +433,7 @@ def _generate_chart_from_df(
                         idx,
                         mutex_time,
                         left=current_left,
-                        label="MUTEX",
+                        label="Mutex",
                         color=state_to_color_map["MUTEX"],
                         **profile_settings,
                     )
@@ -438,7 +444,7 @@ def _generate_chart_from_df(
                         idx,
                         futex_time,
                         left=current_left,
-                        label="FUTEX",
+                        label="Futex",
                         color=state_to_color_map["FUTEX"],
                         **profile_settings,
                     )
@@ -465,9 +471,13 @@ def _generate_chart_from_df(
         handles, labels = ax.get_legend_handles_labels()
         by_label = dict(zip(labels, handles))  # removes duplicates
         ax.legend(by_label.values(), by_label.keys(), fontsize=15)
+        ax.xaxis.set_major_formatter(
+            # FuncFormatter(lambda x, pos: f"{x / 1e9:.3f}")
+            FuncFormatter(lambda x, pos: f"{x/1e9:g}")
+        )
         # ax.legend(loc="upper left")
 
-        plt.xlabel("Time since boot (ns)")
+        plt.xlabel("Time (s)")
         plt.ylabel("Thread Identifier (TID)")
         plt.title(title + ": " + ", ".join(bench_names), fontsize=24)
         plt.tight_layout()
