@@ -6,7 +6,7 @@ Miscellaneous functions.
 
 import datetime
 import getpass
-import os
+import pathlib
 import socket
 import sys
 from time import perf_counter_ns
@@ -123,10 +123,26 @@ def get_user_name() -> str:
     return getpass.getuser()
 
 
-def get_benchkit_temp_folder_str() -> str:
-    path: str = f"/tmp/benchkit-{get_user_name()}"
-    os.makedirs(os.path.dirname(f"{path}/"), exist_ok=True)
-    return path
+def get_benchkit_temp_folder_str(tmp_dir: pathlib.Path | None = None) -> str:
+    """
+    Return the path to the benchkit temporary directory as a string.
+
+    If a temporary directory is explicitly provided, it is used unchanged.
+    Otherwise, the default temporary directory is used:
+
+        /tmp/benchkit-<username>/
+
+    The target directory is created if it does not exist.
+
+    Args:
+        tmp_dir: Optional path overriding the default temporary directory.
+
+    Returns:
+        str: Path to the temporary directory.
+    """
+    path = pathlib.Path(f"/tmp/benchkit-{get_user_name()}") if tmp_dir is None else tmp_dir
+    path.mkdir(parents=True, exist_ok=True)
+    return str(path)
 
 
 if __name__ == "__main__":

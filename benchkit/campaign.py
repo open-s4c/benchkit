@@ -32,8 +32,6 @@ from benchkit.utils.misc import get_benchkit_temp_folder_str, seconds2pretty
 from benchkit.utils.types import Constants, PathType, Pretty
 from benchkit.utils.variables import cartesian_product
 
-_BENCHKIT_CAMPAIGN_CMD_FILE = f"{get_benchkit_temp_folder_str()}/benchkit-campaign.sh"
-
 
 class Campaign:
     """
@@ -49,6 +47,7 @@ class Campaign:
         gdb: bool,
         enable_data_dir: bool,
         continuing: bool,
+        tmp_dir: pathlib.Path | None = None,
         symlink_latest: bool = False,
     ):
         self._check_parameters_integrity()
@@ -56,6 +55,9 @@ class Campaign:
         self._enable_data_dir = enable_data_dir
         self._continuing = continuing
         self._symlink_latest = symlink_latest
+        self._campaign_cmd_file = (
+            pathlib.Path(get_benchkit_temp_folder_str(tmp_dir=tmp_dir)) / "benchkit-campaign.sh"
+        )
 
         params: Dict[str, Any] = self.parameters
 
@@ -293,7 +295,7 @@ class Campaign:
             raise ValueError('Campaign parameters dict has no "nb_runs" field.')
 
     def _init_cmd_file(self) -> None:
-        with open(_BENCHKIT_CAMPAIGN_CMD_FILE, "w") as f:
+        with open(self._campaign_cmd_file, "w") as f:
             header = ["#!/bin/sh", "set -e", ""]
             f.writelines(f"{line}\n" for line in header)
 
@@ -301,7 +303,7 @@ class Campaign:
         bdd = self.base_data_dir()
         if bdd is not None:
             dst_path = pathlib.Path(bdd) / "commands.sh"
-            shutil.move(_BENCHKIT_CAMPAIGN_CMD_FILE, dst_path)
+            shutil.move(self._campaign_cmd_file, dst_path)
 
 
 class CampaignSuite:
@@ -509,6 +511,7 @@ class CampaignTemplate(Campaign):
         continuing: bool,
         benchmark_duration_seconds: Optional[int] = None,
         results_dir: Optional[PathType] = None,
+        tmp_dir: pathlib.Path | None = None,
         pretty: Pretty | None = None,
         symlink_latest: bool = False,
     ):
@@ -564,6 +567,7 @@ class CampaignTemplate(Campaign):
             gdb=gdb,
             enable_data_dir=enable_data_dir,
             continuing=continuing,
+            tmp_dir=tmp_dir,
             symlink_latest=symlink_latest,
         )
 
@@ -587,6 +591,7 @@ class CampaignIterateVariables(CampaignTemplate):
         continuing: bool = False,
         benchmark_duration_seconds: Optional[int] = None,
         results_dir: Optional[PathType] = None,
+        tmp_dir: pathlib.Path | None = None,
         pretty: Pretty | None = None,
         symlink_latest: bool = False,
     ):
@@ -602,6 +607,7 @@ class CampaignIterateVariables(CampaignTemplate):
             continuing=continuing,
             benchmark_duration_seconds=benchmark_duration_seconds,
             results_dir=results_dir,
+            tmp_dir=tmp_dir,
             pretty=pretty,
             symlink_latest=symlink_latest,
         )
@@ -627,6 +633,7 @@ class CampaignCartesianProduct(CampaignTemplate):
         continuing: bool = False,
         benchmark_duration_seconds: Optional[int] = None,
         results_dir: Optional[PathType] = None,
+        tmp_dir: pathlib.Path | None = None,
         pretty: Pretty | None = None,
         filter_func: Optional[Callable[[Dict[str, Any]], bool]] = None,
         symlink_latest: bool = False,
@@ -648,6 +655,7 @@ class CampaignCartesianProduct(CampaignTemplate):
             continuing=continuing,
             benchmark_duration_seconds=benchmark_duration_seconds,
             results_dir=results_dir,
+            tmp_dir=tmp_dir,
             pretty=pretty,
             symlink_latest=symlink_latest,
         )
