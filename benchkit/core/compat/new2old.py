@@ -581,6 +581,7 @@ def CampaignIterateVariables(
     post_run_hooks: Iterable[PostRunHook] = (),
     pretty: Pretty | None = None,
     platform: Platform | None = None,
+    tmp_dir: Path | None = None,
 ) -> CampaignIterateVariablesOld:
     """
     Create a legacy iterate-variables campaign for a new-protocol benchmark.
@@ -657,6 +658,7 @@ def CampaignIterateVariables(
         continuing=False,
         benchmark_duration_seconds=duration_s,
         results_dir=results_dir,
+        tmp_dir=tmp_dir,
         pretty=pretty,
         symlink_latest=False,
     )
