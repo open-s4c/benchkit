@@ -11,8 +11,8 @@ Demonstrates:
 
 from pathlib import Path
 
-from benchkit.benches.graph500 import Graph500Bench
 from benchkit import CampaignCartesianProduct
+from benchkit.benches.graph500 import Graph500Bench
 from benchkit.campaign import CampaignSuite
 from benchkit.commandwrappers.perf import PerfStatWrap
 from benchkit.utils.dir import get_curdir
