@@ -3,6 +3,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/pybenchkit)](https://pypi.org/project/pybenchkit)
 [![GitHub License](https://img.shields.io/github/license/open-s4c/benchkit)](LICENSE)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/pybenchkit)](https://pypi.org/project/pybenchkit)
+[![DOI](https://img.shields.io/badge/DOI-10.1145%2F3777884.3796997-blue)](https://doi.org/10.1145/3777884.3796997)
 
 `benchkit` provides a push-button end-to-end performance evaluation
 pipeline, which includes platform stabilization, benchmark configuration
@@ -334,6 +335,37 @@ List [4].
 [6] [SentryRT-1: A Case Study in Evaluating Real-Time Linux for Safety-Critical Robotic Perception. OSPERT@ECRTS'2025.](https://www.ecrts.org/workshops/ospert25/)
 
 [7] [Is Mojo Ready for Real-Time? A Language Evaluation for Time-Sensitive System Software. RTNS'2025.](https://rtns2025.retis.santannapisa.it/)
+
+
+## Citing benchkit
+
+If you use `benchkit` in your research or project, please cite the
+corresponding paper:
+
+Paolillo, A., Van Molle, M., & Hasselmann, K. (2026). *benchkit: A
+Declarative Framework for Composable Performance Evaluation of System
+Software*. In Proceedings of the 17th ACM/SPEC International Conference on
+Performance Engineering (ICPE '26), Florence, Italy (pp. 170–183). ACM.
+https://doi.org/10.1145/3777884.3796997
+
+<details>
+<summary>BibTeX</summary>
+
+```bibtex
+@inproceedings{Paolillo_benchkit_2026,
+  author    = {Paolillo, Antonio and Van Molle, Mats and Hasselmann, Ken},
+  title     = {benchkit: A Declarative Framework for Composable Performance Evaluation of System Software},
+  booktitle = {Proceedings of the 17th ACM/SPEC International Conference on Performance Engineering (ICPE '26)},
+  year      = {2026},
+  pages     = {170--183},
+  publisher = {ACM},
+  doi       = {10.1145/3777884.3796997},
+  url       = {https://doi.org/10.1145/3777884.3796997}
+}
+```
+</details>
+
+Citation metadata is also available in [`CITATION.cff`](CITATION.cff).
 
 
 ## Contributing

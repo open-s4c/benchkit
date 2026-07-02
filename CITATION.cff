@@ -1,0 +1,39 @@
+cff-version: "1.2.0"
+message: If you use benchkit in your research or project, please cite our ICPE 2026 paper.
+title: "benchkit: Performance Evaluation Framework"
+authors:
+  - family-names: Paolillo
+    given-names: Antonio
+    orcid: "https://orcid.org/0000-0001-6608-6562"
+  - family-names: Van Molle
+    given-names: Mats
+    orcid: "https://orcid.org/0009-0006-5710-3969"
+  - family-names: Hasselmann
+    given-names: Ken
+    orcid: "https://orcid.org/0000-0002-8196-9889"
+preferred-citation:
+  type: conference-paper
+  title: "benchkit: A Declarative Framework for Composable Performance Evaluation of System Software"
+  authors:
+    - family-names: Paolillo
+      given-names: Antonio
+      orcid: "https://orcid.org/0000-0001-6608-6562"
+    - family-names: Van Molle
+      given-names: Mats
+      orcid: "https://orcid.org/0009-0006-5710-3969"
+    - family-names: Hasselmann
+      given-names: Ken
+      orcid: "https://orcid.org/0000-0002-8196-9889"
+  collection-title: "Proceedings of the 17th ACM/SPEC International Conference on Performance Engineering (ICPE '26)"
+  conference:
+    name: "17th ACM/SPEC International Conference on Performance Engineering (ICPE '26)"
+    city: Florence
+    country: IT
+  year: 2026
+  month: 5
+  start: 170
+  end: 183
+  publisher:
+    name: "Association for Computing Machinery"
+  doi: 10.1145/3777884.3796997
+  url: "https://doi.org/10.1145/3777884.3796997"
