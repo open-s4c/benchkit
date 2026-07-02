@@ -2,90 +2,22 @@
 # Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-import os
-from typing import Dict, Iterable, Optional
-
-from heater_sequential import HeaterSeqBench
-
-from benchkit.benchmark import CommandAttachment, PostRunHook, PreRunHook
-from benchkit.campaign import CampaignCartesianProduct, CampaignSuite, Constants
-from benchkit.commandwrappers import CommandWrapper
-from benchkit.platforms import Platform, get_current_platform
-from benchkit.sharedlibs import SharedLib
-from benchkit.utils.dir import get_curdir
-from benchkit.utils.types import PathType
-
-
-def heater_seq_campaign(
-    name: str = "sequential_heater_campaign",
-    benchmark: Optional[HeaterSeqBench] = None,
-    src_dir: Optional[PathType] = None,
-    build_dir: Optional[str] = None,
-    results_dir: Optional[PathType] = None,
-    command_wrappers: Iterable[CommandWrapper] = (),
-    command_attachments: Iterable[CommandAttachment] = (),
-    shared_libs: Iterable[SharedLib] = (),
-    pre_run_hooks: Iterable[PreRunHook] = (),
-    post_run_hooks: Iterable[PostRunHook] = (),
-    platform: Platform | None = None,
-    nb_runs: int = 1,
-    benchmark_duration_seconds: int = 5,
-    cpu: Iterable[int] = (0),
-    debug: bool = False,
-    gdb: bool = False,
-    enable_data_dir: bool = False,
-    continuing: bool = False,
-    constants: Constants = None,
-    pretty: Optional[Dict[str, str]] = None,
-) -> CampaignCartesianProduct:
-    """Return a cartesian product campaign configured for the Sequential Heater benchmark."""
-    variables = {
-        "cpu": cpu,
-    }
-
-    if src_dir is None:
-        pass  # TODO try some search heuristics
-
-    if benchmark is None:
-        benchmark = HeaterSeqBench(
-            src_dir=src_dir,
-            command_wrappers=command_wrappers,
-            command_attachments=command_attachments,
-            shared_libs=shared_libs,
-            pre_run_hooks=pre_run_hooks,
-            post_run_hooks=post_run_hooks,
-            platform=platform,
-            build_dir=build_dir,
-        )
-
-    return CampaignCartesianProduct(
-        name=name,
-        benchmark=benchmark,
-        nb_runs=nb_runs,
-        variables=variables,
-        constants=constants,
-        debug=debug,
-        gdb=gdb,
-        enable_data_dir=enable_data_dir,
-        continuing=continuing,
-        benchmark_duration_seconds=benchmark_duration_seconds,
-        results_dir=results_dir,
-        pretty=pretty,
-    )
+from benchkit.benches.heater import heater_seq_campaign
+from benchkit.campaign import CampaignSuite
+from benchkit.platforms import get_current_platform
 
 
 def main() -> None:
     """Main function of the campaign script."""
 
-    # Where is the benchmark code located
-    src_dir = (get_curdir(__file__) / "").resolve()
+    # Define the platform where to run the benchmark
+    platform = get_current_platform()
 
     # Define the campaign
     campaign = heater_seq_campaign(
-        src_dir=src_dir,
-        nb_runs=3,
-        benchmark_duration_seconds=3,
-        cpu=range(0, os.cpu_count()),
+        nb_runs=1,
+        duration_s=1,
+        cpu=range(0, platform.nb_cpus()),
     )
 
     # Define the campaign suite and run the benchmarks in the suite
