@@ -77,6 +77,7 @@ Example:
     ... )
     >>> record["duration_s"]
 """
+
 import os
 import re
 from pathlib import Path
@@ -133,8 +134,8 @@ class SPECCPU2017Bench:
             (`<parent_dir>/spec`).
         """
         parent_dir = get_benches_dir(parent_dir=parent_dir)
-        spec_dir = parent_dir / "spec"
-        mnt_dir = benchkit_home_dir() / "spec-mnt"
+        spec_dir = parent_dir / "spec-cpu-2017"
+        mnt_dir = benchkit_home_dir() / "spec-cpu-2017-mnt"
 
         comm = ctx.platform.comm
 
