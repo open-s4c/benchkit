@@ -141,15 +141,17 @@ def git_apply_patches(
     platform = ctx.platform
     comm = platform.comm
 
+    repo_dir = Path(repo_dir)
     for patch in patches:
-        # TODO: This currently assumes patch files are present on the target machine.
         comm_patch = comm.host_to_comm_path(host_path=patch)
         if not comm.isfile(comm_patch):
-            raise FileNotFoundError(
-                f"Patch file not found on target machine: {comm_patch}. "
-                "Applying patches currently assumes patches are available "
-                "locally on the target comm."
-            )
+            # The patch lives on the orchestrator, not the target (e.g. a fresh
+            # remote board). Stage it next to the benches dir under
+            # _patches/<repo-name>/<patch-name>, then apply from there.
+            staged_dir = repo_dir.parent / "_patches" / repo_dir.name
+            comm.makedirs(path=staged_dir, exist_ok=True)
+            comm_patch = staged_dir / Path(patch).name
+            comm.copy_from_host(source=patch, destination=comm_patch)
 
         ctx.exec(
             argv=["git", "apply", str(comm_patch)],
