@@ -1161,7 +1161,11 @@ class Benchmark:
         max_nb_digits = len(str(total_nb_runs))
         nb_run_str = f"{run_id:0{max_nb_digits}}"
 
-        dirnames = [f"{k}-{v}" for k, v in record_parameters.items()] + [f"run-{nb_run_str}"]
+        def _safe(value: object) -> str:
+            # a variable value must never spawn nested dirs in the result hierarchy
+            return str(value).replace(os.sep, "_").replace("/", "_")
+
+        dirnames = [f"{k}-{_safe(v)}" for k, v in record_parameters.items()] + [f"run-{nb_run_str}"]
         result = bdd.joinpath(*dirnames).resolve()
 
         if not result.is_dir():

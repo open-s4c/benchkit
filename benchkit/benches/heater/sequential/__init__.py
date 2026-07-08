@@ -101,7 +101,7 @@ class HeaterSequentialBench:
         Returns:
             FetchResult: contains `src_dir`, the directory holding heaterseq.c.
         """
-        parent_dir = get_benches_dir(parent_dir=parent_dir)
+        parent_dir = get_benches_dir(parent_dir=parent_dir, comm=ctx.platform.comm)
         src_dir = parent_dir / name
         ctx.platform.comm.makedirs(src_dir, exist_ok=True)
 

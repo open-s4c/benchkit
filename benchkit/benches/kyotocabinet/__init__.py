@@ -124,7 +124,7 @@ class KyotoCabinetBench:
                 - src_dir: Path to the extracted and patched KyotoCabinet
                   source directory.
         """
-        parent_dir = get_benches_dir(parent_dir=parent_dir)
+        parent_dir = get_benches_dir(parent_dir=parent_dir, comm=ctx.platform.comm)
 
         platform = ctx.platform
         comm = platform.comm

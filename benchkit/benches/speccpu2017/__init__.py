@@ -133,7 +133,7 @@ class SPECCPU2017Bench:
             FetchResult with `src_dir` set to the installed SPEC directory
             (`<parent_dir>/spec`).
         """
-        parent_dir = get_benches_dir(parent_dir=parent_dir)
+        parent_dir = get_benches_dir(parent_dir=parent_dir, comm=ctx.platform.comm)
         spec_dir = parent_dir / "spec-cpu-2017"
         mnt_dir = benchkit_home_dir() / "spec-cpu-2017-mnt"
 
