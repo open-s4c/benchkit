@@ -178,7 +178,7 @@ class Splash4Bench:
         commit: str = SPLASH4_COMMIT,
     ) -> FetchResult:
         """Clone the SPLASH-4 repository (idempotent via git_clone)."""
-        parent_dir = get_benches_dir(parent_dir=parent_dir)
+        parent_dir = get_benches_dir(parent_dir=parent_dir, comm=ctx.platform.comm)
         repo_dir = git_clone(
             ctx=ctx,
             url=SPLASH4_URL,

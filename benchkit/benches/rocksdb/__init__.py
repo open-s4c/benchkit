@@ -106,7 +106,7 @@ class RocksDBBench:
         Returns:
             FetchResult containing the path to the cloned repository.
         """
-        parent_dir = get_benches_dir(parent_dir=parent_dir)
+        parent_dir = get_benches_dir(parent_dir=parent_dir, comm=ctx.platform.comm)
 
         rocksdb_dir = git_clone(
             ctx=ctx,

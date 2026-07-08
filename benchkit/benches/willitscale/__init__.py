@@ -128,7 +128,7 @@ class WillitscaleBench:
             ... )
         """
 
-        parent_dir = get_benches_dir(parent_dir=parent_dir)
+        parent_dir = get_benches_dir(parent_dir=parent_dir, comm=ctx.platform.comm)
 
         willitscale_dir = git_clone(
             ctx=ctx,

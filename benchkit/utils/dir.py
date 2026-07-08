@@ -280,7 +280,7 @@ def benchkit_dir() -> pathlib.Path:
     return benchkit_root_dir.resolve()
 
 
-def benchkit_home_dir() -> pathlib.Path:
+def benchkit_home_dir(comm=None) -> pathlib.Path:
     """
     Return the benchkit user home directory.
 
@@ -291,11 +291,26 @@ def benchkit_home_dir() -> pathlib.Path:
       1. If BENCHKIT_HOME is set in the environment, use it.
       2. Otherwise, default to ~/.benchkit/
 
+    When ``comm`` is provided, resolution happens on the **target** platform
+    (its ``$HOME`` / ``BENCHKIT_HOME``), not the orchestrator's, so that a remote
+    host with a different home directory gets a valid path. Without ``comm``, the
+    local machine is used.
+
     The directory may not necessarily exist yet.
+
+    Args:
+        comm: Optional communication layer of the target platform.
 
     Returns:
         pathlib.Path: Absolute path to the benchkit home directory.
     """
+    if comm is not None:
+        out = comm.shell(
+            command=["sh", "-lc", "echo ${BENCHKIT_HOME:-$HOME/.benchkit}"],
+            output_is_log=False,
+        ).strip()
+        return pathlib.Path(out)
+
     env = os.environ.get("BENCHKIT_HOME")
     if env:
         return pathlib.Path(env).expanduser().resolve()
@@ -303,7 +318,7 @@ def benchkit_home_dir() -> pathlib.Path:
     return pathlib.Path("~/.benchkit").expanduser().resolve()
 
 
-def get_benches_dir(parent_dir: pathlib.Path | None) -> pathlib.Path:
+def get_benches_dir(parent_dir: pathlib.Path | None, comm=None) -> pathlib.Path:
     """
     Return the directory where benchmark sources are stored.
 
@@ -312,15 +327,20 @@ def get_benches_dir(parent_dir: pathlib.Path | None) -> pathlib.Path:
 
         ~/.benchkit/benches/
 
+    When ``comm`` is provided, the default is resolved on the **target** platform
+    (see :func:`benchkit_home_dir`), so remote fetches land under the target's
+    own home directory rather than the orchestrator's.
+
     Args:
         parent_dir: Optional path overriding the default benches directory.
+        comm: Optional communication layer of the target platform.
 
     Returns:
         pathlib.Path: Path to the directory containing benchmark sources.
     """
-    if parent_dir is None:
-        return benchkit_home_dir() / "benches"
-    return parent_dir
+    if parent_dir is not None:
+        return parent_dir
+    return benchkit_home_dir(comm=comm) / "benches"
 
 
 def get_results_dir(results_dir: pathlib.Path | None) -> pathlib.Path:
