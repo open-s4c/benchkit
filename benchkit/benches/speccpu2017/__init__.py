@@ -156,7 +156,6 @@ class SPECCPU2017Bench:
 
         # cp config
         arch = ctx.platform.architecture
-        print(arch)
         if arch not in ["x86_64", "aarch64"]:
             raise NotImplementedError(
                 f"SPEC CPU 2017 is only supported on x86_64 and aarch64 (got {arch})"
