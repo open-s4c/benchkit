@@ -27,9 +27,12 @@ class FetchResult:
 
     Attributes:
         src_dir: Path to the directory containing the fetched source code.
+        other: Additional metadata from the fetch process (e.g., paths to config files or
+               temporary directories).
     """
 
     src_dir: Path
+    other: Vars = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
