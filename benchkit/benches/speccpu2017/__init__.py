@@ -161,41 +161,22 @@ class SPECCPU2017Bench:
                 f"SPEC CPU 2017 is only supported on x86_64 and aarch64 (got {arch})"
             )
 
-        if arch == "x86_64":
-            ctx.exec(
-                argv=["cp", "config/Example-gcc-linux-x86.cfg", "config/config-benchkit.cfg"],
-                cwd=spec_dir,
-            )
+        ctx.exec(
+            argv=["cp", f"config/Example-gcc-linux-{arch}.cfg", "config/config-benchkit.cfg"],
+            cwd=spec_dir,
+        )
 
-            # sed config
-            sed_edit(
-                ctx=ctx,
-                base_dir=spec_dir,
-                edits=[
-                    (
-                        's#"/opt/rh/devtoolset-9/root/usr"#"/usr"#',
-                        Path("config/config-benchkit.cfg"),
-                    ),
-                ],
-            )
-
-        if arch == "aarch64":
-            ctx.exec(
-                argv=["cp", "config/Example-gcc-linux-aarch64.cfg", "config/config-benchkit.cfg"],
-                cwd=spec_dir,
-            )
-
-            # sed config
-            sed_edit(
-                ctx=ctx,
-                base_dir=spec_dir,
-                edits=[
-                    (
-                        's#"/opt/rh/devtoolset-9/root/usr"#"/usr"#',
-                        Path("config/config-benchkit.cfg"),
-                    ),
-                ],
-            )
+        # sed config
+        sed_edit(
+            ctx=ctx,
+            base_dir=spec_dir,
+            edits=[
+                (
+                    's#"/opt/rh/devtoolset-9/root/usr"#"/usr"#',
+                    Path("config/config-benchkit.cfg"),
+                ),
+            ],
+        )
 
         return FetchResult(src_dir=spec_dir)
 
