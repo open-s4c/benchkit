@@ -133,7 +133,7 @@ class SPECCPU2017Bench:
             FetchResult with `src_dir` set to the installed SPEC directory
             (`<parent_dir>/spec`).
         """
-        parent_dir = get_benches_dir(parent_dir=parent_dir, comm=ctx.platform.comm)
+        parent_dir = get_benches_dir(parent_dir=parent_dir)
         spec_dir = parent_dir / "spec-cpu-2017"
         mnt_dir = benchkit_home_dir() / "spec-cpu-2017-mnt"
 
@@ -155,27 +155,48 @@ class SPECCPU2017Bench:
         fuseiso_umount(ctx, mnt_dir)
 
         # cp config
-        # TODO: support ARM
         arch = ctx.platform.architecture
-        if arch != "x86_64":
-            raise NotImplementedError(f"SPEC CPU 2017 is only supported on x86_64 (got {arch})")
+        print(arch)
+        if arch not in ["x86_64", "aarch64"]:
+            raise NotImplementedError(
+                f"SPEC CPU 2017 is only supported on x86_64 and aarch64 (got {arch})"
+            )
 
-        ctx.exec(
-            argv=["cp", "config/Example-gcc-linux-x86.cfg", "config/config-gcc-linux-x86.cfg"],
-            cwd=spec_dir,
-        )
+        if arch == "x86_64":
+            ctx.exec(
+                argv=["cp", "config/Example-gcc-linux-x86.cfg", "config/config-benchkit.cfg"],
+                cwd=spec_dir,
+            )
 
-        # sed config
-        sed_edit(
-            ctx=ctx,
-            base_dir=spec_dir,
-            edits=[
-                (
-                    's#"/opt/rh/devtoolset-9/root/usr"#"/usr"#',
-                    Path("config/config-gcc-linux-x86.cfg"),
-                ),
-            ],
-        )
+            # sed config
+            sed_edit(
+                ctx=ctx,
+                base_dir=spec_dir,
+                edits=[
+                    (
+                        's#"/opt/rh/devtoolset-9/root/usr"#"/usr"#',
+                        Path("config/config-benchkit.cfg"),
+                    ),
+                ],
+            )
+
+        if arch == "aarch64":
+            ctx.exec(
+                argv=["cp", "config/Example-gcc-linux-aarch64.cfg", "config/config-benchkit.cfg"],
+                cwd=spec_dir,
+            )
+
+            # sed config
+            sed_edit(
+                ctx=ctx,
+                base_dir=spec_dir,
+                edits=[
+                    (
+                        's#"/opt/rh/devtoolset-9/root/usr"#"/usr"#',
+                        Path("config/config-benchkit.cfg"),
+                    ),
+                ],
+            )
 
         return FetchResult(src_dir=spec_dir)
 
@@ -222,7 +243,7 @@ class SPECCPU2017Bench:
                 (
                     "source shrc && "
                     f"runcpu --fake --loose --size {size} "
-                    f"--tune base --config config-gcc-linux-x86.cfg {bench_name}"
+                    f"--tune base --config config-benchkit.cfg {bench_name}"
                 ),
             ],
             cwd=src_dir,
@@ -252,7 +273,7 @@ class SPECCPU2017Bench:
                     (
                         "source shrc && "
                         f"runcpu --loose --size {size} "
-                        f"--tune base --config config-gcc-linux-x86.cfg {bench_name}"
+                        f"--tune base --config config-benchkit.cfg {bench_name}"
                     ),
                 ],
                 cwd=src_dir,
