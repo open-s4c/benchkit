@@ -490,6 +490,7 @@ def CampaignCartesianProduct(
     nb_runs: int = 1,
     duration_s: int | None = None,
     results_dir: Path | None = None,
+    tmp_dir: Path | None = None,
     command_wrappers: Iterable[CommandWrapper] = (),
     command_attachments: Iterable[CommandAttachment] = (),
     shared_libs: Iterable[SharedLib] = (),
@@ -515,6 +516,7 @@ def CampaignCartesianProduct(
         duration_s: Legacy benchmark duration (seconds). Passed to the legacy engine as
             `benchmark_duration_seconds` and forwarded to the new run context as `duration_s`.
         results_dir: Optional base directory for results.
+        tmp_dir: Optional directory where temporary campaign files are stored.
         command_wrappers: Legacy command wrappers (applied via `RunContext.exec` interception).
         command_attachments: Legacy command attachments (not supported).
         shared_libs: Legacy shared libs (applied via `RunContext.exec` interception).
@@ -557,6 +559,7 @@ def CampaignCartesianProduct(
         continuing=False,
         benchmark_duration_seconds=duration_s,
         results_dir=results_dir,
+        tmp_dir=tmp_dir,
         pretty=pretty,
         filter_func=None,
         symlink_latest=False,
@@ -578,6 +581,7 @@ def CampaignIterateVariables(
     post_run_hooks: Iterable[PostRunHook] = (),
     pretty: Pretty | None = None,
     platform: Platform | None = None,
+    tmp_dir: Path | None = None,
 ) -> CampaignIterateVariablesOld:
     """
     Create a legacy iterate-variables campaign for a new-protocol benchmark.
@@ -654,6 +658,7 @@ def CampaignIterateVariables(
         continuing=False,
         benchmark_duration_seconds=duration_s,
         results_dir=results_dir,
+        tmp_dir=tmp_dir,
         pretty=pretty,
         symlink_latest=False,
     )
