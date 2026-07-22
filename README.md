@@ -1,5 +1,6 @@
 # benchkit: Performance Evaluation Framework
 
+[![Website](https://img.shields.io/badge/website-benchkit.dev-1e5fd6)](https://benchkit.dev)
 [![PyPI - Version](https://img.shields.io/pypi/v/pybenchkit)](https://pypi.org/project/pybenchkit)
 [![GitHub License](https://img.shields.io/github/license/open-s4c/benchkit)](LICENSE)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/pybenchkit)](https://pypi.org/project/pybenchkit)
@@ -9,6 +10,7 @@
 pipeline, which includes platform stabilization, benchmark configuration
 & build, and an execution engine capable of exploring the specified
 parameter space of the problem.
+Project website: [benchkit.dev](https://benchkit.dev).
 
 Around a given benchmark, the user can define a set of experiments
 called **a campaign**.  Running the campaign within `benchkit` allows to
@@ -116,6 +118,50 @@ results in a format that is friendly with plotting tools.
 
 For further documentation, see the [documentation](docs/README.md)
 
+## Quick start
+
+Install from PyPI:
+
+```bash
+pip install pybenchkit
+```
+
+Then describe an experiment once as a campaign and run it. The following
+campaign benchmarks two LevelDB workloads across thread counts; it is
+the runnable version of Listing 1 of the ICPE 2026 paper (see the
+[reproduction artifact](https://github.com/softwarelanguageslab/icpe26-benchkit-ae)):
+
+```python
+from benchkit import CampaignCartesianProduct
+from benchkit.benches.leveldb import LevelDBBench
+
+campaign = CampaignCartesianProduct(
+    name="leveldb_quickstart",
+    benchmark=LevelDBBench(),
+    variables={
+        "bench_name": ["readrandom", "seekrandom"],
+        "nb_threads": [2, 4, 8],
+    },
+    nb_runs=3,
+    duration_s=10,
+)
+
+campaign.run()
+campaign.generate_graph(
+    plot_name="lineplot",
+    x="nb_threads",
+    y="throughput",
+    hue="bench_name",
+)
+```
+
+Running this script fetches and builds LevelDB, sweeps the parameter
+space (3 runs of 10 seconds per configuration), collects the results
+into a self-documenting CSV, and generates the throughput chart. The
+packaged benchmarks live in the `benchkit.benches` module (see
+[Supported benchmarks](#supported-benchmarks) below).
+
+
 ## Quick start with sugars
 
 If you want to rapidly evaluate command-line programs without writing full
@@ -157,14 +203,25 @@ This is especially useful for:
 See [`examples/cmdbench/dd.py`](examples/cmdbench/dd.py) for a full example.
 
 
-## Getting Started, with tutorials
+## Getting Started
 
-Without further ado, let us fix the idea by using tutorials.
-The repository provides different implementations called
-[examples](examples/), including locktorture, postgresql and rocksdb.
-We also provide what we call "[tutorials](tutorials/)", which are more
-extensive examples and also include the whole execution and scripting
-infrastructure.
+The best starting point after the quick start above is the
+[ICPE 2026 reproduction artifact](https://github.com/softwarelanguageslab/icpe26-benchkit-ae):
+it contains 9 runnable, self-contained example campaigns matching the
+listings of the paper (LevelDB, SPEC CPU, CPU placement, locks,
+schedulers, `perf stat`, flame graphs), plus the full experiments that
+regenerate the paper figures. All of them use the current campaign API
+and were verified on both x86 and ARM platforms (the artifact received
+the ICPE 2026 Artifact Available, Functional, and Reusable badges).
+
+The repository additionally provides benchmark integrations as
+[examples](examples/) (including locktorture, postgresql and rocksdb)
+and more extensive "[tutorials](tutorials/)" that also include the whole
+execution and scripting infrastructure.
+
+> **Note:** the tutorials below and the `examples/` integrations use the
+> legacy campaign API. They remain functional, and their migration to
+> the new engine API is in progress.
 
 ### Tutorial 1: simple evaluation of VSync spinlocks
 
@@ -257,16 +314,29 @@ campaigns, reproducible research can be attained.
 
 ## Supported benchmarks
 
-The following lists the benchmarks supported by `benchkit`:
+Benchmark integrations come in two flavors.
 
-- Leveldb
-- Rocksdb
-- Kyoto cabinet TODO
+Packaged in the `benchkit.benches` module, directly importable:
+
+- **SPEC CPU 2017 and SPEC CPU 2026**, driven non-intrusively through
+  SPEC's own `runcpu` harness, without modifying or redistributing SPEC
+  (requires a SPEC license and ISO image)
+- LevelDB
+- RocksDB
+- Kyoto Cabinet
+- NAS Parallel Benchmarks (NPB)
+- Graph500
+- Splash-4
+- VolanoMark
+- Will-It-Scale
+- microbenchmarks (heater, small utility benches)
+
+Provided as [examples](examples/) integrations:
+
 - benchmarksql
-- sysbench (MySQL, postgres)
-- Locktorture (Linux kernel)
-- Will-it-scale TODO
-- STREAM TODO
+- sysbench (MySQL, PostgreSQL)
+- locktorture (Linux kernel)
+- STREAM
 
 We will add more in the future, so stay tuned!
 Also, contributions are welcome, so if you added the support for an

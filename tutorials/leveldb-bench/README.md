@@ -1,5 +1,11 @@
 # Tutorial: LevelDB
 
+> **Note:** this tutorial uses the legacy campaign API. It remains
+> functional, and its migration to the new engine API is in progress.
+> A packaged LevelDB integration using the current API is available in
+> `benchkit.benches.leveldb` (see the README quick start and the
+> [ICPE 2026 reproduction artifact](https://github.com/softwarelanguageslab/icpe26-benchkit-ae)).
+
 ## Clone LevelDB repo
 
 ```bash
