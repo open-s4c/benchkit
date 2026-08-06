@@ -6,10 +6,7 @@ import re
 from typing import Any, Dict, Iterable, List
 
 from pythainer.examples.builders import get_user_gui_builder
-from pythainer.examples.installs import (
-    opencv_lib_install_from_src,
-    realsense2_lib_install_from_src,
-)
+from pythainer.examples.installs import opencv_lib_install_from_src, realsense2_lib_install_from_src
 from pythainer.examples.runners import camera_runner, gui_runner, personal_runner
 from pythainer.runners import ConcreteDockerRunner
 
