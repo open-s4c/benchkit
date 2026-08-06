@@ -13,11 +13,7 @@ This file is not a unit test but a runnable example showing:
 import logging
 from pathlib import Path
 
-from benchkit.utils.logging import (
-    bkpprint,
-    bkprint,
-    configure_logging,
-)
+from benchkit.utils.logging import bkpprint, bkprint, configure_logging
 
 
 def main() -> None:
