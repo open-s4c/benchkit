@@ -147,7 +147,11 @@ class RocksDBBench:
                 ctx=ctx,
                 src_dir=src_dir,
                 targets=["release"],
-                options={"OBJ_DIR": f"{obj_dir}"},
+                options={
+                    "OBJ_DIR": f"{obj_dir}",
+                    # GCC 15 reports a harmless unused parameter in RocksDB 10.7.5.
+                    "DISABLE_WARNING_AS_ERROR": "1",
+                },
             )
 
         if not platform.comm.isdir(tmpdb_dir):
