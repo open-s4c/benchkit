@@ -62,7 +62,7 @@ Contexts are immutable dataclasses and expose:
 ctx.platform     # execution platform
 ctx.exec(...)    # execution primitive
 ctx.vars         # full variable bag for this record
-ctx.record_dir   # optional directory for record artifacts
+ctx.record_dir   # per-run directory for artifacts (RunContext/CollectContext only)
 ````
 
 Later contexts also expose previous results:
@@ -261,7 +261,8 @@ if ctx.record_dir:
     ctx.exec(argv=["cp", "config.ini", ctx.record_dir / "config.ini"])
 ```
 
-This directory is scoped to one record.
+This field is only available on `RunContext` and `CollectContext`,
+pointing to the specific per-run data directory.
 
 ---
 

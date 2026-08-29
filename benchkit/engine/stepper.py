@@ -106,7 +106,6 @@ class Stepper:
     def fetch(
         self,
         args: Vars,
-        record_dir: Path | None = None,
     ) -> StepSession:
         do_fetch = hasattr(self.bench, "fetch")
         fetch_args = {}
@@ -124,7 +123,6 @@ class Stepper:
             vars=args,
             default_args=default_args,
             platform=self.platform,
-            record_dir=record_dir,
         )
         if do_fetch:
             fetch_result = fetch_context.call(self.bench.fetch)
