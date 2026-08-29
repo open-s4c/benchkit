@@ -147,6 +147,7 @@ class LevelDBBench:
     def build(
         self,
         ctx: BuildContext,
+        build_type: str = "Release",
     ) -> BuildResult:
         """
         Build LevelDB's db_bench tool and prepare test database.
@@ -165,7 +166,7 @@ class LevelDBBench:
         """
         platform = ctx.platform
         src_dir = ctx.fetch_result.src_dir
-        obj_dir = build_dir_from_ctx(ctx=ctx)
+        obj_dir = build_dir_from_ctx(ctx=ctx, suffix=build_type.lower())
         db_bench_path = obj_dir / "db_bench"
         tmpdb_dir = obj_dir / "tmp" / "benchkit_level_db"
 
@@ -174,7 +175,7 @@ class LevelDBBench:
                 ctx=ctx,
                 src_dir=src_dir,
                 build_dir=obj_dir,
-                build_type="Release",
+                build_type=build_type,
                 target="db_bench",
             )
         if not platform.comm.isdir(tmpdb_dir):
