@@ -60,7 +60,7 @@ class RunOnceEngine:
         log.debug("Starting benchmark.")
         stepper = Stepper(bench=bench, platform=platform)
         log.debug("Fetching...")
-        session = stepper.fetch(args=args, record_dir=record_dir)
+        session = stepper.fetch(args=args)
         log.debug("Building...")
         session = stepper.build(session=session, args=args)
         log.debug("Running...")
