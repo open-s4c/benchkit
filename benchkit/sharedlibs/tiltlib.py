@@ -10,11 +10,7 @@ import sys
 from typing import Tuple
 
 from benchkit.platforms import Platform
-from benchkit.sharedlibs import (
-    EnvironmentVariables,
-    FromSourceSharedLib,
-    LdPreloadLibraries,
-)
+from benchkit.sharedlibs import EnvironmentVariables, FromSourceSharedLib, LdPreloadLibraries
 
 
 def cmake_configure_build(

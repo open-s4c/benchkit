@@ -43,6 +43,7 @@ class DockerCommLayer(CommunicationLayer):
     def background_subprocess(
         self,
         command: Command,
+        stdin: PathType,
         stdout: PathType,
         stderr: PathType,
         cwd: PathType | None,
@@ -66,6 +67,7 @@ class DockerCommLayer(CommunicationLayer):
 
         return subprocess.Popen(
             full_command,
+            stdin=stdin,
             stdout=stdout,
             stderr=stderr,
             env=env,

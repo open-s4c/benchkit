@@ -5,6 +5,7 @@ Command wrapper for the `Xlog` functionality of the JVM.
 """
 
 import os
+import re
 from typing import List, Optional, Tuple
 
 from benchkit.benchmark import RecordResult, WriteRecordFileFunction
@@ -23,6 +24,7 @@ class JVMXlogWrap(CommandWrapper):
     def __init__(self) -> None:
         super().__init__()
         self.platform = get_current_platform()
+        self._nb_threads = 1
 
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + []
@@ -52,6 +54,19 @@ class JVMXlogWrap(CommandWrapper):
 
         return wrapped_command, wrapped_environment
 
+    def prerun_hook(
+        self,
+        build_variables: RecordResult,
+        run_variables: RecordResult,
+        other_variables: RecordResult,
+        record_data_dir: PathType,
+    ) -> None:
+        if "nb_threads" not in run_variables:
+            print("ERROR: JVMXlogWrap expects the 'nb_threads' variable to be present")
+            return
+
+        self._nb_threads = run_variables["nb_threads"]
+
     def post_run_hook_update_results(
         self,
         experiment_results_lines: List[RecordResult],
@@ -66,25 +81,16 @@ class JVMXlogWrap(CommandWrapper):
 
         jvmxlog_pathname = os.path.join(record_data_dir, "jvmxlog.log")
 
+        pause_ms_re = re.compile(r"(\d+(?:[.,]\d+)?)ms$")
+
         total_gc_time: float = 0
         with open(jvmxlog_pathname) as file:
             for line in file:
-                splits = line.split(" ")
-                if splits[0][-2:] == "gc":
-                    gc_event = splits[splits.index("]") + 2 : splits.index("]") + 4]
-                    if (
-                        len(gc_event) == 2
-                        and gc_event[0] != "Concurrent"
-                        and gc_event[1] != "Remark"
-                        and gc_event[1] != "Cleanup"
-                    ):
-                        timing = splits[-1].strip()[:-2]
-                        try:
-                            value = float(timing.replace(",", "."))
-                            total_gc_time += value
-                        except ValueError:
-                            pass
+                if " GC(" in line and " Pause " in line:
+                    m = pause_ms_re.search(line)
+                    if m:
+                        total_gc_time += float(m.group(1).replace(",", "."))
 
-        output_dict = {"gc": total_gc_time}
+        output_dict = {"jvmxlogwrap_gc_ms": total_gc_time * self._nb_threads}
 
         return output_dict

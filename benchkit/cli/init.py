@@ -7,11 +7,7 @@ from pathlib import Path
 import black
 import isort
 
-from benchkit.cli.generate import (
-    generate_benchmark,
-    generate_campaign,
-    get_gitignore_content,
-)
+from benchkit.cli.generate import generate_benchmark, generate_campaign, get_gitignore_content
 from benchkit.utils.misc import get_benchkit_temp_folder_str
 
 _DOTGIT_DIR = Path(".git")

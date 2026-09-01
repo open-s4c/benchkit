@@ -20,15 +20,15 @@ def main() -> None:
     enable_non_sudo_perf(comm_layer=platform.comm)
 
     # Where is the benchmark code located
-    dacapobench_src_dir = (caller_dir() / "deps/dacapobench/benchmarks/").resolve()
+    dacapobench_src_dir = (caller_dir() / "deps/dacapobench/").resolve()
 
     speedupstackwrapper = JavaSpeedupStackWrapper()
 
     # Define the campaign, associated with the LevelDB benchmark
     campaign = dacapobench_campaign(
         src_dir=dacapobench_src_dir,
-        size=("small",),
-        # size=("default",),
+        # size=("small",),
+        size=("default",),
         # size=("large",),
         bench_names=[
             # "avrora",
@@ -52,13 +52,14 @@ def main() -> None:
             # "tradesoap",
             "xalan",
             # "zxing",
-            # "h2o", # Not supported due missing data
+            # "h2o",
         ],
-        nb_runs=3,
+        nb_runs=1,
         benchmark_duration_seconds=3,
         nb_threads=[1, 2, 4, 8],
         command_wrappers=speedupstackwrapper.command_wrappers(),
         command_attachments=speedupstackwrapper.command_attachments(),
+        pre_run_hooks=speedupstackwrapper.pre_run_hooks(),
         post_run_hooks=speedupstackwrapper.post_run_hooks(),
         enable_data_dir=True,
         # Makes sure not to clear the deps between benchmarks.
@@ -84,7 +85,7 @@ def main() -> None:
     )
 
     # Generate a speedup stacks
-    suite.generate_graph(plot_name="speedup-stack", use_json=True)
+    suite.generate_graph(plot_name="java-speedup-stack", use_json=True)
 
 
 if __name__ == "__main__":

@@ -311,6 +311,7 @@ class OpenHarmonyCommLayer(CommunicationLayer):
     def background_subprocess(
         self,
         command: Command,
+        stdin: PathType,
         stdout: PathType,
         stderr: PathType,
         cwd: PathType | None,
@@ -329,6 +330,7 @@ class OpenHarmonyCommLayer(CommunicationLayer):
 
         return subprocess.Popen(
             hdc_command,
+            stdin=stdin,
             stdout=stdout,
             stderr=stderr,
             env=env,

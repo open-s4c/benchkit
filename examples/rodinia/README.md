@@ -1,31 +1,33 @@
-# Example: RocksDB
+# Example: Rodinia
 
-## Clone RocksDB repo
+
+## Pull Rodinia 
+
 
 ```bash
-cd examples/rocksdb/
-mkdir deps
+mkdir -p deps
 cd deps/
-git clone https://github.com/facebook/rocksdb.git
-cd rocksdb/
-git checkout v8.5.3
-cd ../../../..
+git clone git@github.com:JuliaParallel/rodinia.git
+cd rodinia/
+git checkout ec580f6
+git apply ../../rodina-benchmark.patch 
+cd openmp
+make -j
+cd ../data/bfs/inputGen/
+make
+./gen_dataset.sh
+cd ../../heartwall/
+make
+cd ../lud/
+make
+cd ../../../../
 ```
 
 ## Generate venv & configure it
 
 ```bash
-cd examples/rocksdb/
 ./configure.sh
-cd ../..
-```
-
-## Run campaign for RocksDB benchmarks
-
-```bash
-cd examples/rocksdb/
 . ./venv/bin/activate
-./campaign_rocksdb.py
 ```
 
 ## Speedup stacks
@@ -99,66 +101,8 @@ sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_futex
 cd ../..
 ```
 
-
 Running the speedup stack campaign.
 ```
-./campaign_rocksdb_speedup_stacks.py
+./campaign_rodinia.py
 ```
 
-
-One shot from benchkit root to speedup stack example (for development)
-
-```
-sudo -v
-while true; do sudo -v; sleep 60; done &
-cd examples/rocksdb/
-mkdir deps
-cd deps/
-git clone https://github.com/facebook/rocksdb.git
-cd rocksdb/
-git checkout v8.5.3
-cd ../../../..
-cd examples/rocksdb/
-./configure.sh
-cd ../..
-cd examples/rocksdb/
-. ./venv/bin/activate
-cd deps/
-git clone git@github.com:iovisor/bcc.git
-cd bcc/
-git checkout 7da5916622dc3a581e4c4adc3003e588657f66fa
-git submodule update --init --recursive
-git apply ../../libbpf-tools-fix-compile.patch
-cd libbpf-tools/
-make -j
-sudo setcap cap_sys_resource,cap_sys_admin+eip ./klockstat
-sudo setcap cap_sys_resource,cap_sys_admin+eip ./offcputime
-sudo setcap cap_sys_resource,cap_sys_admin+eip ./llcstat
-sudo setcap cap_sys_ptrace+ep $(which strace)
-kill %1
-cd ../../..
-cd deps/
-# git clone https://github.com/theodegeest/thread-profiler-bpf.git --recursive
-git clone git@github.com:theodegeest/thread-profiler-bpf.git --recursive
-cd thread-profiler-bpf/
-make install
-make -j
-sudo setcap cap_sys_resource,cap_sys_admin+eip ./src/thread-profiler
-sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_fork
-sudo chmod -R a+r /sys/kernel/tracing/events/sched/sched_process_exit
-# sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_enter_read
-# sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_read
-sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_issue
-sudo chmod -R a+r /sys/kernel/tracing/events/block/block_rq_complete
-sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_enter_futex
-sudo chmod -R a+r /sys/kernel/tracing/events/syscalls/sys_exit_futex
-cd ../..
-./campaign_rocksdb_speedup_stacks.py
-```
-
-
-Cleanup of capabilities
-
-```
-sudo setcap -r /usr/bin/strace
-```

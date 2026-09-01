@@ -48,6 +48,9 @@ class JavaSpeedupStackWrapper:
             ),
         ]
 
+    def pre_run_hooks(self):
+        return [self.jvmxlogwrap.prerun_hook]
+
     def post_run_hooks(self):
         return [
             self.javaperfstatwrap.post_run_hook_update_results,

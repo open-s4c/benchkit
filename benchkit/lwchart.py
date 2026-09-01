@@ -17,7 +17,7 @@ import json
 import os
 import pathlib
 import sys
-from typing import Any, Dict, List, Protocol
+from typing import Any, Callable, Dict, List, Optional, Protocol
 
 import numpy as np
 from numpy import floating, mean
@@ -33,6 +33,7 @@ if any(importlib.util.find_spec(lib) is None for lib in libs):
     FacetGrid = Any
 else:
     import matplotlib.pyplot as plt
+    import matplotlib.ticker as mticker
     import pandas as pd
     import seaborn as sns
     from matplotlib.axes import Axes
@@ -136,6 +137,134 @@ def _generate_chart_from_df(
         chart.figure.subplots_adjust(top=0.9)  # Adjust the layout to make space for the title
         fig = chart.figure
     elif "speedup-stack" == plot_name:
+        facet_by_culumn = kwargs.get("facet_by", "bench_name")
+
+        facet_by_values = df[facet_by_culumn].unique()
+        n_facets = len(facet_by_values)
+
+        bench_names = df["bench_name"].unique()
+
+        sns.set_theme()
+        plt.rcParams["axes.labelsize"] = 20
+        plt.rcParams["xtick.labelsize"] = 15
+        plt.rcParams["ytick.labelsize"] = 15
+        fig, axes = plt.subplots(nrows=1, ncols=n_facets, figsize=(5 * n_facets, 8), sharey=True)
+
+        fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=24, y=0.98)
+
+        if n_facets == 1:
+            axes = [axes]
+
+        colors = sns.color_palette("pastel")
+
+        # TODO: Add color to the settings
+        compontent_settings = {
+            "measured": ("Measured", "", "#A1C9F4"),
+            "other": ("Other", "", "#FFB482"),
+            "threadprofiler_initialization_ns": ("Initialization", "/", "#8DE5A1"),
+            "threadprofiler_shutdown_ns": ("Shutdown", "xx", "#FF9F9B"),
+            "threadprofiler_offcpu_ns": ("Off-CPU Time", "|", "#D0BBFF"),
+            "threadprofiler_mutex_ns": ("Mutex Lock", ".", "#DEBB9B"),
+            "threadprofiler_futex_ns": ("Lock Contention", "x", "#FAB0E4"),
+            "threadprofiler_disk_io_ns": ("Disk IO", "\\\\", "#CFCFCF"),
+            "threadprofiler_literature_load_imbalance_ns": ("Load Imbalance", "//", "#FFFEA3"),
+            "threadprofiler_proposed_load_imbalance_ns": ("Load Imbalance", "//", "#FFFEA3"),
+            "threadprofiler_cpi_overhead_ns": ("Hardware Contention", "\\", "#9795FF"),
+            "klockstat_total_wait_ns": ("Klockstats", "x", "#FAB0E4"),
+            "offcputime_total_micro_s": ("Offcputime", "|", "#D0BBFF"),
+            "llcstat_total_nr_misses": ("LLCStat", "-", "#9795FF"),
+            "strace_total_time_s": ("Strace", "o", "#A1C9F4"),
+            "jvmxlogwrap_gc_ms": ("Garbage Collection", "..", "#54D0BE"),
+        }
+
+        pretty_compontent_map = {k: v[0] for k, v in compontent_settings.items()}
+
+        component_hatches_map = {k: v[1] for k, v in compontent_settings.items()}
+
+        component_color_map = {k: v[2] for k, v in compontent_settings.items()}
+
+        for ax, facet_value in zip(axes, facet_by_values):
+            bench_df = df[df[facet_by_culumn] == facet_value]
+
+            speedup_data = _get_speedup_data(bench_df, **kwargs)
+            # speedup_data = dict(sorted(speedup_data.items()))
+            __import__("pprint").pprint(speedup_data)
+
+            threads = list(speedup_data.keys())
+            nr_different_threads = len(threads)
+
+            nr_groups = len(next(iter(speedup_data.values())))
+
+            ind = np.arange(nr_different_threads)
+
+            group_width = 0.8
+            max_bar_width = group_width / nr_groups
+
+            for group_idx in range(nr_groups):
+                bottom = np.zeros(nr_different_threads)
+                top_positive = np.zeros(nr_different_threads)
+
+                x = ind - group_width / 2 + group_idx * max_bar_width + max_bar_width / 2
+
+                component_names = ["measured", "other"] + [
+                    k for k in speedup_data[1][group_idx].keys() if k not in ("measured", "other")
+                ]
+
+                for component_name in component_names:
+                    vals = [speedup_data[thread][group_idx][component_name] for thread in threads]
+
+                    if component_name == "measured":
+                        top_positive += vals
+
+                    slowdown_component_bitmap = [val >= 0 for val in vals]
+
+                    component_bottom = [
+                        bot if val >= 0 else top
+                        for val, bot, top in zip(vals, bottom, top_positive)
+                    ]
+
+                    widths = [max_bar_width if val >= 0 else max_bar_width * 0.5 for val in vals]
+
+                    ax.bar(
+                        x,
+                        vals,
+                        bottom=component_bottom,
+                        width=widths,
+                        label=pretty_compontent_map[component_name],
+                        color=component_color_map[component_name],
+                        hatch=component_hatches_map[component_name],
+                        edgecolor="black",
+                        linewidth=0.3,
+                        align="center",
+                    )
+
+                    bottom += [
+                        val if slowdown else 0
+                        for val, slowdown in zip(vals, slowdown_component_bitmap)
+                    ]
+
+                    top_positive += [
+                        0 if slowdown else val
+                        for val, slowdown in zip(vals, slowdown_component_bitmap)
+                    ]
+
+            if n_facets > 1:
+                ax.set_title(str(facet_by_culumn) + ": " + str(facet_value))
+            ax.set_xticks(ind)
+            ax.set_xticklabels([str(int(k)) for k in speedup_data.keys()])
+
+            if ax is axes[0]:
+                ax.set_ylabel("Speedup")
+                handles, labels = ax.get_legend_handles_labels()
+                by_label = dict(zip(labels, handles))
+                ax.legend(list(by_label.values())[::-1], list(by_label.keys())[::-1], loc="upper left", fontsize=15)
+
+        # fig.legend(handles, labels, loc="upper center", ncol=4, fontsize=15)
+        # plt.title(title + ": " + ", ".join(bench_names))
+        fig.supxlabel("Number of Threads", fontsize=20)
+        plt.tight_layout()
+        plt.show()
+    elif "java-speedup-stack" == plot_name:
         bench_names = df["bench_name"].unique()
         n_benches = len(bench_names)
 
@@ -160,7 +289,7 @@ def _generate_chart_from_df(
 
         for ax, bench in zip(axes, bench_names):
             bench_df = df[df["bench_name"] == bench]
-            speedup_data = _get_speedup_data(bench_df)
+            speedup_data = _get_java_speedup_data(bench_df)
             speedup_data = dict(sorted(speedup_data.items()))
 
             ind = np.arange(len(speedup_data))
@@ -180,6 +309,177 @@ def _generate_chart_from_df(
             ax.legend(loc="upper left")
 
         # plt.title(title + ": " + ", ".join(bench_names))
+        plt.tight_layout()
+        plt.show()
+    elif "thread-profile" == plot_name:
+        from matplotlib.ticker import FuncFormatter
+
+        all_thread_profiles = (
+            kwargs["speedupstackwrapper"].get_threadprofiler().get_per_thread_profiles()
+        )
+        show_run_number = kwargs["show_run_number"]
+
+        thread_profiles = all_thread_profiles[show_run_number]
+        # __import__("pprint").pprint(thread_profiles)
+        # tid = list(thread_profiles.keys())[1]
+        sorted_tids = sorted(list(thread_profiles.keys()))
+        thread_mapping = {v: i + 1 for i, v in enumerate(sorted_tids)}
+        main_thread_tid = sorted_tids[0]
+        main_thread_merged_profile_block = thread_profiles[main_thread_tid]["merged"]
+        main_thread_start_time_ns = main_thread_merged_profile_block["block_start_time_ns"]
+
+
+        local_df: DataFrame = df
+
+        # print(thread_profile)
+        bench_names = local_df["bench_name"].unique() if ("bench_name" in local_df) else []
+        # n_benches = len(bench_names)
+
+        sns.set_theme()
+        plt.rcParams["axes.labelsize"] = 18
+        plt.rcParams["xtick.labelsize"] = 14
+        plt.rcParams["ytick.labelsize"] = 14
+        fig, ax = plt.subplots(figsize=(8, 6))
+        # fig.suptitle(title + ": " + ", ".join(bench_names), fontsize=24, y=0.98)
+
+        # colors = sns.color_palette("pastel")
+        colors = sns.color_palette()
+
+        state_to_color_map = {
+            "SCHEDULED_OUT": colors[1],
+            "SCHEDULED_IN": colors[0],
+            "THREAD_EXIT": colors[3],
+            "MUTEX": colors[4],
+            "FUTEX": colors[6],
+            "DISK_IO": colors[2],
+        }
+
+        # plt.rcParams["patch.edgecolor"] = "none"
+        # plt.rcParams["patch.linewidth"] = 0.0
+
+        profile_settings = {
+            "edgecolor": "none",
+            "linewidth": 0,
+        }
+
+        for tid, idx in thread_mapping.items():
+            thread_profile = thread_profiles[tid]["blocks"]
+            # thread_profile = [thread_profiles[tid]["merged"]]
+
+            for profile_block in thread_profile:
+                # block_index = profile_block["block_index"]
+                block_start_time = profile_block["block_start_time_ns"]
+                block_end_time = profile_block["block_end_time_ns"]
+                # first_event_time = profile_block["first_event_time_ns"]
+                # last_event_time = profile_block["last_event_time_ns"]
+                # end_state = profile_block["end_state"]
+                offcpu_time = profile_block["offcpu_time_ns"]
+                mutex_time = profile_block["mutex_time_ns"]
+                futex_time = profile_block["futex_time_ns"]
+                disk_io_time = profile_block["disk_io_time_ns"]
+
+                cutoff_time = profile_block["cutoff_time_ns"]
+                block_total_width = (
+                    cutoff_time - block_start_time
+                    if cutoff_time
+                    else block_end_time - block_start_time
+                )
+
+                current_left = block_start_time - main_thread_start_time_ns
+
+                # Show all the components of block
+                # total_component_width = last_event_time - first_event_time
+                scheduled_in_width = (
+                    block_total_width - offcpu_time - mutex_time - futex_time - disk_io_time
+                )
+                if scheduled_in_width > 0:
+                    ax.barh(
+                        idx,
+                        scheduled_in_width,
+                        left=current_left,
+                        label="Scheduled In",
+                        color=state_to_color_map["SCHEDULED_IN"],
+                        **profile_settings,
+                    )
+                    current_left += scheduled_in_width
+                elif scheduled_in_width < 0:
+                    print("WARNING scheduled_in_width is negative", scheduled_in_width)
+                    print(block_total_width, offcpu_time, mutex_time, futex_time, disk_io_time)
+
+                if disk_io_time > 0:
+                    ax.barh(
+                        idx,
+                        disk_io_time,
+                        left=current_left,
+                        label="Disk I/O",
+                        color=state_to_color_map["DISK_IO"],
+                        **profile_settings,
+                    )
+                    current_left += disk_io_time
+
+                if offcpu_time > 0:
+                    ax.barh(
+                        idx,
+                        offcpu_time,
+                        left=current_left,
+                        label="Scheduled Out",
+                        color=state_to_color_map["SCHEDULED_OUT"],
+                        **profile_settings,
+                    )
+                    current_left += offcpu_time
+
+                if mutex_time > 0:
+                    ax.barh(
+                        idx,
+                        mutex_time,
+                        left=current_left,
+                        label="Mutex",
+                        color=state_to_color_map["MUTEX"],
+                        **profile_settings,
+                    )
+                    current_left += mutex_time
+
+                if futex_time > 0:
+                    ax.barh(
+                        idx,
+                        futex_time,
+                        left=current_left,
+                        label="Futex",
+                        color=state_to_color_map["FUTEX"],
+                        **profile_settings,
+                    )
+                    current_left += futex_time
+
+                # Show part after last event (if it exists)
+                # after_part_width = block_end_time - last_event_time
+                # if after_part_width > 0:
+                #     ax.barh(
+                #         idx,
+                #         after_part_width,
+                #         left=current_left,
+                #         label=end_state,
+                #         color=state_to_color_map[end_state],
+                #         **profile_settings,
+                #     )
+                #     current_left += after_part_width
+
+                # current_state = end_state
+
+        ax.set_yticks(list(thread_mapping.values()))
+        ax.set_yticklabels(list(thread_mapping.keys()))
+        # handles, labels = ax.get_legend_handles_labels()
+        handles, labels = ax.get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))  # removes duplicates
+        ax.legend(by_label.values(), by_label.keys(), fontsize=15)
+        ax.xaxis.set_major_formatter(
+            # FuncFormatter(lambda x, pos: f"{x / 1e9:.3f}")
+            FuncFormatter(lambda x, pos: f"{x/1e9:g}")
+        )
+        # ax.legend(loc="upper left")
+
+        plt.xlabel("Time (s)")
+        plt.ylabel("Thread Identifier (TID)")
+        plt.title(title + ": " + ", ".join(bench_names), fontsize=24)
         plt.tight_layout()
         plt.show()
     else:
@@ -229,31 +529,136 @@ def _generate_chart_from_df(
     plt.close()
 
 
+def time_transformation(
+    val: float,
+    from_unit: str,
+    to_unit: str,
+) -> float:
+    unit_table = {
+        "h": 60 * 60,
+        "m": 60,
+        "s": 1,
+        "ms": 1e-3,
+        "us": 1e-6,
+        "ns": 1e-9,
+    }
+    return val * (unit_table[from_unit] / unit_table[to_unit])
+
+
 def _get_speedup_data(
+    df: DataFrame,
+    duration_transformation: Optional[Callable[[float], float]],
+    speedup_stack_components: List[dict[str, Callable[[float, float], float]]],
+    constant_duration: bool = False,
+    speed_metric: Optional[str] = None,
+    **kwargs,
+) -> Dict[int, List[Dict[str, Any]]]:
+    speedup_stack_components_keys = [k for d in speedup_stack_components for k in d]
+    mean_df = (
+        df.groupby("nb_threads")[
+            ["duration"]
+            + speedup_stack_components_keys
+            + ([speed_metric] if constant_duration else [])
+        ]
+        .mean()
+        .reset_index()
+    )
+    if duration_transformation:
+        mean_df["duration"] = mean_df["duration"].apply(duration_transformation)
+
+    single_threaded_row = mean_df[mean_df["nb_threads"] == 1].iloc[0]
+    single_threaded_duration = mean_df.loc[mean_df["nb_threads"] == 1, "duration"].iloc[0]
+    single_threaded_speed_metric = (
+        mean_df.loc[mean_df["nb_threads"] == 1, speed_metric].iloc[0] if speed_metric else 0
+    )
+
+    data: dict[int, List[dict[str, float]]] = {}
+
+    for _, row in mean_df.iterrows():
+        nb_threads = row["nb_threads"]
+
+        duration = row["duration"]
+
+        # how much more data the benchmark has collected
+        duration_multiplier = (
+            row[speed_metric] / single_threaded_speed_metric if constant_duration else 1
+        )
+
+        measured_speedup = (duration_multiplier * single_threaded_duration) / duration
+
+        slowdown_components = [
+            {
+                name: (
+                    (
+                        func(row[name], nb_threads)
+                        - ((func(single_threaded_row[name], nb_threads)) * duration_multiplier)
+                    )
+                    / duration
+                )
+                for name, func in component_dict.items()
+            }
+            for component_dict in speedup_stack_components
+        ]
+
+        for components in slowdown_components:
+            components["other"] = (
+                nb_threads
+                - measured_speedup
+                - sum(map(lambda x: x if x >= 0 else 0, components.values()))
+            )
+
+            components["measured"] = measured_speedup
+
+        data[nb_threads] = slowdown_components
+
+    return data
+
+
+def _get_java_speedup_data(
     df: DataFrame,
 ) -> Dict[str, Dict[str, Any]]:
     single_threaded_duration = df[df["nb_threads"] == 1]["duration"].values[0]
-    single_threaded_gc = df[df["nb_threads"] == 1]["gc"].values[0]
+    single_threaded_gc = df[df["nb_threads"] == 1]["jvmxlogwrap_gc_ms"].values[0]
     multithreaded_df = df[df["nb_threads"] != 1]
     data = {}
 
     for _, row in multithreaded_df.iterrows():
+        print(
+            "t:",
+            row["nb_threads"],
+            ", d:",
+            row["duration"],
+            ", s_gc:",
+            single_threaded_gc,
+            ", gc:",
+            row["jvmxlogwrap_gc_ms"],
+        )
         perfect_speedup_duration = single_threaded_duration / row["nb_threads"]
+        print(
+            f"DEBUGPRINT[88]: lwchart.py:616: perfect_speedup_duration={perfect_speedup_duration}"
+        )
 
         measured_component = perfect_speedup_duration / row["duration"]
-        gc_component = ((row["nb_threads"] * row["gc"]) - single_threaded_gc) / row["duration"]
+        print(f"DEBUGPRINT[89]: lwchart.py:619: measured_component={measured_component}")
+        gc_component = ((row["jvmxlogwrap_gc_ms"]) - single_threaded_gc) / row["duration"]
+        print(f"DEBUGPRINT[90]: lwchart.py:621: gc_component={gc_component}")
         sync_component = (row["context-switches"] / 1000) / row["duration"]
+        print(f"DEBUGPRINT[91]: lwchart.py:623: sync_component={sync_component}")
         lock_component = row["lock"] / row["duration"]
+        print(f"DEBUGPRINT[92]: lwchart.py:625: lock_component={lock_component}")
 
         other_component = 1 - measured_component - gc_component - sync_component - lock_component
+        print(f"DEBUGPRINT[93]: lwchart.py:628: other_component={other_component}")
 
         data[row["nb_threads"]] = {
             "measured": measured_component * row["nb_threads"],
-            "gc": gc_component * row["nb_threads"],
+            "gc": gc_component,
             "sync": sync_component * row["nb_threads"],
             "lock": lock_component * row["nb_threads"],
             "other": other_component * row["nb_threads"],
         }
+
+    print(data)
     return data
 
 
@@ -465,7 +870,7 @@ def _process_jsons(
     # TODO: The processing of json's is currently tightly linked with the
     # processing needed for speedup stacks.
     # This will need to be refactored in order to process arbitrary json.
-    data_columns = ["duration", "gc", "lock", "context-switches"]
+    data_columns = ["duration", "jvmxlogwrap_gc_ms", "lock", "context-switches"]
     information_columns = [
         "experiment_name",
         "benchmark_name",

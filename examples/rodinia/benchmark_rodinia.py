@@ -1,12 +1,12 @@
-# Copyright (C) 2025 Vrije Universiteit Brussel. All rights reserved.
+# Copyright (C) 2026 Vrije Universiteit Brussel. All rights reserved.
 # SPDX-License-Identifier: MIT
 
-import os
 import pathlib
+import re
 from typing import Any, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark, CommandAttachment, PostRunHook, PreRunHook
-from benchkit.campaign import CampaignCartesianProduct, Constants
+from benchkit.campaign import CampaignCartesianProduct, CampaignIterateVariables, Constants
 from benchkit.commandwrappers import CommandWrapper
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.platforms import Platform
@@ -14,33 +14,16 @@ from benchkit.sharedlibs import SharedLib
 from benchkit.utils.types import PathType
 
 supported_bench_names = [
-    "avrora",
-    "batik",
-    "biojava",
-    "cassandra",
-    "eclipse",
-    "fop",
-    "graphchi",
-    "h2",
-    "jme",
-    "jython",
-    "kafka",
-    "luindex",
-    "lusearch",
-    "pmd",
-    "spring",
-    "sunflow",
-    "tomcat",
-    "tradebeans",
-    "tradesoap",
-    "xalan",
-    "zxing",
-    "h2o",
+    "bfs",
+    "heartwall",
+    "lud",
+    "needle",
+    "srad",
 ]
 
 
-class DacapobenchBench(Benchmark):
-    """Benchmark object for dacapobench benchmark."""
+class RodiniaBench(Benchmark):
+    """Benchmark object for Rodinia benchmarks."""
 
     def __init__(
         self,
@@ -51,8 +34,6 @@ class DacapobenchBench(Benchmark):
         pre_run_hooks: Iterable[PreRunHook] = (),
         post_run_hooks: Iterable[PostRunHook] = (),
         platform: Platform | None = None,
-        clean_in_between_different_benchmarks: bool = False,
-        # build_dir: PathType | None = None,
     ) -> None:
         super().__init__(
             command_wrappers=command_wrappers,
@@ -65,15 +46,12 @@ class DacapobenchBench(Benchmark):
             self.platform = platform  # TODO Warning! overriding upper class platform
 
         bench_src_path = pathlib.Path(src_dir)
-        if not self.platform.comm.isdir(bench_src_path) and self.platform.comm.isfile(
-            bench_src_path / "build.xml"
-        ):
+        if not self.platform.comm.isdir(bench_src_path):
             raise ValueError(
-                f"Invalid dacapobench source path: {bench_src_path}\n"
+                f"Invalid Rodinia source path: {bench_src_path}\n"
                 "src_dir argument can be defined manually."
             )
         self._bench_src_path = bench_src_path
-        self.clean_in_between_different_benchmarks = clean_in_between_different_benchmarks
 
     @property
     def bench_src_path(self) -> pathlib.Path:
@@ -89,40 +67,13 @@ class DacapobenchBench(Benchmark):
     def get_run_var_names() -> List[str]:
         return [
             "bench_name",
-            "size",
             "nb_threads",
-            "nb_iterations",
-            "start_heap_space",
-            "max_heap_space",
-            "garbage_collector",
+            "size",
         ]
-
-    @staticmethod
-    def _parse_results(
-        output: str,
-        bench_name: str,
-        nb_threads: int,
-    ) -> Dict[str, str]:
-        duration = ""
-        for line in output.split("\n"):
-
-            output_exceptions = ["lusearch"]
-            if bench_name in output_exceptions and line.startswith("===== DaCapo processed"):
-                splits = line.split(" ")
-                duration = splits[6]
-            elif (
-                bench_name not in output_exceptions
-                and line.startswith("===== DaCapo")
-                and "PASSED" in line
-            ):
-                splits = line.split(" ")
-                duration = splits[6]
-
-        return {"duration": duration}
 
     def dependencies(self) -> List[PackageDependency]:
         return super().dependencies() + [
-            PackageDependency("openjdk-21-jdk"),
+            # PackageDependency("openjdk-21-jdk"),
         ]
 
     def prebuild_bench(self, **_kwargs) -> None:
@@ -141,33 +92,38 @@ class DacapobenchBench(Benchmark):
     def single_run(  # pylint: disable=arguments-differ
         self,
         benchmark_duration_seconds: int,
-        size: str,
+        size: Any,
         nb_threads: int,
-        nb_iterations: int,
         bench_name: str,
-        start_heap_space: str,
-        max_heap_space: str,
-        garbage_collector: str,
         **kwargs,
     ) -> str:
 
-        environment = self._preload_env(
-            size=size,
-            **kwargs,
-        )
+        environment = {"OMP_NUM_THREADS": str(nb_threads)}
 
-        run_command = [
-            "java",
-            "-jar",
-            f"-Xms{start_heap_space}",
-            f"-Xmx{max_heap_space}",
-            f"-XX:+Use{garbage_collector}",
-            "dacapo-23.11-MR2-chopin.jar",
-            bench_name,
-            f"--thread-count={nb_threads}",
-            f"--size={size}",
-            f"--iterations={nb_iterations}",
-        ]
+        if bench_name == "needle":
+            bench_dir = self._bench_src_path / "nw"
+        elif bench_name == "srad":
+            bench_dir = self._bench_src_path / "srad_v2"
+        else:
+            bench_dir = self._bench_src_path / bench_name
+
+        run_command = [f"./{bench_name}"]
+
+        match bench_name:
+            case "bfs":
+                run_command.append(f"../../data/bfs/inputGen/graph{size}.txt")
+            case "heartwall":
+                run_command.extend(["../../data/heartwall/test.avi", str(size)])
+            case "lud":
+                run_command.extend(["-n", str(nb_threads), "-i", f"../../data/lud/{size}.dat"])
+            case "needle":
+                run_command.extend([str(size), "10", str(nb_threads)])
+            case "srad":
+                run_command.extend(
+                    ["2048", "2048", "0", "127", "0", "127", str(nb_threads), "0.5", str(size)]
+                )  # TODO: might change another argument as size
+            case _:
+                raise RuntimeWarning("Unkown bench_name")
 
         wrapped_run_command, wrapped_environment = self._wrap_command(
             run_command=run_command,
@@ -178,7 +134,7 @@ class DacapobenchBench(Benchmark):
         output = self.run_bench_command(
             run_command=run_command,
             wrapped_run_command=wrapped_run_command,
-            current_dir=self._bench_src_path,
+            current_dir=bench_dir,
             environment=environment,
             wrapped_environment=wrapped_environment,
             print_output=False,
@@ -191,18 +147,13 @@ class DacapobenchBench(Benchmark):
         run_variables: Dict[str, Any],
         **_kwargs,
     ) -> Dict[str, Any]:
-        nb_threads = int(run_variables["nb_threads"])
-        bench_name = run_variables["bench_name"]
-        result_dict = self._parse_results(
-            output=command_output, bench_name=bench_name, nb_threads=nb_threads
-        )
-        return result_dict
+        return {}
 
 
-def dacapobench_campaign(
-    name: str = "dacapobench_campaign",
-    benchmark: Optional[DacapobenchBench] = None,
-    bench_names: Iterable[str] = ("lusearch",),
+def rodinia_campaign(
+    name: str = "rodinia_campaign",
+    benchmark: Optional[RodiniaBench] = None,
+    bench_names: Iterable[str] = ("bfs",),
     src_dir: Optional[PathType] = None,
     # build_dir: Optional[str] = None,
     results_dir: Optional[PathType] = None,
@@ -213,41 +164,24 @@ def dacapobench_campaign(
     post_run_hooks: Iterable[PostRunHook] = (),
     platform: Platform | None = None,
     nb_runs: int = 1,
-    nb_iterations: Iterable[int] = (1,),
     benchmark_duration_seconds: int = 5,
-    size: Iterable[str] = ("default",),
-    nb_threads: Iterable[int] = (1,),
-    start_heap_space: Iterable[str] = ("512m",),
-    max_heap_space: Iterable[str] = ("4g",),
-    garbage_collector: Iterable[str] = ("G1GC",),
+    variables: Iterable[dict[str, Any]] = [],
     debug: bool = False,
     gdb: bool = False,
     enable_data_dir: bool = False,
-    clean_in_between_different_benchmarks: bool = False,
     continuing: bool = False,
     constants: Constants = None,
     pretty: Optional[Dict[str, str]] = None,
     symlink_latest: bool = False,
-) -> CampaignCartesianProduct:
-    """Return a cartesian product campaign configured for the dacapobench benchmark."""
-    variables = {
-        "size": size,
-        "nb_threads": nb_threads,
-        "bench_name": bench_names,
-        "nb_iterations": nb_iterations,
-        "start_heap_space": start_heap_space,
-        "max_heap_space": max_heap_space,
-        "garbage_collector": garbage_collector,
-    }
-    if pretty is not None:
-        pretty = {"size": pretty}
+) -> CampaignIterateVariables:
+    """Return a campaign configured for the Rodinia benchmark."""
 
     if not all(bench_name in supported_bench_names for bench_name in bench_names):
         unsupported_benchmarks = [
             bench_name for bench_name in bench_names if bench_name not in supported_bench_names
         ]
         raise ValueError(
-            f"Invalid bench_names for dacapobench: {unsupported_benchmarks}\n"
+            f"Invalid bench_names for Rodinia: {unsupported_benchmarks}\n"
             f"The supported bench names are: {supported_bench_names}."
         )
 
@@ -255,18 +189,17 @@ def dacapobench_campaign(
         pass  # TODO try some search heuristics
 
     if benchmark is None:
-        benchmark = DacapobenchBench(
+        benchmark = RodiniaBench(
             src_dir=src_dir,
             command_wrappers=command_wrappers,
             command_attachments=command_attachments,
             shared_libs=shared_libs,
-            clean_in_between_different_benchmarks=clean_in_between_different_benchmarks,
             pre_run_hooks=pre_run_hooks,
             post_run_hooks=post_run_hooks,
             platform=platform,
         )
 
-    return CampaignCartesianProduct(
+    return CampaignIterateVariables(
         name=name,
         benchmark=benchmark,
         nb_runs=nb_runs,

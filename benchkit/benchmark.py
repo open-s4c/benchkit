@@ -30,14 +30,7 @@ from benchkit.utils.misc import (
 )
 from benchkit.utils.system import get_boot_args
 from benchkit.utils.tee import teeprint
-from benchkit.utils.types import (
-    Command,
-    Constants,
-    Environment,
-    PathType,
-    Pretty,
-    SplitCommand,
-)
+from benchkit.utils.types import Command, Constants, Environment, PathType, Pretty, SplitCommand
 from benchkit.utils.variables import list_groupby
 
 RecordKey = str
@@ -1250,6 +1243,7 @@ class Benchmark:
             platform=self.platform,
             current_dir=current_dir,
             environment=wrapped_environment,
+            **kwargs,
         )
 
         return current_process
