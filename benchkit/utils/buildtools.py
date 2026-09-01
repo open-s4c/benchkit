@@ -78,6 +78,9 @@ def cmake_build(
     platform = ctx.platform
     build_dir = Path(build_dir)
 
+    if build_type not in ["Release", "Debug", "RelWithDebInfo", "MinSizeRel"]:
+        raise ValueError(f"Invalid CMake build_type: {build_type}")
+
     nb_active_cpus = platform.nb_active_cpus()
     parallel_lst = ["-j", f"{nb_active_cpus}"] if nb_active_cpus > 1 else []
 
@@ -111,7 +114,10 @@ def cmake_build(
     ctx.exec(argv=argv, cwd=build_dir, output_is_log=True)
 
 
-def build_dir_from_ctx(ctx: BuildContext) -> Path:
+def build_dir_from_ctx(
+    ctx: BuildContext,
+    suffix: str = "",
+) -> Path:
     """
     Generate a platform-specific build directory path.
 
@@ -120,6 +126,7 @@ def build_dir_from_ctx(ctx: BuildContext) -> Path:
 
     Args:
         ctx: BuildContext containing fetch results and platform information.
+        suffix: Optional suffix to append to the build directory name.
 
     Returns:
         Path to the platform-specific build directory (not created, just the path).
@@ -129,4 +136,5 @@ def build_dir_from_ctx(ctx: BuildContext) -> Path:
         >>> print(build_dir)
         /tmp/src/project/build-hostname123
     """
-    return ctx.fetch_result.src_dir / f"build-{ctx.platform.hostname}"
+    suffix = f"-{suffix}" if suffix else ""
+    return ctx.fetch_result.src_dir / f"build-{ctx.platform.hostname}{suffix}"

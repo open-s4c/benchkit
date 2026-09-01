@@ -7,6 +7,7 @@ from benchkit.core.compat.new2old import CampaignCartesianProduct
 
 def main() -> None:
     variables = {
+        "build_type": ["Release", "Debug"],
         "bench_name": ["readrandom", "seekrandom"],
         "nb_threads": [2, 4, 8],
     }
@@ -23,6 +24,7 @@ def main() -> None:
         x="nb_threads",
         y="throughput",
         hue="bench_name",
+        style="build_type",
     )
 
 
