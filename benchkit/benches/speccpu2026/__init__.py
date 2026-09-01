@@ -155,13 +155,14 @@ class SPECCPU2026Bench:
         fuseiso_umount(ctx, mnt_dir)
 
         # cp config
-        # TODO: support ARM
         arch = ctx.platform.architecture
-        if arch != "x86_64":
-            raise NotImplementedError(f"SPEC CPU 2026 is only supported on x86_64 (got {arch})")
+        if arch not in ["x86_64", "aarch64", "riscv64"]:
+            raise NotImplementedError(
+                f"SPEC CPU 2017 is only supported on x86_64 and aarch64 (got {arch})"
+            )
 
         ctx.exec(
-            argv=["cp", "config/Example-gcc-linux-x86.cfg", "config/config-gcc-linux-x86.cfg"],
+            argv=["cp", f"config/Example-gcc-linux-{arch}.cfg", "config/config-benchkit.cfg"],
             cwd=spec_dir,
         )
 
@@ -172,7 +173,7 @@ class SPECCPU2026Bench:
             edits=[
                 (
                     's#"/opt/rh/gcc-toolset-15/root/usr"#"/usr"#',
-                    Path("config/config-gcc-linux-x86.cfg"),
+                    Path("config/config-benchkit.cfg"),
                 ),
             ],
         )
@@ -222,7 +223,7 @@ class SPECCPU2026Bench:
                 (
                     "source shrc && "
                     f"runcpu --fake --loose --size {size} "
-                    f"--tune base --config config-gcc-linux-x86.cfg {bench_name}"
+                    f"--tune base --config config-benchkit.cfg {bench_name}"
                 ),
             ],
             cwd=src_dir,
@@ -252,7 +253,7 @@ class SPECCPU2026Bench:
                     (
                         "source shrc && "
                         f"runcpu --loose --size {size} "
-                        f"--tune base --config config-gcc-linux-x86.cfg {bench_name}"
+                        f"--tune base --config config-benchkit.cfg {bench_name}"
                     ),
                 ],
                 cwd=src_dir,
