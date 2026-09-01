@@ -4,6 +4,7 @@
 Module to manage campaigns. Campaigns are the main unit of execution of benchmarks.
 A campaign is roughly 1 benchmark + N variables. A campaign also defines how the benchkit iterates
 over the variables.
+The execution of a campaign is orchestrated by `benchkit.engine.execution.ExecutionEngine`.
 """
 
 import datetime
@@ -18,6 +19,7 @@ from collections import defaultdict
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark
+from benchkit.engine.execution import ExecutionEngine
 from benchkit.lwchart import (
     DataframeProcessor,
     generate_chart_from_multiple_csvs,
@@ -190,39 +192,12 @@ class Campaign:
             barrier (Optional[multiprocessing.Barrier]):
                 if needed, the barrier used to synchronize different benchmarks.
         """
-        # Workaround to trunc this global file, before logging refactoring TODO
-        self._init_cmd_file()
-
-        csv_output_path = self.csv_output_abs_path()
-        csv_output_dir = os.path.dirname(csv_output_path)
-        os.makedirs(csv_output_dir, exist_ok=True)
-
-        base_data_dir = self.base_data_dir()
-        if self._symlink_latest and base_data_dir:
-            symlink = str(csv_output_path).rsplit("_", 3)[0]
-            base_data_dir = pathlib.Path(base_data_dir)
-            symlink_path = pathlib.Path(symlink + "_latest")
-            if symlink_path.exists(follow_symlinks=False):
-                os.remove(symlink_path)
-            os.symlink(base_data_dir, symlink_path, True)
-            # Create a `results.csv` symlink inside of the data directory
-            # that links to the to the results CSV file.
-            abs_data_dir_result_path = base_data_dir / "results.csv"
-            os.symlink(csv_output_path, abs_data_dir_result_path)
-        elif self._symlink_latest:
-            symlink = str(csv_output_path).rsplit("_", 3)[0]
-            symlink_path = pathlib.Path(symlink + "_latest.csv")
-            if symlink_path.exists(follow_symlinks=False):
-                os.remove(symlink_path)
-            os.symlink(csv_output_path, symlink_path, False)
-
-        self._benchmark.check_dependencies()
-        self._benchmark.run(
+        engine = ExecutionEngine()
+        engine.run(
+            campaign=self,
             other_campaigns_seconds=other_campaigns_seconds,
             barrier=barrier,
-            continuing=self._continuing,
         )
-        self._move_cmd_file()
 
     def run(self):
         """

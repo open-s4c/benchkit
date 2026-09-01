@@ -6,5 +6,6 @@ See README.md in the root of the repository for details.
 """
 
 from benchkit.core.compat.new2old import CampaignCartesianProduct, CampaignIterateVariables
+from benchkit.engine.execution import ExecutionEngine
 
-__all__ = ["CampaignCartesianProduct", "CampaignIterateVariables"]
+__all__ = ["CampaignCartesianProduct", "CampaignIterateVariables", "ExecutionEngine"]
