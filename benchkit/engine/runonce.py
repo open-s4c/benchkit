@@ -64,7 +64,9 @@ class RunOnceEngine:
         log.debug("Building...")
         session = stepper.build(session=session, args=args)
         log.debug("Running...")
-        session = stepper.run(session=session, args=args, duration_s=duration_s)
+        session = stepper.run(
+            session=session, args=args, duration_s=duration_s, record_dir=record_dir
+        )
         log.debug("Collecting...")
         session = stepper.collect(session=session, args=args)
         log.debug("Benchmark completed.")
