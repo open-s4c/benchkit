@@ -70,6 +70,9 @@ class CartesianGenerator:
                 Values are materialized at construction so that the
                 generator stays re-iterable.
         """
+        # Dict-typed values are a supported nested-parameter case: cartesian_product
+        # normalizes them to (key, value) pairs itself, and list(dict) would silently
+        # collapse them to their keys.
         self._variables = {
             name: (values if isinstance(values, dict) else list(values))
             for name, values in variables.items()
