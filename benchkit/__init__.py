@@ -7,5 +7,19 @@ See README.md in the root of the repository for details.
 
 from benchkit.core.compat.new2old import CampaignCartesianProduct, CampaignIterateVariables
 from benchkit.engine.execution import ExecutionEngine
+from benchkit.engine.generators import (
+    CartesianGenerator,
+    FilteredGenerator,
+    ListGenerator,
+    RecordGenerator,
+)
 
-__all__ = ["CampaignCartesianProduct", "CampaignIterateVariables", "ExecutionEngine"]
+__all__ = [
+    "CampaignCartesianProduct",
+    "CampaignIterateVariables",
+    "CartesianGenerator",
+    "ExecutionEngine",
+    "FilteredGenerator",
+    "ListGenerator",
+    "RecordGenerator",
+]

@@ -20,6 +20,12 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from benchkit.benchmark import Benchmark
 from benchkit.engine.execution import ExecutionEngine
+from benchkit.engine.generators import (
+    CartesianGenerator,
+    FilteredGenerator,
+    ListGenerator,
+    RecordGenerator,
+)
 from benchkit.lwchart import (
     DataframeProcessor,
     generate_chart_from_multiple_csvs,
@@ -32,7 +38,6 @@ from benchkit.platforms import Platform, get_current_platform
 from benchkit.utils.dir import parentdir
 from benchkit.utils.misc import get_benchkit_temp_folder_str, seconds2pretty
 from benchkit.utils.types import Constants, PathType, Pretty
-from benchkit.utils.variables import cartesian_product
 
 
 class Campaign:
@@ -63,6 +68,11 @@ class Campaign:
 
         params: Dict[str, Any] = self.parameters
 
+        # Every campaign exposes a record generator; legacy subclasses that
+        # provide a bare parameters dict get a ListGenerator fallback.
+        if params.get("record_generator") is None and params.get("variables") is not None:
+            params["record_generator"] = ListGenerator(records=params.get("variables"))
+
         bds = None
         if "benchmark_duration_seconds" in params:
             bds = params.get("benchmark_duration_seconds")
@@ -85,6 +95,18 @@ class Campaign:
             debug=debug,
             gdb=gdb,
         )
+
+    @property
+    def record_generator(self) -> Optional[RecordGenerator]:
+        """
+        Return the record generator describing the parameter space explored by this campaign.
+
+        Returns:
+            Optional[RecordGenerator]:
+                the record generator of this campaign, or None if the campaign was built
+                without variables.
+        """
+        return self.parameters.get("record_generator")
 
     def csv_file(
         self,
@@ -478,7 +500,7 @@ class CampaignTemplate(Campaign):
         name: str,
         benchmark: Benchmark,
         nb_runs: int,
-        variables: Iterable[Dict[str, Any]],
+        variables: Optional[Iterable[Dict[str, Any]]],
         constants: Constants,
         debug: bool,
         gdb: bool,
@@ -489,7 +511,15 @@ class CampaignTemplate(Campaign):
         tmp_dir: pathlib.Path | None = None,
         pretty: Pretty | None = None,
         symlink_latest: bool = False,
+        record_generator: Optional[RecordGenerator] = None,
     ):
+        if (variables is None) == (record_generator is None):
+            raise ValueError(
+                "Campaign: provide exactly one of the variables or record_generator arguments."
+            )
+        if record_generator is None:
+            record_generator = ListGenerator(records=variables)
+
         csv_filename = self.csv_file(
             campaign_name="benchmark",
             suffix=f"_{name}",
@@ -509,7 +539,7 @@ class CampaignTemplate(Campaign):
         if constants is not None:
             all_constants.update(constants)
 
-        list_variables = list(variables)
+        list_variables = list(record_generator.records())
 
         variable_names = {key for record in list_variables for key in record}
         constant_names = set(all_constants)
@@ -529,6 +559,7 @@ class CampaignTemplate(Campaign):
             "nb_runs": nb_runs,
             "constants": all_constants,
             "variables": list_variables,
+            "record_generator": record_generator,
         }
 
         if benchmark_duration_seconds is not None:
@@ -613,16 +644,20 @@ class CampaignCartesianProduct(CampaignTemplate):
         filter_func: Optional[Callable[[Dict[str, Any]], bool]] = None,
         symlink_latest: bool = False,
     ):
-        records_gen = cartesian_product(variables)
+        record_generator: RecordGenerator = CartesianGenerator(variables=variables)
 
         if filter_func:
-            records_gen = filter(filter_func, records_gen)
+            record_generator = FilteredGenerator(
+                generator=record_generator,
+                predicate=filter_func,
+            )
 
         super().__init__(
             name=name,
             benchmark=benchmark,
             nb_runs=nb_runs,
-            variables=records_gen,
+            variables=None,
+            record_generator=record_generator,
             constants=constants,
             debug=debug,
             gdb=gdb,
