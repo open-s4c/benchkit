@@ -15,6 +15,7 @@ import os.path
 import pathlib
 import shutil
 import sys
+import warnings
 from collections import defaultdict
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
@@ -26,6 +27,7 @@ from benchkit.engine.generators import (
     ListGenerator,
     RecordGenerator,
 )
+from benchkit.engine.stores import CsvJsonStore, ResultStore
 from benchkit.lwchart import (
     DataframeProcessor,
     generate_chart_from_multiple_csvs,
@@ -59,7 +61,14 @@ class Campaign:
     ):
         self._check_parameters_integrity()
 
-        self._enable_data_dir = enable_data_dir
+        if not enable_data_dir:
+            warnings.warn(
+                "enable_data_dir=False is deprecated: the campaign data directory is now "
+                "always enabled (it hosts the campaign metadata and per-record results).",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        self._enable_data_dir = True
         self._continuing = continuing
         self._symlink_latest = symlink_latest
         self._campaign_cmd_file = (
@@ -82,16 +91,29 @@ class Campaign:
                 raise ValueError(f'Ill formed self.parameters: missing "{param_key}" key.')
 
         self._benchmark = params.get("benchmark")
+
+        # The campaign builds the default store; later slices consolidate
+        # store selection onto ExecutionEngine(store=..., generator=...,
+        # policy=...) per the refactor plan. The protected access to the
+        # benchmark's JSON encoders is temporary, for the same reason.
+        if params.get("result_store") is None:
+            params["result_store"] = CsvJsonStore(
+                csv_output_path=self.csv_output_abs_path(),
+                base_data_dir=self.base_data_dir(),
+                pretty_variables=params.get("pretty"),
+                continuing=self._continuing,
+                json_encoder=self._benchmark._encoders,  # pylint: disable=protected-access
+            )
+
         self._benchmark.configure_variables(
             experiment_name=params.get("experiment_name"),
             benchmark_name=params.get("benchmark_name"),
-            csv_output_path=self.csv_output_abs_path(),
+            result_store=params.get("result_store"),
             base_data_dir=self.base_data_dir(),
             benchmark_duration_seconds=bds,
             nb_runs=params.get("nb_runs"),
             constants=params.get("constants"),
             variables=params.get("variables"),
-            pretty_variables=params.get("pretty"),
             debug=debug,
             gdb=gdb,
         )
@@ -107,6 +129,17 @@ class Campaign:
                 without variables.
         """
         return self.parameters.get("record_generator")
+
+    @property
+    def result_store(self) -> Optional[ResultStore]:
+        """
+        Return the result store persisting the records of this campaign.
+
+        Returns:
+            Optional[ResultStore]:
+                the result store of this campaign; None only before construction completes.
+        """
+        return self.parameters.get("result_store")
 
     def csv_file(
         self,

@@ -164,7 +164,7 @@ class Benchmark(Protocol[P]):
                 on this method's signature.
 
         Returns:
-            RecordResult: either one dict (single record) or a list of dicts
-            (multi-line results).
+            RecordResult: the record of the run, as one dict (one run, one
+            record; per-line data belongs in files inside the record directory).
         """
         ...

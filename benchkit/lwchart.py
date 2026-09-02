@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Protocol
 import numpy as np
 from numpy import floating, mean
 
+from benchkit.engine.stores import strip_role
 from benchkit.utils.misc import get_benchkit_temp_folder_str
 from benchkit.utils.types import PathType
 
@@ -268,6 +269,21 @@ def _read_csv(
         engine="python",
         keep_default_na=nan_replace,  # when True, input values "None" are interpreted as "NaN"
     )
+
+    # Role-namespaced headers ("input/nb_threads", ...) are stripped to bare
+    # names so that plot arguments (x=, y=, hue=, ...) keep referring to
+    # variables the way campaign scripts always did.
+    renames = {c: bare for c in result.columns if (bare := strip_role(c)) != c}
+    if renames:
+        final_names = [renames.get(c, c) for c in result.columns]
+        duplicates = {name for name in final_names if final_names.count(name) > 1}
+        if duplicates:
+            raise ValueError(
+                f"CSV file {csv_pathname} has role-namespaced columns colliding on bare "
+                f"names: {sorted(duplicates)}. Rename the colliding variables."
+            )
+        result = result.rename(columns=renames)
+
     return result
 
 
@@ -436,11 +452,30 @@ def get_global_dataframe(
     return result
 
 
+def _flatten_record_json(data: Any) -> List[Dict[str, Any]]:
+    """
+    Return the flat record lines of an `experiment_results.json` payload.
+
+    Supports the role-structured shape ({"identity": ..., "inputs": ...,
+    "outputs": {...}, ...}) and the legacy shape (a list of flat dicts).
+    """
+    if isinstance(data, dict) and "outputs" in data:
+        base = {
+            **data.get("identity", {}),
+            **data.get("constants", {}),
+            **data.get("inputs", {}),
+            "rep": data.get("rep"),
+            **data.get("pretty", {}),
+        }
+        return [{**base, **data.get("outputs", {})}]
+    return data
+
+
 def _process_json(
     json_path: PathType,
 ) -> Dict[str, int]:
     with open(json_path, "r") as f:
-        data = json.load(f)
+        data = _flatten_record_json(json.load(f))
 
         output = {}
         total_context_switches = 0
