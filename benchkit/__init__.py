@@ -13,13 +13,16 @@ from benchkit.engine.generators import (
     ListGenerator,
     RecordGenerator,
 )
+from benchkit.engine.stores import CsvJsonStore, ResultStore
 
 __all__ = [
     "CampaignCartesianProduct",
     "CampaignIterateVariables",
     "CartesianGenerator",
+    "CsvJsonStore",
     "ExecutionEngine",
     "FilteredGenerator",
     "ListGenerator",
     "RecordGenerator",
+    "ResultStore",
 ]

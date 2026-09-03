@@ -74,7 +74,7 @@ class TestCampaignGeneratorWiring(unittest.TestCase):
             "constants": None,
             "debug": False,
             "gdb": False,
-            "enable_data_dir": False,
+            "enable_data_dir": True,
             "continuing": False,
             "results_dir": results_dir,
         }
@@ -104,7 +104,7 @@ class TestCampaignGeneratorWiring(unittest.TestCase):
                 constants=None,
                 debug=False,
                 gdb=False,
-                enable_data_dir=False,
+                enable_data_dir=True,
                 results_dir=Path(tmp),
             )
             self.assertIsInstance(campaign.record_generator, CartesianGenerator)
@@ -123,7 +123,7 @@ class TestCampaignGeneratorWiring(unittest.TestCase):
                 constants=None,
                 debug=False,
                 gdb=False,
-                enable_data_dir=False,
+                enable_data_dir=True,
                 results_dir=Path(tmp),
                 filter_func=keep,
             )
@@ -142,7 +142,7 @@ class TestCampaignGeneratorWiring(unittest.TestCase):
                 constants=None,
                 debug=False,
                 gdb=False,
-                enable_data_dir=False,
+                enable_data_dir=True,
                 results_dir=Path(tmp),
             )
             self.assertIsInstance(campaign.record_generator, ListGenerator)
@@ -171,7 +171,7 @@ class TestExplicitGeneratorEndToEnd(unittest.TestCase):
 
             data_lines = self._csv_data_lines(csv_path)
             header, rows = data_lines[0], data_lines[1:]
-            self.assertIn("message", header.split(";"))
+            self.assertIn("input/message", header.split(";"))
             self.assertEqual(2, len(rows))  # 2 variable values x 1 run
 
 

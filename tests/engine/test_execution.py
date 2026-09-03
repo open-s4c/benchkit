@@ -95,7 +95,7 @@ class TestExecutionEngine(unittest.TestCase):
             constants=None,
             debug=False,
             gdb=False,
-            enable_data_dir=False,
+            enable_data_dir=True,
             results_dir=results_dir,
         )
 
@@ -111,12 +111,12 @@ class TestExecutionEngine(unittest.TestCase):
         data_lines = self._csv_data_lines(csv_path)
         header, rows = data_lines[0], data_lines[1:]
 
-        self.assertIn("message", header.split(";"))
-        self.assertIn("echoed", header.split(";"))
+        self.assertIn("input/message", header.split(";"))
+        self.assertIn("output/echoed", header.split(";"))
         self.assertEqual(4, len(rows))  # 2 variable values x 2 runs
 
-        message_idx = header.split(";").index("message")
-        echoed_idx = header.split(";").index("echoed")
+        message_idx = header.split(";").index("input/message")
+        echoed_idx = header.split(";").index("output/echoed")
         for row in rows:
             fields = row.split(";")
             self.assertEqual(fields[message_idx], fields[echoed_idx])
