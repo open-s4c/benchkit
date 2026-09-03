@@ -13,6 +13,7 @@ from benchkit.engine.generators import (
     ListGenerator,
     RecordGenerator,
 )
+from benchkit.engine.policies import ExecutionPolicy, SequentialPolicy
 from benchkit.engine.stores import CsvJsonStore, ResultStore
 
 __all__ = [
@@ -21,8 +22,10 @@ __all__ = [
     "CartesianGenerator",
     "CsvJsonStore",
     "ExecutionEngine",
+    "ExecutionPolicy",
     "FilteredGenerator",
     "ListGenerator",
     "RecordGenerator",
     "ResultStore",
+    "SequentialPolicy",
 ]

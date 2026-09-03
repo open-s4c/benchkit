@@ -19,10 +19,11 @@ writing to the legacy `Benchmark.run()` loop; the point of this class is to
 be the single place where orchestration happens.
 """
 
-import multiprocessing
 import os
 import pathlib
 from typing import TYPE_CHECKING, Optional
+
+from benchkit.engine.policies import ExecutionPolicy, SequentialPolicy
 
 if TYPE_CHECKING:
     from benchkit.campaign import Campaign
@@ -30,11 +31,12 @@ if TYPE_CHECKING:
 
 class ExecutionEngine:
     """
-    Own the orchestration of campaign execution; sequential-only today.
+    Own the orchestration of campaign execution.
 
     This is the Tier-2 entry point of the new API: advanced users compose an
-    engine and run campaigns through it. The constructor currently takes no
-    argument; future slices will add `generator=`, `policy=` and `store=`.
+    engine and run campaigns through it. Scheduling is delegated to the
+    engine's `ExecutionPolicy` (sequential by default); future slices add
+    `generator=` and `store=` here as well.
 
     Note: while `Campaign` transitions to a pure data structure, the engine
     reads some of its non-public members (benchmark, continuing/symlink
@@ -45,12 +47,33 @@ class ExecutionEngine:
 
     # pylint: disable=protected-access
 
+    def __init__(
+        self,
+        policy: Optional[ExecutionPolicy] = None,
+    ) -> None:
+        """
+        Args:
+            policy (Optional[ExecutionPolicy], optional):
+                the scheduling policy executing the campaigns given to this
+                engine. Defaults to a `SequentialPolicy`.
+        """
+        self._policy = policy if policy is not None else SequentialPolicy()
+
+    @property
+    def policy(self) -> ExecutionPolicy:
+        """
+        Return the scheduling policy of this engine.
+
+        Returns:
+            ExecutionPolicy: the scheduling policy of this engine.
+        """
+        return self._policy
+
     def run(
         self,
         campaign: "Campaign",
         *,
         other_campaigns_seconds: int = 0,
-        barrier: Optional[multiprocessing.Barrier] = None,
     ) -> None:
         """
         Run a single campaign, possibly among other campaigns in a suite.
@@ -61,9 +84,6 @@ class ExecutionEngine:
             other_campaigns_seconds (int, optional):
                 time remaining to execute other campaigns in the suite.
                 Defaults to 0.
-            barrier (Optional[multiprocessing.Barrier], optional):
-                if needed, the barrier used to synchronize different benchmarks.
-                Defaults to None.
         """
         # Workaround to trunc this global file, before logging refactoring TODO
         campaign._init_cmd_file()
@@ -92,9 +112,8 @@ class ExecutionEngine:
             os.symlink(csv_output_path, symlink_path, False)
 
         campaign._benchmark.check_dependencies()
-        campaign._benchmark.run(
+        self._policy.execute(
+            campaign=campaign,
             other_campaigns_seconds=other_campaigns_seconds,
-            barrier=barrier,
-            continuing=campaign._continuing,
         )
         campaign._move_cmd_file()

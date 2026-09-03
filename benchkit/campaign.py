@@ -9,7 +9,6 @@ The execution of a campaign is orchestrated by `benchkit.engine.execution.Execut
 
 import datetime
 import glob
-import multiprocessing
 import os
 import os.path
 import pathlib
@@ -236,7 +235,6 @@ class Campaign:
     def campaign_run(
         self,
         other_campaigns_seconds: int,
-        barrier: Optional[multiprocessing.Barrier],
     ) -> None:
         """
         Run a single campaign among other campaigns in a suite.
@@ -244,21 +242,18 @@ class Campaign:
         Args:
             other_campaigns_seconds (int):
                 time remaining to execute other campaigns in the suite.
-            barrier (Optional[multiprocessing.Barrier]):
-                if needed, the barrier used to synchronize different benchmarks.
         """
         engine = ExecutionEngine()
         engine.run(
             campaign=self,
             other_campaigns_seconds=other_campaigns_seconds,
-            barrier=barrier,
         )
 
     def run(self):
         """
         Run a single campaign, forwarding the call to `campaign_run`.
         """
-        self.campaign_run(other_campaigns_seconds=0, barrier=None)
+        self.campaign_run(other_campaigns_seconds=0)
 
     def campaign_duration_seconds(self) -> int:
         """
@@ -369,16 +364,14 @@ class CampaignSuite:
             self._durations = [c.campaign_duration_seconds() for c in self._campaigns]
         return self._durations
 
-    def run_suite(
-        self,
-        parallel: bool = False,
-    ) -> None:
+    def run_suite(self) -> None:
         """
-        Run the suite of campaign, running sequentially or in parallel each campaign in the suite.
+        Run the suite of campaigns, sequentially.
 
-        Args:
-            parallel (bool, optional):
-                whether to run campaigns in the suite in parallel. Defaults to False.
+        Co-executing benchmarks is not a suite concern: it is superseded by
+        the multi-benchmark parallel policy of the execution engine (the
+        former barrier-based `parallel=True` mode deadlocked on any asymmetry
+        between campaigns and has been removed).
         """
         for campaign in self._campaigns:
             campaign._benchmark.check_dependencies()
@@ -390,23 +383,8 @@ class CampaignSuite:
         else:
             remaining = [sum(durations[i + 1 :]) for i in range(len(durations))]
 
-        process_list = []
-        barrier = multiprocessing.Barrier(len(self._campaigns))
-
-        if not parallel:
-            for campaign, remaining_seconds in zip(self._campaigns, remaining):
-                campaign.campaign_run(other_campaigns_seconds=remaining_seconds, barrier=None)
-        else:
-            for campaign in self._campaigns:
-                p = multiprocessing.Process(
-                    target=campaign.campaign_run,
-                    args=(0, barrier),
-                )
-                process_list.append(p)
-                p.start()
-
-        for p in process_list:
-            p.join()
+        for campaign, remaining_seconds in zip(self._campaigns, remaining):
+            campaign.campaign_run(other_campaigns_seconds=remaining_seconds)
 
     def print_durations(self) -> None:
         """
