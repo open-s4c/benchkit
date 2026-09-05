@@ -9,7 +9,6 @@ import itertools
 import json
 import os
 import pathlib
-from multiprocessing import Barrier
 from subprocess import CalledProcessError
 from typing import Any, Dict, Iterable, List, Optional, Protocol, Tuple, Type
 
@@ -418,7 +417,6 @@ class Benchmark:
     def run(
         self,
         other_campaigns_seconds: int,
-        barrier: Optional[Barrier],
         continuing: bool,
     ) -> None:
         """
@@ -427,8 +425,6 @@ class Benchmark:
         Args:
             other_campaigns_seconds (int):
                 how many seconds remain in other campaigns (that are run sequentially).
-            barrier (Optional[Barrier]):
-                in case it is necessary to synchronize the start, the associated barrier.
             continuing (bool):
                 whether caching of results is enabled.
         """
@@ -489,7 +485,6 @@ class Benchmark:
                             record_parameters=record_params,
                             executions_dict=executions_dict,
                             continuing=continuing,
-                            barrier=barrier,
                         )
 
         actual_total_seconds = run_duration.duration_seconds
@@ -840,7 +835,6 @@ class Benchmark:
         record_parameters: Dict[str, Any],
         executions_dict: Iterable[Dict[str, str]],
         continuing: bool,
-        barrier: Optional[Barrier],
     ) -> None:
         """
         Run `nb_runs` times a single instance of the benchmark using the given record parameters.
@@ -852,8 +846,6 @@ class Benchmark:
                 current information that need to be stored in the record.
             continuing (bool):
                 whether caching of the results is enabled.
-            barrier (Optional[Barrier]):
-                if applicable, the barrier for the benchmark to wait.
         """
         (
             build_variables,
@@ -924,11 +916,6 @@ class Benchmark:
                     other_variables=other_variables,
                     record_data_dir=temp_record_data_dir,
                 )
-
-            if barrier is not None:
-                barrier_ret = barrier.wait()
-                if barrier_ret == 0:
-                    barrier.reset()
 
             single_run_return = self.single_run(
                 platform=self.platform,

@@ -134,7 +134,7 @@ class TestBenchmark(unittest.TestCase):
             debug=False,
             gdb=False,
         )
-        bench.run(other_campaigns_seconds=0, barrier=None, continuing=False)
+        bench.run(other_campaigns_seconds=0, continuing=False)
 
         def filter_output(s, good_line):
             return "\n".join(line.strip() for line in s.split("\n") if good_line(line.strip()))
