@@ -10,11 +10,12 @@ from typing import List, Tuple
 from benchkit.shell.shell import shell_out
 
 
-def get_threads_of_process(pid: int) -> List[int]:
+def get_threads_of_process(pid: int, ignore_any_error_code: bool = False) -> List[int]:
     """Get thread identifiers (TIDs) of the given process identifier (PID).
 
     Args:
         pid (int): the PID of the process to query.
+        ignore_any_error_code (bool): whether to ignore any error code returned by the `ps` command.
 
     Raises:
         ValueError: if cannot parse `ps` output.
@@ -26,6 +27,7 @@ def get_threads_of_process(pid: int) -> List[int]:
         f"ps -T -p {pid}",
         print_input=False,
         print_output=False,
+        ignore_any_error_code=ignore_any_error_code,
     )
 
     tids = []
