@@ -30,7 +30,6 @@ from benchkit.engine.stores import CsvJsonStore, ResultStore
 from benchkit.lwchart import (
     DataframeProcessor,
     generate_chart_from_multiple_csvs,
-    generate_chart_from_multiple_jsons,
     generate_chart_from_single_csv,
     generate_global_csv_file,
     identical_dataframe,
@@ -412,7 +411,6 @@ class CampaignSuite:
         self,
         plot_name: str | List[str],
         process_dataframe: DataframeProcessor = identical_dataframe,
-        use_json=False,
         **kwargs,
     ) -> None:
         """Generate a global graph for all the campaigns in the suite.
@@ -437,23 +435,13 @@ class CampaignSuite:
             else:
                 suite_path = parentdir(suite_path_tentative)
 
-        if use_json:
-            json_files = self.get_json_files(campaign_paths)
-            generate_chart_from_multiple_jsons(
-                json_pathnames=json_files,
-                plot_name=plot_name,
-                output_dir=suite_path,
-                process_dataframe=process_dataframe,
-                **kwargs,
-            )
-        else:
-            generate_chart_from_multiple_csvs(
-                csv_pathnames=self.result_csv_paths,
-                plot_name=plot_name,
-                output_dir=suite_path,
-                process_dataframe=process_dataframe,
-                **kwargs,
-            )
+        generate_chart_from_multiple_csvs(
+            csv_pathnames=self.result_csv_paths,
+            plot_name=plot_name,
+            output_dir=suite_path,
+            process_dataframe=process_dataframe,
+            **kwargs,
+        )
 
     def generate_graphs(
         self,
