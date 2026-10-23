@@ -103,9 +103,21 @@ class Graph500Bench:
             makefile_path,
         )
 
+        mpicc = platform.comm.which("mpicc")
+        if mpicc is None:
+            for candidate in (
+                Path("/usr/lib64/mpich/bin/mpicc"),
+                Path("/usr/lib64/openmpi/bin/mpicc"),
+            ):
+                if platform.comm.isfile(candidate):
+                    mpicc = candidate
+                    break
+        if mpicc is None:
+            raise RuntimeError("Graph500 requires an MPI C compiler such as mpich-devel")
+
         # build the reference implementation (both BFS and BFS+SSSP binaries)
         ctx.exec(
-            argv=["make", "-j"],
+            argv=["make", "-j", f"MPICC={mpicc}"],
             cwd=build_dir,
             output_is_log=True,
         )
@@ -138,20 +150,36 @@ class Graph500Bench:
         validation = "1" if skip_validation else "0"
         home_dir = os.environ.get("HOME", "/tmp")
 
-        # construct the command to run the benchmark
-        # with appropriate environment variables and arguments
-        command = (
-            f"HOME={home_dir} mpirun -np 1"
-            f" -x HOME"
-            f" -x SKIP_VALIDATION={validation}"
-            f"{version == 'bfs_sssp' and ' -x SKIP_BFS=1' or ''}"
-            f" ./graph500_reference_{version}"
-            f" {scale} {edge_factor}"
-        )
+        mpirun = ctx.platform.comm.which("mpirun")
+        if mpirun is None:
+            for candidate in (
+                Path("/usr/lib64/mpich/bin/mpirun"),
+                Path("/usr/lib64/openmpi/bin/mpirun"),
+            ):
+                if ctx.platform.comm.isfile(candidate):
+                    mpirun = candidate
+                    break
+        if mpirun is None:
+            raise RuntimeError("Graph500 requires an MPI launcher such as mpich")
+
+        environment = {
+            "HOME": home_dir,
+            "SKIP_VALIDATION": validation,
+        }
+        if version == "bfs_sssp":
+            environment["SKIP_BFS"] = "1"
 
         exec_out = ctx.exec(
-            argv=["bash", "-c", command],
+            argv=[
+                str(mpirun),
+                "-np",
+                "1",
+                f"./graph500_reference_{version}",
+                str(scale),
+                str(edge_factor),
+            ],
             cwd=build_dir,
+            env=environment,
             output_is_log=True,
         )
 

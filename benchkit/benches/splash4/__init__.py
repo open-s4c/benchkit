@@ -206,6 +206,14 @@ class Splash4Bench:
         kernel = self._kernel(benchmark)
         bench_dir = ctx.fetch_result.src_dir / "Splash-4" / kernel.subdir
 
+        if benchmark in ("volrend", "volrend-npl"):
+            makefile_path = bench_dir / "Makefile"
+            makefile = ctx.platform.comm.read_file(makefile_path)
+            ctx.platform.comm.write_content_to_file(
+                makefile.replace("-static ", ""),
+                makefile_path,
+            )
+
         make(
             ctx,
             src_dir=bench_dir,

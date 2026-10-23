@@ -87,7 +87,36 @@ from benchkit.core.bktypes.callresults import BuildResult, FetchResult, RunResul
 from benchkit.core.bktypes.contexts import BuildContext, CollectContext, FetchContext, RunContext
 from benchkit.dependencies.packages import PackageDependency
 from benchkit.utils.dir import benchkit_home_dir, get_benches_dir
-from benchkit.utils.fetchtools import fuseiso_mount, fuseiso_umount, sed_edit
+from benchkit.utils.fetchtools import iso_extract, remove_tree, sed_edit
+
+
+def _linux_toolset(platform_architecture: str) -> tuple[str, tuple[str, ...]]:
+    match platform_architecture:
+        case "x86_64":
+            return "linux-x86_64", ("Example-gcc-linux-x86.cfg", "Example-gcc-linux-x86_64.cfg")
+        case "aarch64":
+            return "linux-aarch64", ("Example-gcc-linux-aarch64.cfg",)
+        case "riscv64":
+            return "linux-riscv64", ("Example-gcc-linux-riscv64.cfg",)
+        case _:
+            raise NotImplementedError(
+                "SPEC CPU 2026 is only supported on x86_64, aarch64, and riscv64 "
+                f"(got {platform_architecture})"
+            )
+
+
+def _copy_config(ctx: FetchContext, spec_dir: Path, config_candidates: tuple[str, ...]) -> None:
+    source = " ".join(f"config/{candidate}" for candidate in config_candidates)
+    ctx.exec(
+        argv=[
+            "bash",
+            "-lc",
+            f"for config in {source}; do "
+            'if [ -f "$config" ]; then cp "$config" config/config-benchkit.cfg; exit 0; fi; '
+            "done; echo 'No usable SPEC config found' >&2; exit 1",
+        ],
+        cwd=spec_dir,
+    )
 
 
 class SPECCPU2026Bench:
@@ -115,13 +144,13 @@ class SPECCPU2026Bench:
 
         This fetch step does **not** clone anything from GitHub. Instead it:
         - creates `<parent_dir>/spec` if needed
-        - mounts `spec_source_iso` via FUSE (no sudo)
+        - extracts `spec_source_iso` without mounting it
         - runs SPEC's `install.sh` non-interactively into `<parent_dir>/spec`
-        - unmounts the ISO
-        - copies `config/Example-gcc-linux-x86.cfg` to `config/config-gcc-linux-x86.cfg`
+        - removes the extracted ISO contents
+        - copies an architecture-specific example config to `config/config-benchkit.cfg`
         - patches the config to use `/usr` instead of the devtoolset path
 
-        If the target directory already exists, it returns immediately.
+        If a complete target installation already exists, it returns immediately.
 
         Args:
             ctx: FetchContext providing platform and execution capabilities.
@@ -133,37 +162,35 @@ class SPECCPU2026Bench:
             FetchResult with `src_dir` set to the installed SPEC directory
             (`<parent_dir>/spec`).
         """
-        parent_dir = get_benches_dir(parent_dir=parent_dir)
+        parent_dir = get_benches_dir(parent_dir=parent_dir, comm=ctx.platform.comm)
         spec_dir = parent_dir / "spec-cpu-2026"
-        mnt_dir = benchkit_home_dir() / "spec-cpu-2026-mnt"
+        iso_dir = benchkit_home_dir(comm=ctx.platform.comm) / "spec-cpu-2026-iso"
 
         comm = ctx.platform.comm
+        _, config_candidates = _linux_toolset(ctx.platform.architecture)
 
         if comm.isdir(spec_dir):
-            return FetchResult(src_dir=spec_dir)
+            if (
+                comm.isfile(spec_dir / "shrc")
+                and comm.isfile(spec_dir / "bin" / "runcpu")
+                and comm.isfile(spec_dir / "config" / "config-benchkit.cfg")
+            ):
+                return FetchResult(src_dir=spec_dir)
+            ctx.exec(argv=["rm", "-rf", str(spec_dir)], cwd=spec_dir.parent)
 
         comm.makedirs(path=spec_dir, exist_ok=True)
 
-        fuseiso_mount(ctx, spec_source_iso, mnt_dir)
+        iso_extract(ctx=ctx, image=spec_source_iso, destination=iso_dir)
+        try:
+            ctx.exec(
+                argv=["bash", "-lc", f"yes | ./install.sh -f -d {spec_dir}"],
+                cwd=iso_dir,
+                output_is_log=True,
+            )
+        finally:
+            remove_tree(ctx=ctx, path=iso_dir)
 
-        ctx.exec(
-            argv=["bash", "-lc", f"yes | ./install.sh -d {spec_dir}"],
-            cwd=mnt_dir,
-            output_is_log=True,
-        )
-
-        fuseiso_umount(ctx, mnt_dir)
-
-        # cp config
-        # TODO: support ARM
-        arch = ctx.platform.architecture
-        if arch != "x86_64":
-            raise NotImplementedError(f"SPEC CPU 2026 is only supported on x86_64 (got {arch})")
-
-        ctx.exec(
-            argv=["cp", "config/Example-gcc-linux-x86.cfg", "config/config-gcc-linux-x86.cfg"],
-            cwd=spec_dir,
-        )
+        _copy_config(ctx=ctx, spec_dir=spec_dir, config_candidates=config_candidates)
 
         # sed config
         sed_edit(
@@ -172,7 +199,7 @@ class SPECCPU2026Bench:
             edits=[
                 (
                     's#"/opt/rh/gcc-toolset-15/root/usr"#"/usr"#',
-                    Path("config/config-gcc-linux-x86.cfg"),
+                    Path("config/config-benchkit.cfg"),
                 ),
             ],
         )
@@ -222,7 +249,7 @@ class SPECCPU2026Bench:
                 (
                     "source shrc && "
                     f"runcpu --fake --loose --size {size} "
-                    f"--tune base --config config-gcc-linux-x86.cfg {bench_name}"
+                    f"--tune base --config config-benchkit.cfg {bench_name}"
                 ),
             ],
             cwd=src_dir,
@@ -252,7 +279,7 @@ class SPECCPU2026Bench:
                     (
                         "source shrc && "
                         f"runcpu --loose --size {size} "
-                        f"--tune base --config config-gcc-linux-x86.cfg {bench_name}"
+                        f"--tune base --config config-benchkit.cfg {bench_name}"
                     ),
                 ],
                 cwd=src_dir,
@@ -339,7 +366,9 @@ class SPECCPU2026Bench:
 
         Dependencies include:
             - build-essential: C/C++ compiler and build tools
+            - libarchive-tools: bsdtar utility for extracting the SPEC ISO
         """
         return [
             PackageDependency("build-essential"),
+            PackageDependency("libarchive-tools"),
         ]
