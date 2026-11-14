@@ -36,17 +36,25 @@ class LsCpu:
     ):
         self._info_dict = _gen_lscpu_dict(comm_layer=comm_layer)
 
-    def get(self, key: str) -> str:
+    def get(self, key: str, default: str) -> str:
         """
-        Return the value of the given key in the lscpu output.
+        Return the value of the given key in the lscpu output in a robust manner.
 
         Args:
             key (str): requested key.
+            default (str): default value.
 
         Returns:
-            str: the value of the given key in the lscpu output.
+            str: the value of the given key in the lscpu output or the default.
         """
-        return self._info_dict[key]
+        value = self._info_dict.get(key, "").strip()
+        if value in ["", "-"]:
+            print(
+                f"[WARNING] Invalid or missing value for key '{key}' in lscpu, "
+                f"defaulting to {default}",
+            )
+            return default
+        return value
 
     def hyperthreads_per_core(self) -> int:
         """
@@ -55,7 +63,7 @@ class LsCpu:
         Returns:
             int: the number of hypterthreads (or CPUs) per core.
         """
-        return int(self.get("Thread(s) per core:"))
+        return int(self.get("Thread(s) per core:", "1"))
 
     def numa_nodes(self) -> int:
         """
@@ -64,23 +72,16 @@ class LsCpu:
         Returns:
             int: the number of NUMA nodes.
         """
-        return int(self.get("NUMA node(s):").strip())
+        return int(self.get("NUMA node(s):", "1"))
 
     def sockets(self) -> int:
         """
         Return the number of sockets (or packages).
 
-        If the socket value cannot be parsed as an integer (e.g. on some
-        platforms like Raspberry Pi 5), a default value of 1 is returned.
-
         Returns:
             int: the number of sockets (or packages) or 1 if not specified.
         """
-        result = self.get("Socket(s):").strip()
-        if not result.isdigit():
-            print(f"[WARNING] Invalid socket value '{result}' in lscpu, defaulting to 1")
-            return 1
-        return int(result)
+        return int(self.get("Socket(s):", "1"))
 
     def l1d_cache(self) -> int:
         """
@@ -89,7 +90,7 @@ class LsCpu:
         Returns:
             int: the size of the L1 data cache.
         """
-        return _cache_size(cache_str=self.get("L1d cache:"))
+        return _cache_size(cache_str=self.get("L1d cache:", "0 KiB"))
 
     def l1i_cache(self) -> int:
         """
@@ -98,7 +99,7 @@ class LsCpu:
         Returns:
             int: the size of the L1 instruction cache.
         """
-        return _cache_size(cache_str=self.get("L1i cache:"))
+        return _cache_size(cache_str=self.get("L1i cache:", "0 KiB"))
 
     def l2_cache(self) -> int:
         """
@@ -107,7 +108,7 @@ class LsCpu:
         Returns:
             int: the size of the L2 cache.
         """
-        return _cache_size(cache_str=self.get("L2 cache:"))
+        return _cache_size(cache_str=self.get("L2 cache:", "0 KiB"))
 
     def l3_cache(self) -> int:
         """
@@ -116,7 +117,7 @@ class LsCpu:
         Returns:
             int: the size of the L3 cache.
         """
-        return _cache_size(cache_str=self.get("L3 cache:"))
+        return _cache_size(cache_str=self.get("L3 cache:", "0 KiB"))
 
 
 def _cache_size_with_instances(cache_str: str) -> Optional[Tuple[str, str, str]]:
